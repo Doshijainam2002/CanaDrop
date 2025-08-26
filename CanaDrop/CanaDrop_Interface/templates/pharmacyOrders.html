@@ -700,10 +700,11 @@ function renderProgressSteps(currentStatus) {
         { key: 'pending', label: 'Pending' },
         { key: 'accepted', label: 'Accepted' },
         { key: 'picked_up', label: 'Pickup' },
+        { key: 'inTransit', label: 'In Transit' },
         { key: 'delivered', label: 'Delivered' }
     ];
     
-    const statusOrder = ['pending', 'accepted', 'picked_up', 'delivered'];
+    const statusOrder = ['pending', 'accepted', 'picked_up', 'inTransit', 'delivered'];
     const currentIndex = statusOrder.indexOf(currentStatus);
     
     return steps.map((step, index) => {
@@ -719,6 +720,7 @@ function renderProgressSteps(currentStatus) {
         `;
     }).join('');
 }
+
 
 // Toggle order details visibility
 function toggleOrderDetails(orderId) {

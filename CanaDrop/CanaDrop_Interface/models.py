@@ -94,6 +94,7 @@ class DeliveryOrder(models.Model):
     STATUS_CHOICES = [
         ('pending', 'Pending'),
         ('accepted', 'Accepted'),
+        ('inTransit', 'In Transit'),
         ('picked_up', 'Picked Up'),
         ('delivered', 'Delivered'),
         ('cancelled', 'Cancelled'),
@@ -181,6 +182,7 @@ class OrderTracking(models.Model):
         ('pending', 'Pending'),
         ('accepted', 'Accepted by Driver'),
         ('picked_up', 'Picked Up'),
+        ('inTransit', 'In Transit'),
         ('delivered', 'Delivered'),
         ('cancelled', 'Cancelled'),
         ('handover', 'Pharmacy Handover'),

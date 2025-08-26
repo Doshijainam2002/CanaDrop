@@ -20,6 +20,9 @@ from .models import Pharmacy, DeliveryOrder, OrderImage, OrderTracking, Driver
 import json
 import logging
 import os
+from google.cloud import storage
+from datetime import timedelta
+from django.http import JsonResponse, HttpResponseBadRequest
 
 # Add this for better error logging
 logger = logging.getLogger(__name__)
@@ -927,3 +930,183 @@ def get_driver_details(request):
             return JsonResponse({"error": "Driver not found"}, status=404)
 
     return JsonResponse({"error": "Invalid request method"}, status=405)
+
+@csrf_exempt
+def driver_accepted_orders(request):
+    if request.method != "GET":
+        return HttpResponseBadRequest("Only GET requests are allowed")
+
+    driver_id = request.GET.get("driverId")
+    if not driver_id:
+        return HttpResponseBadRequest("Missing required parameter: driverId")
+
+    try:
+        driver_id = int(driver_id)
+    except (ValueError, TypeError):
+        return HttpResponseBadRequest("driverId must be an integer")
+
+    qs = DeliveryOrder.objects.filter(
+        driver_id=driver_id,
+        status__in=["accepted", "picked_up", "inTransit"]  # Include all active statuses
+    ).select_related("pharmacy")
+
+    orders = []
+    for o in qs:
+        orders.append({
+            "id": o.id,
+            "pharmacy_id": o.pharmacy_id,
+            "pharmacy_name": getattr(o.pharmacy, "name", None),
+            "driver_id": o.driver_id,
+            "pickup_address": o.pickup_address,
+            "pickup_city": o.pickup_city,
+            "pickup_day": o.pickup_day.isoformat() if o.pickup_day else None,
+            "drop_address": o.drop_address,
+            "drop_city": o.drop_city,
+            "status": o.status,
+            "rate": float(o.rate) if isinstance(o.rate, Decimal) else o.rate,
+            "created_at": o.created_at.isoformat() if o.created_at else None,
+            "updated_at": o.updated_at.isoformat() if o.updated_at else None,
+        })
+
+    return JsonResponse({"orders": orders})
+
+@csrf_exempt
+def driver_pickup_proof(request):
+    if request.method != "POST":
+        return HttpResponseBadRequest("Only POST method allowed")
+
+    driver_id = request.POST.get("driverId")
+    order_id = request.POST.get("orderId")
+    pharmacy_id = request.POST.get("pharmacyId")
+    image_file = request.FILES.get("image")
+
+    if not (driver_id and order_id and pharmacy_id and image_file):
+        return HttpResponseBadRequest("driverId, orderId, pharmacyId and image are required")
+
+    try:
+        # fetch objects
+        driver = get_object_or_404(Driver, id=driver_id)
+        order = get_object_or_404(DeliveryOrder, id=order_id)
+        pharmacy = get_object_or_404(Pharmacy, id=pharmacy_id)
+
+        # step 1: update order status to inTransit
+        order.status = "inTransit"
+        order.save()
+
+        # step 2: upload image to GCP
+        key_path = "/Users/jainamdoshi/Desktop/Projects/CanaDrop/CanaDrop/gcp_key.json"
+        bucket_name = "canadrop-bucket"  # Fixed bucket name
+
+        client = storage.Client.from_service_account_json(key_path)
+        bucket = client.bucket(bucket_name)
+
+        safe_pharmacy_name = pharmacy.name.replace(" ", "_")
+        filename = f"{driver_id}_{order_id}_{safe_pharmacy_name}_driverpickup.jpg"
+        blob = bucket.blob(f"Proof/{filename}")
+        blob.upload_from_file(image_file, content_type=image_file.content_type)
+
+        # generate signed URL valid for 7 days
+        signed_url = blob.generate_signed_url(expiration=timedelta(days=7), method="GET")
+
+        # step 3a: create order tracking entry
+        note_text = f"Driver Pickup Image Uploaded : {driver_id}_{order_id}_{pharmacy_id}_DriverPickup"
+        performed_by = f"Driver: {driver.name}"
+        OrderTracking.objects.create(
+            order=order,
+            driver=driver,
+            pharmacy=pharmacy,
+            step="inTransit",
+            performed_by=performed_by,
+            note=note_text,
+            image_url=signed_url,
+        )
+
+        # step 3b: create order image entry
+        OrderImage.objects.create(
+            order=order,
+            image_url=signed_url,
+            stage="pickup"
+        )
+
+        return JsonResponse({
+            "success": True,
+            "message": "Pickup proof uploaded successfully",
+            "image_url": signed_url
+        })
+
+    except Exception as e:
+        return JsonResponse({
+            "success": False,
+            "message": f"Error uploading pickup proof: {str(e)}"
+        }, status=500)
+
+
+@csrf_exempt
+def driver_delivery_proof(request):
+    if request.method != "POST":
+        return HttpResponseBadRequest("Only POST method allowed")
+
+    driver_id = request.POST.get("driverId")
+    order_id = request.POST.get("orderId")
+    pharmacy_id = request.POST.get("pharmacyId")
+    image_file = request.FILES.get("image")
+
+    if not (driver_id and order_id and pharmacy_id and image_file):
+        return HttpResponseBadRequest("driverId, orderId, pharmacyId and image are required")
+
+    try:
+        # fetch objects
+        driver = get_object_or_404(Driver, id=driver_id)
+        order = get_object_or_404(DeliveryOrder, id=order_id)
+        pharmacy = get_object_or_404(Pharmacy, id=pharmacy_id)
+
+        # step 1: update order status to delivered
+        order.status = "delivered"
+        order.save()
+
+        # step 2: upload image to GCP
+        key_path = "/Users/jainamdoshi/Desktop/Projects/CanaDrop/CanaDrop/gcp_key.json"
+        bucket_name = "canadrop-bucket"  # Fixed bucket name
+
+        client = storage.Client.from_service_account_json(key_path)
+        bucket = client.bucket(bucket_name)
+
+        safe_pharmacy_name = pharmacy.name.replace(" ", "_")
+        filename = f"{driver_id}_{order_id}_{safe_pharmacy_name}_delivered.jpg"
+        blob = bucket.blob(f"Proof/{filename}")
+        blob.upload_from_file(image_file, content_type=image_file.content_type)
+
+        # signed URL (valid for 7 days)
+        signed_url = blob.generate_signed_url(expiration=timedelta(days=7), method="GET")
+
+        # step 3a: order tracking entry
+        note_text = f"Driver Delivery Image Uploaded : {driver_id}_{order_id}_{pharmacy_id}_Delivered"
+        performed_by = f"Driver: {driver.name}"
+        OrderTracking.objects.create(
+            order=order,
+            driver=driver,
+            pharmacy=pharmacy,
+            step="delivered",
+            performed_by=performed_by,
+            note=note_text,
+            image_url=signed_url,
+        )
+
+        # step 3b: order image entry
+        OrderImage.objects.create(
+            order=order,
+            image_url=signed_url,
+            stage="delivered"
+        )
+
+        return JsonResponse({
+            "success": True,
+            "message": "Delivery proof uploaded successfully",
+            "image_url": signed_url
+        })
+
+    except Exception as e:
+        return JsonResponse({
+            "success": False,
+            "message": f"Error uploading delivery proof: {str(e)}"
+        }, status=500)

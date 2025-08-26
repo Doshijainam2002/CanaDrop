@@ -21,6 +21,9 @@ urlpatterns = [
     path("api/orders/pending/", views.get_pending_orders, name="get_pending_orders"),
     path("api/orders/assign-driver/", views.assign_driver, name="assign_driver"),
     path("api/driver/details/", views.get_driver_details, name="get_driver_details"),
-    path('driverAcceptedDeliveries/', views.driverAcceptedDeliveriesView, name="DriverAcceptedDeliveriesPage")
+    path('driverAcceptedDeliveries/', views.driverAcceptedDeliveriesView, name="DriverAcceptedDeliveriesPage"),
+    path("api/driver-orders/", views.driver_accepted_orders, name="driver_accepted_orders"),
+    path("api/driver-pickup-proof/", views.driver_pickup_proof, name="driver_pickup_proof"),
+    path("api/driver-delivery-proof/", views.driver_delivery_proof, name="driver_delivery_proof"),
 
 ]
