@@ -168,7 +168,8 @@ class DriverPayment(models.Model):
 # AUDIT TABLES
 # _________________________________________________________________________________________________________________
 
-class DeliveryOrderTracking(models.Model):
+
+class OrderTracking(models.Model):
     STEP_CHOICES = [
         ('pending', 'Pending'),
         ('accepted', 'Accepted by Driver'),
@@ -179,6 +180,8 @@ class DeliveryOrderTracking(models.Model):
     ]
 
     order = models.ForeignKey(DeliveryOrder, on_delete=models.CASCADE, related_name='tracking_entries')
+    driver = models.ForeignKey(Driver, on_delete=models.SET_NULL, null=True, blank=True, related_name='tracking_entries')
+    pharmacy = models.ForeignKey(Pharmacy, on_delete=models.SET_NULL, null=True, blank=True, related_name='tracking_entries')
     step = models.CharField(max_length=20, choices=STEP_CHOICES)
     performed_by = models.CharField(max_length=100, blank=True, null=True)  # driver or pharmacy staff
     timestamp = models.DateTimeField(auto_now_add=True)
@@ -190,6 +193,7 @@ class DeliveryOrderTracking(models.Model):
 
     def __str__(self):
         return f"Order #{self.order.id} - {self.step} at {self.timestamp}"
+
 
 
 class DriverPaymentTracking(models.Model):

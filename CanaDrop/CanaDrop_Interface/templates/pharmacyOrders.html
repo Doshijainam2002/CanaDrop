@@ -118,199 +118,211 @@
                             </div>
                         </div>
 
-                        <!-- Order Rows -->
-                        <div id="ordersList">
-                            <!-- Order 1 -->
-                            <div class="border-b border-gray-50 last:border-b-0">
-                                <!-- Main Row - starts with red highlight since no handover image initially -->
-                                <div id="row-order-001" class="px-6 py-4 bg-red-50 hover:bg-red-100 cursor-pointer transition-colors" onclick="toggleOrderDetails('order-001')">
-                                    <div class="grid grid-cols-12 gap-4 items-center">
-                                        <!-- Order ID -->
-                                        <div class="col-span-2">
-                                            <p class="text-sm font-mono font-medium text-gray-900">#001</p>
-                                            <p class="text-xs text-gray-500">Aug 25, 2025</p>
-                                        </div>
-                                        
-                                        <!-- Addresses -->
-                                        <div class="col-span-3">
-                                            <p class="text-sm text-gray-900 truncate">From: 123 Main St, Toronto, ON</p>
-                                            <p class="text-xs text-gray-500 truncate">To: 456 University Ave, Kitchener, ON</p>
-                                        </div>
-                                        
-                                        <!-- City & Date -->
-                                        <div class="col-span-2">
-                                            <p class="text-sm text-gray-900">Kitchener</p>
-                                            <p class="text-xs text-gray-500">Aug 26, 2025</p>
-                                        </div>
-                                        
-                                        <!-- Status -->
-                                        <div class="col-span-2">
-                                            <span class="inline-flex px-2 py-1 text-xs font-medium rounded-full bg-blue-100 text-blue-700 border border-blue-200">
-                                                Accepted
-                                            </span>
-                                        </div>
-                                        
-                                        <!-- Rate -->
-                                        <div class="col-span-1">
-                                            <p class="text-sm font-semibold text-green-600">$25.00</p>
-                                        </div>
-                                        
-                                        <!-- Images Count -->
-                                        <div class="col-span-1">
-                                            <div class="flex items-center space-x-1">
-                                                <svg class="w-4 h-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 002 2z"/>
-                                                </svg>
-                                                <span id="images-count-001" class="text-xs text-red-500">0</span>
-                                            </div>
-                                        </div>
-                                        
-                                        <!-- Expand Arrow -->
-                                        <div class="col-span-1 flex justify-end">
-                                            <svg id="arrow-order-001" class="w-4 h-4 text-gray-400 transform transition-transform duration-200" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/>
-                                            </svg>
-                                        </div>
-                                    </div>
+<!-- Order Rows -->
+<div id="ordersList">
+    <!-- Order 1 -->
+    <div class="border-b border-gray-50 last:border-b-0">
+        <!-- Main Row - starts with red highlight since no handover image initially -->
+        <div id="row-order-001" class="px-6 py-4 bg-red-50 hover:bg-red-100 cursor-pointer transition-colors" onclick="toggleOrderDetails('order-001')">
+            <div class="grid grid-cols-12 gap-4 items-center">
+                <!-- Order ID -->
+                <div class="col-span-2">
+                    <p class="text-sm font-mono font-medium text-gray-900">#001</p>
+                    <p class="text-xs text-gray-500">Aug 25, 2025</p>
+                </div>
+                
+                <!-- Addresses -->
+                <div class="col-span-3">
+                    <p class="text-sm text-gray-900 truncate">From: 123 Main St, Toronto, ON</p>
+                    <p class="text-xs text-gray-500 truncate">To: 456 University Ave, Kitchener, ON</p>
+                </div>
+                
+                <!-- City & Date -->
+                <div class="col-span-2">
+                    <p class="text-sm text-gray-900">Kitchener</p>
+                    <p class="text-xs text-gray-500">Aug 26, 2025</p>
+                </div>
+                
+                <!-- Status -->
+                <div class="col-span-2">
+                    <span class="inline-flex px-2 py-1 text-xs font-medium rounded-full bg-blue-100 text-blue-700 border border-blue-200">
+                        Accepted
+                    </span>
+                </div>
+                
+                <!-- Rate -->
+                <div class="col-span-1">
+                    <p class="text-sm font-semibold text-green-600">$25.00</p>
+                </div>
+                
+                <!-- Images Count -->
+                <div class="col-span-1">
+                    <div class="flex items-center space-x-1">
+                        <svg class="w-4 h-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 002 2z"/>
+                        </svg>
+                        <span id="images-count-001" class="text-xs text-red-500">0</span>
+                    </div>
+                </div>
+                
+                <!-- Expand Arrow -->
+                <div class="col-span-1 flex justify-end">
+                    <svg id="arrow-order-001" class="w-4 h-4 text-gray-400 transform transition-transform duration-200" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/>
+                    </svg>
+                </div>
+            </div>
+        </div>
+
+        <!-- Expanded Details -->
+        <div id="details-order-001" class="hidden bg-gray-50 px-6 py-6 border-t border-gray-100">
+            <div class="grid grid-cols-1 lg:grid-cols-2 gap-8">
+                <!-- Left Column: Order Details + Timeline -->
+                <div class="space-y-6">
+                    <!-- Order Information -->
+                    <div class="bg-white rounded-lg p-4 shadow-sm">
+                        <h4 class="text-sm font-semibold text-gray-900 mb-3">Order Information</h4>
+                        <div class="space-y-3">
+                            <div>
+                                <label class="text-xs font-medium text-gray-500">Pickup Address</label>
+                                <p class="text-sm text-gray-900">123 Main St, Toronto, ON M5V 3A4</p>
+                            </div>
+                            <div>
+                                <label class="text-xs font-medium text-gray-500">Drop Address</label>
+                                <p class="text-sm text-gray-900">456 University Ave, Kitchener, ON N2L 3G1</p>
+                            </div>
+                            <div class="grid grid-cols-2 gap-3">
+                                <div>
+                                    <label class="text-xs font-medium text-gray-500">Drop City</label>
+                                    <p class="text-sm text-gray-900">Kitchener</p>
                                 </div>
-
-                                <!-- Expanded Details -->
-                                <div id="details-order-001" class="hidden bg-gray-50 px-6 py-6 border-t border-gray-100">
-                                    <div class="grid grid-cols-1 lg:grid-cols-2 gap-8">
-                                        <!-- Left Column: Order Details + Timeline -->
-                                        <div class="space-y-6">
-                                            <!-- Order Information -->
-                                            <div class="bg-white rounded-lg p-4 shadow-sm">
-                                                <h4 class="text-sm font-semibold text-gray-900 mb-3">Order Information</h4>
-                                                <div class="space-y-3">
-                                                    <div>
-                                                        <label class="text-xs font-medium text-gray-500">Pickup Address</label>
-                                                        <p class="text-sm text-gray-900">123 Main St, Toronto, ON M5V 3A4</p>
-                                                    </div>
-                                                    <div>
-                                                        <label class="text-xs font-medium text-gray-500">Drop Address</label>
-                                                        <p class="text-sm text-gray-900">456 University Ave, Kitchener, ON N2L 3G1</p>
-                                                    </div>
-                                                    <div class="grid grid-cols-2 gap-3">
-                                                        <div>
-                                                            <label class="text-xs font-medium text-gray-500">Drop City</label>
-                                                            <p class="text-sm text-gray-900">Kitchener</p>
-                                                        </div>
-                                                        <div>
-                                                            <label class="text-xs font-medium text-gray-500">Pickup Day</label>
-                                                            <p class="text-sm text-gray-900">Aug 26, 2025</p>
-                                                        </div>
-                                                    </div>
-                                                </div>
-                                            </div>
-
-                                            <!-- Timeline -->
-                                            <div class="bg-white rounded-lg p-4 shadow-sm">
-                                                <h4 class="text-sm font-semibold text-gray-900 mb-3">Timeline</h4>
-                                                <div class="space-y-3">
-                                                    <div class="flex items-center">
-                                                        <div class="w-2 h-2 bg-green-500 rounded-full mr-3"></div>
-                                                        <div class="flex-1">
-                                                            <p class="text-sm font-medium text-gray-900">Order Created</p>
-                                                            <p class="text-xs text-gray-500">Aug 25, 2025 at 2:30 PM</p>
-                                                        </div>
-                                                    </div>
-                                                    <div class="flex items-center">
-                                                        <div class="w-2 h-2 bg-green-500 rounded-full mr-3"></div>
-                                                        <div class="flex-1">
-                                                            <p class="text-sm font-medium text-gray-900">Order Accepted</p>
-                                                            <p class="text-xs text-gray-500">Aug 25, 2025 at 3:15 PM</p>
-                                                        </div>
-                                                    </div>
-                                                    <div class="flex items-center">
-                                                        <div class="w-2 h-2 bg-gray-300 rounded-full mr-3"></div>
-                                                        <div class="flex-1">
-                                                            <p class="text-sm font-medium text-gray-500">Awaiting Pickup</p>
-                                                            <p class="text-xs text-gray-400">Pending</p>
-                                                        </div>
-                                                    </div>
-                                                </div>
-                                            </div>
-                                        </div>
-
-                                        <!-- Right Column: Progress + Images -->
-                                        <div class="space-y-6">
-                                            <!-- Progress Bar -->
-                                            <div class="bg-white rounded-lg p-4 shadow-sm">
-                                                <h4 class="text-sm font-semibold text-gray-900 mb-3">Order Progress</h4>
-                                                <div class="relative">
-                                                    <div class="absolute top-2 left-0 w-full h-0.5 bg-gray-200"></div>
-                                                    <div class="absolute top-2 left-0 h-0.5 bg-gradient-to-r from-teal-500 to-cyan-500" style="width: 50%"></div>
-                                                    <div class="relative flex justify-between">
-                                                        <div class="flex flex-col items-center">
-                                                            <div class="w-4 h-4 rounded-full bg-gradient-to-r from-teal-500 to-cyan-500 mb-1"></div>
-                                                            <span class="text-xs font-medium text-gray-900">Pending</span>
-                                                        </div>
-                                                        <div class="flex flex-col items-center">
-                                                            <div class="w-4 h-4 rounded-full bg-gradient-to-r from-teal-500 to-cyan-500 mb-1"></div>
-                                                            <span class="text-xs font-medium text-gray-900">Accepted</span>
-                                                        </div>
-                                                        <div class="flex flex-col items-center">
-                                                            <div class="w-4 h-4 rounded-full bg-gray-200 mb-1"></div>
-                                                            <span class="text-xs font-medium text-gray-500">Pickup</span>
-                                                        </div>
-                                                        <div class="flex flex-col items-center">
-                                                            <div class="w-4 h-4 rounded-full bg-gray-200 mb-1"></div>
-                                                            <span class="text-xs font-medium text-gray-500">Delivered</span>
-                                                        </div>
-                                                    </div>
-                                                </div>
-                                            </div>
-
-                                            <!-- Images -->
-                                            <div class="bg-white rounded-lg p-4 shadow-sm">
-                                                <h4 class="text-sm font-semibold text-gray-900 mb-3">Images</h4>
-                                                <div class="space-y-6">
-                                                    <!-- Handover Images -->
-                                                    <div>
-                                                        <div class="flex items-center justify-between mb-3">
-                                                            <span class="text-sm font-medium text-gray-700">Pharmacy Handover</span>
-                                                            <div class="flex items-center space-x-2">
-                                                                <span id="handover-count-001" class="text-xs text-red-500">No Image</span>
-                                                                <button onclick="triggerFileUpload('001')" class="text-xs text-teal-600 hover:text-teal-700 font-medium">
-                                                                    + Add Photo
-                                                                </button>
-                                                            </div>
-                                                        </div>
-                                                        <input type="file" id="handover-upload-001" accept="image/*" class="hidden" onchange="handleImageUpload(event, '001')">
-                                                        <div id="handover-images-001" class="w-full h-48 border-2 border-dashed border-gray-300 rounded-lg flex items-center justify-center">
-                                                            <span class="text-sm text-gray-400">No handover image</span>
-                                                        </div>
-                                                    </div>
-                                                    
-                                                    <!-- Driver Pickup Images -->
-                                                    <div>
-                                                        <div class="flex items-center justify-between mb-3">
-                                                            <span class="text-sm font-medium text-gray-700">Driver Pickup</span>
-                                                            <span id="pickup-count-001" class="text-xs text-gray-500">No Images</span>
-                                                        </div>
-                                                        <div id="pickup-images-001" class="w-full h-48 border-2 border-dashed border-gray-200 rounded-lg flex items-center justify-center">
-                                                            <span class="text-sm text-gray-400">Awaiting pickup</span>
-                                                        </div>
-                                                    </div>
-
-                                                    <!-- Driver Delivery Images -->
-                                                    <div>
-                                                        <div class="flex items-center justify-between mb-3">
-                                                            <span class="text-sm font-medium text-gray-700">Driver Delivery</span>
-                                                            <span id="delivery-count-001" class="text-xs text-gray-500">No Images</span>
-                                                        </div>
-                                                        <div id="delivery-images-001" class="w-full h-48 border-2 border-dashed border-gray-200 rounded-lg flex items-center justify-center">
-                                                            <span class="text-sm text-gray-400">Awaiting delivery</span>
-                                                        </div>
-                                                    </div>
-                                                </div>
-                                            </div>
-                                        </div>
-                                    </div>
+                                <div>
+                                    <label class="text-xs font-medium text-gray-500">Pickup Day</label>
+                                    <p class="text-sm text-gray-900">Aug 26, 2025</p>
                                 </div>
                             </div>
                         </div>
+                    </div>
+
+                    <!-- Timeline -->
+                    <div class="bg-white rounded-lg p-4 shadow-sm">
+                        <h4 class="text-sm font-semibold text-gray-900 mb-3">Timeline</h4>
+                        <div class="space-y-3">
+                            <div class="flex items-center">
+                                <div class="w-2 h-2 bg-green-500 rounded-full mr-3"></div>
+                                <div class="flex-1">
+                                    <p class="text-sm font-medium text-gray-900">Order Created</p>
+                                    <p class="text-xs text-gray-500">Aug 25, 2025 at 2:30 PM</p>
+                                </div>
+                            </div>
+                            <div class="flex items-center">
+                                <div class="w-2 h-2 bg-green-500 rounded-full mr-3"></div>
+                                <div class="flex-1">
+                                    <p class="text-sm font-medium text-gray-900">Order Accepted</p>
+                                    <p class="text-xs text-gray-500">Aug 25, 2025 at 3:15 PM</p>
+                                </div>
+                            </div>
+                            <div class="flex items-center">
+                                <div class="w-2 h-2 bg-gray-300 rounded-full mr-3"></div>
+                                <div class="flex-1">
+                                    <p class="text-sm font-medium text-gray-500">Awaiting Pickup</p>
+                                    <p class="text-xs text-gray-400">Pending</p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Right Column: Progress + Images -->
+                <div class="space-y-6">
+                    <!-- Progress Bar -->
+                    <div class="bg-white rounded-lg p-4 shadow-sm">
+                        <h4 class="text-sm font-semibold text-gray-900 mb-3">Order Progress</h4>
+                        <div class="relative">
+                            <div class="absolute top-2 left-0 w-full h-0.5 bg-gray-200"></div>
+                            <div class="absolute top-2 left-0 h-0.5 bg-gradient-to-r from-teal-500 to-cyan-500" style="width: 50%"></div>
+                            <div class="relative flex justify-between">
+                                <div class="flex flex-col items-center">
+                                    <div class="w-4 h-4 rounded-full bg-gradient-to-r from-teal-500 to-cyan-500 mb-1"></div>
+                                    <span class="text-xs font-medium text-gray-900">Pending</span>
+                                </div>
+                                <div class="flex flex-col items-center">
+                                    <div class="w-4 h-4 rounded-full bg-gradient-to-r from-teal-500 to-cyan-500 mb-1"></div>
+                                    <span class="text-xs font-medium text-gray-900">Accepted</span>
+                                </div>
+                                <div class="flex flex-col items-center">
+                                    <div class="w-4 h-4 rounded-full bg-gray-200 mb-1"></div>
+                                    <span class="text-xs font-medium text-gray-500">Pickup</span>
+                                </div>
+                                <div class="flex flex-col items-center">
+                                    <div class="w-4 h-4 rounded-full bg-gray-200 mb-1"></div>
+                                    <span class="text-xs font-medium text-gray-500">Delivered</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Images -->
+                    <div class="bg-white rounded-lg p-4 shadow-sm">
+                        <h4 class="text-sm font-semibold text-gray-900 mb-3">Images</h4>
+                        <div class="space-y-6">
+                            <!-- Handover Images -->
+                            <div>
+                                <div class="flex items-center justify-between mb-3">
+                                    <span class="text-sm font-medium text-gray-700">Pharmacy Handover</span>
+                                    <div class="flex items-center space-x-2">
+                                        <span id="handover-count-001" class="text-xs text-red-500">No Image</span>
+                                        <button onclick="triggerFileUpload('001')" class="text-xs text-teal-600 hover:text-teal-700 font-medium">
+                                            + Add Photo
+                                        </button>
+                                    </div>
+                                </div>
+                                <input type="file" id="handover-upload-001" accept="image/*" class="hidden" onchange="handleImageUpload(event, '001')">
+                                <div id="handover-images-001" class="w-full h-48 border-2 border-dashed border-gray-300 rounded-lg flex items-center justify-center">
+                                    <span class="text-sm text-gray-400">No handover image</span>
+                                </div>
+                            </div>
+                            
+                            <!-- Driver Pickup Images -->
+                            <div>
+                                <div class="flex items-center justify-between mb-3">
+                                    <span class="text-sm font-medium text-gray-700">Driver Pickup</span>
+                                    <span id="pickup-count-001" class="text-xs text-gray-500">No Images</span>
+                                </div>
+                                <div id="pickup-images-001" class="w-full h-48 border-2 border-dashed border-gray-200 rounded-lg flex items-center justify-center">
+                                    <span class="text-sm text-gray-400">Awaiting pickup</span>
+                                </div>
+                            </div>
+
+                            <!-- Driver Delivery Images -->
+                            <div>
+                                <div class="flex items-center justify-between mb-3">
+                                    <span class="text-sm font-medium text-gray-700">Driver Delivery</span>
+                                    <span id="delivery-count-001" class="text-xs text-gray-500">No Images</span>
+                                </div>
+                                <div id="delivery-images-001" class="w-full h-48 border-2 border-dashed border-gray-200 rounded-lg flex items-center justify-center">
+                                    <span class="text-sm text-gray-400">Awaiting delivery</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Mark for Pickup Button -->
+            <div class="mt-6 border-t border-gray-200 pt-4">
+                <div class="flex justify-end">
+                    <button id="pickup-btn-001" onclick="markForPickup('001')" class="inline-flex items-center px-4 py-2 bg-gradient-to-r from-teal-500 to-cyan-500 text-white text-sm font-medium rounded-lg hover:from-teal-600 hover:to-cyan-600 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-teal-500 transition-all duration-200 shadow-sm hover:shadow-md">
+                        <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/>
+                        </svg>
+                        Mark for Pickup
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
                     </div>
                 </div>
             </div>
@@ -338,208 +350,638 @@
     </div>
 
     <script>
-        // Toggle order details visibility
-        function toggleOrderDetails(orderId) {
-            const details = document.getElementById(`details-${orderId}`);
-            const arrow = document.getElementById(`arrow-${orderId}`);
-            
-            if (details.classList.contains('hidden')) {
-                details.classList.remove('hidden');
-                details.classList.add('animate-fade-in');
-                arrow.style.transform = 'rotate(90deg)';
-            } else {
-                details.classList.add('hidden');
-                details.classList.remove('animate-fade-in');
-                arrow.style.transform = 'rotate(0deg)';
+// Global variables
+let currentPharmacyId = null;
+let currentPharmacyName = null;
+let ordersData = [];
+
+// Utility function to get cookie value
+function getCookie(name) {
+    let cookieValue = null;
+    if (document.cookie && document.cookie !== '') {
+        const cookies = document.cookie.split(';');
+        for (let i = 0; i < cookies.length; i++) {
+            const cookie = cookies[i].trim();
+            if (cookie.substring(0, name.length + 1) === (name + '=')) {
+                cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
+                break;
             }
         }
+    }
+    return cookieValue;
+}
 
-        // Open image modal
-        function openImageModal(imageSrc, title, timestamp) {
-            const modal = document.getElementById('imageModal');
-            const modalImage = document.getElementById('modalImage');
-            const modalTitle = document.getElementById('modalTitle');
-            const modalTimestamp = document.getElementById('modalTimestamp');
-            
-            modalImage.src = imageSrc;
-            modalTitle.textContent = title;
-            modalTimestamp.textContent = timestamp;
-            modal.classList.remove('hidden');
-            
-            // Prevent body scroll when modal is open
-            document.body.style.overflow = 'hidden';
-        }
+// Initialize page on DOM load
+document.addEventListener('DOMContentLoaded', function() {
+    console.log('DOM loaded, initializing page...');
+    
+    // Get pharmacy ID from cookies
+    currentPharmacyId = getCookie('pharmacyId');
+    currentPharmacyName = getCookie('pharmacyName') || 'Unknown Pharmacy';
+    
+    console.log('Pharmacy ID from cookies:', currentPharmacyId);
+    console.log('Pharmacy Name from cookies:', currentPharmacyName);
+    
+    if (!currentPharmacyId) {
+        console.error('No pharmacy ID found in cookies');
+        showError('Pharmacy ID not found. Please login again.');
+        return;
+    }
+    
+    // Load orders on page load
+    console.log('Starting to load pharmacy orders...');
+    loadPharmacyOrders();
+});
 
-        // Close image modal
-        function closeImageModal() {
-            const modal = document.getElementById('imageModal');
-            modal.classList.add('hidden');
-            document.body.style.overflow = 'auto';
-        }
-
-        // Trigger file upload - Fixed function
-        function triggerFileUpload(orderNumber) {
-            const uploadInput = document.getElementById(`handover-upload-${orderNumber}`);
-            if (uploadInput) {
-                uploadInput.click();
-            } else {
-                console.error('Upload input not found for order:', orderNumber);
+// Load pharmacy orders from API
+async function loadPharmacyOrders() {
+    try {
+        console.log('loadPharmacyOrders called for pharmacy ID:', currentPharmacyId);
+        showLoading(true);
+        
+        const apiUrl = `/api/pharmacy/${currentPharmacyId}/orders/`;
+        console.log('Making API request to:', apiUrl);
+        
+        const response = await fetch(apiUrl, {
+            method: 'GET',
+            headers: {
+                'Content-Type': 'application/json',
             }
+        });
+        
+        console.log('Response status:', response.status);
+        console.log('Response ok:', response.ok);
+        
+        if (!response.ok) {
+            const errorText = await response.text();
+            console.error('Response error text:', errorText);
+            throw new Error(`HTTP error! status: ${response.status}`);
         }
+        
+        const data = await response.json();
+        console.log('Received data:', data);
+        
+        if (data.success) {
+            ordersData = data.orders;
+            console.log('Orders data stored:', ordersData.length, 'orders');
+            renderOrders(data.orders);
+        } else {
+            console.error('API returned success=false:', data.error);
+            throw new Error(data.error || 'Failed to load orders');
+        }
+        
+    } catch (error) {
+        console.error('Error loading orders:', error);
+        console.error('Error stack:', error.stack);
+        showError('Failed to load orders: ' + error.message);
+    } finally {
+        showLoading(false);
+    }
+}
 
-        // Handle image upload for pharmacy handover - Updated to work with order number
-        function handleImageUpload(event, orderNumber) {
-            const file = event.target.files[0];
-            if (!file || !file.type.startsWith('image/')) {
-                return;
-            }
+// Render orders in the UI
+function renderOrders(orders) {
+    console.log('renderOrders called with', orders.length, 'orders');
+    
+    const ordersList = document.getElementById('ordersList');
+    if (!ordersList) {
+        console.error('Orders list container not found');
+        return;
+    }
+    
+    if (orders.length === 0) {
+        console.log('No orders to display');
+        ordersList.innerHTML = `
+            <div class="text-center py-12">
+                <div class="text-gray-400 mb-4">
+                    <svg class="w-12 h-12 mx-auto" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20 13V6a2 2 0 00-2-2H6a2 2 0 00-2 2v7m16 0v5a2 2 0 01-2 2H6a2 2 0 01-2-2v-5m16 0h-2M4 13h2m13-8l-7 7-7-7"/>
+                    </svg>
+                </div>
+                <p class="text-gray-500">No orders found</p>
+            </div>
+        `;
+        return;
+    }
+    
+    let ordersHtml = '';
+    
+    orders.forEach((order, index) => {
+        console.log(`Processing order ${index + 1}:`, order);
+        
+        const hasHandoverImage = order.images && order.images.handover && order.images.handover.length > 0;
+        const rowColorClass = hasHandoverImage ? 'hover:bg-gray-50' : 'bg-red-50 hover:bg-red-100';
+        const imageCountColor = order.total_images > 0 ? 'text-green-600' : 'text-red-500';
+        const statusColorMap = {
+            'pending': 'bg-yellow-100 text-yellow-700 border-yellow-200',
+            'accepted': 'bg-blue-100 text-blue-700 border-blue-200',
+            'picked_up': 'bg-purple-100 text-purple-700 border-purple-200',
+            'delivered': 'bg-green-100 text-green-700 border-green-200',
+            'cancelled': 'bg-red-100 text-red-700 border-red-200'
+        };
+        
+        ordersHtml += `
+            <div class="border-b border-gray-50 last:border-b-0">
+                <!-- Main Row -->
+                <div id="row-order-${order.id}" class="px-6 py-4 ${rowColorClass} cursor-pointer transition-colors" onclick="toggleOrderDetails('order-${order.id}')">
+                    <div class="grid grid-cols-12 gap-4 items-center">
+                        <!-- Order ID -->
+                        <div class="col-span-2">
+                            <p class="text-sm font-mono font-medium text-gray-900">#${order.id}</p>
+                            <p class="text-xs text-gray-500">${formatDate(order.created_at)}</p>
+                        </div>
+                        
+                        <!-- Addresses -->
+                        <div class="col-span-3">
+                            <p class="text-sm text-gray-900 truncate">From: ${order.pickup_address}</p>
+                            <p class="text-xs text-gray-500 truncate">To: ${order.drop_address}</p>
+                        </div>
+                        
+                        <!-- City & Date -->
+                        <div class="col-span-2">
+                            <p class="text-sm text-gray-900">${order.drop_city}</p>
+                            <p class="text-xs text-gray-500">${formatDate(order.pickup_day)}</p>
+                        </div>
+                        
+                        <!-- Status -->
+                        <div class="col-span-2">
+                            <span class="inline-flex px-2 py-1 text-xs font-medium rounded-full ${statusColorMap[order.status] || 'bg-gray-100 text-gray-700 border-gray-200'}">
+                                ${capitalizeFirst(order.status)}
+                            </span>
+                        </div>
+                        
+                        <!-- Rate -->
+                        <div class="col-span-1">
+                            <p class="text-sm font-semibold text-green-600">$${parseFloat(order.rate).toFixed(2)}</p>
+                        </div>
+                        
+                        <!-- Images Count -->
+                        <div class="col-span-1">
+                            <div class="flex items-center space-x-1">
+                                <svg class="w-4 h-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 002 2z"/>
+                                </svg>
+                                <span id="images-count-${order.id}" class="text-xs ${imageCountColor}">${order.total_images}</span>
+                            </div>
+                        </div>
+                        
+                        <!-- Expand Arrow -->
+                        <div class="col-span-1 flex justify-end">
+                            <svg id="arrow-order-${order.id}" class="w-4 h-4 text-gray-400 transform transition-transform duration-200" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/>
+                            </svg>
+                        </div>
+                    </div>
+                </div>
 
-            const container = document.getElementById(`handover-images-${orderNumber}`);
-            const countElement = document.getElementById(`handover-count-${orderNumber}`);
-            const imagesCountElement = document.getElementById(`images-count-${orderNumber}`);
-            
-            if (!container || !countElement || !imagesCountElement) {
-                console.error('Required elements not found for order:', orderNumber);
-                return;
-            }
+                <!-- Expanded Details -->
+                <div id="details-order-${order.id}" class="hidden bg-gray-50 px-6 py-6 border-t border-gray-100">
+                    ${renderOrderDetails(order)}
+                </div>
+            </div>
+        `;
+    });
+    
+    console.log('Setting innerHTML for ordersList');
+    ordersList.innerHTML = ordersHtml;
+    console.log('Orders rendered successfully');
+}
 
-            const addButton = countElement.parentElement.querySelector('button');
-            
-            const reader = new FileReader();
-            reader.onload = function(e) {
-                // Clear existing content
-                container.innerHTML = '';
-                
-                // Create image wrapper with delete button
-                const imageWrapper = document.createElement('div');
-                imageWrapper.className = 'relative group w-full h-48';
-                
-                // Create new image element
-                const img = document.createElement('img');
-                img.src = e.target.result;
-                img.alt = 'Handover Image';
-                img.className = 'w-full h-full object-contain rounded-lg border border-gray-200 cursor-pointer hover:shadow-md transition-shadow';
-                
-                // Get current timestamp
-                const now = new Date();
-                const timestamp = now.toLocaleDateString('en-US', { 
-                    month: 'short', 
-                    day: 'numeric', 
-                    hour: 'numeric', 
-                    minute: '2-digit',
-                    hour12: true 
-                });
-                
-                img.onclick = () => openImageModal(e.target.result, 'Pharmacy Handover Image', timestamp);
-                
-                // Create delete button
-                const deleteButton = document.createElement('button');
-                deleteButton.innerHTML = `
-                    <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+// Render detailed order information
+function renderOrderDetails(order) {
+    console.log('renderOrderDetails called for order:', order.id);
+    
+    const timelineHtml = order.timeline ? order.timeline.map(entry => `
+        <div class="flex items-center">
+            <div class="w-2 h-2 bg-green-500 rounded-full mr-3"></div>
+            <div class="flex-1">
+                <p class="text-sm font-medium text-gray-900">${capitalizeFirst(entry.step.replace('_', ' '))}</p>
+                <p class="text-xs text-gray-500">${formatDateTime(entry.timestamp)}</p>
+                ${entry.note ? `<p class="text-xs text-gray-400">${entry.note}</p>` : ''}
+            </div>
+        </div>
+    `).join('') : '<p class="text-sm text-gray-500">No timeline available</p>';
+
+    const handoverImagesHtml = renderImages(order.images ? order.images.handover : [], 'handover');
+    const pickupImagesHtml = renderImages(order.images ? order.images.pickup : [], 'pickup');
+    const deliveredImagesHtml = renderImages(order.images ? order.images.delivered : [], 'delivered');
+
+    const hasHandoverImage = order.images && order.images.handover && order.images.handover.length > 0;
+    const handoverCountText = hasHandoverImage ? `${order.images.handover.length} Image${order.images.handover.length > 1 ? 's' : ''}` : 'No Image';
+    const handoverCountColor = hasHandoverImage ? 'text-green-600' : 'text-red-500';
+
+    // Check if photo replacement should be disabled (when status is picked_up or later stages)
+    const canReplacePhoto = !['picked_up', 'delivered', 'cancelled'].includes(order.status);
+    console.log(`Order ${order.id} - Status: ${order.status}, Can replace photo: ${canReplacePhoto}`);
+
+    return `
+        <div class="grid grid-cols-1 lg:grid-cols-2 gap-8">
+            <!-- Left Column: Order Details + Timeline -->
+            <div class="space-y-6">
+                <!-- Order Information -->
+                <div class="bg-white rounded-lg p-4 shadow-sm">
+                    <h4 class="text-sm font-semibold text-gray-900 mb-3">Order Information</h4>
+                    <div class="space-y-3">
+                        <div>
+                            <label class="text-xs font-medium text-gray-500">Pickup Address</label>
+                            <p class="text-sm text-gray-900">${order.pickup_address}</p>
+                        </div>
+                        <div>
+                            <label class="text-xs font-medium text-gray-500">Drop Address</label>
+                            <p class="text-sm text-gray-900">${order.drop_address}</p>
+                        </div>
+                        <div class="grid grid-cols-2 gap-3">
+                            <div>
+                                <label class="text-xs font-medium text-gray-500">Drop City</label>
+                                <p class="text-sm text-gray-900">${order.drop_city}</p>
+                            </div>
+                            <div>
+                                <label class="text-xs font-medium text-gray-500">Pickup Day</label>
+                                <p class="text-sm text-gray-900">${formatDate(order.pickup_day)}</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Timeline -->
+                <div class="bg-white rounded-lg p-4 shadow-sm">
+                    <h4 class="text-sm font-semibold text-gray-900 mb-3">Timeline</h4>
+                    <div class="space-y-3">
+                        ${timelineHtml}
+                    </div>
+                </div>
+            </div>
+
+            <!-- Right Column: Progress + Images -->
+            <div class="space-y-6">
+                <!-- Progress Bar -->
+                <div class="bg-white rounded-lg p-4 shadow-sm">
+                    <h4 class="text-sm font-semibold text-gray-900 mb-3">Order Progress</h4>
+                    <div class="relative">
+                        <div class="absolute top-2 left-0 w-full h-0.5 bg-gray-200"></div>
+                        <div class="absolute top-2 left-0 h-0.5 bg-gradient-to-r from-teal-500 to-cyan-500" style="width: ${order.progress_percentage}%"></div>
+                        <div class="relative flex justify-between">
+                            ${renderProgressSteps(order.status)}
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Images -->
+                <div class="bg-white rounded-lg p-4 shadow-sm">
+                    <h4 class="text-sm font-semibold text-gray-900 mb-3">Images</h4>
+                    <div class="space-y-6">
+                        <!-- Handover Images -->
+                        <div>
+                            <div class="flex items-center justify-between mb-3">
+                                <span class="text-sm font-medium text-gray-700">Pharmacy Handover</span>
+                                <div class="flex items-center space-x-2">
+                                    <span id="handover-count-${order.id}" class="text-xs ${handoverCountColor}">${handoverCountText}</span>
+                                    ${canReplacePhoto ? `
+                                        <button onclick="triggerFileUpload('${order.id}')" class="text-xs text-teal-600 hover:text-teal-700 font-medium">
+                                            ${hasHandoverImage ? 'Replace Photo' : '+ Add Photo'}
+                                        </button>
+                                    ` : `
+                                        <span class="text-xs text-gray-400">
+                                            ${hasHandoverImage ? 'Photo Locked' : 'Cannot Add Photo'}
+                                        </span>
+                                    `}
+                                </div>
+                            </div>
+                            ${canReplacePhoto ? `<input type="file" id="handover-upload-${order.id}" accept="image/*" class="hidden" onchange="handleImageUpload(event, '${order.id}', '${order.driver_id || ''}')">` : ''}
+                            <div id="handover-images-${order.id}" class="w-full h-48 border-2 border-dashed ${hasHandoverImage ? 'border-gray-200' : 'border-gray-300'} rounded-lg flex items-center justify-center">
+                                ${hasHandoverImage ? handoverImagesHtml : '<span class="text-sm text-gray-400">No handover image</span>'}
+                            </div>
+                        </div>
+                        
+                        <!-- Driver Pickup Images -->
+                        <div>
+                            <div class="flex items-center justify-between mb-3">
+                                <span class="text-sm font-medium text-gray-700">Driver Pickup</span>
+                                <span id="pickup-count-${order.id}" class="text-xs text-gray-500">${(order.images && order.images.pickup) ? (order.images.pickup.length > 0 ? order.images.pickup.length + ' Images' : 'No Images') : 'No Images'}</span>
+                            </div>
+                            <div id="pickup-images-${order.id}" class="w-full h-48 border-2 border-dashed border-gray-200 rounded-lg flex items-center justify-center">
+                                ${(order.images && order.images.pickup && order.images.pickup.length > 0) ? pickupImagesHtml : '<span class="text-sm text-gray-400">Awaiting pickup</span>'}
+                            </div>
+                        </div>
+
+                        <!-- Driver Delivery Images -->
+                        <div>
+                            <div class="flex items-center justify-between mb-3">
+                                <span class="text-sm font-medium text-gray-700">Driver Delivery</span>
+                                <span id="delivery-count-${order.id}" class="text-xs text-gray-500">${(order.images && order.images.delivered) ? (order.images.delivered.length > 0 ? order.images.delivered.length + ' Images' : 'No Images') : 'No Images'}</span>
+                            </div>
+                            <div id="delivery-images-${order.id}" class="w-full h-48 border-2 border-dashed border-gray-200 rounded-lg flex items-center justify-center">
+                                ${(order.images && order.images.delivered && order.images.delivered.length > 0) ? deliveredImagesHtml : '<span class="text-sm text-gray-400">Awaiting delivery</span>'}
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    `;
+}
+
+// Render images for a specific stage
+function renderImages(images, stage) {
+    console.log(`renderImages called for stage: ${stage}, images count: ${images ? images.length : 0}`);
+    
+    if (!images || images.length === 0) return '';
+    
+    return images.map(image => `
+        <img src="${image.image_url}" alt="${capitalizeFirst(stage)} Image" 
+             class="w-full h-full object-contain rounded-lg border border-gray-200 cursor-pointer hover:shadow-md transition-shadow"
+             onclick="openImageModal('${image.image_url}', '${capitalizeFirst(stage)} Image', '${formatDateTime(image.uploaded_at)}')" />
+    `).join('');
+}
+
+// Render progress steps
+function renderProgressSteps(currentStatus) {
+    const steps = [
+        { key: 'pending', label: 'Pending' },
+        { key: 'accepted', label: 'Accepted' },
+        { key: 'picked_up', label: 'Pickup' },
+        { key: 'delivered', label: 'Delivered' }
+    ];
+    
+    const statusOrder = ['pending', 'accepted', 'picked_up', 'delivered'];
+    const currentIndex = statusOrder.indexOf(currentStatus);
+    
+    return steps.map((step, index) => {
+        const isActive = index <= currentIndex;
+        const circleClass = isActive ? 'bg-gradient-to-r from-teal-500 to-cyan-500' : 'bg-gray-200';
+        const textClass = isActive ? 'text-gray-900' : 'text-gray-500';
+        
+        return `
+            <div class="flex flex-col items-center">
+                <div class="w-4 h-4 rounded-full ${circleClass} mb-1"></div>
+                <span class="text-xs font-medium ${textClass}">${step.label}</span>
+            </div>
+        `;
+    }).join('');
+}
+
+// Toggle order details visibility
+function toggleOrderDetails(orderId) {
+    console.log('toggleOrderDetails called for:', orderId);
+    
+    const details = document.getElementById(`details-${orderId}`);
+    const arrow = document.getElementById(`arrow-${orderId}`);
+    
+    if (!details || !arrow) {
+        console.error('Details or arrow element not found for:', orderId);
+        return;
+    }
+    
+    if (details.classList.contains('hidden')) {
+        console.log('Showing details for:', orderId);
+        details.classList.remove('hidden');
+        arrow.style.transform = 'rotate(90deg)';
+    } else {
+        console.log('Hiding details for:', orderId);
+        details.classList.add('hidden');
+        arrow.style.transform = 'rotate(0deg)';
+    }
+}
+
+// Trigger file upload
+function triggerFileUpload(orderNumber) {
+    console.log('triggerFileUpload called for order:', orderNumber);
+    
+    const uploadInput = document.getElementById(`handover-upload-${orderNumber}`);
+    if (uploadInput) {
+        console.log('Upload input found, triggering click');
+        uploadInput.click();
+    } else {
+        console.error('Upload input not found for order:', orderNumber);
+    }
+}
+
+// Handle image upload for pharmacy handover
+async function handleImageUpload(event, orderNumber, driverId) {
+    console.log('handleImageUpload called:', { orderNumber, driverId });
+    
+    const file = event.target.files[0];
+    if (!file || !file.type.startsWith('image/')) {
+        console.error('Invalid file selected:', file);
+        showError('Please select a valid image file');
+        return;
+    }
+
+    console.log('File selected:', { name: file.name, size: file.size, type: file.type });
+
+    try {
+        showLoading(true, 'Uploading image...');
+        
+        const formData = new FormData();
+        formData.append('image', file);
+        formData.append('order_number', orderNumber);
+        formData.append('pharmacy_id', currentPharmacyId);
+        formData.append('pharmacy_name', currentPharmacyName);
+        
+        // Add driver_id if available
+        if (driverId && driverId !== 'null' && driverId !== '') {
+            console.log('Adding driver_id to form data:', driverId);
+            formData.append('driver_id', driverId);
+        }
+        
+        console.log('Sending upload request to /api/upload-handover-image/');
+        
+        const response = await fetch('/api/upload-handover-image/', {
+            method: 'POST',
+            body: formData
+        });
+        
+        console.log('Upload response status:', response.status);
+        
+        if (!response.ok) {
+            const errorText = await response.text();
+            console.error('Upload response error:', errorText);
+            throw new Error(`HTTP error! status: ${response.status}`);
+        }
+        
+        const data = await response.json();
+        console.log('Upload response data:', data);
+        
+        if (data.success) {
+            console.log('Upload successful');
+            showSuccess('Handover image uploaded successfully!');
+            // Reload orders to reflect changes
+            await loadPharmacyOrders();
+        } else {
+            console.error('Upload failed:', data.error);
+            throw new Error(data.error || 'Upload failed');
+        }
+        
+    } catch (error) {
+        console.error('Error uploading image:', error);
+        console.error('Error stack:', error.stack);
+        showError('Failed to upload image: ' + error.message);
+    } finally {
+        showLoading(false);
+        // Clear the input
+        event.target.value = '';
+    }
+}
+
+// Open image modal
+function openImageModal(imageSrc, title, timestamp) {
+    console.log('openImageModal called:', { imageSrc, title, timestamp });
+    
+    const modal = document.getElementById('imageModal');
+    const modalImage = document.getElementById('modalImage');
+    const modalTitle = document.getElementById('modalTitle');
+    const modalTimestamp = document.getElementById('modalTimestamp');
+    
+    if (!modal || !modalImage || !modalTitle || !modalTimestamp) {
+        console.error('Modal elements not found');
+        return;
+    }
+    
+    modalImage.src = imageSrc;
+    modalTitle.textContent = title;
+    modalTimestamp.textContent = timestamp;
+    modal.classList.remove('hidden');
+    
+    // Prevent body scroll when modal is open
+    document.body.style.overflow = 'hidden';
+}
+
+// Close image modal
+function closeImageModal() {
+    console.log('closeImageModal called');
+    
+    const modal = document.getElementById('imageModal');
+    if (modal) {
+        modal.classList.add('hidden');
+        document.body.style.overflow = 'auto';
+    }
+}
+
+// Refresh orders function
+async function refreshOrders() {
+    console.log('refreshOrders called');
+    
+    const refreshBtn = event.target.closest('button').querySelector('svg');
+    if (refreshBtn) {
+        refreshBtn.style.transform = 'rotate(360deg)';
+        setTimeout(() => {
+            refreshBtn.style.transform = 'rotate(0deg)';
+        }, 500);
+    }
+    
+    await loadPharmacyOrders();
+}
+
+// Utility functions
+function formatDate(dateString) {
+    if (!dateString) return 'N/A';
+    const date = new Date(dateString);
+    return date.toLocaleDateString('en-US', { 
+        month: 'short', 
+        day: 'numeric', 
+        year: 'numeric' 
+    });
+}
+
+function formatDateTime(dateString) {
+    if (!dateString) return 'N/A';
+    const date = new Date(dateString);
+    return date.toLocaleDateString('en-US', { 
+        month: 'short', 
+        day: 'numeric', 
+        year: 'numeric',
+        hour: 'numeric', 
+        minute: '2-digit',
+        hour12: true 
+    });
+}
+
+function capitalizeFirst(str) {
+    if (!str) return '';
+    return str.charAt(0).toUpperCase() + str.slice(1).replace('_', ' ');
+}
+
+// UI feedback functions
+function showLoading(show, message = 'Loading...') {
+    console.log('showLoading called:', { show, message });
+    
+    let loader = document.getElementById('loadingOverlay');
+    
+    if (show) {
+        if (!loader) {
+            loader = document.createElement('div');
+            loader.id = 'loadingOverlay';
+            loader.innerHTML = `
+                <div class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+                    <div class="bg-white rounded-lg p-6 flex items-center space-x-3">
+                        <div class="animate-spin rounded-full h-6 w-6 border-b-2 border-teal-600"></div>
+                        <span class="text-gray-700">${message}</span>
+                    </div>
+                </div>
+            `;
+            document.body.appendChild(loader);
+        }
+        loader.classList.remove('hidden');
+    } else {
+        if (loader) {
+            loader.classList.add('hidden');
+        }
+    }
+}
+
+function showError(message) {
+    console.log('showError called:', message);
+    showNotification(message, 'error');
+}
+
+function showSuccess(message) {
+    console.log('showSuccess called:', message);
+    showNotification(message, 'success');
+}
+
+function showNotification(message, type = 'info') {
+    console.log('showNotification called:', { message, type });
+    
+    const notification = document.createElement('div');
+    const bgColor = type === 'error' ? 'bg-red-500' : type === 'success' ? 'bg-green-500' : 'bg-blue-500';
+    
+    notification.innerHTML = `
+        <div class="fixed top-4 right-4 ${bgColor} text-white px-6 py-3 rounded-lg shadow-lg z-50 max-w-sm">
+            <div class="flex items-center justify-between">
+                <span class="text-sm">${message}</span>
+                <button onclick="this.parentElement.parentElement.remove()" class="ml-4 text-white hover:text-gray-200">
+                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
                     </svg>
-                `;
-                deleteButton.className = 'absolute -top-1 -right-1 bg-red-500 text-white rounded-full p-1 opacity-0 group-hover:opacity-100 transition-opacity hover:bg-red-600';
-                deleteButton.onclick = (e) => {
-                    e.stopPropagation();
-                    removeHandoverImage(orderNumber);
-                };
-                
-                // Assemble the wrapper
-                imageWrapper.appendChild(img);
-                imageWrapper.appendChild(deleteButton);
-                container.appendChild(imageWrapper);
-                
-                // Update UI elements
-                countElement.textContent = '1 Image';
-                countElement.className = 'text-xs text-green-600';
-                imagesCountElement.textContent = '1';
-                imagesCountElement.className = 'text-xs text-green-600';
-                addButton.textContent = 'Replace Photo';
-                
-                // Remove red highlight from row
-                updateRowHighlight(`order-${orderNumber}`, true);
-            };
-            reader.readAsDataURL(file);
-            
-            // Clear the input
-            event.target.value = '';
+                </button>
+            </div>
+        </div>
+    `;
+    
+    document.body.appendChild(notification);
+    
+    // Auto remove after 5 seconds
+    setTimeout(() => {
+        if (notification.parentNode) {
+            notification.remove();
         }
+    }, 5000);
+}
 
-        // Remove handover image - Updated to work with order number
-        function removeHandoverImage(orderNumber) {
-            const container = document.getElementById(`handover-images-${orderNumber}`);
-            const countElement = document.getElementById(`handover-count-${orderNumber}`);
-            const imagesCountElement = document.getElementById(`images-count-${orderNumber}`);
-            
-            if (!container || !countElement || !imagesCountElement) {
-                return;
-            }
+// Event listeners
+document.addEventListener('click', function(e) {
+    // Close modal when clicking outside
+    if (e.target && e.target.id === 'imageModal') {
+        closeImageModal();
+    }
+});
 
-            const addButton = countElement.parentElement.querySelector('button');
-            
-            // Reset container to placeholder state
-            container.innerHTML = '<span class="text-sm text-gray-400">No handover image</span>';
-            container.className = 'w-full h-48 border-2 border-dashed border-gray-300 rounded-lg flex items-center justify-center';
-            
-            // Update UI elements
-            countElement.textContent = 'No Image';
-            countElement.className = 'text-xs text-red-500';
-            imagesCountElement.textContent = '0';
-            imagesCountElement.className = 'text-xs text-red-500';
-            addButton.textContent = '+ Add Photo';
-            
-            // Add red highlight to row
-            updateRowHighlight(`order-${orderNumber}`, false);
-        }
-
-        // Update row highlight based on handover image presence
-        function updateRowHighlight(orderId, hasImage) {
-            const row = document.getElementById(`row-${orderId}`);
-            if (!row) return;
-            
-            if (hasImage) {
-                // Remove red highlighting and use normal hover
-                row.classList.remove('bg-red-50', 'hover:bg-red-100');
-                row.classList.add('hover:bg-gray-50');
-            } else {
-                // Add red highlighting
-                row.classList.remove('hover:bg-gray-50');
-                row.classList.add('bg-red-50', 'hover:bg-red-100');
-            }
-        }
-
-        // Close modal when clicking outside the content
-        document.getElementById('imageModal').addEventListener('click', function(e) {
-            if (e.target === this) {
-                closeImageModal();
-            }
-        });
-
-        // Close modal with Escape key
-        document.addEventListener('keydown', function(e) {
-            if (e.key === 'Escape') {
-                closeImageModal();
-            }
-        });
-
-        // Refresh orders function
-        function refreshOrders() {
-            // Add rotation animation to refresh button
-            const refreshBtn = event.target.closest('button').querySelector('svg');
-            refreshBtn.style.transform = 'rotate(360deg)';
-            setTimeout(() => {
-                refreshBtn.style.transform = 'rotate(0deg)';
-            }, 500);
-            
-            // Simulate refresh - in real app would fetch from API
-            console.log('Refreshing orders...');
-        }
-
-        // Initialize page - set initial red highlight since no handover image
-        document.addEventListener('DOMContentLoaded', function() {
-            updateRowHighlight('order-001', false);
-        });
+document.addEventListener('keydown', function(e) {
+    // Close modal with Escape key
+    if (e.key === 'Escape') {
+        closeImageModal();
+    }
+});
     </script>
 </body>
 </html>

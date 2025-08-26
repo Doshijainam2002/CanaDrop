@@ -180,7 +180,7 @@
                         </div>
                     </div>
                     
-                    <div class="overflow-x-auto">
+                    <div class="overflow-auto" style="max-height: calc(100vh - 400px);">
                         <table class="w-full">
                             <thead class="bg-gray-50">
                                 <tr>
@@ -539,26 +539,33 @@ function checkAddressFields() {
 
 // Create delivery order
 async function createOrder() {
+    console.log("createOrder function called");
+
     const pharmacyId = getCookie('pharmacyId');
-    
+    console.log("Pharmacy ID from cookie:", pharmacyId);
+
     if (!pharmacyId) {
         showNotification('Please login first', 'error');
         return;
     }
-    
+
     const pickupAddress = document.getElementById('pickupAddress').value.trim();
     const pickupCity = document.getElementById('pickupCity').value;
     const pickupDay = document.getElementById('pickupDay').value;
     const dropAddress = document.getElementById('dropAddress').value.trim();
     const dropCity = document.getElementById('dropCity').value;
     const rate = document.getElementById('rate').value;
-    
+
+    console.log("Form values:", { pickupAddress, pickupCity, pickupDay, dropAddress, dropCity, rate });
+
     if (!pickupAddress || !pickupCity || !pickupDay || !dropAddress || !dropCity || !rate || rate === 'Calculating...') {
+        console.log("Validation failed: some fields are missing or rate not calculated");
         showNotification('Please fill all fields and calculate rate', 'warning');
         return;
     }
-    
+
     try {
+        console.log("Sending request to /api/createDeliveryOrder/");
         const response = await fetch('/api/createDeliveryOrder/', {
             method: 'POST',
             headers: {
@@ -573,14 +580,18 @@ async function createOrder() {
                 dropCity
             })
         });
-        
+
+        console.log("Response received from server");
         const data = await response.json();
-        
+        console.log("Response JSON:", data);
+
         if (data.success) {
+            console.log(`Order created successfully: ID=${data.orderId}, Distance=${data.distance_km}, Rate=${data.rate}`);
             showNotification(`Order created successfully! Order ID: ${data.orderId}`, 'success');
             closeCreateModal();
             loadOrders();
         } else {
+            console.log("Order creation failed with error:", data.error);
             showNotification(data.error || 'Failed to create order', 'error');
         }
     } catch (error) {
@@ -588,6 +599,7 @@ async function createOrder() {
         showNotification('Error creating order', 'error');
     }
 }
+
 
 // Close modal
 function closeCreateModal() {
