@@ -37,6 +37,12 @@ def pharmacyOrdersView(request):
 def pharmacyInvoicesView(request):
     return render(request, 'pharmacyInvoices.html')
 
+def driverLoginView(request):
+    return render(request, 'driverLogin.html')
+
+def driverDashboardView(request):
+    return render(request, 'driverDashboard.html')
+
 @csrf_exempt
 def pharmacy_login_api(request):
     if request.method != "POST":
@@ -760,4 +766,63 @@ def upload_handover_image_api(request):
         return JsonResponse({
             'success': False,
             'error': f'An unexpected error occurred: {str(e)}'
+        }, status=500)
+
+
+@csrf_exempt
+@require_http_methods(["POST"])
+def driver_login(request):
+    try:
+        # Parse JSON data from request body
+        data = json.loads(request.body)
+        email = data.get('email')
+        password = data.get('password')
+        
+        # Validate input
+        if not email or not password:
+            return JsonResponse({
+                'success': False,
+                'message': 'Email and password are required'
+            }, status=400)
+        
+        # Check if driver exists
+        try:
+            driver = Driver.objects.get(email=email)
+        except Driver.DoesNotExist:
+            return JsonResponse({
+                'success': False,
+                'message': 'Invalid credentials'
+            }, status=401)
+        
+        # Validate password
+        # If password is hashed, use check_password
+        if check_password(password, driver.password):
+            password_valid = True
+        # If password is plain text (like default "123456"), check directly
+        elif driver.password == password:
+            password_valid = True
+        else:
+            password_valid = False
+        
+        if password_valid:
+            return JsonResponse({
+                'success': True,
+                'id': driver.id,
+                'message': 'Login successful'
+            })
+        else:
+            return JsonResponse({
+                'success': False,
+                'message': 'Invalid credentials'
+            }, status=401)
+            
+    except json.JSONDecodeError:
+        return JsonResponse({
+            'success': False,
+            'message': 'Invalid JSON format'
+        }, status=400)
+    except Exception as e:
+        return JsonResponse({
+            'success': False,
+            'message': 'An error occurred during login'
         }, status=500)

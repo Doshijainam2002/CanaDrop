@@ -65,8 +65,15 @@ class Driver(models.Model):
     name = models.CharField(max_length=255)
     phone_number = models.CharField(max_length=20)
     email = models.EmailField(unique=True)
+    password = models.CharField(max_length=128, default="123456")  # Django hash length
     vehicle_number = models.CharField(max_length=50, blank=True, null=True)
     created_at = models.DateTimeField(auto_now_add=True)
+
+    def save(self, *args, **kwargs):
+        # Hash the password if it's not already hashed
+        if not self.password.startswith('pbkdf2_'):  # Django default hash prefix
+            self.password = make_password(self.password)
+        super().save(*args, **kwargs)
 
     def __str__(self):
         return self.name
@@ -205,10 +212,10 @@ class DriverPaymentTracking(models.Model):
 
     payment = models.ForeignKey(DriverPayment, on_delete=models.CASCADE, related_name='tracking_entries')
     status = models.CharField(max_length=20, choices=PAYMENT_STATUS_CHOICES)
-    processed_by = models.CharField(max_length=100, blank=True, null=True)  # admin or system user
+    processed_by = models.CharField(max_length=100, blank=True, null=True)  
     amount = models.DecimalField(max_digits=10, decimal_places=2)
     timestamp = models.DateTimeField(auto_now_add=True)
-    note = models.TextField(blank=True, null=True)  # optional remarks
+    note = models.TextField(blank=True, null=True)  
 
     class Meta:
         ordering = ['timestamp']

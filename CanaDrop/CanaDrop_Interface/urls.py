@@ -14,4 +14,9 @@ urlpatterns = [
     path('api/pharmacy/<int:pharmacy_id>/orders/', views.pharmacy_orders_api, name='pharmacy_orders_api'),
     path('api/upload-handover-image/', views.upload_handover_image_api, name='upload_handover_image'),
 
+
+    path('driverLogin/', views.driverLoginView, name='DriverLoginPage'),  
+    path('api/driver/login/', views.driver_login, name='driver_login'),
+    path('driverDashboard/', views.driverDashboardView, name="DriverDashboardPage"),
+
 ]
