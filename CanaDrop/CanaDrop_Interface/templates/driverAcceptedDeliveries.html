@@ -399,11 +399,13 @@ let deliveries = [];
         }
 
         function handleLogout() {
-            if (confirm('Are you sure you want to logout?')) {
-                document.cookie = "driverId=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/;";
-                window.location.href = '/driverLogin/';
-            }
+            // Remove driverId cookie
+            document.cookie = 'driverId=; path=/; expires=Thu, 01 Jan 1970 00:00:01 GMT;';
+            
+            // Redirect to login page
+            window.location.href = '/driverLogin/';
         }
+
 
         // Initialize
         document.addEventListener('DOMContentLoaded', loadDeliveries);
