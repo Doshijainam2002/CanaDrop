@@ -1,0 +1,1219 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Accepted Deliveries - CanaDrop</title>
+    <link rel="icon" href="https://i.postimg.cc/c4jt62GM/Website-Logo-No-Background.png">
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        .nav-item.active {
+            background-color: rgb(51 65 85);
+            color: rgb(52 211 153);
+        }
+        
+        .scrollable-table {
+            max-height: 400px;
+            overflow-y: auto;
+        }
+        
+        .scrollable-table::-webkit-scrollbar {
+            width: 6px;
+        }
+        
+        .scrollable-table::-webkit-scrollbar-track {
+            background: rgb(30 41 59);
+            border-radius: 3px;
+        }
+        
+        .scrollable-table::-webkit-scrollbar-thumb {
+            background: rgb(71 85 105);
+            border-radius: 3px;
+        }
+        
+        .scrollable-table::-webkit-scrollbar-thumb:hover {
+            background: rgb(100 116 139);
+        }
+
+        .image-upload-container {
+            border: 2px dashed rgb(75 85 99);
+            border-radius: 8px;
+            padding: 16px;
+            text-align: center;
+            transition: all 0.2s;
+            cursor: pointer;
+            background-color: rgb(51 65 85);
+        }
+
+        .image-upload-container:hover {
+            border-color: rgb(52 211 153);
+            background-color: rgb(55 65 81);
+        }
+
+        .image-upload-container.has-image {
+            border-color: rgb(52 211 153);
+            border-style: solid;
+            padding: 4px;
+        }
+
+        .uploaded-image {
+            max-width: 100%;
+            max-height: 120px;
+            border-radius: 6px;
+            object-fit: cover;
+        }
+
+        .timeline-step {
+            position: relative;
+            padding-left: 2rem;
+        }
+
+        .timeline-step::before {
+            content: '';
+            position: absolute;
+            left: 0.5rem;
+            top: 0.5rem;
+            width: 0.75rem;
+            height: 0.75rem;
+            border-radius: 50%;
+            background-color: rgb(71 85 105);
+        }
+
+        .timeline-step.completed::before {
+            background-color: rgb(52 211 153);
+        }
+
+        .timeline-step.current::before {
+            background-color: rgb(59 130 246);
+            box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.3);
+        }
+
+        .timeline-step:not(:last-child)::after {
+            content: '';
+            position: absolute;
+            left: 0.875rem;
+            top: 1.25rem;
+            width: 2px;
+            height: calc(100% - 0.5rem);
+            background-color: rgb(71 85 105);
+        }
+
+        .timeline-step.completed:not(:last-child)::after {
+            background-color: rgb(52 211 153);
+        }
+    </style>
+</head>
+<body class="min-h-screen bg-gradient-to-br from-slate-900 to-gray-900">
+    <!-- Sidebar -->
+    <div class="fixed inset-y-0 left-0 z-50 w-64 bg-slate-800 border-r border-slate-700 transform transition-transform duration-300 ease-in-out" id="sidebar">
+        <div class="flex items-center justify-center h-16 px-4 border-b border-slate-700">
+            <img src="https://i.postimg.cc/c4jt62GM/Website-Logo-No-Background.png" alt="CanaDrop Logo" class="h-8 w-auto">
+            <span class="ml-2 text-xl font-bold text-slate-100">CanaDrop</span>
+        </div>
+        
+        <nav class="mt-8">
+            <a href="#" onclick="navigateTo('dashboard')" class="nav-item flex items-center px-6 py-3 text-slate-300 hover:bg-slate-700 hover:text-emerald-400 transition-colors">
+                <svg class="w-5 h-5 mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 7v10a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2H5a2 2 0 00-2-2z"/>
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 5a2 2 0 012-2h4a2 2 0 012 2v4H8V5z"/>
+                </svg>
+                Dashboard
+            </a>
+            <a href="#" onclick="navigateTo('accepted')" class="nav-item active flex items-center px-6 py-3 text-slate-300 hover:bg-slate-700 hover:text-emerald-400 transition-colors">
+                <svg class="w-5 h-5 mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 8l6 6 10-10"/>
+                </svg>
+                Accepted Deliveries
+            </a>
+            <a href="#" onclick="navigateTo('finances')" class="nav-item flex items-center px-6 py-3 text-slate-300 hover:bg-slate-700 hover:text-emerald-400 transition-colors">
+                <svg class="w-5 h-5 mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1"/>
+                </svg>
+                Finances
+            </a>
+            <a href="#" onclick="handleLogout()" class="nav-item flex items-center px-6 py-3 text-slate-300 hover:bg-slate-700 hover:text-red-400 transition-colors mt-8">
+                <svg class="w-5 h-5 mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1"/>
+                </svg>
+                Logout
+            </a>
+        </nav>
+    </div>
+
+    <!-- Main Content -->
+    <div class="ml-64">
+        <!-- Header -->
+        <header class="bg-slate-800 border-b border-slate-700 px-6 py-4">
+            <div class="flex items-center justify-between">
+                <div>
+                    <h1 class="text-2xl font-bold text-slate-100">Accepted Deliveries</h1>
+                    <p class="text-slate-400 text-sm">Manage your current delivery assignments</p>
+                </div>
+                <div class="flex items-center space-x-4">
+                    <button onclick="refreshDeliveries()" class="p-2 text-slate-400 hover:text-emerald-400 transition-colors">
+                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"/>
+                        </svg>
+                    </button>
+                    <span class="text-slate-300" id="welcomeText">Welcome back, John Smith!</span>
+                    <div class="w-8 h-8 bg-emerald-500 rounded-full flex items-center justify-center">
+                        <span class="text-white font-semibold" id="profileInitial">J</span>
+                    </div>
+                </div>
+            </div>
+        </header>
+
+        <!-- Main Content -->
+        <main class="p-6">
+            <!-- Today's Deliveries -->
+            <div class="mb-8">
+                <div class="flex items-center justify-between mb-4">
+                    <h2 class="text-xl font-semibold text-slate-100">Today's Deliveries</h2>
+                    <span id="todayCount" class="text-emerald-400 text-sm font-medium">Loading...</span>
+                </div>
+                
+                <div class="bg-slate-800 rounded-lg border border-slate-700 overflow-hidden">
+                    <div class="scrollable-table">
+                        <table class="w-full">
+                            <thead class="bg-slate-700 sticky top-0">
+                                <tr>
+                                    <th class="text-left text-slate-300 font-medium text-sm px-6 py-3">Order ID</th>
+                                    <th class="text-left text-slate-300 font-medium text-sm px-6 py-3">Pharmacy Name</th>
+                                    <th class="text-left text-slate-300 font-medium text-sm px-6 py-3">Pickup Address</th>
+                                    <th class="text-left text-slate-300 font-medium text-sm px-6 py-3">Dropoff Address</th>
+                                    <th class="text-left text-slate-300 font-medium text-sm px-6 py-3">Rate</th>
+                                    <th class="text-left text-slate-300 font-medium text-sm px-6 py-3">Status</th>
+                                    <th class="w-8"></th>
+                                </tr>
+                            </thead>
+                            <tbody id="todayDeliveries">
+                                <!-- Content will be populated by JavaScript -->
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Tomorrow's Deliveries -->
+            <div class="mb-8">
+                <div class="flex items-center justify-between mb-4">
+                    <h2 class="text-xl font-semibold text-slate-100">Tomorrow's Deliveries</h2>
+                    <span id="tomorrowCount" class="text-blue-400 text-sm font-medium">Loading...</span>
+                </div>
+                
+                <div class="bg-slate-800 rounded-lg border border-slate-700 overflow-hidden">
+                    <div class="scrollable-table">
+                        <table class="w-full">
+                            <thead class="bg-slate-700 sticky top-0">
+                                <tr>
+                                    <th class="text-left text-slate-300 font-medium text-sm px-6 py-3">Order ID</th>
+                                    <th class="text-left text-slate-300 font-medium text-sm px-6 py-3">Pharmacy Name</th>
+                                    <th class="text-left text-slate-300 font-medium text-sm px-6 py-3">Pickup Address</th>
+                                    <th class="text-left text-slate-300 font-medium text-sm px-6 py-3">Dropoff Address</th>
+                                    <th class="text-left text-slate-300 font-medium text-sm px-6 py-3">Rate</th>
+                                    <th class="text-left text-slate-300 font-medium text-sm px-6 py-3">Status</th>
+                                    <th class="w-8"></th>
+                                </tr>
+                            </thead>
+                            <tbody id="tomorrowDeliveries">
+                                <!-- Content will be populated by JavaScript -->
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Upcoming Deliveries -->
+            <div class="mb-8">
+                <div class="flex items-center justify-between mb-4">
+                    <h2 class="text-xl font-semibold text-slate-100">Upcoming Deliveries</h2>
+                    <span id="upcomingCount" class="text-purple-400 text-sm font-medium">Loading...</span>
+                </div>
+                
+                <div class="bg-slate-800 rounded-lg border border-slate-700 overflow-hidden">
+                    <div class="scrollable-table">
+                        <table class="w-full">
+                            <thead class="bg-slate-700 sticky top-0">
+                                <tr>
+                                    <th class="text-left text-slate-300 font-medium text-sm px-6 py-3">Order ID</th>
+                                    <th class="text-left text-slate-300 font-medium text-sm px-6 py-3">Pharmacy Name</th>
+                                    <th class="text-left text-slate-300 font-medium text-sm px-6 py-3">Pickup Address</th>
+                                    <th class="text-left text-slate-300 font-medium text-sm px-6 py-3">Dropoff Address</th>
+                                    <th class="text-left text-slate-300 font-medium text-sm px-6 py-3">Pickup Date</th>
+                                    <th class="text-left text-slate-300 font-medium text-sm px-6 py-3">Rate</th>
+                                    <th class="text-left text-slate-300 font-medium text-sm px-6 py-3">Status</th>
+                                    <th class="w-8"></th>
+                                </tr>
+                            </thead>
+                            <tbody id="upcomingDeliveries">
+                                <!-- Content will be populated by JavaScript -->
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <!-- Image Modal -->
+    <div id="imageModal" class="fixed inset-0 bg-black bg-opacity-75 hidden z-50 flex items-center justify-center p-4">
+        <div class="bg-slate-800 rounded-lg max-w-2xl w-full max-h-[90vh] overflow-hidden border border-slate-700">
+            <div class="flex items-center justify-between p-4 border-b border-slate-700">
+                <div>
+                    <h3 id="modalTitle" class="text-lg font-semibold text-slate-100"></h3>
+                    <p id="modalTimestamp" class="text-sm text-slate-400"></p>
+                </div>
+                <button onclick="closeImageModal()" class="p-2 text-slate-400 hover:text-slate-200 transition-colors">
+                    <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
+                    </svg>
+                </button>
+            </div>
+            <div class="p-4">
+                <img id="modalImage" src="" alt="" class="w-full h-auto rounded-lg">
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Mock delivery data with tracking information
+// Fix 3: Add mock data with correct status for testing different scenarios
+const mockDeliveries = [
+    // Today's deliveries - one with handover completed (ready for pickup)
+    {
+        id: 'ORD001',
+        pharmacy_name: 'HealthFirst Pharmacy',
+        pickup_address: '123 Main St, Toronto, ON',
+        dropoff_address: '456 Oak Ave, Toronto, ON',
+        pickup_day: new Date().toISOString().split('T')[0],
+        rate: 15.50,
+        status: 'handover', // Changed to show pickup as current step
+        patient_name: 'Sarah Johnson',
+        patient_phone: '416-555-0123',
+        distance_km: 5.2,
+        created_at: new Date().toISOString(),
+        pickup_proof: null,
+        delivery_proof: null,
+        tracking: [
+            { step: 'pending', timestamp: new Date(Date.now() - 3600000).toISOString(), performed_by: 'System' },
+            { step: 'accepted', timestamp: new Date(Date.now() - 1800000).toISOString(), performed_by: 'John Smith' },
+            { step: 'handover', timestamp: new Date(Date.now() - 900000).toISOString(), performed_by: 'Pharmacy Staff', image_url: 'https://via.placeholder.com/300x200/059669/FFFFFF?text=Handover+Complete' }
+        ]
+    },
+    // Second delivery - picked up, ready for delivery
+    {
+        id: 'ORD002',
+        pharmacy_name: 'MediCare Plus',
+        pickup_address: '789 Queen St, Toronto, ON',
+        dropoff_address: '321 Pine Rd, Toronto, ON',
+        pickup_day: new Date().toISOString().split('T')[0],
+        rate: 18.25,
+        status: 'picked_up',
+        patient_name: 'Michael Chen',
+        patient_phone: '416-555-0456',
+        distance_km: 7.8,
+        created_at: new Date().toISOString(),
+        pickup_proof: 'https://via.placeholder.com/300x200/10B981/FFFFFF?text=Pickup+Proof',
+        delivery_proof: null,
+        tracking: [
+            { step: 'pending', timestamp: new Date(Date.now() - 7200000).toISOString(), performed_by: 'System' },
+            { step: 'accepted', timestamp: new Date(Date.now() - 5400000).toISOString(), performed_by: 'John Smith' },
+            { step: 'handover', timestamp: new Date(Date.now() - 3600000).toISOString(), performed_by: 'Pharmacy Staff', image_url: 'https://via.placeholder.com/300x200/059669/FFFFFF?text=Handover+Complete' },
+            { step: 'picked_up', timestamp: new Date(Date.now() - 1800000).toISOString(), performed_by: 'John Smith' }
+        ]
+    },
+    // Add a third delivery for tomorrow to test that section
+    {
+        id: 'ORD003',
+        pharmacy_name: 'City Pharmacy',
+        pickup_address: '456 King St, Toronto, ON',
+        dropoff_address: '789 Elm Ave, Toronto, ON',
+        pickup_day: new Date(Date.now() + 86400000).toISOString().split('T')[0], // Tomorrow
+        rate: 12.75,
+        status: 'accepted',
+        patient_name: 'Emma Wilson',
+        patient_phone: '416-555-0789',
+        distance_km: 3.1,
+        created_at: new Date().toISOString(),
+        pickup_proof: null,
+        delivery_proof: null,
+        tracking: [
+            { step: 'pending', timestamp: new Date(Date.now() - 1800000).toISOString(), performed_by: 'System' },
+            { step: 'accepted', timestamp: new Date(Date.now() - 900000).toISOString(), performed_by: 'John Smith' }
+        ]
+    }
+];
+
+        let deliveriesData = {
+            today: [],
+            tomorrow: [],
+            upcoming: []
+        };
+
+        // Navigation function
+        function navigateTo(section) {
+            console.log('Navigate to:', section);
+        }
+
+        function handleLogout() {
+            if (confirm('Are you sure you want to logout?')) {
+                window.location.href = '/driverLogin/';
+            }
+        }
+
+        // Load accepted deliveries using mock data
+        function loadAcceptedDeliveries() {
+            try {
+                // Simulate loading delay
+                setTimeout(() => {
+                    categorizeDeliveries(mockDeliveries);
+                    renderDeliveries();
+                }, 500);
+            } catch (error) {
+                console.error('Error loading deliveries:', error);
+                showError('today');
+                showError('tomorrow');
+                showError('upcoming');
+            }
+        }
+
+        // Categorize deliveries by date
+        function categorizeDeliveries(deliveries) {
+            const today = new Date();
+            const tomorrow = new Date(today);
+            tomorrow.setDate(tomorrow.getDate() + 1);
+
+            today.setHours(0, 0, 0, 0);
+            tomorrow.setHours(0, 0, 0, 0);
+
+            deliveriesData = {
+                today: [],
+                tomorrow: [],
+                upcoming: []
+            };
+
+            deliveries.forEach(delivery => {
+                const pickupDate = new Date(delivery.pickup_day);
+                pickupDate.setHours(0, 0, 0, 0);
+
+                if (pickupDate.getTime() === today.getTime()) {
+                    deliveriesData.today.push(delivery);
+                } else if (pickupDate.getTime() === tomorrow.getTime()) {
+                    deliveriesData.tomorrow.push(delivery);
+                } else if (pickupDate > tomorrow) {
+                    deliveriesData.upcoming.push(delivery);
+                }
+            });
+
+            // Update counts
+            document.getElementById('todayCount').textContent = `${deliveriesData.today.length} deliveries`;
+            document.getElementById('tomorrowCount').textContent = `${deliveriesData.tomorrow.length} deliveries`;
+            document.getElementById('upcomingCount').textContent = `${deliveriesData.upcoming.length} deliveries`;
+        }
+
+        // Render all deliveries
+        function renderDeliveries() {
+            renderTodayDeliveries();
+            renderTomorrowDeliveries();
+            renderUpcomingDeliveries();
+        }
+
+        // Render today's deliveries
+        function renderTodayDeliveries() {
+            const tbody = document.getElementById('todayDeliveries');
+            
+            if (deliveriesData.today.length === 0) {
+                tbody.innerHTML = `
+                    <tr>
+                        <td colspan="7" class="px-6 py-8 text-center">
+                            <div class="text-slate-400">
+                                <svg class="w-8 h-8 mx-auto mb-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20 13V6a2 2 0 00-2-2H6a2 2 0 00-2 2v7m16 0v5a2 2 0 01-2 2H6a2 2 0 01-2-2v-5m16 0h-2M4 13h2"/>
+                                </svg>
+                                <p>No deliveries scheduled for today</p>
+                            </div>
+                        </td>
+                    </tr>
+                `;
+                return;
+            }
+
+            tbody.innerHTML = deliveriesData.today.map(delivery => 
+                createDeliveryRow(delivery, 'today')
+            ).join('');
+        }
+
+        // Render tomorrow's deliveries
+        function renderTomorrowDeliveries() {
+            const tbody = document.getElementById('tomorrowDeliveries');
+            
+            if (deliveriesData.tomorrow.length === 0) {
+                tbody.innerHTML = `
+                    <tr>
+                        <td colspan="7" class="px-6 py-8 text-center">
+                            <div class="text-slate-400">
+                                <svg class="w-8 h-8 mx-auto mb-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20 13V6a2 2 0 00-2-2H6a2 2 0 00-2 2v7m16 0v5a2 2 0 01-2 2H6a2 2 0 01-2-2v-5m16 0h-2M4 13h2"/>
+                                </svg>
+                                <p>No deliveries scheduled for tomorrow</p>
+                            </div>
+                        </td>
+                    </tr>
+                `;
+                return;
+            }
+
+            tbody.innerHTML = deliveriesData.tomorrow.map(delivery => 
+                createDeliveryRow(delivery, 'tomorrow')
+            ).join('');
+        }
+
+        // Render upcoming deliveries
+        function renderUpcomingDeliveries() {
+            const tbody = document.getElementById('upcomingDeliveries');
+            
+            if (deliveriesData.upcoming.length === 0) {
+                tbody.innerHTML = `
+                    <tr>
+                        <td colspan="8" class="px-6 py-8 text-center">
+                            <div class="text-slate-400">
+                                <svg class="w-8 h-8 mx-auto mb-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20 13V6a2 2 0 00-2-2H6a2 2 0 00-2 2v7m16 0v5a2 2 0 01-2 2H6a2 2 0 01-2-2v-5m16 0h-2M4 13h2"/>
+                                </svg>
+                                <p>No upcoming deliveries</p>
+                            </div>
+                        </td>
+                    </tr>
+                `;
+                return;
+            }
+
+            tbody.innerHTML = deliveriesData.upcoming.map(delivery => 
+                createUpcomingDeliveryRow(delivery)
+            ).join('');
+        }
+
+        // Create delivery row
+        function createDeliveryRow(delivery, category) {
+            const statusColors = {
+                'accepted': 'bg-blue-900 text-blue-200',
+                'picked_up': 'bg-purple-900 text-purple-200',
+                'delivered': 'bg-green-900 text-green-200',
+                'cancelled': 'bg-red-900 text-red-200'
+            };
+
+            const statusColor = statusColors[delivery.status] || 'bg-slate-700 text-slate-300';
+
+            return `
+                <tr class="border-b border-slate-700 hover:bg-slate-700/50 cursor-pointer transition-colors" onclick="toggleDeliveryDetails('${delivery.id}', '${category}')">
+                    <td class="px-6 py-4 text-slate-100 font-medium">${delivery.id}</td>
+                    <td class="px-6 py-4 text-slate-300">${delivery.pharmacy_name}</td>
+                    <td class="px-6 py-4 text-slate-300">${truncateText(delivery.pickup_address, 30)}</td>
+                    <td class="px-6 py-4 text-slate-300">${truncateText(delivery.dropoff_address, 30)}</td>
+                    <td class="px-6 py-4 text-emerald-400 font-semibold">$${parseFloat(delivery.rate).toFixed(2)}</td>
+                    <td class="px-6 py-4">
+                        <span class="px-2 py-1 text-xs font-medium rounded-full ${statusColor}">
+                            ${capitalizeStatus(delivery.status)}
+                        </span>
+                    </td>
+                    <td class="px-6 py-4 text-center">
+                        <svg id="arrow-${delivery.id}-${category}" class="w-4 h-4 text-slate-400 transform transition-transform duration-200" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/>
+                        </svg>
+                    </td>
+                </tr>
+                <tr id="details-${delivery.id}-${category}" class="hidden">
+                    <td colspan="7" class="px-6 py-6 bg-slate-900 border-b border-slate-700">
+                        ${createDetailedView(delivery)}
+                    </td>
+                </tr>
+            `;
+        }
+
+        // Create upcoming delivery row (includes pickup date)
+        function createUpcomingDeliveryRow(delivery) {
+            const statusColors = {
+                'accepted': 'bg-blue-900 text-blue-200',
+                'picked_up': 'bg-purple-900 text-purple-200',
+                'delivered': 'bg-green-900 text-green-200',
+                'cancelled': 'bg-red-900 text-red-200'
+            };
+
+            const statusColor = statusColors[delivery.status] || 'bg-slate-700 text-slate-300';
+
+            return `
+                <tr class="border-b border-slate-700 hover:bg-slate-700/50 cursor-pointer transition-colors" onclick="toggleDeliveryDetails('${delivery.id}', 'upcoming')">
+                    <td class="px-6 py-4 text-slate-100 font-medium">${delivery.id}</td>
+                    <td class="px-6 py-4 text-slate-300">${delivery.pharmacy_name}</td>
+                    <td class="px-6 py-4 text-slate-300">${truncateText(delivery.pickup_address, 30)}</td>
+                    <td class="px-6 py-4 text-slate-300">${truncateText(delivery.dropoff_address, 30)}</td>
+                    <td class="px-6 py-4 text-slate-300">${formatDate(delivery.pickup_day)}</td>
+                    <td class="px-6 py-4 text-emerald-400 font-semibold">$${parseFloat(delivery.rate).toFixed(2)}</td>
+                    <td class="px-6 py-4">
+                        <span class="px-2 py-1 text-xs font-medium rounded-full ${statusColor}">
+                            ${capitalizeStatus(delivery.status)}
+                        </span>
+                    </td>
+                    <td class="px-6 py-4 text-center">
+                        <svg id="arrow-${delivery.id}-upcoming" class="w-4 h-4 text-slate-400 transform transition-transform duration-200" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/>
+                        </svg>
+                    </td>
+                </tr>
+                <tr id="details-${delivery.id}-upcoming" class="hidden">
+                    <td colspan="8" class="px-6 py-6 bg-slate-900 border-b border-slate-700">
+                        ${createDetailedView(delivery)}
+                    </td>
+                </tr>
+            `;
+        }
+
+// Update the createDetailedView function with better organization and image preview
+function createDetailedView(delivery) {
+    return `
+        <div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
+            <!-- Left Column: Delivery Information & Navigation -->
+            <div class="bg-slate-800 rounded-lg p-6 border border-slate-600 h-fit">
+                <h4 class="text-lg font-semibold text-slate-100 mb-4 border-b border-slate-600 pb-3">Delivery Information</h4>
+                
+                <!-- Patient Details -->
+                <div class="space-y-3 mb-6">
+                    <div class="flex justify-between">
+                        <span class="text-slate-400 text-sm">Patient:</span>
+                        <span class="text-slate-200 font-medium">${delivery.patient_name}</span>
+                    </div>
+                    <div class="flex justify-between">
+                        <span class="text-slate-400 text-sm">Phone:</span>
+                        <span class="text-slate-200">${delivery.patient_phone}</span>
+                    </div>
+                    <div class="flex justify-between">
+                        <span class="text-slate-400 text-sm">Distance:</span>
+                        <span class="text-slate-200">${delivery.distance_km} km</span>
+                    </div>
+                </div>
+
+                <!-- Addresses -->
+                <div class="space-y-4 mb-6">
+                    <div>
+                        <span class="text-slate-400 text-sm block mb-1">Pickup Address:</span>
+                        <p class="text-slate-200 text-sm bg-slate-700 p-2 rounded">${delivery.pickup_address}</p>
+                    </div>
+                    <div>
+                        <span class="text-slate-400 text-sm block mb-1">Dropoff Address:</span>
+                        <p class="text-slate-200 text-sm bg-slate-700 p-2 rounded">${delivery.dropoff_address}</p>
+                    </div>
+                </div>
+
+                <!-- Navigation Buttons -->
+                <div class="space-y-3">
+                    <h5 class="text-slate-300 font-medium text-sm border-b border-slate-600 pb-2">Quick Navigation</h5>
+                    <button onclick="navigateToPickup('${delivery.pickup_address}')" 
+                            class="w-full bg-blue-600 hover:bg-blue-700 text-white px-4 py-2.5 rounded-lg text-sm font-medium transition-colors flex items-center justify-center">
+                        <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z"/>
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 11a3 3 0 11-6 0 3 3 0 016 0z"/>
+                        </svg>
+                        Navigate to Pickup
+                    </button>
+                    <button onclick="navigateToDropoff('${delivery.dropoff_address}')" 
+                            class="w-full bg-emerald-600 hover:bg-emerald-700 text-white px-4 py-2.5 rounded-lg text-sm font-medium transition-colors flex items-center justify-center">
+                        <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z"/>
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 11a3 3 0 11-6 0 3 3 0 016 0z"/>
+                        </svg>
+                        Navigate to Drop Off
+                    </button>
+                </div>
+            </div>
+
+            <!-- Middle Column: Quick Actions -->
+            <div class="bg-slate-800 rounded-lg p-6 border border-slate-600">
+                <h4 class="text-lg font-semibold text-slate-100 mb-4 border-b border-slate-600 pb-3">Quick Actions</h4>
+                
+                <div class="space-y-5">
+                    <!-- Section 1: Pharmacy Handover -->
+                    <div class="bg-slate-900 rounded-lg p-4 border border-slate-700">
+                        <div class="flex items-center justify-between mb-3">
+                            <div class="flex items-center">
+                                <span class="w-3 h-3 rounded-full ${getStepStatus(delivery, 'handover') === 'completed' ? 'bg-emerald-500' : 'bg-slate-500'} mr-2"></span>
+                                <h5 class="font-medium text-slate-200">1. Pharmacy Handover</h5>
+                            </div>
+                            ${getStepStatus(delivery, 'handover') === 'completed' ? 
+                                '<span class="text-emerald-400 text-xs px-2 py-1 bg-emerald-900 rounded-full">✓ Complete</span>' : 
+                                '<span class="text-slate-400 text-xs px-2 py-1 bg-slate-700 rounded-full">Pending</span>'
+                            }
+                        </div>
+                        <div class="image-upload-container h-24 ${getHandoverImage(delivery) ? 'has-image' : ''}" 
+                             onclick="viewImage('${getHandoverImage(delivery)}', 'Pharmacy Handover', '${getHandoverTimestamp(delivery)}')">
+                            ${getHandoverImage(delivery) ? 
+                                `<img src="${getHandoverImage(delivery)}" alt="Handover proof" class="uploaded-image">` :
+                                `<div class="text-slate-400 text-sm">
+                                    <svg class="w-6 h-6 mx-auto mb-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2-2v12a2 2 0 002 2z"/>
+                                    </svg>
+                                    Handover proof image
+                                </div>`
+                            }
+                        </div>
+                    </div>
+
+                    <!-- Section 2: Driver Pickup -->
+                    <div class="bg-slate-900 rounded-lg p-4 border border-slate-700">
+                        <div class="flex items-center justify-between mb-3">
+                            <div class="flex items-center">
+                                <span class="w-3 h-3 rounded-full ${getStepStatus(delivery, 'picked_up') === 'completed' ? 'bg-emerald-500' : getStepStatus(delivery, 'picked_up') === 'current' ? 'bg-blue-500' : 'bg-slate-500'} mr-2"></span>
+                                <h5 class="font-medium text-slate-200">2. Driver Pickup</h5>
+                            </div>
+                            ${getStepStatus(delivery, 'picked_up') === 'completed' ? 
+                                '<span class="text-emerald-400 text-xs px-2 py-1 bg-emerald-900 rounded-full">✓ Complete</span>' : 
+                                getStepStatus(delivery, 'picked_up') === 'current' ?
+                                '<span class="text-blue-400 text-xs px-2 py-1 bg-blue-900 rounded-full">● Current</span>' :
+                                '<span class="text-slate-400 text-xs px-2 py-1 bg-slate-700 rounded-full">Pending</span>'
+                            }
+                        </div>
+                        <div class="image-upload-container h-24 mb-3 ${delivery.pickup_proof ? 'has-image' : ''}" 
+                             onclick="handleImageClick('${delivery.id}', 'pickup')">
+                            ${delivery.pickup_proof ? 
+                                `<img src="${delivery.pickup_proof}" alt="Pickup proof" class="uploaded-image">` :
+                                `<div class="text-slate-400 text-sm">
+                                    <svg class="w-6 h-6 mx-auto mb-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6"/>
+                                    </svg>
+                                    ${getStepStatus(delivery, 'picked_up') === 'current' ? 'Click to upload pickup proof' : 'Pickup proof required'}
+                                </div>`
+                            }
+                        </div>
+                        <button onclick="uploadProof('${delivery.id}', 'pickup')" 
+                                class="w-full px-3 py-2 rounded-lg text-sm font-medium transition-colors ${
+                                    getStepStatus(delivery, 'picked_up') === 'current' && !delivery.pickup_proof ? 
+                                    'bg-blue-600 hover:bg-blue-700 text-white' : 
+                                    'bg-slate-600 text-slate-400 cursor-not-allowed'
+                                }"
+                                ${getStepStatus(delivery, 'picked_up') === 'current' && !delivery.pickup_proof ? '' : 'disabled'}>
+                            Upload Proof
+                        </button>
+                    </div>
+
+                    <!-- Section 3: Driver Delivery -->
+                    <div class="bg-slate-900 rounded-lg p-4 border border-slate-700">
+                        <div class="flex items-center justify-between mb-3">
+                            <div class="flex items-center">
+                                <span class="w-3 h-3 rounded-full ${getStepStatus(delivery, 'delivered') === 'completed' ? 'bg-emerald-500' : getStepStatus(delivery, 'delivered') === 'current' ? 'bg-blue-500' : 'bg-slate-500'} mr-2"></span>
+                                <h5 class="font-medium text-slate-200">3. Driver Delivery</h5>
+                            </div>
+                            ${getStepStatus(delivery, 'delivered') === 'completed' ? 
+                                '<span class="text-emerald-400 text-xs px-2 py-1 bg-emerald-900 rounded-full">✓ Complete</span>' : 
+                                getStepStatus(delivery, 'delivered') === 'current' ?
+                                '<span class="text-blue-400 text-xs px-2 py-1 bg-blue-900 rounded-full">● Current</span>' :
+                                '<span class="text-slate-400 text-xs px-2 py-1 bg-slate-700 rounded-full">Pending</span>'
+                            }
+                        </div>
+                        <div class="image-upload-container h-24 mb-3 ${delivery.delivery_proof ? 'has-image' : ''}" 
+                             onclick="handleImageClick('${delivery.id}', 'delivery')">
+                            ${delivery.delivery_proof ? 
+                                `<img src="${delivery.delivery_proof}" alt="Delivery proof" class="uploaded-image">` :
+                                `<div class="text-slate-400 text-sm">
+                                    <svg class="w-6 h-6 mx-auto mb-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6"/>
+                                    </svg>
+                                    ${getStepStatus(delivery, 'delivered') === 'current' ? 'Click to upload delivery proof' : 'Delivery proof required'}
+                                </div>`
+                            }
+                        </div>
+                        <button onclick="uploadProof('${delivery.id}', 'delivery')" 
+                                class="w-full px-3 py-2 rounded-lg text-sm font-medium transition-colors ${
+                                    getStepStatus(delivery, 'delivered') === 'current' && !delivery.delivery_proof ? 
+                                    'bg-blue-600 hover:bg-blue-700 text-white' : 
+                                    'bg-slate-600 text-slate-400 cursor-not-allowed'
+                                }"
+                                ${getStepStatus(delivery, 'delivered') === 'current' && !delivery.delivery_proof ? '' : 'disabled'}>
+                            Upload Proof
+                        </button>
+                    </div>
+
+                    <!-- Complete Delivery Button -->
+                    <button onclick="completeDelivery('${delivery.id}')" 
+                            class="w-full px-4 py-3 rounded-lg text-sm font-semibold transition-colors border-2 ${
+                                delivery.pickup_proof && delivery.delivery_proof && delivery.status !== 'delivered' ? 
+                                'bg-emerald-600 hover:bg-emerald-700 border-emerald-500 text-white shadow-lg' : 
+                                'bg-slate-700 border-slate-600 text-slate-400 cursor-not-allowed'
+                            }"
+                            ${delivery.pickup_proof && delivery.delivery_proof && delivery.status !== 'delivered' ? '' : 'disabled'}>
+                        <svg class="w-5 h-5 mr-2 inline" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/>
+                        </svg>
+                        Complete Delivery
+                    </button>
+                </div>
+            </div>
+
+            <!-- Right Column: Order Timeline -->
+            <div class="bg-slate-800 rounded-lg p-6 border border-slate-600 h-fit">
+                <h4 class="text-lg font-semibold text-slate-100 mb-4 border-b border-slate-600 pb-3">Order Timeline</h4>
+                <div class="space-y-4">
+                    ${createOrderTimeline(delivery)}
+                </div>
+            </div>
+        </div>
+    `;
+}
+
+// New function to handle image clicks for sections 2 and 3
+function handleImageClick(orderId, type) {
+    const delivery = findDeliveryById(orderId);
+    if (!delivery) return;
+    
+    // If image exists, view it in modal
+    if ((type === 'pickup' && delivery.pickup_proof) || (type === 'delivery' && delivery.delivery_proof)) {
+        const imageUrl = type === 'pickup' ? delivery.pickup_proof : delivery.delivery_proof;
+        const title = type === 'pickup' ? 'Pickup Proof' : 'Delivery Proof';
+        viewImage(imageUrl, title, 'Uploaded by driver');
+        return;
+    }
+    
+    // If no image and step is current, allow upload
+    const currentStep = getStepStatus(delivery, type === 'pickup' ? 'picked_up' : 'delivered');
+    if (currentStep === 'current') {
+        handleImageUpload(orderId, type);
+    }
+}
+
+// Update the existing handleImageUpload function to include preview
+function handleImageUpload(orderId, type) {
+    const delivery = findDeliveryById(orderId);
+    if (!delivery) return;
+    
+    const currentStep = getStepStatus(delivery, type === 'pickup' ? 'picked_up' : 'delivered');
+    if (currentStep !== 'current') return;
+    
+    // Create file input
+    const input = document.createElement('input');
+    input.type = 'file';
+    input.accept = 'image/*';
+    input.onchange = function(e) {
+        const file = e.target.files[0];
+        if (file) {
+            // Validate file size (max 5MB)
+            if (file.size > 5 * 1024 * 1024) {
+                showNotification('Image file too large. Please select an image smaller than 5MB.', 'error');
+                return;
+            }
+            
+            // Validate file type
+            if (!file.type.startsWith('image/')) {
+                showNotification('Please select a valid image file.', 'error');
+                return;
+            }
+            
+            handleFileUpload(orderId, type, file);
+        }
+    };
+    input.click();
+}
+
+// Add navigation functions
+function navigateToPickup(address) {
+    // Encode the address for URL
+    const encodedAddress = encodeURIComponent(address);
+    
+    // Try to open Google Maps first, fallback to Apple Maps on iOS
+    const isMobile = /Android|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
+    const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent);
+    
+    if (isMobile) {
+        if (isIOS) {
+            // Try Apple Maps first on iOS
+            window.open(`maps://maps.google.com/maps?daddr=${encodedAddress}`, '_system');
+            // Fallback to Google Maps web if Apple Maps doesn't work
+            setTimeout(() => {
+                window.open(`https://www.google.com/maps/dir/?api=1&destination=${encodedAddress}`, '_blank');
+            }, 1000);
+        } else {
+            // Android - try Google Maps app first
+            window.open(`google.navigation:q=${encodedAddress}`, '_system');
+            // Fallback to Google Maps web
+            setTimeout(() => {
+                window.open(`https://www.google.com/maps/dir/?api=1&destination=${encodedAddress}`, '_blank');
+            }, 1000);
+        }
+    } else {
+        // Desktop - open Google Maps in new tab
+        window.open(`https://www.google.com/maps/dir/?api=1&destination=${encodedAddress}`, '_blank');
+    }
+    
+    showNotification('Opening navigation to pickup location...', 'info');
+}
+
+function navigateToDropoff(address) {
+    // Encode the address for URL
+    const encodedAddress = encodeURIComponent(address);
+    
+    // Try to open Google Maps first, fallback to Apple Maps on iOS
+    const isMobile = /Android|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
+    const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent);
+    
+    if (isMobile) {
+        if (isIOS) {
+            // Try Apple Maps first on iOS
+            window.open(`maps://maps.google.com/maps?daddr=${encodedAddress}`, '_system');
+            // Fallback to Google Maps web if Apple Maps doesn't work
+            setTimeout(() => {
+                window.open(`https://www.google.com/maps/dir/?api=1&destination=${encodedAddress}`, '_blank');
+            }, 1000);
+        } else {
+            // Android - try Google Maps app first
+            window.open(`google.navigation:q=${encodedAddress}`, '_system');
+            // Fallback to Google Maps web
+            setTimeout(() => {
+                window.open(`https://www.google.com/maps/dir/?api=1&destination=${encodedAddress}`, '_blank');
+            }, 1000);
+        }
+    } else {
+        // Desktop - open Google Maps in new tab
+        window.open(`https://www.google.com/maps/dir/?api=1&destination=${encodedAddress}`, '_blank');
+    }
+    
+    showNotification('Opening navigation to drop-off location...', 'info');
+}
+
+// Update the uploadProof function to handle disabled state
+function uploadProof(orderId, type) {
+    const delivery = findDeliveryById(orderId);
+    if (!delivery) return;
+    
+    // Check if button should be enabled
+    if (type === 'pickup') {
+        const currentStep = getStepStatus(delivery, 'picked_up');
+        if (currentStep !== 'current' || delivery.pickup_proof) return;
+    } else if (type === 'delivery') {
+        const currentStep = getStepStatus(delivery, 'delivered');
+        if (currentStep !== 'current' || delivery.delivery_proof) return;
+    }
+    
+    handleImageUpload(orderId, type);
+}
+
+// Fix 2: Update the getStepStatus function to properly handle your mock data
+function getStepStatus(delivery, step) {
+    const tracking = delivery.tracking || [];
+    const hasStep = tracking.some(t => t.step === step);
+    
+    if (hasStep) return 'completed';
+    
+    // Determine if this is the current step based on delivery status
+    const currentStatus = delivery.status;
+    
+    // For handover step - current if status is 'accepted' and handover not yet completed
+    if (step === 'handover' && currentStatus === 'accepted' && !hasStep) return 'current';
+    
+    // For pickup step - current if handover is completed but pickup is not
+    if (step === 'picked_up') {
+        const handoverCompleted = tracking.some(t => t.step === 'handover');
+        if (handoverCompleted && !hasStep) return 'current';
+        // Also current if status is 'handover' (waiting for pickup)
+        if (currentStatus === 'handover') return 'current';
+    }
+    
+    // For delivery step - current if pickup is completed but delivery is not
+    if (step === 'delivered') {
+        const pickupCompleted = tracking.some(t => t.step === 'picked_up') || currentStatus === 'picked_up';
+        if (pickupCompleted && !hasStep) return 'current';
+    }
+    
+    return 'pending';
+}
+
+        // Helper function to get handover image from tracking
+        function getHandoverImage(delivery) {
+            const handoverEntry = delivery.tracking?.find(t => t.step === 'handover');
+            return handoverEntry?.image_url || null;
+        }
+
+        // Helper function to get handover timestamp
+        function getHandoverTimestamp(delivery) {
+            const handoverEntry = delivery.tracking?.find(t => t.step === 'handover');
+            return handoverEntry ? formatTimestamp(handoverEntry.timestamp) : '';
+        }
+
+        // Create order timeline
+        function createOrderTimeline(delivery) {
+            const steps = [
+                { key: 'pending', label: 'Order Pending', icon: 'M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z' },
+                { key: 'accepted', label: 'Accepted by Driver', icon: 'M5 13l4 4L19 7' },
+                { key: 'handover', label: 'Pharmacy Handover', icon: 'M8 7h12m0 0l-4-4m4 4l-4 4m0 6H4m0 0l4 4m-4-4l4-4' },
+                { key: 'picked_up', label: 'Picked Up', icon: 'M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10' },
+                { key: 'delivered', label: 'Delivered', icon: 'M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z' }
+            ];
+
+            const tracking = delivery.tracking || [];
+            
+            return steps.map((step, index) => {
+                const trackingEntry = tracking.find(t => t.step === step.key);
+                const isCompleted = !!trackingEntry;
+                const isCurrent = !isCompleted && getStepStatus(delivery, step.key) === 'current';
+                
+                return `
+                    <div class="timeline-step ${isCompleted ? 'completed' : ''} ${isCurrent ? 'current' : ''}">
+                        <div class="flex items-start space-x-3">
+                            <svg class="w-5 h-5 mt-0.5 ${isCompleted ? 'text-emerald-400' : isCurrent ? 'text-blue-400' : 'text-slate-500'}" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="${step.icon}"/>
+                            </svg>
+                            <div class="flex-1 min-w-0">
+                                <p class="${isCompleted ? 'text-slate-200' : isCurrent ? 'text-blue-300' : 'text-slate-400'} font-medium">
+                                    ${step.label}
+                                </p>
+                                ${trackingEntry ? `
+                                    <div class="mt-1">
+                                        <p class="text-slate-400 text-sm">
+                                            ${formatTimestamp(trackingEntry.timestamp)}
+                                        </p>
+                                        ${trackingEntry.performed_by ? `
+                                            <p class="text-slate-500 text-xs">
+                                                by ${trackingEntry.performed_by}
+                                            </p>
+                                        ` : ''}
+                                        ${trackingEntry.note ? `
+                                            <p class="text-slate-400 text-sm mt-1">
+                                                ${trackingEntry.note}
+                                            </p>
+                                        ` : ''}
+                                    </div>
+                                ` : ''}
+                            </div>
+                        </div>
+                    </div>
+                `;
+            }).join('');
+        }
+
+        // Handle image upload click
+        function handleImageUpload(orderId, type) {
+            const delivery = findDeliveryById(orderId);
+            if (!delivery) return;
+            
+            const currentStep = getStepStatus(delivery, type === 'pickup' ? 'picked_up' : 'delivered');
+            if (currentStep !== 'current') return;
+            
+            // Create file input
+            const input = document.createElement('input');
+            input.type = 'file';
+            input.accept = 'image/*';
+            input.onchange = function(e) {
+                const file = e.target.files[0];
+                if (file) {
+                    handleFileUpload(orderId, type, file);
+                }
+            };
+            input.click();
+        }
+
+        // Handle file upload
+        function handleFileUpload(orderId, type, file) {
+            // Create a preview URL
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                // Update delivery data with image
+                updateDeliveryProof(orderId, type, e.target.result);
+                
+                // Re-render the specific delivery
+                const delivery = findDeliveryById(orderId);
+                if (delivery) {
+                    renderDeliveries();
+                }
+                
+                // Show success message
+                showNotification(`${type === 'pickup' ? 'Pickup' : 'Delivery'} proof uploaded successfully!`, 'success');
+            };
+            reader.readAsDataURL(file);
+        }
+
+        // Upload proof function
+        function uploadProof(orderId, type) {
+            handleImageUpload(orderId, type);
+        }
+
+        // Complete delivery function
+        function completeDelivery(orderId) {
+            if (!confirm('Are you sure you want to mark this delivery as completed?')) {
+                return;
+            }
+
+            // Update delivery status
+            const delivery = findDeliveryById(orderId);
+            if (delivery && delivery.pickup_proof && delivery.delivery_proof) {
+                delivery.status = 'delivered';
+                
+                // Add tracking entry
+                delivery.tracking.push({
+                    step: 'delivered',
+                    timestamp: new Date().toISOString(),
+                    performed_by: 'John Smith',
+                    note: 'Delivery completed successfully'
+                });
+                
+                renderDeliveries();
+                showNotification('Delivery completed successfully!', 'success');
+            }
+        }
+
+        // Update delivery proof
+        function updateDeliveryProof(orderId, type, imageUrl) {
+            const allDeliveries = [...deliveriesData.today, ...deliveriesData.tomorrow, ...deliveriesData.upcoming];
+            const delivery = allDeliveries.find(d => d.id === orderId);
+            
+            if (delivery) {
+                if (type === 'pickup') {
+                    delivery.pickup_proof = imageUrl;
+                    if (delivery.status === 'handover') {
+                        delivery.status = 'picked_up';
+                        delivery.tracking.push({
+                            step: 'picked_up',
+                            timestamp: new Date().toISOString(),
+                            performed_by: 'John Smith',
+                            note: 'Package picked up from pharmacy'
+                        });
+                    }
+                } else if (type === 'delivery') {
+                    delivery.delivery_proof = imageUrl;
+                }
+            }
+        }
+
+        // Find delivery by ID
+        function findDeliveryById(orderId) {
+            const allDeliveries = [...deliveriesData.today, ...deliveriesData.tomorrow, ...deliveriesData.upcoming];
+            return allDeliveries.find(d => d.id === orderId);
+        }
+
+function viewImage(imageUrl, title, timestamp) {
+    if (!imageUrl || imageUrl === 'null') return;
+    
+    document.getElementById('modalTitle').textContent = title;
+    document.getElementById('modalTimestamp').textContent = timestamp;
+    document.getElementById('modalImage').src = imageUrl;
+    document.getElementById('imageModal').classList.remove('hidden');
+}
+
+        // Close image modal
+        function closeImageModal() {
+            document.getElementById('imageModal').classList.add('hidden');
+        }
+
+        // Show notification
+        function showNotification(message, type = 'info') {
+            // Create notification element
+            const notification = document.createElement('div');
+            notification.className = `fixed top-4 right-4 z-50 p-4 rounded-lg shadow-lg max-w-sm ${
+                type === 'success' ? 'bg-emerald-600' : 
+                type === 'error' ? 'bg-red-600' : 
+                'bg-blue-600'
+            } text-white`;
+            
+            notification.innerHTML = `
+                <div class="flex items-center">
+                    <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" 
+                              d="${type === 'success' ? 'M5 13l4 4L19 7' : 
+                                  type === 'error' ? 'M6 18L18 6M6 6l12 12' : 
+                                  'M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z'}"/>
+                    </svg>
+                    <span>${message}</span>
+                </div>
+            `;
+            
+            document.body.appendChild(notification);
+            
+            // Remove after 3 seconds
+            setTimeout(() => {
+                notification.remove();
+            }, 3000);
+        }
+
+        // Toggle delivery details
+        function toggleDeliveryDetails(orderId, category) {
+            const detailsRow = document.getElementById(`details-${orderId}-${category}`);
+            const arrow = document.getElementById(`arrow-${orderId}-${category}`);
+            
+            if (detailsRow.classList.contains('hidden')) {
+                detailsRow.classList.remove('hidden');
+                arrow.style.transform = 'rotate(90deg)';
+            } else {
+                detailsRow.classList.add('hidden');
+                arrow.style.transform = 'rotate(0deg)';
+            }
+        }
+
+        // Utility functions
+        function truncateText(text, maxLength) {
+            return text.length > maxLength ? text.substring(0, maxLength) + '...' : text;
+        }
+
+        function capitalizeStatus(status) {
+            return status.split('_').map(word => 
+                word.charAt(0).toUpperCase() + word.slice(1)
+            ).join(' ');
+        }
+
+        function formatDate(dateString) {
+            const date = new Date(dateString);
+            return date.toLocaleDateString('en-CA', { 
+                year: 'numeric', 
+                month: 'short', 
+                day: 'numeric' 
+            });
+        }
+
+        function formatTimestamp(timestamp) {
+            const date = new Date(timestamp);
+            return date.toLocaleString('en-CA', {
+                year: 'numeric',
+                month: 'short',
+                day: 'numeric',
+                hour: '2-digit',
+                minute: '2-digit'
+            });
+        }
+
+        function showError(category) {
+            const tbody = document.getElementById(`${category}Deliveries`);
+            const colSpan = category === 'upcoming' ? '8' : '7';
+            
+            tbody.innerHTML = `
+                <tr>
+                    <td colspan="${colSpan}" class="px-6 py-8 text-center">
+                        <div class="text-red-400">
+                            <svg class="w-8 h-8 mx-auto mb-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.964-.833-2.732 0L3.732 16.5c-.77.833.192 2.5 1.732 2.5z"/>
+                            </svg>
+                            <p>Error loading deliveries</p>
+                        </div>
+                    </td>
+                </tr>
+            `;
+            
+            document.getElementById(`${category}Count`).textContent = 'Error loading';
+        }
+
+        function refreshDeliveries() {
+            document.getElementById('todayCount').textContent = 'Loading...';
+            document.getElementById('tomorrowCount').textContent = 'Loading...';
+            document.getElementById('upcomingCount').textContent = 'Loading...';
+            
+            loadAcceptedDeliveries();
+            showNotification('Deliveries refreshed!', 'success');
+        }
+
+        // Initialize the page
+        document.addEventListener('DOMContentLoaded', function() {
+            loadAcceptedDeliveries();
+        });
+
+        // Close modal when clicking outside
+        document.getElementById('imageModal').addEventListener('click', function(e) {
+            if (e.target === this) {
+                closeImageModal();
+            }
+        });
+    </script>
+</body>
+</html>

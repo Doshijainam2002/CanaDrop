@@ -43,6 +43,9 @@ def driverLoginView(request):
 def driverDashboardView(request):
     return render(request, 'driverDashboard.html')
 
+def driverAcceptedDeliveriesView(request):
+    return render(request, 'driverAcceptedDeliveries.html')
+
 @csrf_exempt
 def pharmacy_login_api(request):
     if request.method != "POST":
@@ -826,3 +829,101 @@ def driver_login(request):
             'success': False,
             'message': 'An error occurred during login'
         }, status=500)
+
+
+@csrf_exempt
+def get_pending_orders(request):
+    if request.method == "GET":
+        # Fetch all pending orders ordered by created_at (oldest first)
+        orders = DeliveryOrder.objects.filter(status="pending").order_by("created_at")
+
+        # Prepare JSON data manually
+        data = []
+        for order in orders:
+            data.append({
+                "id": order.id,
+                "pharmacy": order.pharmacy.name if order.pharmacy else None,
+                "driver": order.driver.name if order.driver else None,
+                "pickup_address": order.pickup_address,
+                "pickup_city": order.pickup_city,
+                "pickup_day": order.pickup_day.strftime("%Y-%m-%d"),
+                "drop_address": order.drop_address,
+                "drop_city": order.drop_city,
+                "status": order.status,
+                "rate": str(order.rate),
+                "created_at": order.created_at.strftime("%Y-%m-%d %H:%M:%S"),
+                "updated_at": order.updated_at.strftime("%Y-%m-%d %H:%M:%S"),
+            })
+
+        return JsonResponse({"orders": data}, safe=False)
+
+    return JsonResponse({"error": "Invalid request method"}, status=405)
+
+
+@csrf_exempt
+def assign_driver(request):
+    if request.method == "POST":
+        try:
+            body = json.loads(request.body.decode("utf-8"))
+            order_id = body.get("orderId")
+            driver_id = body.get("driverId")
+
+            if not order_id or not driver_id:
+                return JsonResponse({"error": "orderId and driverId are required"}, status=400)
+
+            # Fetch order & driver
+            order = DeliveryOrder.objects.get(id=order_id)
+            driver = Driver.objects.get(id=driver_id)
+
+            # Update order
+            order.driver = driver
+            order.status = "accepted"
+            order.save()
+
+            # Log in OrderTracking
+            tracking = OrderTracking.objects.create(
+                order=order,
+                driver=driver,
+                pharmacy=order.pharmacy,
+                step="accepted",
+                performed_by=f"Driver: {driver.name}",
+                note=f"{order.pharmacy.id}_{order.id}_{driver.id}_Accepted",
+                image_url=None
+            )
+
+            return JsonResponse({
+                "message": "Driver assigned and order accepted",
+                "orderId": order.id,
+                "driverId": driver.id,
+                "trackingId": tracking.id
+            }, status=200)
+
+        except DeliveryOrder.DoesNotExist:
+            return JsonResponse({"error": "Order not found"}, status=404)
+        except Driver.DoesNotExist:
+            return JsonResponse({"error": "Driver not found"}, status=404)
+        except Exception as e:
+            return JsonResponse({"error": str(e)}, status=500)
+
+    return JsonResponse({"error": "Invalid request method"}, status=405)
+
+
+@csrf_exempt
+def get_driver_details(request):
+    if request.method == "GET":
+        driver_id = request.GET.get("driverId")
+
+        if not driver_id:
+            return JsonResponse({"error": "driverId is required"}, status=400)
+
+        try:
+            driver = Driver.objects.get(id=driver_id)
+            return JsonResponse({
+                "id": driver.id,
+                "name": driver.name,
+                "email": driver.email
+            }, status=200)
+        except Driver.DoesNotExist:
+            return JsonResponse({"error": "Driver not found"}, status=404)
+
+    return JsonResponse({"error": "Invalid request method"}, status=405)

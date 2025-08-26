@@ -18,5 +18,9 @@ urlpatterns = [
     path('driverLogin/', views.driverLoginView, name='DriverLoginPage'),  
     path('api/driver/login/', views.driver_login, name='driver_login'),
     path('driverDashboard/', views.driverDashboardView, name="DriverDashboardPage"),
+    path("api/orders/pending/", views.get_pending_orders, name="get_pending_orders"),
+    path("api/orders/assign-driver/", views.assign_driver, name="assign_driver"),
+    path("api/driver/details/", views.get_driver_details, name="get_driver_details"),
+    path('driverAcceptedDeliveries/', views.driverAcceptedDeliveriesView, name="DriverAcceptedDeliveriesPage")
 
 ]
