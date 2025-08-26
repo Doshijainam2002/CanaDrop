@@ -58,9 +58,11 @@
                     </a>
 
                     <!-- Logout -->
-                    <a href="/pharmacyLogin/" class="flex items-center px-3 py-2 text-sm font-medium text-gray-700 hover:bg-gray-100 rounded-lg transition-colors">
+                    <a href="javascript:void(0);" onclick="logoutPharmacy()" 
+                    class="flex items-center px-3 py-2 text-sm font-medium text-gray-700 hover:bg-gray-100 rounded-lg transition-colors">
                         <svg class="w-5 h-5 mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a2 2 0 01-2 2H5a2 2 0 01-2-2V7a2 2 0 012-2h6a2 2 0 012 2v1"/>
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" 
+                                d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a2 2 0 01-2 2H5a2 2 0 01-2-2V7a2 2 0 012-2h6a2 2 0 012 2v1"/>
                         </svg>
                         Logout
                     </a>
@@ -70,11 +72,11 @@
                 <div class="px-4 py-4 border-t border-gray-200">
                     <div class="flex items-center">
                         <div class="flex-shrink-0 w-8 h-8 bg-gradient-to-r from-teal-500 to-cyan-500 rounded-full flex items-center justify-center">
-                            <span class="text-sm font-medium text-white">P</span>
+                            <span class="text-sm font-medium text-white" id="pharmacyInitial">P</span>
                         </div>
                         <div class="ml-3">
-                            <p class="text-sm font-medium text-gray-900">Pharmacy Admin</p>
-                            <p class="text-xs text-gray-500">admin@pharmacy.com</p>
+                            <p class="text-sm font-medium text-gray-900" id="pharmacyName">Pharmacy Admin</p>
+                            <p class="text-xs text-gray-500" id="pharmacyEmail">admin@pharmacy.com</p>
                         </div>
                     </div>
                 </div>
@@ -984,6 +986,60 @@ document.addEventListener('keydown', function(e) {
         closeImageModal();
     }
 });
+
+// Load and display pharmacy details
+async function loadPharmacyDetails() {
+    try {
+        const pharmacyId = getCookie("pharmacyId");
+        if (!pharmacyId) {
+            console.error("Pharmacy ID not found in cookies");
+            return;
+        }
+
+        const response = await fetch(`/pharmacy/${pharmacyId}/`);
+        if (!response.ok) {
+            throw new Error("Failed to fetch pharmacy details");
+        }
+
+        const data = await response.json();
+        
+        if (data.success && data.pharmacy) {
+            // Update pharmacy name
+            const nameElement = document.getElementById('pharmacyName');
+            if (nameElement) {
+                nameElement.textContent = data.pharmacy.name;
+            }
+            
+            // Update pharmacy email
+            const emailElement = document.getElementById('pharmacyEmail');
+            if (emailElement) {
+                emailElement.textContent = data.pharmacy.email;
+            }
+            
+            // Update initial (first letter of pharmacy name)
+            const initialElement = document.getElementById('pharmacyInitial');
+            if (initialElement && data.pharmacy.name) {
+                initialElement.textContent = data.pharmacy.name.charAt(0).toUpperCase();
+            }
+        } else {
+            console.error("Invalid pharmacy data received");
+        }
+
+    } catch (error) {
+        console.error("Error loading pharmacy details:", error);
+        showNotification && showNotification('Failed to load pharmacy details', 'error');
+    }
+}
+
+loadPharmacyDetails();
+
+function logoutPharmacy() {
+    // Remove the pharmacyId cookie
+    document.cookie = "pharmacyId=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/;";
+
+    // Redirect to pharmacy login
+    window.location.href = "/pharmacyLogin/";
+}
     </script>
 </body>
 </html>

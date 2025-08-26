@@ -57,9 +57,11 @@
                     </a>
 
                     <!-- Logout -->
-                    <a href="/pharmacyLogin/" class="flex items-center px-3 py-2 text-sm font-medium text-gray-700 hover:bg-gray-100 rounded-lg transition-colors">
+                    <a href="javascript:void(0);" onclick="logoutPharmacy()" 
+                    class="flex items-center px-3 py-2 text-sm font-medium text-gray-700 hover:bg-gray-100 rounded-lg transition-colors">
                         <svg class="w-5 h-5 mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a2 2 0 01-2 2H5a2 2 0 01-2-2V7a2 2 0 012-2h6a2 2 0 012 2v1"/>
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" 
+                                d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a2 2 0 01-2 2H5a2 2 0 01-2-2V7a2 2 0 012-2h6a2 2 0 012 2v1"/>
                         </svg>
                         Logout
                     </a>
@@ -69,11 +71,11 @@
                 <div class="px-4 py-4 border-t border-gray-200">
                     <div class="flex items-center">
                         <div class="flex-shrink-0 w-8 h-8 bg-gradient-to-r from-teal-500 to-cyan-500 rounded-full flex items-center justify-center">
-                            <span class="text-sm font-medium text-white">P</span>
+                            <span class="text-sm font-medium text-white" id="pharmacyInitial">P</span>
                         </div>
                         <div class="ml-3">
-                            <p class="text-sm font-medium text-gray-900">Pharmacy Admin</p>
-                            <p class="text-xs text-gray-500">admin@pharmacy.com</p>
+                            <p class="text-sm font-medium text-gray-900" id="pharmacyName">Pharmacy Admin</p>
+                            <p class="text-xs text-gray-500" id="pharmacyEmail">admin@pharmacy.com</p>
                         </div>
                     </div>
                 </div>
@@ -355,7 +357,10 @@ async function fetchInvoices() {
     
     // Get pharmacy ID from cookies
     pharmacyId = getCookie('pharmacyId');
+    console.log('Pharmacy ID from cookie:', pharmacyId);
+    
     if (!pharmacyId) {
+        console.error('Pharmacy ID not found in cookies');
         alert('Pharmacy ID not found. Please log in again.');
         return;
     }
@@ -366,7 +371,10 @@ async function fetchInvoices() {
         updateRefreshButton(true);
         
         const response = await fetch(`/api/generate-weekly-invoices/?pharmacyId=${pharmacyId}`);
+        console.log('Fetch invoices response status:', response.status);
+        
         const data = await response.json();
+        console.log('Fetch invoices response data:', data);
         
         if (data.invoices) {
             invoices = data.invoices.map(invoice => ({
@@ -390,7 +398,6 @@ async function fetchInvoices() {
         updateStats();
     } catch (error) {
         console.error('Error fetching invoices:', error);
-        // Show error message to user
         alert('Failed to load invoices. Please try again.');
     } finally {
         isRefreshing = false;
@@ -427,7 +434,6 @@ function updateRefreshButton(isLoading) {
     }
 }
 
-
 function showPaymentModal(invoiceId) {
     const invoice = invoices.find(inv => inv.id == invoiceId);
     if (!invoice) return;
@@ -444,16 +450,86 @@ function closePaymentModal() {
     document.getElementById('paymentModal').classList.add('hidden');
 }
 
-function redirectToStripe(invoiceId) {
+// Fixed redirectToStripe function with better error handling and logging
+async function redirectToStripe(invoiceId, buttonElement) {
     const invoice = invoices.find(inv => inv.id == invoiceId);
-    if (!invoice) return;
+    if (!invoice) {
+        console.error('Invoice not found:', invoiceId);
+        alert('Invoice not found');
+        return;
+    }
     
-    // For now, redirect to a sample Stripe checkout page
-    // In production, you would integrate with actual Stripe API
-    const stripeUrl = `https://checkout.stripe.com/pay/cs_test_sample#fidkdWxOYHwnPyd1blpxYHZxWjA0VUhMNG9mUkNmdTZAfH1iYjdXZzNqXW5ncEUzRnBPa01Pb3NgYnFpcTIxPTdNYU9wPXI2Y01rUGJLf0ZTa0BwQ3Q2ZG5JNzBwPWd2NnZya2pfTUZqTTVqP25kaDJdUFZaRicpJ3VpbGtuQH11anZgYUxhJz8nYHZpJ2N0PDdoQHJqMVZxJyknaWpmYmtnUGpPYW1xUGpAMGJSQTBRcVJVYU9SVkh1JyknaGZmfmpAXGhXNkxUd1JjbDBMPzhFbXRBMnRhXGdnNkJCXGNGd01NdicpJ2hwbGdpZ2lwZDVmaWV8Y2Nqbk1cQH9aVjVsNWVAbU1KVmxHanBHSVFpJyknaGZmX2dqQGdaZHN2VGlcUj1bPzFAZkZ5SG5UMHFdMVxTXE9dQlpfMWFGXCcpJ2hwamNqZ2gkcXdxdCg%3D`;
+    console.log('Initiating payment for invoice:', invoice);
+    console.log('Pharmacy ID:', pharmacyId);
     
-    // Open Stripe in a new tab
-    window.open(stripeUrl, '_blank');
+    try {
+        // Show loading state
+        if (buttonElement) {
+            buttonElement.disabled = true;
+            buttonElement.innerHTML = 'Processing...';
+        }
+        
+        // Prepare request data
+        const requestData = {
+            invoice_id: parseInt(invoiceId), // Ensure it's a number
+            pharmacy_id: parseInt(pharmacyId) // Ensure it's a number
+        };
+        
+        console.log('Request data for checkout session:', requestData);
+        
+        // Create Stripe checkout session
+        const response = await fetch('/api/create-checkout-session/', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'X-Requested-With': 'XMLHttpRequest', // Add this header
+            },
+            body: JSON.stringify(requestData)
+        });
+        
+        console.log('Checkout session response status:', response.status);
+        console.log('Checkout session response headers:', response.headers);
+        
+        // Log raw response text for debugging
+        const responseText = await response.text();
+        console.log('Raw response text:', responseText);
+        
+        // Try to parse as JSON
+        let data;
+        try {
+            data = JSON.parse(responseText);
+            console.log('Parsed response data:', data);
+        } catch (parseError) {
+            console.error('Failed to parse response as JSON:', parseError);
+            console.error('Response text:', responseText);
+            throw new Error('Invalid JSON response from server');
+        }
+        
+        // Check if response is ok
+        if (!response.ok) {
+            console.error('Response not ok:', response.status, data);
+            throw new Error(data.error || `HTTP error! status: ${response.status}`);
+        }
+        
+        if (data.checkout_url) {
+            console.log('Redirecting to checkout URL:', data.checkout_url);
+            // Redirect to Stripe Checkout
+            window.location.href = data.checkout_url;
+        } else {
+            console.error('No checkout_url in response:', data);
+            throw new Error(data.error || 'No checkout URL received');
+        }
+        
+    } catch (error) {
+        console.error('Error creating checkout session:', error);
+        alert(`Failed to create payment session: ${error.message}`);
+        
+        // Reset button state
+        if (buttonElement) {
+            buttonElement.disabled = false;
+            buttonElement.innerHTML = 'Pay Now';
+        }
+    }
 }
 
 function downloadPDF(invoiceId) {
@@ -578,18 +654,18 @@ function renderInvoices() {
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/>
                         </svg>
                     </button>
-                    ${invoice.displayStatus !== 'paid' ? `
-                        <button onclick="redirectToStripe(${invoice.id})" class="bg-gradient-to-r from-teal-600 to-cyan-600 text-white px-3 py-1.5 rounded-lg text-sm font-medium hover:from-teal-700 hover:to-cyan-700 transition-all duration-200 shadow-sm hover:shadow-md transform hover:scale-105">
-                            Pay Now
-                        </button>
-                    ` : `
-                        <span class="text-green-600 text-sm font-medium flex items-center">
-                            <svg class="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/>
-                            </svg>
-                            Paid
-                        </span>
-                    `}
+                        ${invoice.displayStatus !== 'paid' ? `
+                            <button onclick="redirectToStripe(${invoice.id}, this)" class="bg-gradient-to-r from-teal-600 to-cyan-600 text-white px-3 py-1.5 rounded-lg text-sm font-medium hover:from-teal-700 hover:to-cyan-700 transition-all duration-200 shadow-sm hover:shadow-md transform hover:scale-105">
+                                Pay Now
+                            </button>
+                        ` : `
+                            <span class="text-green-600 text-sm font-medium flex items-center">
+                                <svg class="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/>
+                                </svg>
+                                Paid
+                            </span>
+                        `}
                 </div>
             </td>
         </tr>
@@ -617,26 +693,40 @@ function updateStats() {
 
 // Initialize the page
 document.addEventListener('DOMContentLoaded', function() {
+    console.log('DOM Content Loaded, initializing page...');
+    
     // Fetch invoices from API on page load
     fetchInvoices();
+    handlePaymentSuccess();
 
     // Filter change handler
-    document.getElementById('statusFilter').addEventListener('change', renderInvoices);
+    const statusFilter = document.getElementById('statusFilter');
+    if (statusFilter) {
+        statusFilter.addEventListener('change', renderInvoices);
+    }
 
     // Close modals when clicking outside
-    document.getElementById('paymentModal').addEventListener('click', function(e) {
-        if (e.target === this) closePaymentModal();
-    });
+    const paymentModal = document.getElementById('paymentModal');
+    if (paymentModal) {
+        paymentModal.addEventListener('click', function(e) {
+            if (e.target === this) closePaymentModal();
+        });
+    }
 
     // Handle payment method change
-    document.getElementById('paymentMethod').addEventListener('change', function() {
-        const creditCardForm = document.getElementById('creditCardForm');
-        if (this.value === 'credit_card') {
-            creditCardForm.style.display = 'block';
-        } else {
-            creditCardForm.style.display = 'none';
-        }
-    });
+    const paymentMethod = document.getElementById('paymentMethod');
+    if (paymentMethod) {
+        paymentMethod.addEventListener('change', function() {
+            const creditCardForm = document.getElementById('creditCardForm');
+            if (creditCardForm) {
+                if (this.value === 'credit_card') {
+                    creditCardForm.style.display = 'block';
+                } else {
+                    creditCardForm.style.display = 'none';
+                }
+            }
+        });
+    }
 
     // Add refresh button functionality
     const refreshButton = document.createElement('button');
@@ -656,6 +746,86 @@ document.addEventListener('DOMContentLoaded', function() {
         headerControls.appendChild(refreshButton);
     }
 });
+
+// Enhanced payment success handling with better logging
+function handlePaymentSuccess() {
+    const urlParams = new URLSearchParams(window.location.search);
+    const payment = urlParams.get('payment');
+    const invoiceId = urlParams.get('invoice_id');
+    
+    console.log('Payment status from URL:', payment);
+    console.log('Invoice ID from URL:', invoiceId);
+    
+    if (payment === 'success' && invoiceId) {
+        alert(`Payment successful for Invoice #${invoiceId.padStart(6, '0')}!`);
+        // Clean URL
+        window.history.replaceState({}, document.title, window.location.pathname);
+        // Refresh the invoices to show updated status
+        setTimeout(() => {
+            console.log('Refreshing invoices after successful payment...');
+            fetchInvoices();
+        }, 1000);
+    } else if (payment === 'cancelled') {
+        alert('Payment was cancelled.');
+        // Clean URL
+        window.history.replaceState({}, document.title, window.location.pathname);
+    }
+}
+
+// Load and display pharmacy details
+async function loadPharmacyDetails() {
+    try {
+        const pharmacyId = getCookie("pharmacyId");
+        if (!pharmacyId) {
+            console.error("Pharmacy ID not found in cookies");
+            return;
+        }
+
+        const response = await fetch(`/pharmacy/${pharmacyId}/`);
+        if (!response.ok) {
+            throw new Error("Failed to fetch pharmacy details");
+        }
+
+        const data = await response.json();
+        
+        if (data.success && data.pharmacy) {
+            // Update pharmacy name
+            const nameElement = document.getElementById('pharmacyName');
+            if (nameElement) {
+                nameElement.textContent = data.pharmacy.name;
+            }
+            
+            // Update pharmacy email
+            const emailElement = document.getElementById('pharmacyEmail');
+            if (emailElement) {
+                emailElement.textContent = data.pharmacy.email;
+            }
+            
+            // Update initial (first letter of pharmacy name)
+            const initialElement = document.getElementById('pharmacyInitial');
+            if (initialElement && data.pharmacy.name) {
+                initialElement.textContent = data.pharmacy.name.charAt(0).toUpperCase();
+            }
+        } else {
+            console.error("Invalid pharmacy data received");
+        }
+
+    } catch (error) {
+        console.error("Error loading pharmacy details:", error);
+        showNotification && showNotification('Failed to load pharmacy details', 'error');
+    }
+}
+
+loadPharmacyDetails();
+
+
+function logoutPharmacy() {
+    // Remove the pharmacyId cookie
+    document.cookie = "pharmacyId=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/;";
+
+    // Redirect to pharmacy login
+    window.location.href = "/pharmacyLogin/";
+}
     </script>
 </body>
 </html>

@@ -25,20 +25,20 @@
         </div>
         
         <nav class="mt-8">
-            <a href="#" onclick="navigateTo('dashboard')" class="nav-item flex items-center px-6 py-3 text-slate-300 hover:bg-slate-700 hover:text-emerald-400 transition-colors">
+            <a href="/driverDashboard/" onclick="navigateTo('dashboard')" class="nav-item flex items-center px-6 py-3 text-slate-300 hover:bg-slate-700 hover:text-emerald-400 transition-colors">
                 <svg class="w-5 h-5 mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 7v10a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2H5a2 2 0 00-2-2z"/>
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 5a2 2 0 012-2h4a2 2 0 012 2v4H8V5z"/>
                 </svg>
                 Dashboard
             </a>
-            <a href="#" onclick="navigateTo('accepted')" class="nav-item active flex items-center px-6 py-3 text-slate-300 hover:bg-slate-700 hover:text-emerald-400 transition-colors">
+            <a href="/driverAcceptedDeliveries/" onclick="navigateTo('accepted')" class="nav-item active flex items-center px-6 py-3 text-slate-300 hover:bg-slate-700 hover:text-emerald-400 transition-colors">
                 <svg class="w-5 h-5 mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 8l6 6 10-10"/>
                 </svg>
                 Accepted Deliveries
             </a>
-            <a href="#" onclick="navigateTo('finances')" class="nav-item flex items-center px-6 py-3 text-slate-300 hover:bg-slate-700 hover:text-emerald-400 transition-colors">
+            <a href="/driverFinances/" onclick="navigateTo('finances')" class="nav-item flex items-center px-6 py-3 text-slate-300 hover:bg-slate-700 hover:text-emerald-400 transition-colors">
                 <svg class="w-5 h-5 mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1"/>
                 </svg>
@@ -63,18 +63,22 @@
                     <p class="text-slate-400 text-sm">Manage your current delivery assignments</p>
                 </div>
                 <div class="flex items-center space-x-4">
-                    <button onclick="refreshDeliveries()" class="p-2 text-slate-400 hover:text-emerald-400 transition-colors">
+                    <button onclick="refreshDeliveries()" 
+                            class="p-2 text-slate-400 hover:text-emerald-400 transition-colors">
                         <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"/>
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" 
+                                d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"/>
                         </svg>
                     </button>
-                    <span class="text-slate-300">Welcome back, John Smith!</span>
+                    <!-- Dynamic text -->
+                    <span id="welcomeText" class="text-slate-300">Welcome back, ...</span>
                     <div class="w-8 h-8 bg-emerald-500 rounded-full flex items-center justify-center">
-                        <span class="text-white font-semibold">J</span>
+                        <span id="profileInitial" class="text-white font-semibold">?</span>
                     </div>
                 </div>
             </div>
         </header>
+
 
         <!-- Deliveries Cards -->
         <main class="p-6">
@@ -158,11 +162,13 @@ let deliveries = [];
                         id: order.id,
                         pharmacy_name: order.pharmacy_name,
                         pickup_address: order.pickup_address,
+                        pickup_city : order.pickup_city,
                         dropoff_address: order.drop_address,
+                        drop_city: order.drop_city,
                         pickup_day: order.pickup_day,
                         rate: order.rate,
                         status: order.status,
-                        distance_km: 5.2, // Default for now
+                        distance_km: order.distance_km,
                         pharmacy_id: order.pharmacy_id
                     }));
                     renderDeliveries();
@@ -212,22 +218,38 @@ let deliveries = [];
                             <div class="w-2 h-2 bg-blue-400 rounded-full mt-2 mr-3 flex-shrink-0"></div>
                             <div>
                                 <div class="text-xs text-slate-500 mb-1">PICKUP</div>
-                                <span class="leading-tight">${delivery.pickup_address}</span>
+                                <span class="leading-tight">
+                                    ${delivery.pickup_address}, ${delivery.pickup_city}
+                                </span>
                             </div>
                         </div>
-                        <div class="flex items-start text-sm text-slate-300">
-                            <div class="w-2 h-2 bg-emerald-400 rounded-full mt-2 mr-3 flex-shrink-0"></div>
-                            <div>
-                                <div class="text-xs text-slate-500 mb-1">DROP-OFF</div>
-                                <span class="leading-tight">${delivery.dropoff_address}</span>
+                            <div class="flex items-start text-sm text-slate-300">
+                                <div class="w-2 h-2 bg-emerald-400 rounded-full mt-2 mr-3 flex-shrink-0"></div>
+                                <div>
+                                    <div class="text-xs text-slate-500 mb-1">DROP-OFF</div>
+                                    <span class="leading-tight">
+                                        ${delivery.dropoff_address}, ${delivery.drop_city}
+                                    </span>
+                                </div>
                             </div>
-                        </div>
                     </div>
                     
-                    <div class="flex justify-between items-center text-xs text-slate-400 pt-3 border-t border-slate-700">
-                        <span>${delivery.distance_km} km</span>
-                        <span>${delivery.pickup_day === new Date().toISOString().split('T')[0] ? 'Today' : new Date(delivery.pickup_day).toLocaleDateString()}</span>
-                    </div>
+                        <div class="flex justify-between items-center text-xs text-slate-400 pt-3 border-t border-slate-700">
+                            <span>
+                                ${(() => {
+                                    const exact = delivery.distance_km;
+                                    const lower = Math.max(0, (exact * 0.9).toFixed(1));
+                                    const upper = exact.toFixed(1);
+                                    return `${lower} - ${upper} km`;
+                                })()}
+                            </span>
+                            <span>
+                                ${delivery.pickup_day === new Date().toISOString().split('T')[0] 
+                                    ? 'Today' 
+                                    : new Date(delivery.pickup_day).toLocaleDateString()}
+                            </span>
+                        </div>
+
                 </div>
             `}).join('');
         }
@@ -390,6 +412,34 @@ let deliveries = [];
         document.getElementById('detailsModal').addEventListener('click', function(e) {
             if (e.target === this) closeModal();
         });
+
+        async function loadDriverInfo() {
+    try {
+        const driverId = getCookie("driverId");
+        if (!driverId) {
+            console.error("driverId not found in cookies");
+            return;
+        }
+
+        const response = await fetch(`/api/driver/details/?driverId=${driverId}`);
+        if (!response.ok) {
+            throw new Error("Failed to fetch driver info");
+        }
+
+        const data = await response.json();
+
+        // Update welcome text and profile circle
+        document.getElementById("welcomeText").textContent =
+            `Welcome back, ${data.name} (${data.email})`;
+        document.getElementById("profileInitial").textContent =
+            data.name.charAt(0).toUpperCase();
+
+    } catch (error) {
+        console.error("Error loading driver info:", error);
+    }
+}
+
+document.addEventListener("DOMContentLoaded", loadDriverInfo);
     </script>
 </body>
 </html>

@@ -26,5 +26,10 @@ urlpatterns = [
     path("api/driver-pickup-proof/", views.driver_pickup_proof, name="driver_pickup_proof"),
     path("api/driver-delivery-proof/", views.driver_delivery_proof, name="driver_delivery_proof"),
     path("api/generate-weekly-invoices/", views.generate_weekly_invoices, name="generate_weekly_invoices"),
+    path('api/create-checkout-session/', views.create_checkout_session, name='create_checkout_session'),
+    path('webhooks/stripe/', views.stripe_webhook, name='stripe_webhook'),
+    path('api/payment-status/', views.get_payment_status, name='payment_status'),
+    path('driverFinances/', views.driverFinancesView, name="DriverFinancesPage"),
+    path("api/driver/invoices/weeks/", views.driver_invoice_weeks, name="driver_invoice_weeks"),
 
 ]

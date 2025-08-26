@@ -149,6 +149,7 @@ class Invoice(models.Model):
     status = models.CharField(max_length=20, choices=STATUS_CHOICES, default='generated')
     created_at = models.DateTimeField(auto_now_add=True)
     pdf_url = models.URLField(blank=True, null=True)  # Generated invoice PDF link
+    stripe_payment_id = models.CharField(max_length=100, blank=True, null=True)
 
     def __str__(self):
         return f"Invoice {self.id} for {self.pharmacy.name}"
@@ -161,16 +162,24 @@ class Invoice(models.Model):
 
 
 
-class DriverPayment(models.Model):
-    driver = models.ForeignKey(Driver, on_delete=models.CASCADE, related_name='payments')
-    order = models.ForeignKey(DeliveryOrder, on_delete=models.CASCADE, related_name='driver_payments')
-    amount = models.DecimalField(max_digits=10, decimal_places=2)
-    paid = models.BooleanField(default=False)
-    paid_at = models.DateTimeField(blank=True, null=True)
+class DriverInvoice(models.Model):
+    STATUS_CHOICES = [
+        ('generated', 'Generated'),
+        ('paid', 'Paid'),
+    ]
+
+    driver = models.ForeignKey("Driver", on_delete=models.CASCADE, related_name="invoices")
+    start_date = models.DateField()
+    end_date = models.DateField()
+    total_deliveries = models.IntegerField()
+    total_amount = models.DecimalField(max_digits=10, decimal_places=2)
+    due_date = models.DateField()
+    status = models.CharField(max_length=20, choices=STATUS_CHOICES, default="generated")
+    created_at = models.DateTimeField(auto_now_add=True)
+    pdf_url = models.URLField(blank=True, null=True)  # generated invoice PDF link
 
     def __str__(self):
-        return f"Payment to {self.driver.name} for Order #{self.order.id}"
-
+        return f"Invoice {self.id} for Driver {self.driver.name}"
 
 # _________________________________________________________________________________________________________________
 # AUDIT TABLES
@@ -205,25 +214,7 @@ class OrderTracking(models.Model):
 
 
 
-class DriverPaymentTracking(models.Model):
-    PAYMENT_STATUS_CHOICES = [
-        ('pending', 'Pending'),
-        ('paid', 'Paid'),
-        ('failed', 'Failed'),
-    ]
 
-    payment = models.ForeignKey(DriverPayment, on_delete=models.CASCADE, related_name='tracking_entries')
-    status = models.CharField(max_length=20, choices=PAYMENT_STATUS_CHOICES)
-    processed_by = models.CharField(max_length=100, blank=True, null=True)  
-    amount = models.DecimalField(max_digits=10, decimal_places=2)
-    timestamp = models.DateTimeField(auto_now_add=True)
-    note = models.TextField(blank=True, null=True)  
-
-    class Meta:
-        ordering = ['timestamp']
-
-    def __str__(self):
-        return f"Payment #{self.payment.id} - {self.status} at {self.timestamp}"
 
 
 

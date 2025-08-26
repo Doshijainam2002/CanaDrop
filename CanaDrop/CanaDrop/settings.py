@@ -26,7 +26,7 @@ SECRET_KEY = 'django-insecure-ew&-*4^h+=pf%xcks80v6liw_3n7y^3#47@88&s3kl-+0)pz)-
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = True
 
-ALLOWED_HOSTS = []
+ALLOWED_HOSTS = ["*"]
 
 
 # Application definition
@@ -38,7 +38,8 @@ INSTALLED_APPS = [
     'django.contrib.sessions',
     'django.contrib.messages',
     'django.contrib.staticfiles',
-    'CanaDrop_Interface'
+    'CanaDrop_Interface',
+    
 ]
 
 MIDDLEWARE = [
@@ -121,6 +122,32 @@ STATIC_URL = 'static/'
 # Default primary key field type
 # https://docs.djangoproject.com/en/5.2/ref/settings/#default-auto-field
 
-DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 
-GOOGLE_MAPS_API_KEY = "AIzaSyDujPzWRyGVbl9CTbgHzbkIPZD1xPD6sI8"
+
+
+
+# Logging configuration for better debugging
+LOGGING = {
+    'version': 1,
+    'disable_existing_loggers': False,
+    'handlers': {
+        'console': {
+            'class': 'logging.StreamHandler',
+        },
+        'file': {
+            'class': 'logging.FileHandler',
+            'filename': 'stripe_debug.log',
+        },
+    },
+    'root': {
+        'handlers': ['console'],
+        'level': 'INFO',
+    },
+    'loggers': {
+        'CanaDrop_Interface': {  # Replace with your actual app name
+            'handlers': ['console', 'file'],
+            'level': 'DEBUG',
+            'propagate': False,
+        },
+    },
+}
