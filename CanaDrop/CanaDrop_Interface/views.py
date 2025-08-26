@@ -1110,3 +1110,390 @@ def driver_delivery_proof(request):
             "success": False,
             "message": f"Error uploading delivery proof: {str(e)}"
         }, status=500)
+
+
+import os
+from datetime import timedelta
+from decimal import Decimal
+from django.http import HttpResponseBadRequest, JsonResponse
+from django.shortcuts import get_object_or_404
+from django.views.decorators.csrf import csrf_exempt
+from django.conf import settings
+from django.core.files.storage import default_storage
+from django.core.files.base import ContentFile
+from reportlab.lib.pagesizes import letter
+from reportlab.lib.styles import getSampleStyleSheet, ParagraphStyle
+from reportlab.lib.units import inch
+from reportlab.lib import colors
+from reportlab.platypus import SimpleDocTemplate, Table, TableStyle, Paragraph, Spacer, Image
+from reportlab.lib.enums import TA_CENTER, TA_RIGHT, TA_LEFT
+import io
+
+
+@csrf_exempt
+def generate_weekly_invoices(request):
+    pharmacy_id = request.GET.get("pharmacyId")
+    if not pharmacy_id:
+        return HttpResponseBadRequest("Missing pharmacyId parameter")
+
+    try:
+        pharmacy_id = int(pharmacy_id)
+    except ValueError:
+        return HttpResponseBadRequest("pharmacyId must be an integer")
+
+    pharmacy = get_object_or_404(Pharmacy, id=pharmacy_id)
+
+    # only delivered orders for this pharmacy
+    orders_qs = DeliveryOrder.objects.filter(pharmacy_id=pharmacy_id, status="delivered").order_by("created_at")
+
+    if not orders_qs.exists():
+        return JsonResponse({"message": "No delivered orders for this pharmacy yet", "invoices": []})
+
+    earliest = orders_qs.first().created_at.date()
+    latest = orders_qs.last().created_at.date()
+
+    invoices_list = []
+    week_start = earliest
+
+    while week_start + timedelta(days=6) <= latest:
+        week_end = week_start + timedelta(days=6)
+
+        # filter orders only in this week and delivered
+        week_orders = orders_qs.filter(created_at__date__gte=week_start, created_at__date__lte=week_end)
+        total_orders = week_orders.count()
+        
+        if total_orders > 0:
+            # Calculate subtotal, HST, and final total
+            subtotal = sum([Decimal(str(o.rate)) for o in week_orders])
+            hst_rate = Decimal('0.13')  # 13% HST
+            hst_amount = subtotal * hst_rate
+            total_amount_with_hst = subtotal + hst_amount
+
+            due_date = week_end + timedelta(days=2)  # due date 2 days after end_date
+
+            # get or create invoice
+            invoice, created = Invoice.objects.get_or_create(
+                pharmacy=pharmacy,
+                start_date=week_start,
+                end_date=week_end,
+                defaults={
+                    "total_orders": total_orders,
+                    "total_amount": total_amount_with_hst,  # Store final amount including HST
+                    "due_date": due_date,
+                    "status": "generated"
+                }
+            )
+
+            # Update existing invoice if needed
+            if not created:
+                invoice.total_orders = total_orders
+                invoice.total_amount = total_amount_with_hst
+                invoice.save()
+
+            # Get order details for this week
+            orders_data = []
+            for order in week_orders:
+                orders_data.append({
+                    "order_id": order.id,
+                    "pickup_address": order.pickup_address,
+                    "pickup_city": order.pickup_city,
+                    "drop_address": order.drop_address,
+                    "drop_city": order.drop_city,
+                    "pickup_day": order.pickup_day.strftime('%Y-%m-%d'),
+                    "rate": float(order.rate),
+                    "created_at": order.created_at.strftime('%Y-%m-%d %H:%M'),
+                    "driver": order.driver.name if order.driver else "N/A"
+                })
+
+            # Generate PDF
+            pdf_url = generate_invoice_pdf(invoice, pharmacy, orders_data, subtotal, hst_amount, total_amount_with_hst)
+            
+            # Update invoice with PDF URL
+            invoice.pdf_url = pdf_url
+            invoice.save()
+
+            invoices_list.append({
+                "invoice_id": invoice.id,
+                "start_date": invoice.start_date.strftime('%Y-%m-%d'),
+                "end_date": invoice.end_date.strftime('%Y-%m-%d'),
+                "total_orders": invoice.total_orders,
+                "subtotal": float(subtotal),
+                "hst_amount": float(hst_amount),
+                "total_amount": float(invoice.total_amount),
+                "due_date": invoice.due_date.strftime('%Y-%m-%d'),
+                "status": invoice.status,
+                "pdf_url": invoice.pdf_url,
+                "orders": orders_data
+            })
+
+        # move to next week
+        week_start += timedelta(days=7)
+
+    return JsonResponse({"invoices": invoices_list})
+
+
+def generate_invoice_pdf(invoice, pharmacy, orders_data, subtotal, hst_amount, total_amount):
+    """Generate PDF invoice and return the URL"""
+    
+    # Create PDF buffer
+    buffer = io.BytesIO()
+    doc = SimpleDocTemplate(buffer, pagesize=letter, topMargin=0.5*inch, leftMargin=0.5*inch, rightMargin=0.5*inch)
+    
+    # Get styles
+    styles = getSampleStyleSheet()
+    
+    # Modern styling
+    company_style = ParagraphStyle(
+        'CompanyName',
+        parent=styles['Normal'],
+        fontSize=18,
+        spaceAfter=5,
+        alignment=TA_CENTER,
+        textColor=colors.Color(0.2, 0.2, 0.2),  # Dark grey
+        fontName='Helvetica-Bold'
+    )
+    
+    subtitle_style = ParagraphStyle(
+        'CompanySubtitle',
+        parent=styles['Normal'],
+        fontSize=12,
+        spaceAfter=20,
+        alignment=TA_CENTER,
+        textColor=colors.Color(0.4, 0.4, 0.4)  # Medium grey
+    )
+    
+    address_style = ParagraphStyle(
+        'CompanyAddress',
+        parent=styles['Normal'],
+        fontSize=10,
+        spaceAfter=25,
+        alignment=TA_CENTER,
+        textColor=colors.Color(0.3, 0.3, 0.3)
+    )
+    
+    section_header_style = ParagraphStyle(
+        'SectionHeader',
+        parent=styles['Normal'],
+        fontSize=14,
+        spaceAfter=10,
+        fontName='Helvetica-Bold',
+        textColor=colors.Color(0.1, 0.1, 0.1)
+    )
+    
+    # Build PDF content
+    content = []
+    
+    # Logo - Large and centered
+    logo_path = "/Users/jainamdoshi/Desktop/Projects/CanaDrop/CanaDrop/Logo/Website_Logo_No_Background.png"
+    try:
+        logo = Image(logo_path, width=3*inch, height=1.5*inch)  # Large logo
+        logo.hAlign = 'CENTER'
+        content.append(logo)
+        content.append(Spacer(1, 15))
+    except:
+        # Fallback if logo not found
+        content.append(Paragraph("CanaDrop", company_style))
+    
+    # Company info with modern styling
+    content.append(Paragraph("Cana Group of Companies", subtitle_style))
+    content.append(Paragraph("12 - 147 Fairway Road North<br/>Kitchener, N2A 2N3, Ontario, Canada", address_style))
+    
+    # Modern invoice header with card-like styling
+    content.append(Spacer(1, 10))
+    
+    # Modern invoice header with better layout
+    invoice_title = Paragraph("INVOICE", ParagraphStyle(
+        'InvoiceTitle',
+        parent=styles['Normal'],
+        fontSize=32,
+        fontName='Helvetica-Bold',
+        textColor=colors.Color(0.1, 0.1, 0.1),
+        alignment=TA_LEFT,
+        spaceAfter=15
+    ))
+    content.append(invoice_title)
+    
+    # Two-column layout for invoice details
+    invoice_info_data = [
+        [
+            Paragraph("<b>Invoice Number:</b>", styles['Normal']),
+            Paragraph(f"#{invoice.id:06d}", ParagraphStyle('InvoiceNum', parent=styles['Normal'], fontSize=12, fontName='Helvetica-Bold'))
+        ],
+        [
+            Paragraph("<b>Issue Date:</b>", styles['Normal']),
+            Paragraph(invoice.created_at.strftime('%B %d, %Y'), styles['Normal'])
+        ],
+        [
+            Paragraph("<b>Due Date:</b>", styles['Normal']),
+            Paragraph(invoice.due_date.strftime('%B %d, %Y'), styles['Normal'])
+        ],
+        [
+            Paragraph("<b>Billing Period:</b>", styles['Normal']),
+            Paragraph(f'{invoice.start_date.strftime("%B %d, %Y")} - {invoice.end_date.strftime("%B %d, %Y")}', styles['Normal'])
+        ]
+    ]
+    
+    invoice_info_table = Table(invoice_info_data, colWidths=[2.2*inch, 3.5*inch])
+    invoice_info_table.setStyle(TableStyle([
+        ('FONTNAME', (0, 0), (-1, -1), 'Helvetica'),
+        ('FONTSIZE', (0, 0), (-1, -1), 10),
+        ('ALIGN', (0, 0), (0, -1), 'LEFT'),
+        ('ALIGN', (1, 0), (1, -1), 'LEFT'),
+        ('VALIGN', (0, 0), (-1, -1), 'TOP'),
+        ('BOTTOMPADDING', (0, 0), (-1, -1), 8),
+        ('TOPPADDING', (0, 0), (-1, -1), 8),
+    ]))
+    content.append(invoice_info_table)
+    content.append(Spacer(1, 30))
+    
+    # Bill To section with modern card styling
+    content.append(Paragraph("BILL TO", section_header_style))
+    
+    # Pharmacy info with simpler styling (avoid complex border properties)
+    pharmacy_info = f"""
+    <b>{pharmacy.name}</b><br/>
+    {pharmacy.store_address}<br/>
+    {pharmacy.city}, {pharmacy.province} {pharmacy.postal_code}<br/>
+    {pharmacy.country}<br/><br/>
+    <b>Email:</b> {pharmacy.email}<br/>
+    <b>Phone:</b> {pharmacy.phone_number}
+    """
+    
+    pharmacy_para = Paragraph(pharmacy_info, ParagraphStyle(
+        'PharmacyInfo',
+        parent=styles['Normal'],
+        fontSize=10,
+        leftIndent=15,
+        rightIndent=15,
+        spaceBefore=10,
+        spaceAfter=10,
+        backColor=colors.Color(0.98, 0.98, 0.98)
+    ))
+    content.append(pharmacy_para)
+    content.append(Spacer(1, 30))
+    
+    # Modern orders table
+    content.append(Paragraph("DELIVERY ORDERS", section_header_style))
+    content.append(Spacer(1, 10))
+    
+    # Modern table headers with better styling
+    table_data = [['Order ID', 'Date', 'Pickup Location', 'Delivery Location', 'Amount']]
+    
+    # Add order rows with better formatting
+    for order in orders_data:
+        table_data.append([
+            f"#{order['order_id']}",
+            order['pickup_day'],
+            f"{order['pickup_address']}\n{order['pickup_city']}",
+            f"{order['drop_address']}\n{order['drop_city']}",
+            f"${order['rate']:.2f}"
+        ])
+    
+    # Create modern orders table
+    orders_table = Table(table_data, colWidths=[0.9*inch, 1*inch, 2.3*inch, 2.3*inch, 0.9*inch])
+    
+    # Build table style dynamically based on actual number of rows
+    table_style_commands = [
+        # Header styling
+        ('FONTNAME', (0, 0), (-1, 0), 'Helvetica-Bold'),
+        ('FONTSIZE', (0, 0), (-1, 0), 11),
+        ('BACKGROUND', (0, 0), (-1, 0), colors.Color(0.2, 0.3, 0.5)),  # Modern blue
+        ('TEXTCOLOR', (0, 0), (-1, 0), colors.white),
+        
+        # Data rows styling
+        ('FONTNAME', (0, 1), (-1, -1), 'Helvetica'),
+        ('FONTSIZE', (0, 1), (-1, -1), 9),
+        ('ALIGN', (0, 0), (-1, -1), 'LEFT'),
+        ('ALIGN', (-1, 0), (-1, -1), 'RIGHT'),  # Amount column right aligned
+        ('VALIGN', (0, 0), (-1, -1), 'MIDDLE'),
+        
+        # Border styling
+        ('GRID', (0, 0), (-1, -1), 0.5, colors.Color(0.7, 0.7, 0.7)),
+        ('LINEBELOW', (0, 0), (-1, 0), 2, colors.Color(0.2, 0.3, 0.5)),
+        
+        # Padding
+        ('TOPPADDING', (0, 0), (-1, -1), 12),
+        ('BOTTOMPADDING', (0, 0), (-1, -1), 12),
+        ('LEFTPADDING', (0, 0), (-1, -1), 8),
+        ('RIGHTPADDING', (0, 0), (-1, -1), 8),
+    ]
+    
+    # Add alternating row colors only for existing rows
+    num_data_rows = len(table_data) - 1  # Exclude header row
+    for i in range(1, num_data_rows + 1):  # Start from row 1 (after header)
+        if i % 2 == 0:  # Even rows (2, 4, 6, etc.)
+            table_style_commands.append(('BACKGROUND', (0, i), (-1, i), colors.Color(0.95, 0.95, 0.95)))
+    
+    orders_table.setStyle(TableStyle(table_style_commands))
+    content.append(orders_table)
+    content.append(Spacer(1, 30))
+    
+    # Modern summary section
+    content.append(Paragraph("INVOICE SUMMARY", section_header_style))
+    content.append(Spacer(1, 10))
+    
+    # Summary table with modern styling
+    summary_data = [
+        ['Subtotal:', f'${subtotal:.2f}'],
+        ['HST (13%):', f'${hst_amount:.2f}'],
+        ['', ''],  # Empty row for spacing
+        ['Total Amount:', f'${total_amount:.2f}']
+    ]
+    
+    summary_table = Table(summary_data, colWidths=[2*inch, 1.2*inch], hAlign='RIGHT')
+    summary_table.setStyle(TableStyle([
+        # Regular rows
+        ('FONTNAME', (0, 0), (-1, 2), 'Helvetica'),
+        ('FONTSIZE', (0, 0), (-1, 2), 12),
+        ('ALIGN', (0, 0), (-1, -1), 'RIGHT'),
+        
+        # Total row styling
+        ('FONTNAME', (0, -1), (-1, -1), 'Helvetica-Bold'),
+        ('FONTSIZE', (0, -1), (-1, -1), 16),
+        ('BACKGROUND', (0, -1), (-1, -1), colors.Color(0.2, 0.3, 0.5)),
+        ('TEXTCOLOR', (0, -1), (-1, -1), colors.white),
+        
+        # Borders and spacing
+        ('LINEABOVE', (0, -1), (-1, -1), 2, colors.Color(0.2, 0.3, 0.5)),
+        ('TOPPADDING', (0, 0), (-1, -1), 8),
+        ('BOTTOMPADDING', (0, 0), (-1, -1), 8),
+        ('LEFTPADDING', (0, 0), (-1, -1), 15),
+        ('RIGHTPADDING', (0, 0), (-1, -1), 15),
+        
+        # Hide the empty spacing row
+        ('LINEABOVE', (0, 2), (-1, 2), 0, colors.white),
+        ('LINEBELOW', (0, 2), (-1, 2), 0, colors.white),
+    ]))
+    content.append(summary_table)
+    
+    # Modern footer
+    content.append(Spacer(1, 40))
+    footer_text = "Thank you for choosing CanaDrop for your delivery needs!"
+    footer_para = Paragraph(footer_text, ParagraphStyle(
+        'ModernFooter',
+        parent=styles['Normal'],
+        fontSize=12,
+        alignment=TA_CENTER,
+        textColor=colors.Color(0.3, 0.3, 0.3),
+        fontName='Helvetica-Oblique'
+    ))
+    content.append(footer_para)
+    
+    # Build PDF
+    doc.build(content)
+    buffer.seek(0)
+    
+    # Save PDF file
+    filename = f"invoice_{invoice.id}_{pharmacy.name.replace(' ', '_')}.pdf"
+    file_path = f"invoices/{filename}"
+    
+    # Save to media storage
+    saved_path = default_storage.save(file_path, ContentFile(buffer.getvalue()))
+    
+    # Return the URL
+    if hasattr(settings, 'MEDIA_URL') and settings.MEDIA_URL:
+        return f"{settings.MEDIA_URL}{saved_path}"
+    else:
+        return f"/media/{saved_path}"
+
+

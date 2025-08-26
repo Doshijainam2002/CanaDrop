@@ -25,5 +25,6 @@ urlpatterns = [
     path("api/driver-orders/", views.driver_accepted_orders, name="driver_accepted_orders"),
     path("api/driver-pickup-proof/", views.driver_pickup_proof, name="driver_pickup_proof"),
     path("api/driver-delivery-proof/", views.driver_delivery_proof, name="driver_delivery_proof"),
+    path("api/generate-weekly-invoices/", views.generate_weekly_invoices, name="generate_weekly_invoices"),
 
 ]
