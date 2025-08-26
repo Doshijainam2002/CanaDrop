@@ -23,6 +23,24 @@ import os
 from google.cloud import storage
 from datetime import timedelta
 from django.http import JsonResponse, HttpResponseBadRequest
+import os
+from datetime import timedelta
+from decimal import Decimal
+from django.http import HttpResponseBadRequest, JsonResponse
+from django.shortcuts import get_object_or_404
+from django.views.decorators.csrf import csrf_exempt
+from django.conf import settings
+from django.core.files.storage import default_storage
+from django.core.files.base import ContentFile
+from reportlab.lib.pagesizes import letter
+from reportlab.lib.styles import getSampleStyleSheet, ParagraphStyle
+from reportlab.lib.units import inch
+from reportlab.lib import colors
+from reportlab.platypus import SimpleDocTemplate, Table, TableStyle, Paragraph, Spacer, Image
+from reportlab.lib.enums import TA_CENTER, TA_RIGHT, TA_LEFT
+from google.cloud import storage
+import io
+
 
 # Add this for better error logging
 logger = logging.getLogger(__name__)
@@ -1112,22 +1130,11 @@ def driver_delivery_proof(request):
         }, status=500)
 
 
-import os
-from datetime import timedelta
-from decimal import Decimal
-from django.http import HttpResponseBadRequest, JsonResponse
-from django.shortcuts import get_object_or_404
-from django.views.decorators.csrf import csrf_exempt
-from django.conf import settings
-from django.core.files.storage import default_storage
-from django.core.files.base import ContentFile
-from reportlab.lib.pagesizes import letter
-from reportlab.lib.styles import getSampleStyleSheet, ParagraphStyle
-from reportlab.lib.units import inch
-from reportlab.lib import colors
-from reportlab.platypus import SimpleDocTemplate, Table, TableStyle, Paragraph, Spacer, Image
-from reportlab.lib.enums import TA_CENTER, TA_RIGHT, TA_LEFT
-import io
+# Initialize GCP Storage client
+def get_gcp_storage_client():
+    """Initialize and return GCP Storage client"""
+    os.environ['GOOGLE_APPLICATION_CREDENTIALS'] = '/Users/jainamdoshi/Desktop/Projects/CanaDrop/CanaDrop/gcp_key.json'
+    return storage.Client()
 
 
 @csrf_exempt
@@ -1205,7 +1212,7 @@ def generate_weekly_invoices(request):
                     "driver": order.driver.name if order.driver else "N/A"
                 })
 
-            # Generate PDF
+            # Generate PDF and upload to GCP
             pdf_url = generate_invoice_pdf(invoice, pharmacy, orders_data, subtotal, hst_amount, total_amount_with_hst)
             
             # Update invoice with PDF URL
@@ -1232,8 +1239,32 @@ def generate_weekly_invoices(request):
     return JsonResponse({"invoices": invoices_list})
 
 
+def upload_pdf_to_gcp(pdf_content, filename):
+    """Upload PDF to GCP Storage bucket and return public URL"""
+    try:
+        # Initialize GCP client
+        client = get_gcp_storage_client()
+        bucket_name = 'canadrop-bucket'
+        bucket = client.bucket(bucket_name)
+        
+        # Create blob with the filename in PharmacyInvoices folder
+        blob_name = f"PharmacyInvoices/{filename}"
+        blob = bucket.blob(blob_name)
+        
+        # Upload PDF content
+        blob.upload_from_string(pdf_content, content_type='application/pdf')
+        
+        # Return the GCS URL (works with uniform bucket-level access)
+        return f"https://storage.googleapis.com/{bucket_name}/{blob_name}"
+        
+    except Exception as e:
+        print(f"Error uploading to GCP: {str(e)}")
+        # Fallback to local storage if GCP fails
+        return None
+
+
 def generate_invoice_pdf(invoice, pharmacy, orders_data, subtotal, hst_amount, total_amount):
-    """Generate PDF invoice and return the URL"""
+    """Generate PDF invoice and upload to GCP bucket"""
     
     # Create PDF buffer
     buffer = io.BytesIO()
@@ -1283,10 +1314,10 @@ def generate_invoice_pdf(invoice, pharmacy, orders_data, subtotal, hst_amount, t
     # Build PDF content
     content = []
     
-    # Logo - Large and centered
+    # Logo - Reduced width
     logo_path = "/Users/jainamdoshi/Desktop/Projects/CanaDrop/CanaDrop/Logo/Website_Logo_No_Background.png"
     try:
-        logo = Image(logo_path, width=3*inch, height=1.5*inch)  # Large logo
+        logo = Image(logo_path, width=2*inch, height=1*inch)  # Reduced from 3x1.5 to 2x1
         logo.hAlign = 'CENTER'
         content.append(logo)
         content.append(Spacer(1, 15))
@@ -1298,14 +1329,14 @@ def generate_invoice_pdf(invoice, pharmacy, orders_data, subtotal, hst_amount, t
     content.append(Paragraph("Cana Group of Companies", subtitle_style))
     content.append(Paragraph("12 - 147 Fairway Road North<br/>Kitchener, N2A 2N3, Ontario, Canada", address_style))
     
-    # Modern invoice header with card-like styling
+    # Modern invoice header with reduced size and better alignment
     content.append(Spacer(1, 10))
     
-    # Modern invoice header with better layout
+    # Reduced invoice title size to match section headers
     invoice_title = Paragraph("INVOICE", ParagraphStyle(
         'InvoiceTitle',
         parent=styles['Normal'],
-        fontSize=32,
+        fontSize=14,  # Reduced from 32 to 14 to match section headers
         fontName='Helvetica-Bold',
         textColor=colors.Color(0.1, 0.1, 0.1),
         alignment=TA_LEFT,
@@ -1313,7 +1344,7 @@ def generate_invoice_pdf(invoice, pharmacy, orders_data, subtotal, hst_amount, t
     ))
     content.append(invoice_title)
     
-    # Two-column layout for invoice details
+    # Better aligned invoice details table
     invoice_info_data = [
         [
             Paragraph("<b>Invoice Number:</b>", styles['Normal']),
@@ -1333,15 +1364,17 @@ def generate_invoice_pdf(invoice, pharmacy, orders_data, subtotal, hst_amount, t
         ]
     ]
     
-    invoice_info_table = Table(invoice_info_data, colWidths=[2.2*inch, 3.5*inch])
+    # Adjusted column widths for better left alignment
+    invoice_info_table = Table(invoice_info_data, colWidths=[1.5*inch, 4*inch])
     invoice_info_table.setStyle(TableStyle([
         ('FONTNAME', (0, 0), (-1, -1), 'Helvetica'),
         ('FONTSIZE', (0, 0), (-1, -1), 10),
-        ('ALIGN', (0, 0), (0, -1), 'LEFT'),
-        ('ALIGN', (1, 0), (1, -1), 'LEFT'),
+        ('ALIGN', (0, 0), (0, -1), 'LEFT'),  # Left align labels
+        ('ALIGN', (1, 0), (1, -1), 'LEFT'),  # Left align values
         ('VALIGN', (0, 0), (-1, -1), 'TOP'),
-        ('BOTTOMPADDING', (0, 0), (-1, -1), 8),
-        ('TOPPADDING', (0, 0), (-1, -1), 8),
+        ('BOTTOMPADDING', (0, 0), (-1, -1), 6),  # Slightly reduced padding
+        ('TOPPADDING', (0, 0), (-1, -1), 6),
+        ('LEFTPADDING', (0, 0), (-1, -1), 0),  # Remove left padding for better alignment
     ]))
     content.append(invoice_info_table)
     content.append(Spacer(1, 30))
@@ -1481,19 +1514,28 @@ def generate_invoice_pdf(invoice, pharmacy, orders_data, subtotal, hst_amount, t
     
     # Build PDF
     doc.build(content)
-    buffer.seek(0)
+    pdf_content = buffer.getvalue()
+    buffer.close()
     
-    # Save PDF file
-    filename = f"invoice_{invoice.id}_{pharmacy.name.replace(' ', '_')}.pdf"
-    file_path = f"invoices/{filename}"
+    # Create filename with the required format: pharmacyId_PharmacyName_StartDate_EndDate.pdf
+    pharmacy_name_clean = pharmacy.name.replace(' ', '_').replace('/', '_').replace('\\', '_')
+    start_date_str = invoice.start_date.strftime('%Y-%m-%d')
+    end_date_str = invoice.end_date.strftime('%Y-%m-%d')
+    filename = f"{pharmacy.id}_{pharmacy_name_clean}_{start_date_str}_{end_date_str}.pdf"
     
-    # Save to media storage
-    saved_path = default_storage.save(file_path, ContentFile(buffer.getvalue()))
+    # Upload to GCP bucket
+    pdf_url = upload_pdf_to_gcp(pdf_content, filename)
     
-    # Return the URL
-    if hasattr(settings, 'MEDIA_URL') and settings.MEDIA_URL:
-        return f"{settings.MEDIA_URL}{saved_path}"
-    else:
-        return f"/media/{saved_path}"
+    # If GCP upload fails, fallback to local storage
+    if pdf_url is None:
+        # Fallback: save locally without creating invoices folder structure since we prefer GCP
+        saved_path = default_storage.save(f"temp_{filename}", ContentFile(pdf_content))
+        
+        if hasattr(settings, 'MEDIA_URL') and settings.MEDIA_URL:
+            pdf_url = f"{settings.MEDIA_URL}{saved_path}"
+        else:
+            pdf_url = f"/media/{saved_path}"
+    
+    return pdf_url
 
 
