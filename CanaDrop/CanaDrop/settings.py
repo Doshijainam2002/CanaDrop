@@ -75,12 +75,24 @@ WSGI_APPLICATION = 'CanaDrop.wsgi.application'
 # Database
 # https://docs.djangoproject.com/en/5.2/ref/settings/#databases
 
+# DATABASES = {
+#     'default': {
+#         'ENGINE': 'django.db.backends.sqlite3',
+#         'NAME': BASE_DIR / 'db.sqlite3',
+#     }
+# }
+
 DATABASES = {
     'default': {
-        'ENGINE': 'django.db.backends.sqlite3',
-        'NAME': BASE_DIR / 'db.sqlite3',
+        'ENGINE': 'django.db.backends.postgresql',
+        'NAME': 'canadrop',
+        'USER': 'canauser',
+        'PASSWORD': 'canadrop123@',
+        'HOST': 'localhost',
+        'PORT': '5432',
     }
 }
+
 
 
 # Password validation
@@ -144,7 +156,7 @@ LOGGING = {
         'level': 'INFO',
     },
     'loggers': {
-        'CanaDrop_Interface': {  # Replace with your actual app name
+        'CanaDrop_Interface': {  
             'handlers': ['console', 'file'],
             'level': 'DEBUG',
             'propagate': False,

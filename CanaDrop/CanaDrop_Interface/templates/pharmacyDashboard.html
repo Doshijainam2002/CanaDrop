@@ -21,69 +21,75 @@
 </head>
 <body class="bg-gray-50 font-inter">
     <div class="flex h-screen overflow-hidden">
-        <!-- Sidebar -->
-        <div class="hidden lg:flex lg:flex-shrink-0">
-            <div class="flex flex-col w-64 bg-white border-r border-gray-200">
-                <!-- Logo -->
-                <div class="flex items-center h-16 px-6 border-b border-gray-200">
-                    <img src="https://i.postimg.cc/c4jt62GM/Website-Logo-No-Background.png" alt="Logo" class="h-12 w-auto">
-                    <span class="ml-3 text-xl font-semibold text-gray-900">CanaDrop</span>
+<div class="flex h-screen overflow-hidden">
+    <!-- Mobile Sidebar Overlay -->
+    <div id="sidebarOverlay" class="fixed inset-0 bg-black bg-opacity-50 z-30 lg:hidden hidden"></div>
+    
+    <!-- Sidebar -->
+    <div id="sidebar" class="fixed inset-y-0 left-0 z-40 w-64 bg-white border-r border-gray-200 transform -translate-x-full transition-transform duration-300 ease-in-out lg:translate-x-0 lg:static lg:inset-0">
+        <!-- Logo with close button for mobile -->
+        <div class="flex items-center justify-between h-16 px-6 border-b border-gray-200 lg:justify-start">
+            <div class="flex items-center">
+                <img src="https://i.postimg.cc/c4jt62GM/Website-Logo-No-Background.png" alt="Logo" class="h-12 w-auto">
+                <span class="ml-3 text-xl font-semibold text-gray-900">CanaDrop</span>
+            </div>
+            <button id="closeSidebarBtn" class="lg:hidden p-2 text-gray-600 hover:text-gray-900 hover:bg-gray-100 rounded-lg transition-colors">
+                <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
+                </svg>
+            </button>
+        </div>
+
+        <!-- Navigation -->
+        <nav class="flex-1 px-4 py-6 space-y-2">
+            <!-- Dashboard -->
+            <a href="/pharmacyDashboard/" class="flex items-center px-3 py-2 text-sm font-medium text-white bg-gradient-to-r from-teal-600 to-cyan-600 rounded-lg">
+                <svg class="w-5 h-5 mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 12l2-2m0 0l7-7 7 7M13 5v6h6"/>
+                </svg>
+                Dashboard
+            </a>
+
+            <!-- Orders -->
+            <a href="/pharmacyOrders/" class="flex items-center px-3 py-2 text-sm font-medium text-gray-700 hover:bg-gray-100 rounded-lg transition-colors">
+                <svg class="w-5 h-5 mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 17v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v8m-6 0a2 2 0 002 2h2a2 2 0 002-2"/>
+                </svg>
+                Orders
+            </a>
+
+            <!-- Invoices -->
+            <a href="/pharmacyInvoices/" class="flex items-center px-3 py-2 text-sm font-medium text-gray-700 hover:bg-gray-100 rounded-lg transition-colors">
+                <svg class="w-5 h-5 mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 4H7a2 2 0 01-2-2V6a2 2 0 012-2h7l5 5v9a2 2 0 01-2 2z"/>
+                </svg>
+                Invoices
+            </a>
+
+            <!-- Logout -->
+            <a href="javascript:void(0);" onclick="logoutPharmacy()" 
+            class="flex items-center px-3 py-2 text-sm font-medium text-gray-700 hover:bg-gray-100 rounded-lg transition-colors">
+                <svg class="w-5 h-5 mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" 
+                        d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a2 2 0 01-2 2H5a2 2 0 01-2-2V7a2 2 0 012-2h6a2 2 0 012 2v1"/>
+                </svg>
+                Logout
+            </a>
+        </nav>
+
+        <!-- User Profile -->
+        <div class="px-4 py-4 border-t border-gray-200">
+            <div class="flex items-center">
+                <div class="flex-shrink-0 w-8 h-8 bg-gradient-to-r from-teal-500 to-cyan-500 rounded-full flex items-center justify-center">
+                    <span class="text-sm font-medium text-white" id="pharmacyInitial">P</span>
                 </div>
-
-                
-                <!-- Navigation -->
-                <nav class="flex-1 px-4 py-6 space-y-2">
-                    <!-- Dashboard -->
-                    <a href="/pharmacyDashboard/" class="flex items-center px-3 py-2 text-sm font-medium text-white bg-gradient-to-r from-teal-600 to-cyan-600 rounded-lg">
-                        <svg class="w-5 h-5 mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 12l2-2m0 0l7-7 7 7M13 5v6h6"/>
-                        </svg>
-                        Dashboard
-                    </a>
-
-                    <!-- Orders -->
-                    <a href="/pharmacyOrders/" class="flex items-center px-3 py-2 text-sm font-medium text-gray-700 hover:bg-gray-100 rounded-lg transition-colors">
-                        <svg class="w-5 h-5 mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 17v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v8m-6 0a2 2 0 002 2h2a2 2 0 002-2"/>
-                        </svg>
-                        Orders
-                    </a>
-
-                    <!-- Invoices -->
-                    <a href="/pharmacyInvoices/" class="flex items-center px-3 py-2 text-sm font-medium text-gray-700 hover:bg-gray-100 rounded-lg transition-colors">
-                        <!-- New Invoice Icon -->
-                        <svg class="w-5 h-5 mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 4H7a2 2 0 01-2-2V6a2 2 0 012-2h7l5 5v9a2 2 0 01-2 2z"/>
-                        </svg>
-                        Invoices
-                    </a>
-
-                    <!-- Logout -->
-                    <a href="javascript:void(0);" onclick="logoutPharmacy()" 
-                    class="flex items-center px-3 py-2 text-sm font-medium text-gray-700 hover:bg-gray-100 rounded-lg transition-colors">
-                        <svg class="w-5 h-5 mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" 
-                                d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a2 2 0 01-2 2H5a2 2 0 01-2-2V7a2 2 0 012-2h6a2 2 0 012 2v1"/>
-                        </svg>
-                        Logout
-                    </a>
-                </nav>
-
-
-                
-                <!-- User Profile -->
-                <div class="px-4 py-4 border-t border-gray-200">
-                    <div class="flex items-center">
-                        <div class="flex-shrink-0 w-8 h-8 bg-gradient-to-r from-teal-500 to-cyan-500 rounded-full flex items-center justify-center">
-                            <span class="text-sm font-medium text-white" id="pharmacyInitial">P</span>
-                        </div>
-                        <div class="ml-3">
-                            <p class="text-sm font-medium text-gray-900" id="pharmacyName">Pharmacy Admin</p>
-                            <p class="text-xs text-gray-500" id="pharmacyEmail">admin@pharmacy.com</p>
-                        </div>
-                    </div>
+                <div class="ml-3">
+                    <p class="text-sm font-medium text-gray-900" id="pharmacyName">Pharmacy Admin</p>
+                    <p class="text-xs text-gray-500" id="pharmacyEmail">admin@pharmacy.com</p>
                 </div>
             </div>
+        </div>
+    </div>
         </div>
 
         <!-- Main Content -->
@@ -91,6 +97,13 @@
             <!-- Top Header -->
             <header class="bg-white shadow-sm border-b border-gray-200">
                 <div class="flex items-center justify-between px-6 py-4">
+                    <!-- ADD THIS HAMBURGER BUTTON -->
+                    <button id="mobileMenuBtn" class="lg:hidden p-2 text-gray-600 hover:text-gray-900 hover:bg-gray-100 rounded-lg transition-colors">
+                        <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16"/>
+                        </svg>
+                    </button>
+                    
                     <div>
                         <h1 class="text-2xl font-bold text-gray-900">Orders Dashboard</h1>
                         <p class="text-sm text-gray-500">Manage your delivery orders</p>
@@ -99,14 +112,14 @@
                         <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/>
                         </svg>
-                        New Order
+                        <span class="hidden sm:inline">New Order</span>
                     </button>
                 </div>
             </header>
 
             <!-- Dashboard Stats -->
             <div class="px-6 py-6">
-                <div class="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
+                <div class="grid grid-cols-2 lg:grid-cols-4 gap-4 lg:gap-6 mb-8">
                     <div class="bg-white p-6 rounded-xl shadow-sm border border-gray-100 hover:shadow-lg transition-shadow">
                         <div class="flex items-center">
                             <div class="p-2 bg-blue-100 rounded-lg">
@@ -164,41 +177,45 @@
                     </div>
                 </div>
 
-                <!-- Orders Table Card -->
-                <div class="bg-white rounded-xl shadow-sm border border-gray-100">
-                    <div class="px-6 py-4 border-b border-gray-100">
-                        <div class="flex items-center justify-between">
-                            <h2 class="text-lg font-semibold text-gray-900">Recent Orders</h2>
-                            <div class="flex space-x-2">
-                                <select onchange="filterOrders(this.value)" class="text-sm border border-gray-300 rounded-lg px-3 py-1 focus:ring-2 focus:ring-teal-500 focus:border-transparent">
-                                    <option value="">All Status</option>
-                                    <option value="pending">Pending</option>
-                                    <option value="accepted">Accepted</option>
-                                    <option value="picked_up">Picked Up</option>
-                                    <option value="delivered">Delivered</option>
-                                    <option value="cancelled">Cancelled</option>
-                                </select>
-                            </div>
-                        </div>
-                    </div>
-                    
-                    <div class="overflow-auto" style="max-height: calc(100vh - 400px);">
-                        <table class="w-full">
-                            <thead class="bg-gray-50">
-                                <tr>
-                                    <th class="px-6 py-4 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">Order ID</th>
-                                    <th class="px-6 py-4 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">Pickup Address</th>
-                                    <th class="px-6 py-4 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">Drop Address</th>
-                                    <th class="px-6 py-4 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">Pickup Day</th>
-                                    <th class="px-6 py-4 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">Status</th>
-                                    <th class="px-6 py-4 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">Rate</th>
-                                </tr>
-                            </thead>
-                            <tbody id="ordersTable" class="divide-y divide-gray-100">
-                            </tbody>
-                        </table>
-                    </div>
-                </div>
+<!-- 4. MODIFY ORDERS TABLE - Replace your existing table section with this -->
+<div class="bg-white rounded-xl shadow-sm border border-gray-100">
+    <div class="px-6 py-4 border-b border-gray-100">
+        <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+            <h2 class="text-lg font-semibold text-gray-900">Recent Orders</h2>
+            <select onchange="filterOrders(this.value)" class="text-sm border border-gray-300 rounded-lg px-3 py-1 focus:ring-2 focus:ring-teal-500 focus:border-transparent w-full sm:w-auto">
+                <option value="">All Status</option>
+                <option value="pending">Pending</option>
+                <option value="accepted">Accepted</option>
+                <option value="picked_up">Picked Up</option>
+                <option value="delivered">Delivered</option>
+                <option value="cancelled">Cancelled</option>
+            </select>
+        </div>
+    </div>
+    
+    <div class="block lg:hidden max-h-96 overflow-y-auto pb-40" id="mobileOrdersContainer">
+        <!-- Orders will be rendered as cards here -->
+    </div>
+
+    
+    <!-- Desktop Table View -->
+    <div class="hidden lg:block overflow-auto" style="max-height: calc(100vh - 400px);">
+        <table class="w-full">
+            <thead class="bg-gray-50">
+                <tr>
+                    <th class="px-6 py-4 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">Order ID</th>
+                    <th class="px-6 py-4 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">Pickup Address</th>
+                    <th class="px-6 py-4 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">Drop Address</th>
+                    <th class="px-6 py-4 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">Pickup Day</th>
+                    <th class="px-6 py-4 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">Status</th>
+                    <th class="px-6 py-4 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">Rate</th>
+                </tr>
+            </thead>
+            <tbody id="ordersTable" class="divide-y divide-gray-100">
+            </tbody>
+        </table>
+    </div>
+</div>
             </div>
         </div>
     </div>
@@ -376,26 +393,53 @@ async function loadOrders() {
     }
 }
 
-// Render filtered orders in table
+// 7. MODIFY renderFilteredOrders function - Replace your existing function with this
 function renderFilteredOrders(orders) {
+    // Desktop table
     const tableBody = document.getElementById("ordersTable");
-    if (!tableBody) return;
+    if (tableBody) {
+        tableBody.innerHTML = "";
+        orders.forEach(order => {
+            const row = `
+                <tr class="hover:bg-gray-50 transition-colors">
+                    <td class="px-6 py-4 text-sm font-medium text-gray-900">#${order.id}</td>
+                    <td class="px-6 py-4 text-sm text-gray-600">${order.pickup_address}, ${order.pickup_city}</td>
+                    <td class="px-6 py-4 text-sm text-gray-600">${order.drop_address}, ${order.drop_city}</td>
+                    <td class="px-6 py-4 text-sm text-gray-600">${order.pickup_day}</td>
+                    <td class="px-6 py-4">${getStatusBadge(order.status)}</td>
+                    <td class="px-6 py-4 text-sm font-medium text-gray-900">$${order.rate || '0.00'}</td>
+                </tr>
+            `;
+            tableBody.insertAdjacentHTML("beforeend", row);
+        });
+    }
     
-    tableBody.innerHTML = "";
-
-    orders.forEach(order => {
-        const row = `
-            <tr class="hover:bg-gray-50 transition-colors">
-                <td class="px-6 py-4 text-sm font-medium text-gray-900">#${order.id}</td>
-                <td class="px-6 py-4 text-sm text-gray-600">${order.pickup_address}, ${order.pickup_city}</td>
-                <td class="px-6 py-4 text-sm text-gray-600">${order.drop_address}, ${order.drop_city}</td>
-                <td class="px-6 py-4 text-sm text-gray-600">${order.pickup_day}</td>
-                <td class="px-6 py-4">${getStatusBadge(order.status)}</td>
-                <td class="px-6 py-4 text-sm font-medium text-gray-900">$${order.rate || '0.00'}</td>
-            </tr>
-        `;
-        tableBody.insertAdjacentHTML("beforeend", row);
-    });
+    // Mobile cards
+    const mobileContainer = document.getElementById("mobileOrdersContainer");
+    if (mobileContainer) {
+        mobileContainer.innerHTML = "";
+        orders.forEach(order => {
+            const card = `
+                <div class="p-4 border-b border-gray-100 hover:bg-gray-50 transition-colors">
+                    <div class="flex justify-between items-start mb-3">
+                        <span class="text-sm font-semibold text-gray-900">#${order.id}</span>
+                        ${getStatusBadge(order.status)}
+                    </div>
+                    <div class="space-y-2">
+                        <div class="text-xs text-gray-500">Pickup</div>
+                        <div class="text-sm text-gray-900 mb-2">${order.pickup_address}, ${order.pickup_city}</div>
+                        <div class="text-xs text-gray-500">Drop</div>
+                        <div class="text-sm text-gray-900 mb-2">${order.drop_address}, ${order.drop_city}</div>
+                        <div class="flex justify-between items-center text-sm">
+                            <span class="text-gray-600">Date: ${order.pickup_day}</span>
+                            <span class="font-semibold text-gray-900">$${order.rate || '0.00'}</span>
+                        </div>
+                    </div>
+                </div>
+            `;
+            mobileContainer.insertAdjacentHTML("beforeend", card);
+        });
+    }
 }
 
 // Update dashboard statistics
@@ -754,6 +798,29 @@ document.addEventListener("DOMContentLoaded", function() {
     loadOrders();
     loadPharmacyDetails();
     
+    // Mobile menu event listeners
+    const mobileMenuBtn = document.getElementById('mobileMenuBtn');
+    const closeSidebarBtn = document.getElementById('closeSidebarBtn');
+    const sidebarOverlay = document.getElementById('sidebarOverlay');
+    
+    if (mobileMenuBtn) {
+        mobileMenuBtn.addEventListener('click', toggleMobileMenu);
+    }
+    
+    if (closeSidebarBtn) {
+        closeSidebarBtn.addEventListener('click', closeMobileMenu);
+    }
+    
+    if (sidebarOverlay) {
+        sidebarOverlay.addEventListener('click', closeMobileMenu);
+    }
+    
+    // Close mobile menu when clicking on nav links
+    const navLinks = document.querySelectorAll('#sidebar nav a');
+    navLinks.forEach(link => {
+        link.addEventListener('click', closeMobileMenu);
+    });
+    
     // Add event listeners to show/hide calculate button based on field completion
     const addressFields = ['pickupAddress', 'pickupCity', 'dropAddress', 'dropCity'];
     
@@ -787,6 +854,23 @@ function logoutPharmacy() {
 
     // Redirect to pharmacy login
     window.location.href = "/pharmacyLogin/";
+}
+
+// Mobile menu toggle functions
+function toggleMobileMenu() {
+    const sidebar = document.getElementById('sidebar');
+    const overlay = document.getElementById('sidebarOverlay');
+    
+    sidebar.classList.toggle('-translate-x-full');
+    overlay.classList.toggle('hidden');
+}
+
+function closeMobileMenu() {
+    const sidebar = document.getElementById('sidebar');
+    const overlay = document.getElementById('sidebarOverlay');
+    
+    sidebar.classList.add('-translate-x-full');
+    overlay.classList.add('hidden');
 }
 
 

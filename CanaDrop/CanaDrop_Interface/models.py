@@ -36,6 +36,9 @@ class AdminUser(models.Model):
     # Optional: method to check password
     def check_password(self, raw_password):
         return check_password(raw_password, self.password)
+    
+    class Meta:
+        db_table = 'canadrop_interface_adminuser'  
 
 class Pharmacy(models.Model):
     name = models.CharField(max_length=255)
@@ -60,6 +63,9 @@ class Pharmacy(models.Model):
 
     def __str__(self):
         return self.name
+    
+    class Meta:
+        db_table = 'canadrop_interface_pharmacy'
 
 class Driver(models.Model):
     name = models.CharField(max_length=255)
@@ -78,6 +84,9 @@ class Driver(models.Model):
     def __str__(self):
         return self.name
 
+    class Meta:
+        db_table = 'canadrop_interface_driver'
+
 class DeliveryDistanceRate(models.Model):
     min_distance_km = models.DecimalField(max_digits=5, decimal_places=2, default=0)
     max_distance_km = models.DecimalField(max_digits=5, decimal_places=2, blank=True, null=True)  # Null = no upper limit
@@ -87,6 +96,9 @@ class DeliveryDistanceRate(models.Model):
         if self.max_distance_km:
             return f"{self.min_distance_km}-{self.max_distance_km} km = ${self.rate}"
         return f"{self.min_distance_km}+ km = ${self.rate}"
+    
+    class Meta:
+        db_table = 'canadrop_interface_deliverydistancerate'
 
 
 
@@ -115,6 +127,9 @@ class DeliveryOrder(models.Model):
     def __str__(self):
         return f"Order #{self.id} by {self.pharmacy.name}"
 
+    class Meta:
+        db_table = 'canadrop_interface_deliveryorder'
+
 
 
 class OrderImage(models.Model):
@@ -131,6 +146,9 @@ class OrderImage(models.Model):
 
     def __str__(self):
         return f"{self.stage} image for Order #{self.order.id}"
+    
+    class Meta:
+        db_table = 'canadrop_interface_orderimage'
 
 
 class Invoice(models.Model):
@@ -160,6 +178,9 @@ class Invoice(models.Model):
             self.status = 'past_due'
         super().save(*args, **kwargs)
 
+    class Meta:
+        db_table = 'canadrop_interface_invoice'
+
 
 
 class DriverInvoice(models.Model):
@@ -180,6 +201,9 @@ class DriverInvoice(models.Model):
 
     def __str__(self):
         return f"Invoice {self.id} for Driver {self.driver.name}"
+    
+    class Meta:
+        db_table = 'canadrop_interface_driverinvoice'
 
 # _________________________________________________________________________________________________________________
 # AUDIT TABLES
@@ -208,6 +232,7 @@ class OrderTracking(models.Model):
 
     class Meta:
         ordering = ['timestamp']
+        db_table = 'canadrop_interface_ordertracking'
 
     def __str__(self):
         return f"Order #{self.order.id} - {self.step} at {self.timestamp}"
