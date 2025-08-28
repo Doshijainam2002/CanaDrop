@@ -17,10 +17,19 @@
     </div>
 
     <!-- Sidebar -->
-    <div class="fixed inset-y-0 left-0 z-50 w-64 bg-slate-800 border-r border-slate-700">
-        <div class="flex items-center justify-center h-16 px-4 border-b border-slate-700">
-            <img src="https://i.postimg.cc/c4jt62GM/Website-Logo-No-Background.png" alt="CanaDrop Logo" class="h-8 w-auto">
-            <span class="ml-2 text-xl font-bold text-slate-100">CanaDrop</span>
+<!-- Sidebar -->
+    <div class="fixed inset-y-0 left-0 z-50 w-64 bg-slate-800 border-r border-slate-700 transform transition-transform duration-300 ease-in-out -translate-x-full md:translate-x-0" id="sidebar">
+        <div class="flex items-center justify-between h-16 px-4 border-b border-slate-700">
+            <div class="flex items-center">
+                <img src="https://i.postimg.cc/c4jt62GM/Website-Logo-No-Background.png" alt="CanaDrop Logo" class="h-8 w-auto">
+                <span class="ml-2 text-xl font-bold text-slate-100">CanaDrop</span>
+            </div>
+            <!-- Close button for mobile -->
+            <button id="closeSidebarBtn" class="md:hidden p-2 text-slate-300 hover:text-emerald-400 transition-colors">
+                <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
+                </svg>
+            </button>
         </div>
         
         <nav class="mt-8">
@@ -42,6 +51,12 @@
                 </svg>
                 Finances
             </a>
+            <a href="/contactAdmin/" onclick="showSection('contactAdmin')" class="nav-item flex items-center px-6 py-3 text-slate-300 hover:bg-slate-700 hover:text-emerald-400 transition-colors">
+                <svg class="w-5 h-5 mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 10h.01M12 10h.01M16 10h.01M21 12c0 4.418-4.03 8-9 8s-9-3.582-9-8 4.03-8 9-8 9 3.582 9 8zM12 14v-4m0 4h.01"/>
+                </svg>
+            Contact Admin
+            </a>
             <a href="#" onclick="handleLogout()" class="nav-item flex items-center px-6 py-3 text-slate-300 hover:bg-slate-700 hover:text-red-400 transition-colors mt-8">
                 <svg class="w-5 h-5 mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1"/>
@@ -52,16 +67,28 @@
     </div>
 
     <!-- Main Content -->
-    <div class="ml-64">
+    <!-- Mobile overlay -->
+<div id="mobileOverlay" class="fixed inset-0 bg-black bg-opacity-50 z-40 hidden md:hidden"></div>
+
+    <!-- Main Content -->
+    <div class="md:ml-64">
         <!-- Header -->
-        <header class="bg-slate-800 border-b border-slate-700 px-6 py-4">
+<!-- Header -->
+        <header class="bg-slate-800 border-b border-slate-700 px-4 md:px-6 py-4">
             <div class="flex items-center justify-between">
+                <!-- Mobile menu button -->
+                <button id="mobileMenuBtn" class="md:hidden p-2 text-slate-300 hover:text-emerald-400 transition-colors">
+                    <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16"/>
+                    </svg>
+                </button>
+                
                 <div>
-                    <h1 class="text-2xl font-bold text-slate-100">Finances</h1>
-                    <p class="text-slate-400 text-sm">Manage your earnings and payment summaries</p>
+                    <h1 class="text-xl md:text-2xl font-bold text-slate-100">Finances</h1>
+                    <p class="text-slate-400 text-xs md:text-sm hidden sm:block">Manage your earnings and payment summaries</p>
                 </div>
-                <div class="flex items-center space-x-4">
-                    <span class="text-slate-300" id="welcomeText">Welcome back, Driver!</span>
+                <div class="flex items-center space-x-2 md:space-x-4">
+                    <span class="text-slate-300 text-sm hidden lg:inline" id="welcomeText">Welcome back, Driver!</span>
                     <div class="w-8 h-8 bg-emerald-500 rounded-full flex items-center justify-center">
                         <span class="text-white font-semibold" id="profileInitial">D</span>
                     </div>
@@ -70,7 +97,7 @@
         </header>
 
         <!-- Main Content -->
-        <main class="p-6">
+        <main class="p-4 md:p-6">
             <!-- Stats Grid -->
             <div class="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
                 <div class="bg-slate-800 border border-slate-700 rounded-lg p-6 hover:border-emerald-500 transition-colors">
@@ -531,6 +558,23 @@ document.addEventListener('keydown', function(e) {
     }
 });
 
+// Mobile menu functionality
+function toggleMobileMenu() {
+    const sidebar = document.getElementById('sidebar');
+    const overlay = document.getElementById('mobileOverlay');
+    
+    sidebar.classList.toggle('-translate-x-full');
+    overlay.classList.toggle('hidden');
+}
+
+function closeMobileMenu() {
+    const sidebar = document.getElementById('sidebar');
+    const overlay = document.getElementById('mobileOverlay');
+    
+    sidebar.classList.add('-translate-x-full');
+    overlay.classList.add('hidden');
+}
+
 // Initialize page
 document.addEventListener("DOMContentLoaded", function() {
     // Check if driver is logged in
@@ -539,6 +583,40 @@ document.addEventListener("DOMContentLoaded", function() {
         window.location.href = "/driverLogin/";
         return;
     }
+
+    // Mobile menu event listeners
+    const mobileMenuBtn = document.getElementById('mobileMenuBtn');
+    const closeSidebarBtn = document.getElementById('closeSidebarBtn');
+    const mobileOverlay = document.getElementById('mobileOverlay');
+    const navItems = document.querySelectorAll('.nav-item');
+    
+    if (mobileMenuBtn) {
+        mobileMenuBtn.addEventListener('click', toggleMobileMenu);
+    }
+    
+    if (closeSidebarBtn) {
+        closeSidebarBtn.addEventListener('click', closeMobileMenu);
+    }
+    
+    if (mobileOverlay) {
+        mobileOverlay.addEventListener('click', closeMobileMenu);
+    }
+    
+    // Close menu when navigation item is clicked on mobile
+    navItems.forEach(item => {
+        item.addEventListener('click', () => {
+            if (window.innerWidth < 768) {
+                closeMobileMenu();
+            }
+        });
+    });
+    
+    // Close menu on window resize if desktop size
+    window.addEventListener('resize', () => {
+        if (window.innerWidth >= 768) {
+            closeMobileMenu();
+        }
+    });
 
     // Load data
     loadDriverInfo();

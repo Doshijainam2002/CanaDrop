@@ -18,79 +18,107 @@
 </head>
 <body class="min-h-screen bg-gradient-to-br from-slate-900 to-gray-900">
     <!-- Sidebar -->
-    <div class="fixed inset-y-0 left-0 z-50 w-64 bg-slate-800 border-r border-slate-700">
-        <div class="flex items-center justify-center h-16 px-4 border-b border-slate-700">
+<!-- Sidebar -->
+<div class="fixed inset-y-0 left-0 z-50 w-64 bg-slate-800 border-r border-slate-700 transform transition-transform duration-300 ease-in-out -translate-x-full md:translate-x-0" id="sidebar">
+    <div class="flex items-center justify-between h-16 px-4 border-b border-slate-700">
+        <div class="flex items-center">
             <img src="https://i.postimg.cc/c4jt62GM/Website-Logo-No-Background.png" alt="CanaDrop Logo" class="h-8 w-auto">
             <span class="ml-2 text-xl font-bold text-slate-100">CanaDrop</span>
         </div>
-        
-        <nav class="mt-8">
-            <a href="/driverDashboard/" onclick="navigateTo('dashboard')" class="nav-item flex items-center px-6 py-3 text-slate-300 hover:bg-slate-700 hover:text-emerald-400 transition-colors">
-                <svg class="w-5 h-5 mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 7v10a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2H5a2 2 0 00-2-2z"/>
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 5a2 2 0 012-2h4a2 2 0 012 2v4H8V5z"/>
-                </svg>
-                Dashboard
-            </a>
-            <a href="/driverAcceptedDeliveries/" onclick="navigateTo('accepted')" class="nav-item active flex items-center px-6 py-3 text-slate-300 hover:bg-slate-700 hover:text-emerald-400 transition-colors">
-                <svg class="w-5 h-5 mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 8l6 6 10-10"/>
-                </svg>
-                Accepted Deliveries
-            </a>
-            <a href="/driverFinances/" onclick="navigateTo('finances')" class="nav-item flex items-center px-6 py-3 text-slate-300 hover:bg-slate-700 hover:text-emerald-400 transition-colors">
-                <svg class="w-5 h-5 mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1"/>
-                </svg>
-                Finances
-            </a>
-            <a href="#" onclick="handleLogout()" class="nav-item flex items-center px-6 py-3 text-slate-300 hover:bg-slate-700 hover:text-red-400 transition-colors mt-8">
-                <svg class="w-5 h-5 mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013 3v1"/>
-                </svg>
-                Logout
-            </a>
-        </nav>
+        <!-- Close button for mobile -->
+        <button id="closeSidebarBtn" class="md:hidden p-2 text-slate-300 hover:text-emerald-400 transition-colors">
+            <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
+            </svg>
+        </button>
     </div>
+    
+    <nav class="mt-8">
+        <!-- Navigation items remain the same -->
+        <a href="/driverDashboard/" onclick="navigateTo('dashboard')" class="nav-item flex items-center px-6 py-3 text-slate-300 hover:bg-slate-700 hover:text-emerald-400 transition-colors">
+            <svg class="w-5 h-5 mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 7v10a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2H5a2 2 0 00-2-2z"/>
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 5a2 2 0 012-2h4a2 2 0 012 2v4H8V5z"/>
+            </svg>
+            Dashboard
+        </a>
+        <a href="/driverAcceptedDeliveries/" onclick="navigateTo('accepted')" class="nav-item active flex items-center px-6 py-3 text-slate-300 hover:bg-slate-700 hover:text-emerald-400 transition-colors">
+            <svg class="w-5 h-5 mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 8l6 6 10-10"/>
+            </svg>
+            Accepted Deliveries
+        </a>
+        <a href="/driverFinances/" onclick="navigateTo('finances')" class="nav-item flex items-center px-6 py-3 text-slate-300 hover:bg-slate-700 hover:text-emerald-400 transition-colors">
+            <svg class="w-5 h-5 mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1"/>
+            </svg>
+            Finances
+        </a>
+        <a href="/contactAdmin/" onclick="showSection('contactAdmin')" class="nav-item flex items-center px-6 py-3 text-slate-300 hover:bg-slate-700 hover:text-emerald-400 transition-colors">
+            <svg class="w-5 h-5 mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 10h.01M12 10h.01M16 10h.01M21 12c0 4.418-4.03 8-9 8s-9-3.582-9-8 4.03-8 9-8 9 3.582 9 8zM12 14v-4m0 4h.01"/>
+            </svg>
+            Contact Admin
+        </a>
+        <a href="#" onclick="handleLogout()" class="nav-item flex items-center px-6 py-3 text-slate-300 hover:bg-slate-700 hover:text-red-400 transition-colors mt-8">
+            <svg class="w-5 h-5 mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013 3v1"/>
+            </svg>
+            Logout
+        </a>
+    </nav>
+</div>
+
+<!-- Mobile overlay -->
+<div id="mobileOverlay" class="fixed inset-0 bg-black bg-opacity-50 z-40 hidden md:hidden"></div>
 
     <!-- Main Content -->
-    <div class="ml-64">
+    <!-- Main Content -->
+    <div class="md:ml-64">
         <!-- Header -->
-        <header class="bg-slate-800 border-b border-slate-700 px-6 py-4">
-            <div class="flex items-center justify-between">
-                <div>
-                    <h1 class="text-2xl font-bold text-slate-100">Accepted Deliveries</h1>
-                    <p class="text-slate-400 text-sm">Manage your current delivery assignments</p>
-                </div>
-                <div class="flex items-center space-x-4">
-                    <button onclick="refreshDeliveries()" 
-                            class="p-2 text-slate-400 hover:text-emerald-400 transition-colors">
-                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" 
-                                d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"/>
-                        </svg>
-                    </button>
-                    <!-- Dynamic text -->
-                    <span id="welcomeText" class="text-slate-300">Welcome back, ...</span>
-                    <div class="w-8 h-8 bg-emerald-500 rounded-full flex items-center justify-center">
-                        <span id="profileInitial" class="text-white font-semibold">?</span>
-                    </div>
-                </div>
+<!-- Header -->
+<header class="bg-slate-800 border-b border-slate-700 px-4 md:px-6 py-4">
+    <div class="flex items-center justify-between">
+        <!-- Mobile menu button -->
+        <button id="mobileMenuBtn" class="md:hidden p-2 text-slate-300 hover:text-emerald-400 transition-colors">
+            <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16"/>
+            </svg>
+        </button>
+        
+        <div>
+            <h1 class="text-xl md:text-2xl font-bold text-slate-100">Accepted Deliveries</h1>
+            <p class="text-slate-400 text-xs md:text-sm hidden sm:block">Manage your current delivery assignments</p>
+        </div>
+        <div class="flex items-center space-x-2 md:space-x-4">
+            <button onclick="refreshDeliveries()" 
+                    class="p-2 text-slate-400 hover:text-emerald-400 transition-colors">
+                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" 
+                        d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"/>
+                </svg>
+            </button>
+            <!-- Dynamic text -->
+            <span id="welcomeText" class="text-slate-300 text-sm hidden lg:inline">Welcome back, ...</span>
+            <div class="w-8 h-8 bg-emerald-500 rounded-full flex items-center justify-center">
+                <span id="profileInitial" class="text-white font-semibold">?</span>
             </div>
-        </header>
+        </div>
+    </div>
+</header>
 
 
         <!-- Deliveries Cards -->
-        <main class="p-6">
-            <div id="deliveriesContainer" class="grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-3 gap-4">
-                <!-- Cards will be populated by JavaScript -->
-            </div>
-        </main>
+<main class="p-4 md:p-6">
+    <div id="deliveriesContainer" class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
+        <!-- Cards will be populated by JavaScript -->
+    </div>
+</main>
     </div>
 
     <!-- Delivery Details Modal -->
     <div id="detailsModal" class="fixed inset-0 bg-black bg-opacity-75 hidden z-50 flex items-center justify-center p-4">
-        <div class="bg-slate-800 rounded-xl max-w-lg w-full max-h-[85vh] overflow-y-auto border border-slate-700 shadow-2xl">
+        <div class="bg-slate-800 rounded-xl max-w-lg w-full max-h-[85vh] overflow-y-auto border border-slate-700 shadow-2xl mx-4">
             <div class="flex items-center justify-between p-4 border-b border-slate-700">
                 <div>
                     <h3 id="modalOrderId" class="text-lg font-bold text-slate-100"></h3>
@@ -264,20 +292,20 @@ let deliveries = [];
             const content = document.getElementById('modalContent');
             content.innerHTML = `
                 <div class="space-y-4">
-                    <div class="flex space-x-2">
-                        <button onclick="navigate('${delivery.pickup_address}')" class="flex-1 bg-blue-600 hover:bg-blue-700 text-white py-2 px-3 rounded-lg text-sm font-medium transition-colors flex items-center justify-center">
-                            <svg class="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z"/>
-                            </svg>
-                            Navigate to Pickup
-                        </button>
-                        <button onclick="navigate('${delivery.dropoff_address}')" class="flex-1 bg-emerald-600 hover:bg-emerald-700 text-white py-2 px-3 rounded-lg text-sm font-medium transition-colors flex items-center justify-center">
-                            <svg class="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z"/>
-                            </svg>
-                            Navigate to Drop-off
-                        </button>
-                    </div>
+<div class="flex flex-col sm:flex-row gap-2">
+    <button onclick="navigate('${delivery.pickup_address}')" class="flex-1 bg-blue-600 hover:bg-blue-700 text-white py-2 px-3 rounded-lg text-sm font-medium transition-colors flex items-center justify-center">
+        <svg class="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z"/>
+        </svg>
+        <span class="hidden sm:inline">Navigate to </span>Pickup
+    </button>
+    <button onclick="navigate('${delivery.dropoff_address}')" class="flex-1 bg-emerald-600 hover:bg-emerald-700 text-white py-2 px-3 rounded-lg text-sm font-medium transition-colors flex items-center justify-center">
+        <svg class="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z"/>
+        </svg>
+        <span class="hidden sm:inline">Navigate to </span>Drop-off
+    </button>
+</div>
                     
                     ${renderDeliveryProcess(delivery)}
                 </div>
@@ -442,6 +470,59 @@ let deliveries = [];
 }
 
 document.addEventListener("DOMContentLoaded", loadDriverInfo);
+
+// Mobile menu functionality
+function toggleMobileMenu() {
+    const sidebar = document.getElementById('sidebar');
+    const overlay = document.getElementById('mobileOverlay');
+    
+    sidebar.classList.toggle('-translate-x-full');
+    overlay.classList.toggle('hidden');
+}
+
+function closeMobileMenu() {
+    const sidebar = document.getElementById('sidebar');
+    const overlay = document.getElementById('mobileOverlay');
+    
+    sidebar.classList.add('-translate-x-full');
+    overlay.classList.add('hidden');
+}
+
+// Add event listeners for mobile menu
+document.addEventListener('DOMContentLoaded', function() {
+    const mobileMenuBtn = document.getElementById('mobileMenuBtn');
+    const closeSidebarBtn = document.getElementById('closeSidebarBtn');
+    const mobileOverlay = document.getElementById('mobileOverlay');
+    const navItems = document.querySelectorAll('.nav-item');
+    
+    if (mobileMenuBtn) {
+        mobileMenuBtn.addEventListener('click', toggleMobileMenu);
+    }
+    
+    if (closeSidebarBtn) {
+        closeSidebarBtn.addEventListener('click', closeMobileMenu);
+    }
+    
+    if (mobileOverlay) {
+        mobileOverlay.addEventListener('click', closeMobileMenu);
+    }
+    
+    // Close menu when navigation item is clicked on mobile
+    navItems.forEach(item => {
+        item.addEventListener('click', () => {
+            if (window.innerWidth < 768) {
+                closeMobileMenu();
+            }
+        });
+    });
+    
+    // Close menu on window resize if desktop size
+    window.addEventListener('resize', () => {
+        if (window.innerWidth >= 768) {
+            closeMobileMenu();
+        }
+    });
+});
     </script>
 </body>
 </html>

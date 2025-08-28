@@ -32,4 +32,9 @@ urlpatterns = [
     path('driverFinances/', views.driverFinancesView, name="DriverFinancesPage"),
     path("api/driver/invoices/weeks/", views.driver_invoice_weeks, name="driver_invoice_weeks"),
 
+    path('contactAdmin/', views.contactAdminView, name='contactAdminPage'), 
+    path('api/contact-admin/', views.contact_admin_api, name='contact_admin_api'),
+
+    path('', views.landingView, name='landingPage'),
+
 ]

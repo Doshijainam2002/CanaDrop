@@ -137,7 +137,6 @@ STATIC_URL = 'static/'
 
 
 
-
 # Logging configuration for better debugging
 LOGGING = {
     'version': 1,

@@ -1,0 +1,972 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>CanaDrop - Premium Medicine Delivery Service | CGC</title>
+    <link rel="icon" href="https://i.postimg.cc/c4jt62GM/Website-Logo-No-Background.png">
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+    <style>
+        * {
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+        }
+        
+        .gradient-bg {
+            background: linear-gradient(135deg, #3B82F6 0%, #1D4ED8 25%, #10B981 75%, #059669 100%);
+        }
+        
+        .glass-effect {
+            backdrop-filter: blur(20px);
+            background: rgba(255, 255, 255, 0.9);
+            border: 1px solid rgba(255, 255, 255, 0.3);
+        }
+        
+        .floating-animation {
+            animation: float 6s ease-in-out infinite;
+        }
+        
+        .floating-animation-delayed {
+            animation: float 6s ease-in-out infinite 2s;
+        }
+        
+        @keyframes float {
+            0%, 100% { transform: translateY(0px) rotate(0deg); }
+            33% { transform: translateY(-10px) rotate(1deg); }
+            66% { transform: translateY(5px) rotate(-1deg); }
+        }
+        
+        .fade-in-up {
+            opacity: 0;
+            transform: translateY(30px);
+            animation: fadeInUp 0.8s ease forwards;
+        }
+        
+        @keyframes fadeInUp {
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+        
+        .stagger-1 { animation-delay: 0.1s; }
+        .stagger-2 { animation-delay: 0.2s; }
+        .stagger-3 { animation-delay: 0.3s; }
+        .stagger-4 { animation-delay: 0.4s; }
+        
+        .btn-primary {
+            background: linear-gradient(135deg, #3B82F6, #1D4ED8);
+            box-shadow: 0 10px 25px rgba(59, 130, 246, 0.3);
+            transition: all 0.4s ease;
+        }
+        
+        .btn-primary:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 20px 40px rgba(59, 130, 246, 0.4);
+        }
+        
+        .btn-secondary {
+            background: linear-gradient(135deg, #10B981, #059669);
+            box-shadow: 0 10px 25px rgba(16, 185, 129, 0.3);
+            transition: all 0.4s ease;
+        }
+        
+        .btn-secondary:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 20px 40px rgba(16, 185, 129, 0.4);
+        }
+        
+        .feature-card {
+            transition: all 0.4s ease;
+            transform: translateY(0);
+        }
+        
+        .feature-card:hover {
+            transform: translateY(-10px);
+            box-shadow: 0 25px 50px rgba(0, 0, 0, 0.1);
+        }
+        
+        .parallax-bg {
+            background-attachment: fixed;
+            background-position: center;
+            background-repeat: no-repeat;
+            background-size: cover;
+        }
+        
+        .scroll-indicator {
+            animation: bounce 2s infinite;
+        }
+        
+        @keyframes bounce {
+            0%, 20%, 50%, 80%, 100% { transform: translateY(0); }
+            40% { transform: translateY(-10px); }
+            60% { transform: translateY(-5px); }
+        }
+        
+        .step-line {
+            background: linear-gradient(90deg, #3B82F6, #10B981);
+            height: 3px;
+            position: relative;
+            overflow: hidden;
+        }
+        
+        .step-line::after {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: -100%;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(90deg, transparent, rgba(255,255,255,0.6), transparent);
+            animation: shimmer 2s infinite;
+        }
+        
+        @keyframes shimmer {
+            100% { left: 100%; }
+        }
+        
+        .number-circle {
+            background: linear-gradient(135deg, #3B82F6, #10B981);
+            box-shadow: 0 8px 25px rgba(59, 130, 246, 0.3);
+        }
+        
+        .trust-badge {
+            background: linear-gradient(135deg, rgba(59, 130, 246, 0.1), rgba(16, 185, 129, 0.1));
+            border: 1px solid rgba(59, 130, 246, 0.2);
+        }
+
+        /* Mobile Menu Styles */
+        .mobile-menu {
+            transform: translateX(100%);
+            transition: transform 0.3s ease-in-out;
+        }
+
+        .mobile-menu.open {
+            transform: translateX(0);
+        }
+
+        .mobile-menu-overlay {
+            opacity: 0;
+            visibility: hidden;
+            transition: all 0.3s ease-in-out;
+        }
+
+        .mobile-menu-overlay.open {
+            opacity: 1;
+            visibility: visible;
+        }
+
+        /* Enhanced Mobile Responsiveness */
+        @media (max-width: 768px) {
+            .text-5xl { font-size: 2.25rem !important; line-height: 1.2; }
+            .text-7xl { font-size: 2.75rem !important; line-height: 1.1; }
+            .text-4xl { font-size: 1.875rem !important; }
+            .text-3xl { font-size: 1.5rem !important; }
+            .text-2xl { font-size: 1.25rem !important; }
+            .text-xl { font-size: 1.125rem !important; }
+            .py-24 { padding-top: 3rem !important; padding-bottom: 3rem !important; }
+            .py-16 { padding-top: 2.5rem !important; padding-bottom: 2.5rem !important; }
+            .mb-20 { margin-bottom: 2.5rem !important; }
+            .mb-16 { margin-bottom: 2rem !important; }
+            .mb-12 { margin-bottom: 1.5rem !important; }
+            .mb-8 { margin-bottom: 1rem !important; }
+            .mb-6 { margin-bottom: 0.75rem !important; }
+            
+            .px-10 { padding-left: 1.5rem !important; padding-right: 1.5rem !important; }
+            .px-12 { padding-left: 1.5rem !important; padding-right: 1.5rem !important; }
+            .py-4 { padding-top: 0.75rem !important; padding-bottom: 0.75rem !important; }
+            
+            .gap-16 { gap: 2rem !important; }
+            .gap-8 { gap: 1.5rem !important; }
+            .gap-6 { gap: 1rem !important; }
+            
+            .space-y-8 > * + * { margin-top: 1.5rem !important; }
+            
+            .feature-card {
+                padding: 1.5rem !important;
+            }
+            
+            .max-w-3xl {
+                max-width: 100% !important;
+            }
+            
+            .max-w-2xl {
+                max-width: 100% !important;
+            }
+        }
+
+        @media (max-width: 640px) {
+            .text-5xl { font-size: 2rem !important; }
+            .text-7xl { font-size: 2.25rem !important; }
+            .text-4xl { font-size: 1.75rem !important; }
+            
+            .py-24 { padding-top: 2rem !important; padding-bottom: 2rem !important; }
+            .mb-20 { margin-bottom: 2rem !important; }
+            .mb-16 { margin-bottom: 1.5rem !important; }
+            
+            .px-4 { padding-left: 1rem !important; padding-right: 1rem !important; }
+        }
+
+        /* Hamburger Menu Animation */
+        .hamburger {
+            cursor: pointer;
+            width: 24px;
+            height: 24px;
+            transition: all 0.25s;
+            position: relative;
+        }
+
+        .hamburger-top,
+        .hamburger-middle,
+        .hamburger-bottom {
+            position: absolute;
+            width: 24px;
+            height: 2px;
+            top: 0;
+            left: 0;
+            background: #374151;
+            transform: rotate(0);
+            transition: all 0.5s;
+        }
+
+        .hamburger-middle {
+            transform: translateY(7px);
+        }
+
+        .hamburger-bottom {
+            transform: translateY(14px);
+        }
+
+        .open .hamburger-top {
+            transform: rotate(45deg) translateY(6px) translateX(6px);
+        }
+
+        .open .hamburger-middle {
+            opacity: 0;
+        }
+
+        .open .hamburger-bottom {
+            transform: rotate(-45deg) translateY(6px) translateX(-6px);
+        }
+    </style>
+</head>
+<body class="bg-gray-50 overflow-x-hidden">
+    <!-- Navigation -->
+    <nav class="fixed top-0 left-0 right-0 z-50 glass-effect">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="flex justify-between items-center h-16">
+                <div class="flex items-center space-x-3">
+                    <img src="https://i.postimg.cc/c4jt62GM/Website-Logo-No-Background.png" alt="CanaDrop Logo" class="h-8 sm:h-10 w-auto">
+                    <div>
+                        <h1 class="text-lg sm:text-xl font-bold bg-gradient-to-r from-blue-600 to-green-600 bg-clip-text text-transparent">CanaDrop</h1>
+                        <p class="text-xs text-gray-500 font-medium hidden sm:block">By CGC</p>
+                    </div>
+                </div>
+                
+                <!-- Desktop Navigation -->
+                <div class="hidden md:flex items-center space-x-4">
+                    <a href="/pharmacyLogin/" class="btn-primary text-white px-6 py-2.5 rounded-full font-semibold text-sm">
+                        Pharmacy Login
+                    </a>
+                    <a href="/driverLogin/" class="btn-secondary text-white px-6 py-2.5 rounded-full font-semibold text-sm">
+                        Driver Login
+                    </a>
+                </div>
+
+                <!-- Mobile Menu Button -->
+                <div class="md:hidden">
+                    <button id="mobile-menu-button" class="hamburger">
+                        <div class="hamburger-top"></div>
+                        <div class="hamburger-middle"></div>
+                        <div class="hamburger-bottom"></div>
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Mobile Menu Overlay -->
+        <div id="mobile-menu-overlay" class="mobile-menu-overlay fixed inset-0 bg-black bg-opacity-50 z-40 md:hidden">
+        </div>
+
+        <!-- Mobile Menu -->
+        <div id="mobile-menu" class="mobile-menu fixed top-0 right-0 h-full w-80 max-w-full bg-white shadow-xl z-50 md:hidden">
+            <div class="p-6">
+                <div class="flex items-center justify-between mb-8">
+                    <div class="flex items-center space-x-3">
+                        <img src="https://i.postimg.cc/c4jt62GM/Website-Logo-No-Background.png" alt="CanaDrop Logo" class="h-8 w-auto">
+                        <div>
+                            <h1 class="text-lg font-bold bg-gradient-to-r from-blue-600 to-green-600 bg-clip-text text-transparent">CanaDrop</h1>
+                            <p class="text-xs text-gray-500 font-medium">By CGC</p>
+                        </div>
+                    </div>
+                    <button id="mobile-menu-close" class="text-gray-500 hover:text-gray-700">
+                        <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
+                        </svg>
+                    </button>
+                </div>
+                
+                <div class="space-y-4">
+                    <a href="/pharmacyLogin/" class="block w-full btn-primary text-white px-6 py-3 rounded-full font-semibold text-center">
+                        Pharmacy Login
+                    </a>
+                    <a href="/driverLogin/" class="block w-full btn-secondary text-white px-6 py-3 rounded-full font-semibold text-center">
+                        Driver Login
+                    </a>
+                </div>
+            </div>
+        </div>
+    </nav>
+
+    <!-- Hero Section -->
+    <section class="relative min-h-screen flex items-center justify-center overflow-hidden bg-gradient-to-br from-blue-50 via-white to-green-50 pt-16">
+        <!-- Floating Background Elements -->
+        <div class="absolute inset-0 overflow-hidden">
+            <div class="floating-animation absolute top-20 left-5 sm:left-10 w-48 h-48 sm:w-72 sm:h-72 bg-gradient-to-r from-blue-200/30 to-blue-300/30 rounded-full blur-3xl"></div>
+            <div class="floating-animation-delayed absolute bottom-20 right-5 sm:right-10 w-64 h-64 sm:w-96 sm:h-96 bg-gradient-to-r from-green-200/30 to-green-300/30 rounded-full blur-3xl"></div>
+            <div class="floating-animation absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 w-48 h-48 sm:w-64 sm:h-64 bg-gradient-to-r from-purple-200/20 to-pink-200/20 rounded-full blur-3xl"></div>
+        </div>
+        
+        <div class="relative z-10 max-w-6xl mx-auto px-4 text-center">
+            <div class="fade-in-up stagger-1">
+                <img src="https://i.postimg.cc/c4jt62GM/Website-Logo-No-Background.png" alt="CanaDrop Logo" class="h-16 sm:h-24 w-auto mx-auto mb-4 sm:mb-6">
+            </div>
+            
+            <h1 class="fade-in-up stagger-2 text-4xl sm:text-5xl md:text-7xl font-bold text-gray-900 mb-4 sm:mb-6 leading-tight">
+                Medicine Delivery
+                <span class="block bg-gradient-to-r from-blue-600 via-purple-600 to-green-600 bg-clip-text text-transparent">
+                    Redefined
+                </span>
+            </h1>
+            
+            <p class="fade-in-up stagger-3 text-lg sm:text-xl md:text-2xl text-gray-600 mb-6 sm:mb-8 max-w-3xl mx-auto leading-relaxed px-4">
+                Secure, reliable, and swift medicine delivery service connecting pharmacies with verified drivers for seamless healthcare logistics.
+            </p>
+            
+            <div class="fade-in-up stagger-4 flex flex-col sm:flex-row gap-4 sm:gap-6 justify-center items-center mb-12 sm:mb-16 px-4">
+                <a href="/pharmacyLogin/" class="w-full sm:w-auto btn-primary text-white px-8 sm:px-10 py-3 sm:py-4 rounded-full font-semibold text-base sm:text-lg flex items-center justify-center space-x-2 group">
+                    <span>Start as Pharmacy</span>
+                    <svg class="w-5 h-5 group-hover:translate-x-1 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 7l5 5m0 0l-5 5m5-5H6"/>
+                    </svg>
+                </a>
+                
+                <a href="/driverLogin/" class="w-full sm:w-auto btn-secondary text-white px-8 sm:px-10 py-3 sm:py-4 rounded-full font-semibold text-base sm:text-lg flex items-center justify-center space-x-2 group">
+                    <span>Join as Driver</span>
+                    <svg class="w-5 h-5 group-hover:translate-x-1 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 7l5 5m0 0l-5 5m5-5H6"/>
+                    </svg>
+                </a>
+            </div>
+            
+            <!-- Trust Badges -->
+            <div class="fade-in-up stagger-4 flex flex-wrap justify-center gap-4 sm:gap-8 mb-8 sm:mb-12 px-4">
+                <div class="trust-badge px-4 sm:px-6 py-2 sm:py-3 rounded-full">
+                    <div class="flex items-center space-x-2">
+                        <svg class="w-4 sm:w-5 h-4 sm:h-5 text-green-600" fill="currentColor" viewBox="0 0 20 20">
+                            <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z"/>
+                        </svg>
+                        <span class="text-xs sm:text-sm font-semibold text-gray-700">100% Free Service</span>
+                    </div>
+                </div>
+                
+                <div class="trust-badge px-4 sm:px-6 py-2 sm:py-3 rounded-full">
+                    <div class="flex items-center space-x-2">
+                        <svg class="w-4 sm:w-5 h-4 sm:h-5 text-blue-600" fill="currentColor" viewBox="0 0 20 20">
+                            <path fill-rule="evenodd" d="M5 9V7a5 5 0 0110 0v2a2 2 0 012 2v5a2 2 0 01-2 2H5a2 2 0 01-2-2v-5a2 2 0 012-2zm8-2v2H7V7a3 3 0 016 0z"/>
+                        </svg>
+                        <span class="text-xs sm:text-sm font-semibold text-gray-700">Secure & Verified</span>
+                    </div>
+                </div>
+                
+                <div class="trust-badge px-4 sm:px-6 py-2 sm:py-3 rounded-full">
+                    <div class="flex items-center space-x-2">
+                        <svg class="w-4 sm:w-5 h-4 sm:h-5 text-green-600" fill="currentColor" viewBox="0 0 20 20">
+                            <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-8.293l-3-3a1 1 0 00-1.414 0l-3 3a1 1 0 001.414 1.414L9 9.414V13a1 1 0 102 0V9.414l1.293 1.293a1 1 0 001.414-1.414z"/>
+                        </svg>
+                        <span class="text-xs sm:text-sm font-semibold text-gray-700">24hr Delivery</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Scroll Indicator -->
+        <div class="absolute bottom-8 left-1/2 transform -translate-x-1/2">
+            <div class="scroll-indicator">
+                <svg class="w-6 h-6 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 14l-7 7m0 0l-7-7m7 7V3"/>
+                </svg>
+            </div>
+        </div>
+    </section>
+
+    <!-- Features Section -->
+    <section class="py-16 sm:py-24 bg-white relative overflow-hidden">
+        <div class="max-w-7xl mx-auto px-4">
+            <div class="text-center mb-12 sm:mb-20">
+                <h2 class="text-3xl sm:text-4xl md:text-5xl font-bold text-gray-900 mb-4 sm:mb-6">
+                    Why Choose <span class="bg-gradient-to-r from-blue-600 to-green-600 bg-clip-text text-transparent">CanaDrop?</span>
+                </h2>
+                <p class="text-lg sm:text-xl text-gray-600 max-w-3xl mx-auto px-4">
+                    Experience the future of medicine delivery with our comprehensive platform designed for both pharmacies and drivers.
+                </p>
+            </div>
+            
+            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 sm:gap-8">
+                <!-- Feature 1 -->
+                <div class="feature-card glass-effect rounded-3xl p-6 sm:p-8 text-center">
+                    <div class="number-circle w-12 h-12 sm:w-16 sm:h-16 rounded-full flex items-center justify-center text-white font-bold text-lg sm:text-xl mx-auto mb-4 sm:mb-6">
+                        <svg class="w-6 h-6 sm:w-8 sm:h-8" fill="currentColor" viewBox="0 0 20 20">
+                            <path d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/>
+                        </svg>
+                    </div>
+                    <h3 class="text-xl sm:text-2xl font-bold text-gray-900 mb-3 sm:mb-4">100% Free Service</h3>
+                    <p class="text-gray-600 leading-relaxed text-sm sm:text-base">No subscription fees, no hidden costs. Our platform is completely free for both pharmacies and drivers to use.</p>
+                </div>
+                
+                <!-- Feature 2 -->
+                <div class="feature-card glass-effect rounded-3xl p-6 sm:p-8 text-center">
+                    <div class="number-circle w-12 h-12 sm:w-16 sm:h-16 rounded-full flex items-center justify-center text-white font-bold text-lg sm:text-xl mx-auto mb-4 sm:mb-6">
+                        <svg class="w-6 h-6 sm:w-8 sm:h-8" fill="currentColor" viewBox="0 0 20 20">
+                            <path fill-rule="evenodd" d="M3.172 5.172a4 4 0 015.656 0L10 6.343l1.172-1.171a4 4 0 115.656 5.656L10 17.657l-6.828-6.829a4 4 0 010-5.656z"/>
+                        </svg>
+                    </div>
+                    <h3 class="text-xl sm:text-2xl font-bold text-gray-900 mb-3 sm:mb-4">Trusted Care</h3>
+                    <p class="text-gray-600 leading-relaxed text-sm sm:text-base">Every delivery is handled with medical-grade care and attention, ensuring medicines reach patients safely.</p>
+                </div>
+                
+                <!-- Feature 3 -->
+                <div class="feature-card glass-effect rounded-3xl p-6 sm:p-8 text-center">
+                    <div class="number-circle w-12 h-12 sm:w-16 sm:h-16 rounded-full flex items-center justify-center text-white font-bold text-lg sm:text-xl mx-auto mb-4 sm:mb-6">
+                        <svg class="w-6 h-6 sm:w-8 sm:h-8" fill="currentColor" viewBox="0 0 20 20">
+                            <path fill-rule="evenodd" d="M5.05 4.05a7 7 0 119.9 9.9L10 18.9l-4.95-4.95a7 7 0 010-9.9zM10 11a2 2 0 100-4 2 2 0 000 4z"/>
+                        </svg>
+                    </div>
+                    <h3 class="text-xl sm:text-2xl font-bold text-gray-900 mb-3 sm:mb-4">Live Tracking</h3>
+                    <p class="text-gray-600 leading-relaxed text-sm sm:text-base">Real-time GPS tracking allows pharmacies and patients to monitor their medicine deliveries every step of the way.</p>
+                </div>
+                
+                <!-- Feature 4 -->
+                <div class="feature-card glass-effect rounded-3xl p-6 sm:p-8 text-center">
+                    <div class="number-circle w-12 h-12 sm:w-16 sm:h-16 rounded-full flex items-center justify-center text-white font-bold text-lg sm:text-xl mx-auto mb-4 sm:mb-6">
+                        <svg class="w-6 h-6 sm:w-8 sm:h-8" fill="currentColor" viewBox="0 0 20 20">
+                            <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-8.293l-3-3a1 1 0 00-1.414 0l-3 3a1 1 0 001.414 1.414L9 9.414V13a1 1 0 102 0V9.414l1.293 1.293a1 1 0 001.414-1.414z"/>
+                        </svg>
+                    </div>
+                    <h3 class="text-xl sm:text-2xl font-bold text-gray-900 mb-3 sm:mb-4">24-Hour Delivery</h3>
+                    <p class="text-gray-600 leading-relaxed text-sm sm:text-base">Swift and reliable delivery within 24 hours, ensuring patients get their medications when they need them most.</p>
+                </div>
+                
+                <!-- Feature 5 -->
+                <div class="feature-card glass-effect rounded-3xl p-6 sm:p-8 text-center">
+                    <div class="number-circle w-12 h-12 sm:w-16 sm:h-16 rounded-full flex items-center justify-center text-white font-bold text-lg sm:text-xl mx-auto mb-4 sm:mb-6">
+                        <svg class="w-6 h-6 sm:w-8 sm:h-8" fill="currentColor" viewBox="0 0 20 20">
+                            <path fill-rule="evenodd" d="M4 4a2 2 0 00-2 2v8a2 2 0 002 2h12a2 2 0 002-2V6a2 2 0 00-2-2H4zm12 4l-8 5-8-5V6h16v2z"/>
+                        </svg>
+                    </div>
+                    <h3 class="text-xl sm:text-2xl font-bold text-gray-900 mb-3 sm:mb-4">Easy Management</h3>
+                    <p class="text-gray-600 leading-relaxed text-sm sm:text-base">Complete portal management with automated invoicing, order tracking, and seamless communication tools.</p>
+                </div>
+                
+                <!-- Feature 6 -->
+                <div class="feature-card glass-effect rounded-3xl p-6 sm:p-8 text-center">
+                    <div class="number-circle w-12 h-12 sm:w-16 sm:h-16 rounded-full flex items-center justify-center text-white font-bold text-lg sm:text-xl mx-auto mb-4 sm:mb-6">
+                        <svg class="w-6 h-6 sm:w-8 sm:h-8" fill="currentColor" viewBox="0 0 20 20">
+                            <path d="M4 3a2 2 0 000 4h12a2 2 0 000-4H4z"/>
+                            <path fill-rule="evenodd" d="M3 8a2 2 0 012-2v9a2 2 0 002 2h6a2 2 0 002-2V6a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2V8z"/>
+                        </svg>
+                    </div>
+                    <h3 class="text-xl sm:text-2xl font-bold text-gray-900 mb-3 sm:mb-4">Photo Proof Delivery</h3>
+                    <p class="text-gray-600 leading-relaxed text-sm sm:text-base">Every delivery includes photo documentation for verification and peace of mind for all parties involved.</p>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- How It Works Section -->
+    <section class="py-16 sm:py-24 bg-gradient-to-br from-gray-50 to-blue-50 relative overflow-hidden">
+        <div class="max-w-7xl mx-auto px-4">
+            <div class="text-center mb-12 sm:mb-20">
+                <h2 class="text-3xl sm:text-4xl md:text-5xl font-bold text-gray-900 mb-4 sm:mb-6">
+                    How It <span class="bg-gradient-to-r from-blue-600 to-green-600 bg-clip-text text-transparent">Works</span>
+                </h2>
+                <p class="text-lg sm:text-xl text-gray-600 max-w-3xl mx-auto px-4">
+                    Simple, secure, and efficient process designed to make medicine delivery seamless for everyone.
+                </p>
+            </div>
+            
+            <div class="grid grid-cols-1 lg:grid-cols-2 gap-12 sm:gap-16">
+                <!-- For Pharmacies -->
+                <div>
+                    <h3 class="text-2xl sm:text-3xl font-bold text-gray-900 mb-6 sm:mb-8 text-center">For Pharmacies</h3>
+                    <div class="space-y-6 sm:space-y-8">
+                        <div class="flex items-start space-x-4 sm:space-x-6">
+                            <div class="number-circle w-10 h-10 sm:w-12 sm:h-12 rounded-full flex items-center justify-center text-white font-bold text-base sm:text-lg flex-shrink-0">1</div>
+                            <div>
+                                <h4 class="text-lg sm:text-xl font-bold text-gray-900 mb-2">Create Pickup Order</h4>
+                                <p class="text-gray-600 text-sm sm:text-base">Simply create a pickup request through our user-friendly portal with patient and medication details.</p>
+                            </div>
+                        </div>
+                        <div class="step-line ml-5 sm:ml-6 w-px h-8 sm:h-12"></div>
+                        
+                        <div class="flex items-start space-x-4 sm:space-x-6">
+                            <div class="number-circle w-10 h-10 sm:w-12 sm:h-12 rounded-full flex items-center justify-center text-white font-bold text-base sm:text-lg flex-shrink-0">2</div>
+                            <div>
+                                <h4 class="text-lg sm:text-xl font-bold text-gray-900 mb-2">Driver Assignment</h4>
+                                <p class="text-gray-600 text-sm sm:text-base">Our verified drivers receive the order notification and the nearest available driver accepts the delivery.</p>
+                            </div>
+                        </div>
+                        <div class="step-line ml-5 sm:ml-6 w-px h-8 sm:h-12"></div>
+                        
+                        <div class="flex items-start space-x-4 sm:space-x-6">
+                            <div class="number-circle w-10 h-10 sm:w-12 sm:h-12 rounded-full flex items-center justify-center text-white font-bold text-base sm:text-lg flex-shrink-0">3</div>
+                            <div>
+                                <h4 class="text-lg sm:text-xl font-bold text-gray-900 mb-2">Track & Deliver</h4>
+                                <p class="text-gray-600 text-sm sm:text-base">Monitor the delivery in real-time and receive confirmation with photo proof once delivered safely.</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- For Drivers -->
+                <div>
+                    <h3 class="text-2xl sm:text-3xl font-bold text-gray-900 mb-6 sm:mb-8 text-center">For Drivers</h3>
+                    <div class="space-y-6 sm:space-y-8">
+                        <div class="flex items-start space-x-4 sm:space-x-6">
+                            <div class="number-circle w-10 h-10 sm:w-12 sm:h-12 rounded-full flex items-center justify-center text-white font-bold text-base sm:text-lg flex-shrink-0">1</div>
+                            <div>
+                                <h4 class="text-lg sm:text-xl font-bold text-gray-900 mb-2">Receive Offers</h4>
+                                <p class="text-gray-600 text-sm sm:text-base">Get instant notifications for delivery opportunities in your area with all necessary details.</p>
+                            </div>
+                        </div>
+                        <div class="step-line ml-5 sm:ml-6 w-px h-8 sm:h-12"></div>
+                        
+                        <div class="flex items-start space-x-4 sm:space-x-6">
+                            <div class="number-circle w-10 h-10 sm:w-12 sm:h-12 rounded-full flex items-center justify-center text-white font-bold text-base sm:text-lg flex-shrink-0">2</div>
+                            <div>
+                                <h4 class="text-lg sm:text-xl font-bold text-gray-900 mb-2">Accept & Pickup</h4>
+                                <p class="text-gray-600 text-sm sm:text-base">Accept the delivery offer, navigate to the pharmacy, and securely collect the medication package.</p>
+                            </div>
+                        </div>
+                        <div class="step-line ml-5 sm:ml-6 w-px h-8 sm:h-12"></div>
+                        
+                        <div class="flex items-start space-x-4 sm:space-x-6">
+                            <div class="number-circle w-10 h-10 sm:w-12 sm:h-12 rounded-full flex items-center justify-center text-white font-bold text-base sm:text-lg flex-shrink-0">3</div>
+                            <div>
+                                <h4 class="text-lg sm:text-xl font-bold text-gray-900 mb-2">Deliver & Earn</h4>
+                                <p class="text-gray-600 text-sm sm:text-base">Complete the delivery with photo proof, confirm delivery, and earn your payment instantly.</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- CTA Section -->
+    <section class="py-16 sm:py-24 gradient-bg relative overflow-hidden">
+        <div class="absolute inset-0 bg-black/20"></div>
+        <div class="relative z-10 max-w-4xl mx-auto px-4 text-center">
+            <h2 class="text-3xl sm:text-4xl md:text-6xl font-bold text-white mb-6 sm:mb-8 leading-tight">
+                Ready to Transform
+                <span class="block">Medicine Delivery?</span>
+            </h2>
+            <p class="text-lg sm:text-xl text-blue-100 mb-8 sm:mb-12 max-w-3xl mx-auto px-4">
+                Join thousands of pharmacies and drivers who trust CanaDrop for secure, reliable, and swift medicine delivery services.
+            </p>
+            
+            <div class="flex flex-col sm:flex-row gap-4 sm:gap-6 justify-center px-4">
+                <a href="/pharmacyLogin/" class="w-full sm:w-auto bg-white text-blue-600 px-8 sm:px-12 py-3 sm:py-4 rounded-full font-bold text-base sm:text-lg hover:bg-blue-50 transform hover:-translate-y-1 transition-all duration-300 shadow-2xl">
+                    Start as Pharmacy
+                </a>
+                <a href="/driverLogin/" class="w-full sm:w-auto bg-green-500 text-white px-8 sm:px-12 py-3 sm:py-4 rounded-full font-bold text-base sm:text-lg hover:bg-green-400 transform hover:-translate-y-1 transition-all duration-300 shadow-2xl">
+                    Join as Driver
+                </a>
+            </div>
+        </div>
+    </section>
+
+    <!-- Footer -->
+    <footer class="bg-gray-900 text-white py-12 sm:py-16">
+        <div class="max-w-7xl mx-auto px-4">
+            <div class="text-center">
+                <div class="flex items-center justify-center space-x-3 mb-4 sm:mb-6">
+                    <img src="https://i.postimg.cc/c4jt62GM/Website-Logo-No-Background.png" alt="CanaDrop Logo" class="h-10 sm:h-12 w-auto">
+                    <div>
+                        <h3 class="text-xl sm:text-2xl font-bold">CanaDrop</h3>
+                        <p class="text-xs sm:text-sm text-gray-400">By CGC - Cana Group of Companies</p>
+                    </div>
+                </div>
+                
+                <p class="text-base sm:text-lg text-gray-300 mb-6 sm:mb-8 max-w-2xl mx-auto px-4">
+                    Revolutionizing medicine delivery with secure, reliable, and swift logistics solutions for healthcare providers and patients across Canada.
+                </p>
+                
+                <div class="border-t border-gray-800 pt-6 sm:pt-8">
+                    <p class="text-gray-400 text-sm sm:text-base">
+                        © 2024 CanaDrop - Cana Group of Companies. All rights reserved.
+                    </p>
+                </div>
+            </div>
+        </div>
+    </footer>
+
+    <script>
+        // Mobile menu functionality
+        const mobileMenuButton = document.getElementById('mobile-menu-button');
+        const mobileMenu = document.getElementById('mobile-menu');
+        const mobileMenuOverlay = document.getElementById('mobile-menu-overlay');
+        const mobileMenuClose = document.getElementById('mobile-menu-close');
+
+        const openMobileMenu = () => {
+            mobileMenu.classList.add('open');
+            mobileMenuOverlay.classList.add('open');
+            mobileMenuButton.classList.add('open');
+            document.body.style.overflow = 'hidden';
+        };
+
+        const closeMobileMenu = () => {
+            mobileMenu.classList.remove('open');
+            mobileMenuOverlay.classList.remove('open');
+            mobileMenuButton.classList.remove('open');
+            document.body.style.overflow = '';
+        };
+
+        mobileMenuButton.addEventListener('click', openMobileMenu);
+        mobileMenuClose.addEventListener('click', closeMobileMenu);
+        mobileMenuOverlay.addEventListener('click', closeMobileMenu);
+
+        // Close mobile menu when clicking on menu links
+        mobileMenu.querySelectorAll('a').forEach(link => {
+            link.addEventListener('click', closeMobileMenu);
+        });
+
+        // Close mobile menu on escape key
+        document.addEventListener('keydown', (e) => {
+            if (e.key === 'Escape') {
+                closeMobileMenu();
+            }
+        });
+
+        // Smooth scrolling for anchor links
+        document.querySelectorAll('a[href^="#"]').forEach(anchor => {
+            anchor.addEventListener('click', function (e) {
+                e.preventDefault();
+                document.querySelector(this.getAttribute('href')).scrollIntoView({
+                    behavior: 'smooth'
+                });
+            });
+        });
+
+        // Add scroll animations
+        const observerOptions = {
+            threshold: 0.1,
+            rootMargin: '0px 0px -50px 0px'
+        };
+
+        const observer = new IntersectionObserver((entries) => {
+            entries.forEach(entry => {
+                if (entry.isIntersecting) {
+                    entry.target.style.animationPlayState = 'running';
+                }
+            });
+        }, observerOptions);
+
+        // Observe all animated elements
+        document.querySelectorAll('.fade-in-up').forEach(el => {
+            el.style.animationPlayState = 'paused';
+            observer.observe(el);
+        });
+
+        // Parallax effect for background elements (disabled on mobile for performance)
+        const handleParallax = () => {
+            if (window.innerWidth > 768) {
+                const scrolled = window.pageYOffset;
+                const parallax = document.querySelectorAll('.floating-animation');
+                const speed = 0.5;
+
+                parallax.forEach(element => {
+                    const yPos = -(scrolled * speed);
+                    element.style.transform = `translate3d(0, ${yPos}px, 0)`;
+                });
+            }
+        };
+
+        window.addEventListener('scroll', handleParallax);
+
+        // Add loading animation on page load
+        window.addEventListener('load', () => {
+            document.body.classList.add('loaded');
+        });
+
+        // Navbar scroll effect
+        window.addEventListener('scroll', () => {
+            const navbar = document.querySelector('nav');
+            if (window.scrollY > 100) {
+                navbar.classList.add('backdrop-blur-xl', 'bg-white/95');
+                navbar.classList.remove('bg-white/90');
+            } else {
+                navbar.classList.remove('backdrop-blur-xl', 'bg-white/95');
+                navbar.classList.add('bg-white/90');
+            }
+        });
+
+        // Feature cards hover effect (disabled on touch devices)
+        if (!('ontouchstart' in window)) {
+            document.querySelectorAll('.feature-card').forEach(card => {
+                card.addEventListener('mouseenter', () => {
+                    card.style.transform = 'translateY(-10px) scale(1.02)';
+                });
+                
+                card.addEventListener('mouseleave', () => {
+                    card.style.transform = 'translateY(0) scale(1)';
+                });
+            });
+        }
+
+        // Button click animations
+        document.querySelectorAll('.btn-primary, .btn-secondary').forEach(button => {
+            button.addEventListener('click', function(e) {
+                // Create ripple effect
+                const ripple = document.createElement('span');
+                const rect = this.getBoundingClientRect();
+                const size = Math.max(rect.width, rect.height);
+                const x = e.clientX - rect.left - size / 2;
+                const y = e.clientY - rect.top - size / 2;
+                
+                ripple.style.width = ripple.style.height = size + 'px';
+                ripple.style.left = x + 'px';
+                ripple.style.top = y + 'px';
+                ripple.classList.add('ripple');
+                
+                this.appendChild(ripple);
+                
+                setTimeout(() => {
+                    ripple.remove();
+                }, 600);
+            });
+        });
+
+        // Add custom styles for ripple effect
+        const style = document.createElement('style');
+        style.textContent = `
+            .btn-primary, .btn-secondary {
+                position: relative;
+                overflow: hidden;
+            }
+            
+            .ripple {
+                position: absolute;
+                border-radius: 50%;
+                background: rgba(255, 255, 255, 0.6);
+                transform: scale(0);
+                animation: ripple-animation 0.6s linear;
+                pointer-events: none;
+            }
+            
+            @keyframes ripple-animation {
+                to {
+                    transform: scale(4);
+                    opacity: 0;
+                }
+            }
+            
+            .loaded .fade-in-up {
+                animation-play-state: running;
+            }
+            
+            /* Enhanced focus styles for better accessibility */
+            .btn-primary:focus, .btn-secondary:focus {
+                outline: 2px solid #3B82F6;
+                outline-offset: 2px;
+            }
+            
+            /* Loading state */
+            body:not(.loaded) .fade-in-up {
+                opacity: 0;
+                transform: translateY(30px);
+            }
+
+            /* Mobile menu z-index fix */
+            .mobile-menu {
+                z-index: 60;
+            }
+
+            .mobile-menu-overlay {
+                z-index: 55;
+            }
+
+            /* Improved mobile touch targets */
+            @media (max-width: 768px) {
+                button, a {
+                    min-height: 44px;
+                    min-width: 44px;
+                }
+                
+                .hamburger {
+                    padding: 10px;
+                    min-width: 44px;
+                    min-height: 44px;
+                    display: flex;
+                    align-items: center;
+                    justify-content: center;
+                }
+                
+                /* Disable hover effects on touch devices */
+                .btn-primary:hover, .btn-secondary:hover {
+                    transform: none;
+                    box-shadow: 0 10px 25px rgba(59, 130, 246, 0.3);
+                }
+                
+                .feature-card:hover {
+                    transform: none;
+                }
+            }
+            
+            /* Improved accessibility */
+            @media (prefers-reduced-motion: reduce) {
+                *, *::before, *::after {
+                    animation-duration: 0.01ms !important;
+                    animation-iteration-count: 1 !important;
+                    transition-duration: 0.01ms !important;
+                }
+                
+                .floating-animation, .floating-animation-delayed {
+                    animation: none;
+                }
+                
+                .scroll-indicator {
+                    animation: none;
+                }
+            }
+
+            /* Prevent horizontal scroll on small screens */
+            @media (max-width: 640px) {
+                body {
+                    overflow-x: hidden;
+                }
+                
+                .container {
+                    padding-left: 1rem;
+                    padding-right: 1rem;
+                }
+            }
+
+            /* Better mobile typography */
+            @media (max-width: 480px) {
+                .text-3xl { font-size: 1.5rem !important; }
+                .text-4xl { font-size: 1.75rem !important; }
+                .text-5xl { font-size: 2rem !important; }
+                .text-7xl { font-size: 2.25rem !important; }
+                
+                .px-4 { padding-left: 0.75rem !important; padding-right: 0.75rem !important; }
+            }
+        `;
+        document.head.appendChild(style);
+
+        // Intersection Observer for counting animations (if you want to add counters later)
+        const countUp = (element, target, duration = 2000) => {
+            let start = 0;
+            const increment = target / (duration / 16);
+            
+            const timer = setInterval(() => {
+                start += increment;
+                element.textContent = Math.floor(start);
+                
+                if (start >= target) {
+                    element.textContent = target;
+                    clearInterval(timer);
+                }
+            }, 16);
+        };
+
+        // Preload critical images
+        const preloadImages = [
+            'https://i.postimg.cc/c4jt62GM/Website-Logo-No-Background.png'
+        ];
+
+        preloadImages.forEach(src => {
+            const img = new Image();
+            img.src = src;
+        });
+
+        // Add smooth reveal animation for sections
+        const revealSections = () => {
+            const sections = document.querySelectorAll('section');
+            
+            sections.forEach(section => {
+                const rect = section.getBoundingClientRect();
+                const isVisible = (rect.top <= window.innerHeight * 0.75);
+                
+                if (isVisible) {
+                    section.classList.add('revealed');
+                }
+            });
+        };
+
+        window.addEventListener('scroll', revealSections);
+        revealSections(); // Initial call
+
+        // Enhanced mobile menu handling
+        const handleResize = () => {
+            const vh = window.innerHeight * 0.01;
+            document.documentElement.style.setProperty('--vh', `${vh}px`);
+            
+            // Close mobile menu on resize to larger screen
+            if (window.innerWidth >= 768) {
+                closeMobileMenu();
+            }
+        };
+
+        window.addEventListener('resize', handleResize);
+        handleResize();
+
+        // Performance optimization: throttle scroll events
+        let ticking = false;
+
+        const updateOnScroll = () => {
+            // Parallax and other scroll-based animations (only on desktop)
+            if (window.innerWidth > 768) {
+                const scrolled = window.pageYOffset;
+                const rate = scrolled * -0.5;
+                
+                // Apply transformations
+                document.querySelectorAll('.floating-animation').forEach(element => {
+                    element.style.transform = `translate3d(0, ${rate}px, 0)`;
+                });
+            }
+            
+            ticking = false;
+        };
+
+        const requestTick = () => {
+            if (!ticking) {
+                requestAnimationFrame(updateOnScroll);
+                ticking = true;
+            }
+        };
+
+        window.addEventListener('scroll', requestTick);
+
+        // Initialize everything when DOM is ready
+        document.addEventListener('DOMContentLoaded', () => {
+            console.log('CanaDrop Landing Page Loaded Successfully');
+            
+            // Add any initialization code here
+            setTimeout(() => {
+                document.body.classList.add('loaded');
+            }, 100);
+        });
+
+        // Handle viewport changes for mobile browsers
+        const setVH = () => {
+            let vh = window.innerHeight * 0.01;
+            document.documentElement.style.setProperty('--vh', `${vh}px`);
+        };
+
+        window.addEventListener('resize', setVH);
+        window.addEventListener('orientationchange', setVH);
+        setVH();
+    </script>
+</body>
+</html>

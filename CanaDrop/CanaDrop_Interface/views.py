@@ -42,6 +42,11 @@ from google.cloud import storage
 import io
 import pytz
 from datetime import timedelta, date, datetime
+from django.http import JsonResponse
+from django.views.decorators.csrf import csrf_exempt
+from django.views.decorators.http import require_http_methods
+from django.core.exceptions import ValidationError
+import json
 
 
 # Add this for better error logging
@@ -71,6 +76,13 @@ def driverAcceptedDeliveriesView(request):
 
 def driverFinancesView(request):
     return render(request, 'driverFinances.html')
+
+def contactAdminView(request):
+    return render(request, 'contactAdmin.html')
+
+def landingView(request):
+    return render(request, 'landingPage.html')
+
 
 @csrf_exempt
 def pharmacy_login_api(request):
@@ -2418,5 +2430,96 @@ def driver_invoice_weeks(request):
     }
 
     return JsonResponse(response_payload, safe=True)
+
+
+
+@csrf_exempt
+@require_http_methods(["POST"])
+def contact_admin_api(request):
+    try:
+        # Parse JSON body
+        try:
+            data = json.loads(request.body)
+        except json.JSONDecodeError:
+            return JsonResponse({'error': 'Invalid JSON'}, status=400)
+
+        # Get data
+        subject = data.get('subject')
+        other_subject = data.get('otherSubject', '')
+        message = data.get('message')
+        pharmacy_id = data.get('pharmacy_id')
+        driver_id = data.get('driver_id')
+        
+        # Validate required fields
+        if not subject:
+            return JsonResponse({'error': 'Subject is required'}, status=400)
+        
+        if not message:
+            return JsonResponse({'error': 'Message is required'}, status=400)
+        
+        # Validate that either pharmacy_id or driver_id is provided
+        if not pharmacy_id and not driver_id:
+            return JsonResponse({'error': 'User authentication required'}, status=400)
+        
+        # Validate 'other' subject
+        if subject == 'other':
+            if not other_subject or not other_subject.strip():
+                return JsonResponse({'error': 'Please specify your subject when selecting "Other"'}, status=400)
+            if len(other_subject) > 255:
+                return JsonResponse({'error': 'Subject too long (maximum 255 characters)'}, status=400)
+        
+        # Validate subject choice
+        valid_subjects = [
+            'account_creation', 'login_problem', 'password_reset', 'profile_update',
+            'order_placement', 'order_cancellation', 'order_tracking', 'order_payment',
+            'pickup_issue', 'delivery_delay', 'delivery_incorrect', 'driver_unavailable',
+            'invoice_generated', 'invoice_payment', 'driver_invoice',
+            'technical_bug', 'cloud_storage', 'notification',
+            'feedback', 'other'
+        ]
+        
+        if subject not in valid_subjects:
+            return JsonResponse({'error': 'Invalid subject category'}, status=400)
+        
+        # Prepare contact data
+        contact_data = {
+            'subject': subject,
+            'message': message.strip(),
+            'status': 'pending'
+        }
+        
+        if subject == 'other':
+            contact_data['other_subject'] = other_subject.strip()
+        
+        # Add pharmacy or driver reference
+        if pharmacy_id:
+            try:
+                pharmacy = Pharmacy.objects.get(id=pharmacy_id)
+                contact_data['pharmacy'] = pharmacy
+            except Pharmacy.DoesNotExist:
+                return JsonResponse({'error': 'Invalid pharmacy ID'}, status=400)
+        
+        if driver_id:
+            try:
+                driver = Driver.objects.get(id=driver_id)
+                contact_data['driver'] = driver
+            except Driver.DoesNotExist:
+                return JsonResponse({'error': 'Invalid driver ID'}, status=400)
+        
+        # Create record
+        contact = ContactAdmin.objects.create(**contact_data)
+        
+        return JsonResponse({
+            'success': True,
+            'message': 'Your message has been sent successfully. We will get back to you soon.',
+            'contact_id': contact.id
+        })
+        
+    except Exception as e:
+        return JsonResponse({
+            'error': 'An error occurred while processing your request. Please try again.'
+        }, status=500)
+
+
 
 

@@ -205,6 +205,73 @@ class DriverInvoice(models.Model):
     class Meta:
         db_table = 'canadrop_interface_driverinvoice'
 
+
+class ContactAdmin(models.Model):
+    STATUS_CHOICES = [
+        ('pending', 'Pending'),
+        ('in_progress', 'In Progress'),
+        ('resolved', 'Resolved'),
+    ]
+
+    SUBJECT_CHOICES = [
+        # Account / Login issues
+        ('account_creation', 'Account Creation Issue'),
+        ('login_problem', 'Login / Authentication Problem'),
+        ('password_reset', 'Password Reset Issue'),
+        ('profile_update', 'Profile / Information Update Issue'),
+
+        # Order related
+        ('order_placement', 'Order Placement Issue'),
+        ('order_cancellation', 'Order Cancellation Issue'),
+        ('order_tracking', 'Order Tracking / Status Issue'),
+        ('order_payment', 'Order Payment / Rate Issue'),
+
+        # Delivery related
+        ('pickup_issue', 'Pickup Issue by Driver'),
+        ('delivery_delay', 'Delivery Delay'),
+        ('delivery_incorrect', 'Incorrect Delivery / Item Issue'),
+        ('driver_unavailable', 'Driver Unavailable / Assignment Issue'),
+
+        # Invoice / Payment related
+        ('invoice_generated', 'Invoice Generated Issue'),
+        ('invoice_payment', 'Invoice Payment / Stripe Issue'),
+        ('driver_invoice', 'Driver Invoice / Payment Issue'),
+
+        # Technical / App issues
+        ('technical_bug', 'Technical / App Bug'),
+        ('cloud_storage', 'Cloud / Image Upload Issue'),
+        ('notification', 'Notification / Alert Issue'),
+
+        # Feedback
+        ('feedback', 'Feedback / Suggestion'),
+
+        # Catch-all
+        ('other', 'Other'),
+    ]
+
+    # Either a pharmacy or a driver can contact admin
+    pharmacy = models.ForeignKey(Pharmacy, on_delete=models.SET_NULL, null=True, blank=True, related_name='contacts')
+    driver = models.ForeignKey(Driver, on_delete=models.SET_NULL, null=True, blank=True, related_name='contacts')
+
+    subject = models.CharField(max_length=50, choices=SUBJECT_CHOICES)
+    other_subject = models.CharField(max_length=255, blank=True, null=True)  # Only used if subject='other'
+    message = models.TextField()
+    admin_response = models.TextField(blank=True, null=True)
+    status = models.CharField(max_length=20, choices=STATUS_CHOICES, default='pending')
+
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    def __str__(self):
+        sender = self.pharmacy.name if self.pharmacy else self.driver.name if self.driver else "Unknown"
+        subject_display = self.other_subject if self.subject == 'other' else self.get_subject_display()
+        return f"Contact from {sender} - {subject_display}"
+
+    class Meta:
+        db_table = 'canadrop_interface_contactadmin'
+        ordering = ['-created_at']
+
+
 # _________________________________________________________________________________________________________________
 # AUDIT TABLES
 # _________________________________________________________________________________________________________________
