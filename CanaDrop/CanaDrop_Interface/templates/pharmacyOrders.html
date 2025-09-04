@@ -400,14 +400,13 @@ function getCookie(name) {
 
 // Initialize page on DOM load
 document.addEventListener('DOMContentLoaded', function() {
-    console.log('DOM loaded, initializing page...');
+    
     
     // Get pharmacy ID from cookies
     currentPharmacyId = getCookie('pharmacyId');
     currentPharmacyName = getCookie('pharmacyName') || 'Unknown Pharmacy';
     
-    console.log('Pharmacy ID from cookies:', currentPharmacyId);
-    console.log('Pharmacy Name from cookies:', currentPharmacyName);
+
     
     if (!currentPharmacyId) {
         console.error('No pharmacy ID found in cookies');
@@ -416,7 +415,7 @@ document.addEventListener('DOMContentLoaded', function() {
     }
     
     // Load orders on page load
-    console.log('Starting to load pharmacy orders...');
+    
     loadPharmacyOrders();
 
     // Mobile menu event listeners
@@ -446,11 +445,11 @@ document.addEventListener('DOMContentLoaded', function() {
 // Load pharmacy orders from API
 async function loadPharmacyOrders() {
     try {
-        console.log('loadPharmacyOrders called for pharmacy ID:', currentPharmacyId);
+        
         showLoading(true);
         
         const apiUrl = `/api/pharmacy/${currentPharmacyId}/orders/`;
-        console.log('Making API request to:', apiUrl);
+        
         
         const response = await fetch(apiUrl, {
             method: 'GET',
@@ -459,8 +458,7 @@ async function loadPharmacyOrders() {
             }
         });
         
-        console.log('Response status:', response.status);
-        console.log('Response ok:', response.ok);
+
         
         if (!response.ok) {
             const errorText = await response.text();
@@ -469,11 +467,11 @@ async function loadPharmacyOrders() {
         }
         
         const data = await response.json();
-        console.log('Received data:', data);
+       
         
         if (data.success) {
             ordersData = data.orders;
-            console.log('Orders data stored:', ordersData.length, 'orders');
+            
             renderOrders(data.orders);
         } else {
             console.error('API returned success=false:', data.error);
@@ -504,7 +502,7 @@ function getStatusBadge(status) {
 
 // Render orders in the UI
 function renderOrders(orders) {
-    console.log('renderOrders called with', orders.length, 'orders');
+   
     
     const ordersList = document.getElementById('ordersList');
     if (!ordersList) {
@@ -513,7 +511,7 @@ function renderOrders(orders) {
     }
     
     if (orders.length === 0) {
-        console.log('No orders to display');
+        
         ordersList.innerHTML = `
             <div class="text-center py-12">
                 <div class="text-gray-400 mb-4">
@@ -530,7 +528,7 @@ function renderOrders(orders) {
     let ordersHtml = '';
     
     orders.forEach((order, index) => {
-        console.log(`Processing order ${index + 1}:`, order);
+        
         
         const hasHandoverImage = order.images && order.images.handover && order.images.handover.length > 0;
         const rowColorClass = hasHandoverImage ? 'hover:bg-gray-50' : 'bg-red-50 hover:bg-red-100';
@@ -647,14 +645,14 @@ ordersHtml += `
 `;
     });
     
-    console.log('Setting innerHTML for ordersList');
+   
     ordersList.innerHTML = ordersHtml;
-    console.log('Orders rendered successfully');
+
 }
 
 // Render detailed order information
 function renderOrderDetails(order) {
-    console.log('renderOrderDetails called for order:', order.id);
+    
     
     const timelineHtml = order.timeline ? order.timeline.map(entry => `
         <div class="flex items-center">
@@ -677,7 +675,7 @@ function renderOrderDetails(order) {
 
     // Check if photo replacement should be disabled (when status is picked_up or later stages)
     const canReplacePhoto = !['picked_up', 'delivered', 'cancelled'].includes(order.status);
-    console.log(`Order ${order.id} - Status: ${order.status}, Can replace photo: ${canReplacePhoto}`);
+    
 
     return `
         <div class="grid grid-cols-1 lg:grid-cols-2 gap-8">
@@ -788,7 +786,7 @@ function renderOrderDetails(order) {
 
 // Render images for a specific stage
 function renderImages(images, stage) {
-    console.log(`renderImages called for stage: ${stage}, images count: ${images ? images.length : 0}`);
+   
     
     if (!images || images.length === 0) return '';
     
@@ -829,7 +827,7 @@ function renderProgressSteps(currentStatus) {
 
 // Toggle order details visibility
 function toggleOrderDetails(orderId) {
-    console.log('toggleOrderDetails called for:', orderId);
+   
     
     const details = document.getElementById(`details-${orderId}`);
     const arrow = document.getElementById(`arrow-${orderId}`);
@@ -840,11 +838,11 @@ function toggleOrderDetails(orderId) {
     }
     
     if (details.classList.contains('hidden')) {
-        console.log('Showing details for:', orderId);
+        
         details.classList.remove('hidden');
         arrow.style.transform = 'rotate(90deg)';
     } else {
-        console.log('Hiding details for:', orderId);
+        
         details.classList.add('hidden');
         arrow.style.transform = 'rotate(0deg)';
     }
@@ -852,11 +850,11 @@ function toggleOrderDetails(orderId) {
 
 // Trigger file upload
 function triggerFileUpload(orderNumber) {
-    console.log('triggerFileUpload called for order:', orderNumber);
+    
     
     const uploadInput = document.getElementById(`handover-upload-${orderNumber}`);
     if (uploadInput) {
-        console.log('Upload input found, triggering click');
+        
         uploadInput.click();
     } else {
         console.error('Upload input not found for order:', orderNumber);
@@ -865,7 +863,7 @@ function triggerFileUpload(orderNumber) {
 
 // Handle image upload for pharmacy handover
 async function handleImageUpload(event, orderNumber, driverId) {
-    console.log('handleImageUpload called:', { orderNumber, driverId });
+  
     
     const file = event.target.files[0];
     if (!file || !file.type.startsWith('image/')) {
@@ -874,7 +872,7 @@ async function handleImageUpload(event, orderNumber, driverId) {
         return;
     }
 
-    console.log('File selected:', { name: file.name, size: file.size, type: file.type });
+  
 
     try {
         showLoading(true, 'Uploading image...');
@@ -887,18 +885,18 @@ async function handleImageUpload(event, orderNumber, driverId) {
         
         // Add driver_id if available
         if (driverId && driverId !== 'null' && driverId !== '') {
-            console.log('Adding driver_id to form data:', driverId);
+            
             formData.append('driver_id', driverId);
         }
         
-        console.log('Sending upload request to /api/upload-handover-image/');
+       
         
         const response = await fetch('/api/upload-handover-image/', {
             method: 'POST',
             body: formData
         });
         
-        console.log('Upload response status:', response.status);
+        
         
         if (!response.ok) {
             const errorText = await response.text();
@@ -907,10 +905,10 @@ async function handleImageUpload(event, orderNumber, driverId) {
         }
         
         const data = await response.json();
-        console.log('Upload response data:', data);
+        
         
         if (data.success) {
-            console.log('Upload successful');
+           
             showSuccess('Handover image uploaded successfully!');
             // Reload orders to reflect changes
             await loadPharmacyOrders();
@@ -932,7 +930,7 @@ async function handleImageUpload(event, orderNumber, driverId) {
 
 // Open image modal
 function openImageModal(imageSrc, title, timestamp) {
-    console.log('openImageModal called:', { imageSrc, title, timestamp });
+  
     
     const modal = document.getElementById('imageModal');
     const modalImage = document.getElementById('modalImage');
@@ -955,7 +953,7 @@ function openImageModal(imageSrc, title, timestamp) {
 
 // Close image modal
 function closeImageModal() {
-    console.log('closeImageModal called');
+   
     
     const modal = document.getElementById('imageModal');
     if (modal) {
@@ -966,7 +964,7 @@ function closeImageModal() {
 
 // Refresh orders function
 async function refreshOrders() {
-    console.log('refreshOrders called');
+    
     
     const refreshBtn = event.target.closest('button').querySelector('svg');
     if (refreshBtn) {
@@ -1010,7 +1008,7 @@ function capitalizeFirst(str) {
 
 // UI feedback functions
 function showLoading(show, message = 'Loading...') {
-    console.log('showLoading called:', { show, message });
+ 
     
     let loader = document.getElementById('loadingOverlay');
     
@@ -1037,17 +1035,17 @@ function showLoading(show, message = 'Loading...') {
 }
 
 function showError(message) {
-    console.log('showError called:', message);
+   
     showNotification(message, 'error');
 }
 
 function showSuccess(message) {
-    console.log('showSuccess called:', message);
+   
     showNotification(message, 'success');
 }
 
 function showNotification(message, type = 'info') {
-    console.log('showNotification called:', { message, type });
+    
     
     const notification = document.createElement('div');
     const bgColor = type === 'error' ? 'bg-red-500' : type === 'success' ? 'bg-green-500' : 'bg-blue-500';

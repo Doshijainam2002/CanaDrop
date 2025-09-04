@@ -37,4 +37,7 @@ urlpatterns = [
 
     path('', views.landingView, name='landingPage'),
 
+
+    
+
 ]

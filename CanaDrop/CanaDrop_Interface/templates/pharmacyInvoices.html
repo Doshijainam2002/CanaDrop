@@ -392,7 +392,7 @@ async function fetchInvoices() {
     
     // Get pharmacy ID from cookies
     pharmacyId = getCookie('pharmacyId');
-    console.log('Pharmacy ID from cookie:', pharmacyId);
+    
     
     if (!pharmacyId) {
         console.error('Pharmacy ID not found in cookies');
@@ -406,10 +406,10 @@ async function fetchInvoices() {
         updateRefreshButton(true);
         
         const response = await fetch(`/api/generate-weekly-invoices/?pharmacyId=${pharmacyId}`);
-        console.log('Fetch invoices response status:', response.status);
+        
         
         const data = await response.json();
-        console.log('Fetch invoices response data:', data);
+        
         
         if (data.invoices) {
             invoices = data.invoices.map(invoice => ({
@@ -426,7 +426,7 @@ async function fetchInvoices() {
                 orders: invoice.orders || []
             }));
         } else if (data.message) {
-            console.log(data.message);
+            return;
         }
         
         renderInvoices();
@@ -494,8 +494,6 @@ async function redirectToStripe(invoiceId, buttonElement) {
         return;
     }
     
-    console.log('Initiating payment for invoice:', invoice);
-    console.log('Pharmacy ID:', pharmacyId);
     
     try {
         // Show loading state
@@ -510,7 +508,7 @@ async function redirectToStripe(invoiceId, buttonElement) {
             pharmacy_id: parseInt(pharmacyId) // Ensure it's a number
         };
         
-        console.log('Request data for checkout session:', requestData);
+        
         
         // Create Stripe checkout session
         const response = await fetch('/api/create-checkout-session/', {
@@ -522,18 +520,17 @@ async function redirectToStripe(invoiceId, buttonElement) {
             body: JSON.stringify(requestData)
         });
         
-        console.log('Checkout session response status:', response.status);
-        console.log('Checkout session response headers:', response.headers);
+
         
         // Log raw response text for debugging
         const responseText = await response.text();
-        console.log('Raw response text:', responseText);
+        
         
         // Try to parse as JSON
         let data;
         try {
             data = JSON.parse(responseText);
-            console.log('Parsed response data:', data);
+            
         } catch (parseError) {
             console.error('Failed to parse response as JSON:', parseError);
             console.error('Response text:', responseText);
@@ -547,7 +544,7 @@ async function redirectToStripe(invoiceId, buttonElement) {
         }
         
         if (data.checkout_url) {
-            console.log('Redirecting to checkout URL:', data.checkout_url);
+            
             // Redirect to Stripe Checkout
             window.location.href = data.checkout_url;
         } else {
@@ -568,13 +565,20 @@ async function redirectToStripe(invoiceId, buttonElement) {
 }
 
 function downloadPDF(invoiceId) {
-    const invoice = invoices.find(inv => inv.id == invoiceId);
+    console.log('=== PDF Download Debug ===');
+    console.log('Invoice ID:', invoiceId);
+    
+    const invoice = invoices.find(inv => inv.id === invoiceId);
+    console.log('Found invoice:', invoice);
+    console.log('PDF URL:', invoice?.pdfUrl);
+    
     if (!invoice || !invoice.pdfUrl) {
+        console.error('No PDF URL found for invoice');
         alert('PDF not available for this invoice.');
         return;
     }
     
-    // Open PDF in new tab or trigger download
+    console.log('Opening URL:', invoice.pdfUrl);
     window.open(invoice.pdfUrl, '_blank');
 }
 
@@ -805,7 +809,7 @@ function updateStats() {
 
 // Initialize the page
 document.addEventListener('DOMContentLoaded', function() {
-    console.log('DOM Content Loaded, initializing page...');
+    
     
     // Fetch invoices from API on page load
     fetchInvoices();
@@ -865,8 +869,7 @@ function handlePaymentSuccess() {
     const payment = urlParams.get('payment');
     const invoiceId = urlParams.get('invoice_id');
     
-    console.log('Payment status from URL:', payment);
-    console.log('Invoice ID from URL:', invoiceId);
+
     
     if (payment === 'success' && invoiceId) {
         alert(`Payment successful for Invoice #${invoiceId.padStart(6, '0')}!`);
@@ -874,7 +877,7 @@ function handlePaymentSuccess() {
         window.history.replaceState({}, document.title, window.location.pathname);
         // Refresh the invoices to show updated status
         setTimeout(() => {
-            console.log('Refreshing invoices after successful payment...');
+            
             fetchInvoices();
         }, 1000);
     } else if (payment === 'cancelled') {

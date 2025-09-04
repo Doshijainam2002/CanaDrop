@@ -47,6 +47,9 @@ from django.views.decorators.csrf import csrf_exempt
 from django.views.decorators.http import require_http_methods
 from django.core.exceptions import ValidationError
 import json
+from django.conf import settings
+from google.cloud import storage
+
 
 
 # Add this for better error logging
@@ -128,7 +131,7 @@ def validate_address_city(address, city):
         formatted_address = response['results'][0]['formatted_address']
         return city.lower() in formatted_address.lower()
     except Exception as e:
-        print("Address validation failed:", e)
+        # print("Address validation failed:", e)
         return False
 
 
@@ -158,7 +161,7 @@ def get_distance_km(pickup_address, pickup_city, drop_address, drop_city):
         distance_km = distance_meters / 1000  # convert meters to km
         return distance_km, None
     except Exception as e:
-        print("Distance calculation failed:", e)
+        # print("Distance calculation failed:", e)
         return 0, "Failed to calculate distance"
 
 
@@ -168,11 +171,11 @@ def create_order_tracking_entry(order_id, step='pending', performed_by=None, not
     Function to create tracking entries for orders
     """
     try:
-        print(f"Creating tracking entry for order ID: {order_id}")
+        # print(f"Creating tracking entry for order ID: {order_id}")
         
         # Get the order object
         order = DeliveryOrder.objects.get(id=order_id)
-        print(f"Order found: {order}")
+        # print(f"Order found: {order}")
         
         # Create tracking entry with OrderTracking model
         tracking_entry = OrderTracking.objects.create(
@@ -187,11 +190,11 @@ def create_order_tracking_entry(order_id, step='pending', performed_by=None, not
         
         # Force commit
         transaction.commit()
-        print(f"Tracking entry created and committed: ID={tracking_entry.id}")
+        # print(f"Tracking entry created and committed: ID={tracking_entry.id}")
         
         # Verify it was saved
         tracking_count = OrderTracking.objects.filter(order=order).count()
-        print(f"Total tracking entries for order {order.id}: {tracking_count}")
+        # print(f"Total tracking entries for order {order.id}: {tracking_count}")
         
         return {
             "success": True,
@@ -203,13 +206,13 @@ def create_order_tracking_entry(order_id, step='pending', performed_by=None, not
         }
         
     except DeliveryOrder.DoesNotExist:
-        print(f"Order with ID {order_id} not found")
+        # print(f"Order with ID {order_id} not found")
         return {
             "success": False,
             "error": f"Order with ID {order_id} not found"
         }
     except Exception as e:
-        print(f"Error creating tracking entry: {e}")
+        # print(f"Error creating tracking entry: {e}")
         import traceback
         traceback.print_exc()
         return {
@@ -220,15 +223,10 @@ def create_order_tracking_entry(order_id, step='pending', performed_by=None, not
 
 @csrf_exempt
 def create_delivery_order(request):
-    """
-    Main function to create delivery order and initial tracking entry
-    """
-    print("Entered create_delivery_order API")
-    
     if request.method == "POST":
         try:
             data = json.loads(request.body)
-            print(f"Request data: {data}")
+            # print(f"Request data: {data}")
 
             pharmacy_id = data.get('pharmacyId')
             pickup_address = data.get('pickupAddress')
@@ -239,30 +237,30 @@ def create_delivery_order(request):
 
             # Validate required fields
             if not all([pharmacy_id, pickup_address, pickup_city, pickup_day, drop_address, drop_city]):
-                print("Validation failed: Missing required fields")
+                # print("Validation failed: Missing required fields")
                 return JsonResponse({"success": False, "error": "Missing required fields"}, status=400)
 
-            print(f"Fetching pharmacy with ID: {pharmacy_id}")
+            # print(f"Fetching pharmacy with ID: {pharmacy_id}")
             pharmacy = Pharmacy.objects.get(id=pharmacy_id)
-            print(f"Pharmacy found: {pharmacy.name}")
+            # print(f"Pharmacy found: {pharmacy.name}")
 
-            # Get distance dynamically and validate addresses
-            print("Calculating distance...")
+            # Get distance directly - no separate address validation
+            # print("Calculating distance...")
             distance_km, error = get_distance_km(pickup_address, pickup_city, drop_address, drop_city)
             if error:
-                print(f"Address validation failed: {error}")
+                # print(f"Distance calculation failed: {error}")
                 return JsonResponse({"success": False, "error": error}, status=400)
-            print(f"Distance calculated: {distance_km} km")
+            # print(f"Distance calculated: {distance_km} km")
 
             # Determine rate based on distance
             rate_entry = DeliveryDistanceRate.objects.filter(
                 min_distance_km__lte=distance_km
             ).order_by('min_distance_km').last()
             rate = rate_entry.rate if rate_entry else 0
-            print(f"Rate determined: {rate}")
+            # print(f"Rate determined: {rate}")
 
             # Create the delivery order with status 'pending'
-            print("Creating DeliveryOrder...")
+            # print("Creating DeliveryOrder...")
             order = DeliveryOrder.objects.create(
                 pharmacy=pharmacy,
                 pickup_address=pickup_address,
@@ -276,15 +274,15 @@ def create_delivery_order(request):
             
             # Force commit the order creation
             transaction.commit()
-            print(f"Order created and committed: ID={order.id}")
+            # print(f"Order created and committed: ID={order.id}")
             
             # Verify order exists in database
             order_exists = DeliveryOrder.objects.filter(id=order.id).exists()
-            print(f"Order {order.id} exists in database: {order_exists}")
+            # print(f"Order {order.id} exists in database: {order_exists}")
             
             if order_exists:
                 # Create initial tracking entry using the function
-                print("Creating initial tracking entry...")
+                # print("Creating initial tracking entry...")
                 tracking_result = create_order_tracking_entry(
                     order_id=order.id,
                     step='pending',
@@ -293,7 +291,7 @@ def create_delivery_order(request):
                 )
                 
                 if tracking_result["success"]:
-                    print(f"Tracking entry created successfully: {tracking_result}")
+                    # print(f"Tracking entry created successfully: {tracking_result}")
                     return JsonResponse({
                         "success": True,
                         "orderId": order.id,
@@ -304,7 +302,7 @@ def create_delivery_order(request):
                         "message": "Order and tracking created successfully"
                     })
                 else:
-                    print(f"Tracking entry creation failed: {tracking_result['error']}")
+                    # print(f"Tracking entry creation failed: {tracking_result['error']}")
                     # Return success for order but note tracking failure
                     return JsonResponse({
                         "success": True,
@@ -317,60 +315,38 @@ def create_delivery_order(request):
                         "message": "Order created successfully but tracking entry failed"
                     })
             else:
-                print("Order was not properly saved to database")
+                # print("Order was not properly saved to database")
                 return JsonResponse({
                     "success": False, 
                     "error": "Order creation failed - not saved to database"
                 }, status=500)
 
         except Pharmacy.DoesNotExist:
-            print("Pharmacy not found")
+            # print("Pharmacy not found")
             return JsonResponse({"success": False, "error": "Pharmacy not found"}, status=404)
         except Exception as e:
-            print(f"Error in create_delivery_order: {e}")
+            # print(f"Error in create_delivery_order: {e}")
             import traceback
             traceback.print_exc()
             return JsonResponse({"success": False, "error": str(e)}, status=500)
 
-    print("Invalid HTTP method")
+    # print("Invalid HTTP method")
     return JsonResponse({"success": False, "error": "Invalid HTTP method"}, status=405)
-
-
-def validate_address_city(address, city):
-    """
-    Validate that the address belongs to the provided city using Google Geocoding API.
-    Returns True if valid, False otherwise.
-    """
-    try:
-        url = "https://maps.googleapis.com/maps/api/geocode/json"
-        params = {
-            "address": f"{address}, {city}",
-            "key": settings.GOOGLE_MAPS_API_KEY
-        }
-        response = requests.get(url, params=params).json()
-        if response['status'] != 'OK':
-            return False
-        # Check if the city exists in the formatted address
-        formatted_address = response['results'][0]['formatted_address']
-        return city.lower() in formatted_address.lower()
-    except Exception as e:
-        print("Address validation failed:", e)
-        return False
 
 
 def get_distance_km(pickup_address, pickup_city, drop_address, drop_city):
     """
-    Calculate the distance in kilometers between pickup and drop locations
-    using Google Maps Distance Matrix API.
+    Calculate the distance in kilometers between pickup and drop locations 
+    using Google Maps Distance Matrix API - WITHOUT separate address validation.
+    If Google can calculate distance, the addresses are valid enough.
     """
-    # Validate pickup and drop addresses
-    if not validate_address_city(pickup_address, pickup_city):
-        return None, "Pickup address does not match the city"
-    if not validate_address_city(drop_address, drop_city):
-        return None, "Drop address does not match the city"
-
+    
+    # Build full addresses
     full_pickup = f"{pickup_address}, {pickup_city}"
     full_drop = f"{drop_address}, {drop_city}"
+    
+    print(f"🚗 Calculating distance from '{full_pickup}' to '{full_drop}'")
+    
     try:
         url = "https://maps.googleapis.com/maps/api/distancematrix/json"
         params = {
@@ -379,15 +355,64 @@ def get_distance_km(pickup_address, pickup_city, drop_address, drop_city):
             "key": settings.GOOGLE_MAPS_API_KEY,
             "units": "metric"
         }
-        response = requests.get(url, params=params).json()
-        distance_meters = response['rows'][0]['elements'][0]['distance']['value']
-        distance_km = distance_meters / 1000  # convert meters to km
-        return distance_km, None
+        
+        response = requests.get(url, params=params)
+        data = response.json()
+        
+        print(f"📊 Distance Matrix API Status: {data.get('status')}")
+        
+        # Check overall API response
+        if data.get('status') != 'OK':
+            error_msg = f"Distance Matrix API error: {data.get('status', 'UNKNOWN')}"
+            if 'error_message' in data:
+                error_msg += f" - {data['error_message']}"
+            print(f"❌ {error_msg}")
+            return None, error_msg
+        
+        # Check if we have valid response structure
+        rows = data.get('rows', [])
+        if not rows or not rows[0].get('elements'):
+            return None, "No route data returned from Google Maps"
+            
+        element = rows[0]['elements'][0]
+        element_status = element.get('status')
+        
+        print(f"📍 Route Status: {element_status}")
+        
+        if element_status == 'OK':
+            distance_meters = element.get('distance', {}).get('value')
+            if distance_meters is None:
+                return None, "Distance data not found in response"
+                
+            distance_km = distance_meters / 1000
+            duration_text = element.get('duration', {}).get('text', 'Unknown')
+            
+            print(f"✅ Distance: {distance_km} km, Duration: {duration_text}")
+            return distance_km, None
+            
+        elif element_status == 'NOT_FOUND':
+            return None, "One or both addresses could not be found by Google Maps"
+        elif element_status == 'ZERO_RESULTS':
+            return None, "No route could be found between the addresses"
+        elif element_status == 'MAX_WAYPOINTS_EXCEEDED':
+            return None, "Too many waypoints in request"
+        elif element_status == 'MAX_ROUTE_LENGTH_EXCEEDED':
+            return None, "Route is too long"
+        elif element_status == 'INVALID_REQUEST':
+            return None, "Invalid request to Google Maps"
+        else:
+            return None, f"Route calculation failed with status: {element_status}"
+            
+    except KeyError as e:
+        error_msg = f"Unexpected response format from Google Maps API: missing {e}"
+        print(f"❌ {error_msg}")
+        return None, error_msg
     except Exception as e:
-        print("Distance calculation failed:", e)
-        return 0, "Failed to calculate distance"
-
-
+        error_msg = f"Distance calculation failed: {str(e)}"
+        print(f"❌ {error_msg}")
+        import traceback
+        traceback.print_exc()
+        return None, error_msg
 
 
 @csrf_exempt
@@ -403,7 +428,7 @@ def get_delivery_rate(request):
             if not all([pickup_address, pickup_city, drop_address, drop_city]):
                 return JsonResponse({"success": False, "error": "Missing required fields"}, status=400)
 
-            # Get distance dynamically and validate addresses
+            # Get distance directly - no separate address validation
             distance_km, error = get_distance_km(pickup_address, pickup_city, drop_address, drop_city)
             if error:
                 return JsonResponse({"success": False, "error": error}, status=400)
@@ -417,13 +442,229 @@ def get_delivery_rate(request):
             return JsonResponse({
                 "success": True,
                 "distance_km": distance_km,
-                "rate": rate
+                "rate": float(rate)  # Ensure it's a number, not Decimal
             })
 
         except Exception as e:
-            return JsonResponse({"success": False, "error": str(e)}, status=500)
+            print(f"❌ Exception in get_delivery_rate: {str(e)}")
+            import traceback
+            traceback.print_exc()
+            return JsonResponse({"success": False, "error": f"Server error: {str(e)}"}, status=500)
 
     return JsonResponse({"success": False, "error": "Invalid HTTP method"}, status=405)
+
+
+# You can remove this function entirely since we're not using it anymore
+# def validate_address_city(address, city):
+#     """
+#     REMOVED - We now validate addresses through the Distance Matrix API directly
+#     """
+#     pass
+
+
+# @csrf_exempt
+# def create_delivery_order(request):
+
+    
+#     if request.method == "POST":
+#         try:
+#             data = json.loads(request.body)
+#             # print(f"Request data: {data}")
+
+#             pharmacy_id = data.get('pharmacyId')
+#             pickup_address = data.get('pickupAddress')
+#             pickup_city = data.get('pickupCity')
+#             pickup_day = data.get('pickupDay')
+#             drop_address = data.get('dropAddress')
+#             drop_city = data.get('dropCity')
+
+#             # Validate required fields
+#             if not all([pharmacy_id, pickup_address, pickup_city, pickup_day, drop_address, drop_city]):
+#                 # print("Validation failed: Missing required fields")
+#                 return JsonResponse({"success": False, "error": "Missing required fields"}, status=400)
+
+#             # print(f"Fetching pharmacy with ID: {pharmacy_id}")
+#             pharmacy = Pharmacy.objects.get(id=pharmacy_id)
+#             # print(f"Pharmacy found: {pharmacy.name}")
+
+#             # Get distance dynamically and validate addresses
+#             # print("Calculating distance...")
+#             distance_km, error = get_distance_km(pickup_address, pickup_city, drop_address, drop_city)
+#             if error:
+#                 # print(f"Address validation failed: {error}")
+#                 return JsonResponse({"success": False, "error": error}, status=400)
+#             # print(f"Distance calculated: {distance_km} km")
+
+#             # Determine rate based on distance
+#             rate_entry = DeliveryDistanceRate.objects.filter(
+#                 min_distance_km__lte=distance_km
+#             ).order_by('min_distance_km').last()
+#             rate = rate_entry.rate if rate_entry else 0
+#             # print(f"Rate determined: {rate}")
+
+#             # Create the delivery order with status 'pending'
+#             # print("Creating DeliveryOrder...")
+#             order = DeliveryOrder.objects.create(
+#                 pharmacy=pharmacy,
+#                 pickup_address=pickup_address,
+#                 pickup_city=pickup_city,
+#                 pickup_day=parse_date(pickup_day),
+#                 drop_address=drop_address,
+#                 drop_city=drop_city,
+#                 status='pending',  # Set initial status
+#                 rate=rate
+#             )
+            
+#             # Force commit the order creation
+#             transaction.commit()
+#             # print(f"Order created and committed: ID={order.id}")
+            
+#             # Verify order exists in database
+#             order_exists = DeliveryOrder.objects.filter(id=order.id).exists()
+#             # print(f"Order {order.id} exists in database: {order_exists}")
+            
+#             if order_exists:
+#                 # Create initial tracking entry using the function
+#                 # print("Creating initial tracking entry...")
+#                 tracking_result = create_order_tracking_entry(
+#                     order_id=order.id,
+#                     step='pending',
+#                     performed_by=f'Pharmacy: {pharmacy.name}',
+#                     note='Order created and pending driver acceptance'
+#                 )
+                
+#                 if tracking_result["success"]:
+#                     # print(f"Tracking entry created successfully: {tracking_result}")
+#                     return JsonResponse({
+#                         "success": True,
+#                         "orderId": order.id,
+#                         "distance_km": distance_km,
+#                         "rate": str(rate),
+#                         "status": order.status,
+#                         "tracking_id": tracking_result["tracking_id"],
+#                         "message": "Order and tracking created successfully"
+#                     })
+#                 else:
+#                     # print(f"Tracking entry creation failed: {tracking_result['error']}")
+#                     # Return success for order but note tracking failure
+#                     return JsonResponse({
+#                         "success": True,
+#                         "orderId": order.id,
+#                         "distance_km": distance_km,
+#                         "rate": str(rate),
+#                         "status": order.status,
+#                         "tracking_created": False,
+#                         "tracking_error": tracking_result["error"],
+#                         "message": "Order created successfully but tracking entry failed"
+#                     })
+#             else:
+#                 # print("Order was not properly saved to database")
+#                 return JsonResponse({
+#                     "success": False, 
+#                     "error": "Order creation failed - not saved to database"
+#                 }, status=500)
+
+#         except Pharmacy.DoesNotExist:
+#             # print("Pharmacy not found")
+#             return JsonResponse({"success": False, "error": "Pharmacy not found"}, status=404)
+#         except Exception as e:
+#             # print(f"Error in create_delivery_order: {e}")
+#             import traceback
+#             traceback.print_exc()
+#             return JsonResponse({"success": False, "error": str(e)}, status=500)
+
+#     # print("Invalid HTTP method")
+#     return JsonResponse({"success": False, "error": "Invalid HTTP method"}, status=405)
+
+
+# def validate_address_city(address, city):
+#     """
+#     Validate that the address belongs to the provided city using Google Geocoding API.
+#     Returns True if valid, False otherwise.
+#     """
+#     try:
+#         url = "https://maps.googleapis.com/maps/api/geocode/json"
+#         params = {
+#             "address": f"{address}, {city}",
+#             "key": settings.GOOGLE_MAPS_API_KEY
+#         }
+#         response = requests.get(url, params=params).json()
+#         if response['status'] != 'OK':
+#             return False
+#         # Check if the city exists in the formatted address
+#         formatted_address = response['results'][0]['formatted_address']
+#         return city.lower() in formatted_address.lower()
+#     except Exception as e:
+#         # print("Address validation failed:", e)
+#         return False
+
+
+# def get_distance_km(pickup_address, pickup_city, drop_address, drop_city):
+#     """
+#     Calculate the distance in kilometers between pickup and drop locations
+#     using Google Maps Distance Matrix API.
+#     """
+#     # Validate pickup and drop addresses
+#     if not validate_address_city(pickup_address, pickup_city):
+#         return None, "Pickup address does not match the city"
+#     if not validate_address_city(drop_address, drop_city):
+#         return None, "Drop address does not match the city"
+
+#     full_pickup = f"{pickup_address}, {pickup_city}"
+#     full_drop = f"{drop_address}, {drop_city}"
+#     try:
+#         url = "https://maps.googleapis.com/maps/api/distancematrix/json"
+#         params = {
+#             "origins": full_pickup,
+#             "destinations": full_drop,
+#             "key": settings.GOOGLE_MAPS_API_KEY,
+#             "units": "metric"
+#         }
+#         response = requests.get(url, params=params).json()
+#         distance_meters = response['rows'][0]['elements'][0]['distance']['value']
+#         distance_km = distance_meters / 1000  # convert meters to km
+#         return distance_km, None
+#     except Exception as e:
+#         # print("Distance calculation failed:", e)
+#         return 0, "Failed to calculate distance"
+
+
+
+
+# @csrf_exempt
+# def get_delivery_rate(request):
+#     if request.method == "GET":
+#         try:
+#             pickup_address = request.GET.get('pickupAddress')
+#             pickup_city = request.GET.get('pickupCity')
+#             drop_address = request.GET.get('dropAddress')
+#             drop_city = request.GET.get('dropCity')
+
+#             # Validate required fields
+#             if not all([pickup_address, pickup_city, drop_address, drop_city]):
+#                 return JsonResponse({"success": False, "error": "Missing required fields"}, status=400)
+
+#             # Get distance dynamically and validate addresses
+#             distance_km, error = get_distance_km(pickup_address, pickup_city, drop_address, drop_city)
+#             if error:
+#                 return JsonResponse({"success": False, "error": error}, status=400)
+
+#             # Determine rate from DeliveryDistanceRate model
+#             rate_entry = DeliveryDistanceRate.objects.filter(
+#                 min_distance_km__lte=distance_km
+#             ).order_by('min_distance_km').last()
+#             rate = rate_entry.rate if rate_entry else 0
+
+#             return JsonResponse({
+#                 "success": True,
+#                 "distance_km": distance_km,
+#                 "rate": rate
+#             })
+
+#         except Exception as e:
+#             return JsonResponse({"success": False, "error": str(e)}, status=500)
+
+#     return JsonResponse({"success": False, "error": "Invalid HTTP method"}, status=405)
 
 def get_pharmacy_details(request, pharmacy_id):
     try:
@@ -680,7 +921,7 @@ def upload_handover_image_api(request):
             logger.info("Initializing Google Cloud Storage client...")
             
             # Define the path to your GCP service account key file
-            gcp_key_path = "/Users/jainamdoshi/Desktop/Projects/CanaDrop/CanaDrop/gcp_key.json"
+            gcp_key_path = settings.GCP_KEY_PATH
             
             # Check if the key file exists
             if not os.path.exists(gcp_key_path):
@@ -691,7 +932,7 @@ def upload_handover_image_api(request):
                 }, status=500)
             
             # Create credentials from the key file
-            credentials = service_account.Credentials.from_service_account_file(gcp_key_path)
+            credentials = service_account.Credentials.from_service_account_file(settings.GCP_KEY_PATH)
             client = storage.Client(credentials=credentials)
             bucket = client.bucket('canadrop-bucket')
             blob = bucket.blob(blob_name)
@@ -1042,7 +1283,7 @@ def driver_pickup_proof(request):
         order.save()
 
         # step 2: upload image to GCP
-        key_path = "/Users/jainamdoshi/Desktop/Projects/CanaDrop/CanaDrop/gcp_key.json"
+        key_path = settings.GCP_KEY_PATH
         bucket_name = "canadrop-bucket"  # Fixed bucket name
 
         client = storage.Client.from_service_account_json(key_path)
@@ -1113,7 +1354,7 @@ def driver_delivery_proof(request):
         order.save()
 
         # step 2: upload image to GCP
-        key_path = "/Users/jainamdoshi/Desktop/Projects/CanaDrop/CanaDrop/gcp_key.json"
+        key_path = settings.GCP_KEY_PATH
         bucket_name = "canadrop-bucket"  # Fixed bucket name
 
         client = storage.Client.from_service_account_json(key_path)
@@ -1160,144 +1401,476 @@ def driver_delivery_proof(request):
         }, status=500)
 
 
-# Initialize GCP Storage client
-def get_gcp_storage_client():
-    """Initialize and return GCP Storage client"""
-    os.environ['GOOGLE_APPLICATION_CREDENTIALS'] = '/Users/jainamdoshi/Desktop/Projects/CanaDrop/CanaDrop/gcp_key.json'
-    return storage.Client()
+# def get_gcp_storage_client():
+#     """Initialize and return GCP Storage client using secrets from settings"""
+#     credentials_dict = json.loads(settings.gcp_key_json)  # now contains JSON string from AWS Secrets
+#     credentials = service_account.Credentials.from_service_account_info(credentials_dict)
+#     client = storage.Client(credentials=credentials)
+#     return client
 
 
-@csrf_exempt
-def generate_weekly_invoices(request):
-    pharmacy_id = request.GET.get("pharmacyId")
-    if not pharmacy_id:
-        return HttpResponseBadRequest("Missing pharmacyId parameter")
+# @csrf_exempt
+# def generate_weekly_invoices(request):
+#     pharmacy_id = request.GET.get("pharmacyId")
+#     if not pharmacy_id:
+#         return HttpResponseBadRequest("Missing pharmacyId parameter")
 
-    try:
-        pharmacy_id = int(pharmacy_id)
-    except ValueError:
-        return HttpResponseBadRequest("pharmacyId must be an integer")
+#     try:
+#         pharmacy_id = int(pharmacy_id)
+#     except ValueError:
+#         return HttpResponseBadRequest("pharmacyId must be an integer")
 
-    pharmacy = get_object_or_404(Pharmacy, id=pharmacy_id)
+#     pharmacy = get_object_or_404(Pharmacy, id=pharmacy_id)
 
-    # only delivered orders for this pharmacy
-    orders_qs = DeliveryOrder.objects.filter(pharmacy_id=pharmacy_id, status="delivered").order_by("created_at")
+#     # only delivered orders for this pharmacy
+#     orders_qs = DeliveryOrder.objects.filter(pharmacy_id=pharmacy_id, status="delivered").order_by("created_at")
 
-    if not orders_qs.exists():
-        return JsonResponse({"message": "No delivered orders for this pharmacy yet", "invoices": []})
+#     if not orders_qs.exists():
+#         return JsonResponse({"message": "No delivered orders for this pharmacy yet", "invoices": []})
 
-    earliest = orders_qs.first().created_at.date()
-    latest = orders_qs.last().created_at.date()
+#     earliest = orders_qs.first().created_at.date()
+#     latest = orders_qs.last().created_at.date()
 
-    invoices_list = []
-    week_start = earliest
+#     invoices_list = []
+#     week_start = earliest
 
-    while week_start + timedelta(days=6) <= latest:
-        week_end = week_start + timedelta(days=6)
+#     while week_start + timedelta(days=6) <= latest:
+#         week_end = week_start + timedelta(days=6)
 
-        # filter orders only in this week and delivered
-        week_orders = orders_qs.filter(created_at__date__gte=week_start, created_at__date__lte=week_end)
-        total_orders = week_orders.count()
+#         # filter orders only in this week and delivered
+#         week_orders = orders_qs.filter(created_at__date__gte=week_start, created_at__date__lte=week_end)
+#         total_orders = week_orders.count()
         
-        if total_orders > 0:
-            # Calculate subtotal, HST, and final total
-            subtotal = sum([Decimal(str(o.rate)) for o in week_orders])
-            hst_rate = Decimal('0.13')  # 13% HST
-            hst_amount = subtotal * hst_rate
-            total_amount_with_hst = subtotal + hst_amount
+#         if total_orders > 0:
+#             # Calculate subtotal, HST, and final total
+#             subtotal = sum([Decimal(str(o.rate)) for o in week_orders])
+#             hst_rate = Decimal('0.13')  # 13% HST
+#             hst_amount = subtotal * hst_rate
+#             total_amount_with_hst = subtotal + hst_amount
 
-            due_date = week_end + timedelta(days=2)  # due date 2 days after end_date
+#             due_date = week_end + timedelta(days=2)  # due date 2 days after end_date
 
-            # get or create invoice
-            invoice, created = Invoice.objects.get_or_create(
-                pharmacy=pharmacy,
-                start_date=week_start,
-                end_date=week_end,
-                defaults={
-                    "total_orders": total_orders,
-                    "total_amount": total_amount_with_hst,  # Store final amount including HST
-                    "due_date": due_date,
-                    "status": "generated"
-                }
-            )
+#             # get or create invoice
+#             invoice, created = Invoice.objects.get_or_create(
+#                 pharmacy=pharmacy,
+#                 start_date=week_start,
+#                 end_date=week_end,
+#                 defaults={
+#                     "total_orders": total_orders,
+#                     "total_amount": total_amount_with_hst,  # Store final amount including HST
+#                     "due_date": due_date,
+#                     "status": "generated"
+#                 }
+#             )
 
-            # Update existing invoice if needed
-            if not created:
-                invoice.total_orders = total_orders
-                invoice.total_amount = total_amount_with_hst
-                invoice.save()
+#             # Update existing invoice if needed
+#             if not created:
+#                 invoice.total_orders = total_orders
+#                 invoice.total_amount = total_amount_with_hst
+#                 invoice.save()
 
-            # Get order details for this week
-            orders_data = []
-            for order in week_orders:
-                orders_data.append({
-                    "order_id": order.id,
-                    "pickup_address": order.pickup_address,
-                    "pickup_city": order.pickup_city,
-                    "drop_address": order.drop_address,
-                    "drop_city": order.drop_city,
-                    "pickup_day": order.pickup_day.strftime('%Y-%m-%d'),
-                    "rate": float(order.rate),
-                    "created_at": order.created_at.strftime('%Y-%m-%d %H:%M'),
-                    "driver": order.driver.name if order.driver else "N/A"
-                })
+#             # Get order details for this week
+#             orders_data = []
+#             for order in week_orders:
+#                 orders_data.append({
+#                     "order_id": order.id,
+#                     "pickup_address": order.pickup_address,
+#                     "pickup_city": order.pickup_city,
+#                     "drop_address": order.drop_address,
+#                     "drop_city": order.drop_city,
+#                     "pickup_day": order.pickup_day.strftime('%Y-%m-%d'),
+#                     "rate": float(order.rate),
+#                     "created_at": order.created_at.strftime('%Y-%m-%d %H:%M'),
+#                     "driver": order.driver.name if order.driver else "N/A"
+#                 })
 
-            # Generate PDF and upload to GCP
-            pdf_url = generate_invoice_pdf(invoice, pharmacy, orders_data, subtotal, hst_amount, total_amount_with_hst)
+#             # Generate PDF and upload to GCP
+#             pdf_url = generate_invoice_pdf(invoice, pharmacy, orders_data, subtotal, hst_amount, total_amount_with_hst)
             
-            # Update invoice with PDF URL
-            invoice.pdf_url = pdf_url
-            invoice.save()
+#             # Update invoice with PDF URL
+#             invoice.pdf_url = pdf_url
+#             invoice.save()
 
-            invoices_list.append({
-                "invoice_id": invoice.id,
-                "start_date": invoice.start_date.strftime('%Y-%m-%d'),
-                "end_date": invoice.end_date.strftime('%Y-%m-%d'),
-                "total_orders": invoice.total_orders,
-                "subtotal": float(subtotal),
-                "hst_amount": float(hst_amount),
-                "total_amount": float(invoice.total_amount),
-                "due_date": invoice.due_date.strftime('%Y-%m-%d'),
-                "status": invoice.status,
-                "pdf_url": invoice.pdf_url,
-                "orders": orders_data
-            })
+#             invoices_list.append({
+#                 "invoice_id": invoice.id,
+#                 "start_date": invoice.start_date.strftime('%Y-%m-%d'),
+#                 "end_date": invoice.end_date.strftime('%Y-%m-%d'),
+#                 "total_orders": invoice.total_orders,
+#                 "subtotal": float(subtotal),
+#                 "hst_amount": float(hst_amount),
+#                 "total_amount": float(invoice.total_amount),
+#                 "due_date": invoice.due_date.strftime('%Y-%m-%d'),
+#                 "status": invoice.status,
+#                 "pdf_url": invoice.pdf_url,
+#                 "orders": orders_data
+#             })
 
-        # move to next week
-        week_start += timedelta(days=7)
+#         # move to next week
+#         week_start += timedelta(days=7)
 
-    return JsonResponse({"invoices": invoices_list})
+#     return JsonResponse({"invoices": invoices_list})
 
 
-def upload_pdf_to_gcp(pdf_content, filename):
-    """Upload PDF to GCP Storage bucket and return public URL"""
+# def upload_pdf_to_gcp(pdf_content, filename):
+#     """Upload PDF to GCP Storage bucket and return public URL"""
+#     try:
+#         # Initialize GCP client
+#         client = get_gcp_storage_client()
+#         bucket_name = 'canadrop-bucket'
+#         bucket = client.bucket(bucket_name)
+        
+#         # Create blob with the filename in PharmacyInvoices folder
+#         blob_name = f"PharmacyInvoices/{filename}"
+#         blob = bucket.blob(blob_name)
+        
+#         # Upload PDF content
+#         blob.upload_from_string(pdf_content, content_type='application/pdf')
+        
+#         # Return the GCS URL (works with uniform bucket-level access)
+#         return f"https://storage.googleapis.com/{bucket_name}/{blob_name}"
+        
+#     except Exception as e:
+#         # print(f"Error uploading to GCP: {str(e)}")
+#         # Fallback to local storage if GCP fails
+#         return None
+
+
+# def generate_invoice_pdf(invoice, pharmacy, orders_data, subtotal, hst_amount, total_amount):
+#     """Generate PDF invoice and upload to GCP bucket"""
+    
+#     # Create PDF buffer
+#     buffer = io.BytesIO()
+#     doc = SimpleDocTemplate(buffer, pagesize=letter, topMargin=0.5*inch, leftMargin=0.5*inch, rightMargin=0.5*inch)
+    
+#     # Get styles
+#     styles = getSampleStyleSheet()
+    
+#     # Modern styling
+#     company_style = ParagraphStyle(
+#         'CompanyName',
+#         parent=styles['Normal'],
+#         fontSize=18,
+#         spaceAfter=5,
+#         alignment=TA_CENTER,
+#         textColor=colors.Color(0.2, 0.2, 0.2),  # Dark grey
+#         fontName='Helvetica-Bold'
+#     )
+    
+#     subtitle_style = ParagraphStyle(
+#         'CompanySubtitle',
+#         parent=styles['Normal'],
+#         fontSize=12,
+#         spaceAfter=20,
+#         alignment=TA_CENTER,
+#         textColor=colors.Color(0.4, 0.4, 0.4)  # Medium grey
+#     )
+    
+#     address_style = ParagraphStyle(
+#         'CompanyAddress',
+#         parent=styles['Normal'],
+#         fontSize=10,
+#         spaceAfter=25,
+#         alignment=TA_CENTER,
+#         textColor=colors.Color(0.3, 0.3, 0.3)
+#     )
+    
+#     section_header_style = ParagraphStyle(
+#         'SectionHeader',
+#         parent=styles['Normal'],
+#         fontSize=14,
+#         spaceAfter=10,
+#         fontName='Helvetica-Bold',
+#         textColor=colors.Color(0.1, 0.1, 0.1)
+#     )
+    
+#     # Build PDF content
+#     content = []
+    
+#     # Logo - Reduced width
+#     logo_path = os.path.join(settings.BASE_DIR, "Logo", "Website_Logo_No_Background.png")
+
+#     try:
+#         logo = Image(logo_path, width=2*inch, height=1*inch)  # Reduced from 3x1.5 to 2x1
+#         logo.hAlign = 'CENTER'
+#         content.append(logo)
+#         content.append(Spacer(1, 15))
+#     except:
+#         # Fallback if logo not found
+#         content.append(Paragraph("CanaDrop", company_style))
+    
+#     # Company info with modern styling
+#     content.append(Paragraph("Cana Group of Companies", subtitle_style))
+#     content.append(Paragraph("12 - 147 Fairway Road North<br/>Kitchener, N2A 2N3, Ontario, Canada", address_style))
+    
+#     # Modern invoice header with reduced size and better alignment
+#     content.append(Spacer(1, 10))
+    
+#     # Reduced invoice title size to match section headers
+#     invoice_title = Paragraph("INVOICE", ParagraphStyle(
+#         'InvoiceTitle',
+#         parent=styles['Normal'],
+#         fontSize=14,  # Reduced from 32 to 14 to match section headers
+#         fontName='Helvetica-Bold',
+#         textColor=colors.Color(0.1, 0.1, 0.1),
+#         alignment=TA_LEFT,
+#         spaceAfter=15
+#     ))
+#     content.append(invoice_title)
+    
+#     # Better aligned invoice details table
+#     invoice_info_data = [
+#         [
+#             Paragraph("<b>Invoice Number:</b>", styles['Normal']),
+#             Paragraph(f"#{invoice.id:06d}", ParagraphStyle('InvoiceNum', parent=styles['Normal'], fontSize=12, fontName='Helvetica-Bold'))
+#         ],
+#         [
+#             Paragraph("<b>Issue Date:</b>", styles['Normal']),
+#             Paragraph(invoice.created_at.strftime('%B %d, %Y'), styles['Normal'])
+#         ],
+#         [
+#             Paragraph("<b>Due Date:</b>", styles['Normal']),
+#             Paragraph(invoice.due_date.strftime('%B %d, %Y'), styles['Normal'])
+#         ],
+#         [
+#             Paragraph("<b>Billing Period:</b>", styles['Normal']),
+#             Paragraph(f'{invoice.start_date.strftime("%B %d, %Y")} - {invoice.end_date.strftime("%B %d, %Y")}', styles['Normal'])
+#         ]
+#     ]
+    
+#     # Adjusted column widths for better left alignment
+#     invoice_info_table = Table(invoice_info_data, colWidths=[1.5*inch, 4*inch])
+#     invoice_info_table.setStyle(TableStyle([
+#         ('FONTNAME', (0, 0), (-1, -1), 'Helvetica'),
+#         ('FONTSIZE', (0, 0), (-1, -1), 10),
+#         ('ALIGN', (0, 0), (0, -1), 'LEFT'),  # Left align labels
+#         ('ALIGN', (1, 0), (1, -1), 'LEFT'),  # Left align values
+#         ('VALIGN', (0, 0), (-1, -1), 'TOP'),
+#         ('BOTTOMPADDING', (0, 0), (-1, -1), 6),  # Slightly reduced padding
+#         ('TOPPADDING', (0, 0), (-1, -1), 6),
+#         ('LEFTPADDING', (0, 0), (-1, -1), 0),  # Remove left padding for better alignment
+#     ]))
+#     content.append(invoice_info_table)
+#     content.append(Spacer(1, 30))
+    
+#     # Bill To section with modern card styling
+#     content.append(Paragraph("BILL TO", section_header_style))
+    
+#     # Pharmacy info with simpler styling (avoid complex border properties)
+#     pharmacy_info = f"""
+#     <b>{pharmacy.name}</b><br/>
+#     {pharmacy.store_address}<br/>
+#     {pharmacy.city}, {pharmacy.province} {pharmacy.postal_code}<br/>
+#     {pharmacy.country}<br/><br/>
+#     <b>Email:</b> {pharmacy.email}<br/>
+#     <b>Phone:</b> {pharmacy.phone_number}
+#     """
+    
+#     pharmacy_para = Paragraph(pharmacy_info, ParagraphStyle(
+#         'PharmacyInfo',
+#         parent=styles['Normal'],
+#         fontSize=10,
+#         leftIndent=15,
+#         rightIndent=15,
+#         spaceBefore=10,
+#         spaceAfter=10,
+#         backColor=colors.Color(0.98, 0.98, 0.98)
+#     ))
+#     content.append(pharmacy_para)
+#     content.append(Spacer(1, 30))
+    
+#     # Modern orders table
+#     content.append(Paragraph("DELIVERY ORDERS", section_header_style))
+#     content.append(Spacer(1, 10))
+    
+#     # Modern table headers with better styling
+#     table_data = [['Order ID', 'Date', 'Pickup Location', 'Delivery Location', 'Amount']]
+    
+#     # Add order rows with better formatting
+#     for order in orders_data:
+#         table_data.append([
+#             f"#{order['order_id']}",
+#             order['pickup_day'],
+#             f"{order['pickup_address']}\n{order['pickup_city']}",
+#             f"{order['drop_address']}\n{order['drop_city']}",
+#             f"${order['rate']:.2f}"
+#         ])
+    
+#     # Create modern orders table
+#     orders_table = Table(table_data, colWidths=[0.9*inch, 1*inch, 2.3*inch, 2.3*inch, 0.9*inch])
+    
+#     # Build table style dynamically based on actual number of rows
+#     table_style_commands = [
+#         # Header styling
+#         ('FONTNAME', (0, 0), (-1, 0), 'Helvetica-Bold'),
+#         ('FONTSIZE', (0, 0), (-1, 0), 11),
+#         ('BACKGROUND', (0, 0), (-1, 0), colors.Color(0.2, 0.3, 0.5)),  # Modern blue
+#         ('TEXTCOLOR', (0, 0), (-1, 0), colors.white),
+        
+#         # Data rows styling
+#         ('FONTNAME', (0, 1), (-1, -1), 'Helvetica'),
+#         ('FONTSIZE', (0, 1), (-1, -1), 9),
+#         ('ALIGN', (0, 0), (-1, -1), 'LEFT'),
+#         ('ALIGN', (-1, 0), (-1, -1), 'RIGHT'),  # Amount column right aligned
+#         ('VALIGN', (0, 0), (-1, -1), 'MIDDLE'),
+        
+#         # Border styling
+#         ('GRID', (0, 0), (-1, -1), 0.5, colors.Color(0.7, 0.7, 0.7)),
+#         ('LINEBELOW', (0, 0), (-1, 0), 2, colors.Color(0.2, 0.3, 0.5)),
+        
+#         # Padding
+#         ('TOPPADDING', (0, 0), (-1, -1), 12),
+#         ('BOTTOMPADDING', (0, 0), (-1, -1), 12),
+#         ('LEFTPADDING', (0, 0), (-1, -1), 8),
+#         ('RIGHTPADDING', (0, 0), (-1, -1), 8),
+#     ]
+    
+#     # Add alternating row colors only for existing rows
+#     num_data_rows = len(table_data) - 1  # Exclude header row
+#     for i in range(1, num_data_rows + 1):  # Start from row 1 (after header)
+#         if i % 2 == 0:  # Even rows (2, 4, 6, etc.)
+#             table_style_commands.append(('BACKGROUND', (0, i), (-1, i), colors.Color(0.95, 0.95, 0.95)))
+    
+#     orders_table.setStyle(TableStyle(table_style_commands))
+#     content.append(orders_table)
+#     content.append(Spacer(1, 30))
+    
+#     # Modern summary section
+#     content.append(Paragraph("INVOICE SUMMARY", section_header_style))
+#     content.append(Spacer(1, 10))
+    
+#     # Summary table with modern styling
+#     summary_data = [
+#         ['Subtotal:', f'${subtotal:.2f}'],
+#         ['HST (13%):', f'${hst_amount:.2f}'],
+#         ['', ''],  # Empty row for spacing
+#         ['Total Amount:', f'${total_amount:.2f}']
+#     ]
+    
+#     summary_table = Table(summary_data, colWidths=[2*inch, 1.2*inch], hAlign='RIGHT')
+#     summary_table.setStyle(TableStyle([
+#         # Regular rows
+#         ('FONTNAME', (0, 0), (-1, 2), 'Helvetica'),
+#         ('FONTSIZE', (0, 0), (-1, 2), 12),
+#         ('ALIGN', (0, 0), (-1, -1), 'RIGHT'),
+        
+#         # Total row styling
+#         ('FONTNAME', (0, -1), (-1, -1), 'Helvetica-Bold'),
+#         ('FONTSIZE', (0, -1), (-1, -1), 16),
+#         ('BACKGROUND', (0, -1), (-1, -1), colors.Color(0.2, 0.3, 0.5)),
+#         ('TEXTCOLOR', (0, -1), (-1, -1), colors.white),
+        
+#         # Borders and spacing
+#         ('LINEABOVE', (0, -1), (-1, -1), 2, colors.Color(0.2, 0.3, 0.5)),
+#         ('TOPPADDING', (0, 0), (-1, -1), 8),
+#         ('BOTTOMPADDING', (0, 0), (-1, -1), 8),
+#         ('LEFTPADDING', (0, 0), (-1, -1), 15),
+#         ('RIGHTPADDING', (0, 0), (-1, -1), 15),
+        
+#         # Hide the empty spacing row
+#         ('LINEABOVE', (0, 2), (-1, 2), 0, colors.white),
+#         ('LINEBELOW', (0, 2), (-1, 2), 0, colors.white),
+#     ]))
+#     content.append(summary_table)
+    
+#     # Modern footer
+#     content.append(Spacer(1, 40))
+#     footer_text = "Thank you for choosing CanaDrop for your delivery needs!"
+#     footer_para = Paragraph(footer_text, ParagraphStyle(
+#         'ModernFooter',
+#         parent=styles['Normal'],
+#         fontSize=12,
+#         alignment=TA_CENTER,
+#         textColor=colors.Color(0.3, 0.3, 0.3),
+#         fontName='Helvetica-Oblique'
+#     ))
+#     content.append(footer_para)
+    
+#     # Build PDF
+#     doc.build(content)
+#     pdf_content = buffer.getvalue()
+#     buffer.close()
+    
+#     # Create filename with the required format: pharmacyId_PharmacyName_StartDate_EndDate.pdf
+#     pharmacy_name_clean = pharmacy.name.replace(' ', '_').replace('/', '_').replace('\\', '_')
+#     start_date_str = invoice.start_date.strftime('%Y-%m-%d')
+#     end_date_str = invoice.end_date.strftime('%Y-%m-%d')
+#     filename = f"{pharmacy.id}_{pharmacy_name_clean}_{start_date_str}_{end_date_str}.pdf"
+    
+#     # Upload to GCP bucket
+#     pdf_url = upload_pdf_to_gcp(pdf_content, filename)
+    
+#     # If GCP upload fails, fallback to local storage
+#     if pdf_url is None:
+#         # Fallback: save locally without creating invoices folder structure since we prefer GCP
+#         saved_path = default_storage.save(f"temp_{filename}", ContentFile(pdf_content))
+        
+#         if hasattr(settings, 'MEDIA_URL') and settings.MEDIA_URL:
+#             pdf_url = f"{settings.MEDIA_URL}{saved_path}"
+#         else:
+#             pdf_url = f"/media/{saved_path}"
+    
+#     return pdf_url
+
+
+import os
+import json
+import logging
+from datetime import timedelta
+from decimal import Decimal
+from io import BytesIO
+
+from django.conf import settings
+from django.http import HttpResponseBadRequest, JsonResponse
+from django.shortcuts import get_object_or_404
+from django.views.decorators.csrf import csrf_exempt
+from django.core.files.storage import default_storage
+from django.core.files.base import ContentFile
+from google.cloud import storage
+from google.oauth2 import service_account
+from reportlab.lib import colors
+from reportlab.lib.pagesizes import letter
+from reportlab.lib.styles import getSampleStyleSheet, ParagraphStyle
+from reportlab.lib.units import inch
+from reportlab.platypus import SimpleDocTemplate, Paragraph, Spacer, Table, TableStyle, Image
+from reportlab.lib.enums import TA_CENTER, TA_LEFT
+
+from .models import DeliveryOrder, Pharmacy, Invoice
+
+# Configure logger
+logger = logging.getLogger(__name__)
+
+# GCP Storage configuration
+GCP_BUCKET_NAME = "canadrop-bucket"
+GCP_FOLDER_NAME = "PharmacyInvoices"
+
+
+def get_gcp_storage_client():
+    """Initialize and return GCP Storage client using secrets from settings"""
     try:
-        # Initialize GCP client
-        client = get_gcp_storage_client()
-        bucket_name = 'canadrop-bucket'
-        bucket = client.bucket(bucket_name)
-        
-        # Create blob with the filename in PharmacyInvoices folder
-        blob_name = f"PharmacyInvoices/{filename}"
-        blob = bucket.blob(blob_name)
-        
-        # Upload PDF content
-        blob.upload_from_string(pdf_content, content_type='application/pdf')
-        
-        # Return the GCS URL (works with uniform bucket-level access)
-        return f"https://storage.googleapis.com/{bucket_name}/{blob_name}"
-        
+        credentials_dict = json.loads(settings.gcp_key_json)  # now contains JSON string from AWS Secrets
+        credentials = service_account.Credentials.from_service_account_info(credentials_dict)
+        client = storage.Client(credentials=credentials)
+        return client
     except Exception as e:
-        print(f"Error uploading to GCP: {str(e)}")
-        # Fallback to local storage if GCP fails
+        logger.error(f"Failed to initialize GCP storage client: {str(e)}")
         return None
+
+
+def upload_pdf_to_gcp(pdf_buffer, filename):
+    client = storage.Client.from_service_account_json(settings.GCP_KEY_PATH)  # same as drivers
+    bucket = client.bucket("canadrop-bucket")
+    blob = bucket.blob(f"PharmacyInvoices/{filename}")
+    pdf_buffer.seek(0)
+    blob.upload_from_file(pdf_buffer, content_type="application/pdf")
+    # bucket is public → public URL ok; or use signed URL if you prefer
+    return f"https://storage.googleapis.com/canadrop-bucket/PharmacyInvoices/{filename}"
 
 
 def generate_invoice_pdf(invoice, pharmacy, orders_data, subtotal, hst_amount, total_amount):
     """Generate PDF invoice and upload to GCP bucket"""
     
     # Create PDF buffer
-    buffer = io.BytesIO()
+    buffer = BytesIO()
     doc = SimpleDocTemplate(buffer, pagesize=letter, topMargin=0.5*inch, leftMargin=0.5*inch, rightMargin=0.5*inch)
     
     # Get styles
@@ -1345,7 +1918,8 @@ def generate_invoice_pdf(invoice, pharmacy, orders_data, subtotal, hst_amount, t
     content = []
     
     # Logo - Reduced width
-    logo_path = "/Users/jainamdoshi/Desktop/Projects/CanaDrop/CanaDrop/Logo/Website_Logo_No_Background.png"
+    logo_path = os.path.join(settings.BASE_DIR, "Logo", "Website_Logo_No_Background.png")
+
     try:
         logo = Image(logo_path, width=2*inch, height=1*inch)  # Reduced from 3x1.5 to 2x1
         logo.hAlign = 'CENTER'
@@ -1353,6 +1927,7 @@ def generate_invoice_pdf(invoice, pharmacy, orders_data, subtotal, hst_amount, t
         content.append(Spacer(1, 15))
     except:
         # Fallback if logo not found
+        logger.warning(f"Logo not found at path: {logo_path}, using text fallback")
         content.append(Paragraph("CanaDrop", company_style))
     
     # Company info with modern styling
@@ -1544,29 +2119,166 @@ def generate_invoice_pdf(invoice, pharmacy, orders_data, subtotal, hst_amount, t
     
     # Build PDF
     doc.build(content)
-    pdf_content = buffer.getvalue()
-    buffer.close()
     
-    # Create filename with the required format: pharmacyId_PharmacyName_StartDate_EndDate.pdf
-    pharmacy_name_clean = pharmacy.name.replace(' ', '_').replace('/', '_').replace('\\', '_')
-    start_date_str = invoice.start_date.strftime('%Y-%m-%d')
-    end_date_str = invoice.end_date.strftime('%Y-%m-%d')
-    filename = f"{pharmacy.id}_{pharmacy_name_clean}_{start_date_str}_{end_date_str}.pdf"
-    
-    # Upload to GCP bucket
-    pdf_url = upload_pdf_to_gcp(pdf_content, filename)
-    
-    # If GCP upload fails, fallback to local storage
-    if pdf_url is None:
-        # Fallback: save locally without creating invoices folder structure since we prefer GCP
-        saved_path = default_storage.save(f"temp_{filename}", ContentFile(pdf_content))
-        
-        if hasattr(settings, 'MEDIA_URL') and settings.MEDIA_URL:
-            pdf_url = f"{settings.MEDIA_URL}{saved_path}"
-        else:
-            pdf_url = f"/media/{saved_path}"
-    
-    return pdf_url
+    logger.info(f"Generated PDF for invoice {invoice.id}")
+    return buffer
+
+
+@csrf_exempt
+def generate_weekly_invoices(request):
+    pharmacy_id = request.GET.get("pharmacyId")
+    if not pharmacy_id:
+        return HttpResponseBadRequest("Missing pharmacyId parameter")
+
+    try:
+        pharmacy_id = int(pharmacy_id)
+    except ValueError:
+        return HttpResponseBadRequest("pharmacyId must be an integer")
+
+    pharmacy = get_object_or_404(Pharmacy, id=pharmacy_id)
+    logger.info(f"Generating weekly invoices for pharmacy {pharmacy.name} (ID: {pharmacy_id})")
+
+    # Only delivered orders for this pharmacy
+    orders_qs = DeliveryOrder.objects.filter(
+        pharmacy_id=pharmacy_id,
+        status="delivered"
+    ).order_by("created_at")
+
+    if not orders_qs.exists():
+        logger.info(f"No delivered orders found for pharmacy {pharmacy.name} (ID: {pharmacy_id})")
+        return JsonResponse({"message": "No delivered orders for this pharmacy yet", "invoices": []})
+
+    earliest = orders_qs.first().created_at.date()
+    latest = orders_qs.last().created_at.date()
+
+    invoices_list = []
+    week_start = earliest
+
+    # === CHANGE 1: include current partial week ===
+    # Previously: while week_start + timedelta(days=6) <= latest:
+    while week_start <= latest:
+        week_end = min(week_start + timedelta(days=6), latest)
+
+        # Filter orders only in this week and delivered
+        week_orders = orders_qs.filter(
+            created_at__date__gte=week_start,
+            created_at__date__lte=week_end
+        )
+        total_orders = week_orders.count()
+
+        if total_orders > 0:
+            logger.debug(f"Processing week {week_start} to {week_end} with {total_orders} orders")
+
+            # Calculate subtotal, HST, and final total
+            subtotal = sum(Decimal(str(o.rate)) for o in week_orders)
+            hst_rate = Decimal('0.13')  # 13% HST
+            hst_amount = (subtotal * hst_rate)
+            total_amount_with_hst = (subtotal + hst_amount)
+
+            due_date = week_end + timedelta(days=2)  # due date 2 days after end_date
+
+            # get or create invoice
+            invoice, created = Invoice.objects.get_or_create(
+                pharmacy=pharmacy,
+                start_date=week_start,
+                end_date=week_end,
+                defaults={
+                    "total_orders": total_orders,
+                    "total_amount": total_amount_with_hst,  # Store final amount including HST
+                    "due_date": due_date,
+                    "status": "generated"
+                }
+            )
+
+            if created:
+                logger.info(f"Created new invoice {invoice.id} for pharmacy {pharmacy.name}")
+            else:
+                logger.debug(f"Updated existing invoice {invoice.id} for pharmacy {pharmacy.name}")
+                # Keep totals up to date
+                invoice.total_orders = total_orders
+                invoice.total_amount = total_amount_with_hst
+                invoice.due_date = due_date
+                if invoice.status is None:
+                    invoice.status = "generated"
+                invoice.save()
+
+            # Build order rows for the PDF
+            orders_data = [{
+                "order_id": o.id,
+                "pickup_address": o.pickup_address,
+                "pickup_city": o.pickup_city,
+                "drop_address": o.drop_address,
+                "drop_city": o.drop_city,
+                "pickup_day": o.pickup_day.strftime('%Y-%m-%d'),
+                "rate": float(o.rate),
+                "created_at": o.created_at.strftime('%Y-%m-%d %H:%M'),
+                "driver": o.driver.name if o.driver else "N/A"
+            } for o in week_orders]
+
+            # Determine whether we must (re)generate/upload the PDF
+            pdf_url = invoice.pdf_url or ""
+            needs_upload = (
+                not pdf_url                                         # missing
+                or pdf_url.startswith("/")                          # local temp path like "/temp_..."
+                or pdf_url.startswith("/media/")                    # local media path
+            )
+
+            if needs_upload:
+                try:
+                    # Generate PDF buffer
+                    pdf_buffer = generate_invoice_pdf(
+                        invoice, pharmacy, orders_data, subtotal, hst_amount, total_amount_with_hst
+                    )
+
+                    # Create filename: pharmacyId_PharmacyName_StartDate_EndDate.pdf
+                    pharmacy_name_clean = pharmacy.name.replace(' ', '_').replace('/', '_').replace('\\', '_')
+                    start_date_str = invoice.start_date.strftime('%Y-%m-%d')
+                    end_date_str = invoice.end_date.strftime('%Y-%m-%d')
+                    filename = f"{pharmacy.id}_{pharmacy_name_clean}_{start_date_str}_{end_date_str}.pdf"
+
+                    # === CHANGE 2: require GCS upload to succeed; NO local fallback ===
+                    uploaded_url = upload_pdf_to_gcp(pdf_buffer, filename)
+                    if not uploaded_url:
+                        logger.error(f"GCS upload returned empty URL for invoice {invoice.id}")
+                        return JsonResponse(
+                            {"error": f"Failed to upload invoice PDF for invoice {invoice.id}"},
+                            status=500
+                        )
+
+                    invoice.pdf_url = uploaded_url
+                    invoice.save()
+                    pdf_url = uploaded_url
+                    logger.info(f"Successfully generated and uploaded PDF for invoice {invoice.id}")
+
+                except Exception as e:
+                    logger.exception(f"Error generating/uploading PDF for invoice {invoice.id}: {e}")
+                    return JsonResponse(
+                        {"error": f"Error generating/uploading PDF for invoice {invoice.id}: {str(e)}"},
+                        status=500
+                    )
+            else:
+                logger.debug(f"Using existing PDF URL for invoice {invoice.id}")
+
+            invoices_list.append({
+                "invoice_id": invoice.id,
+                "start_date": invoice.start_date.strftime('%Y-%m-%d'),
+                "end_date": invoice.end_date.strftime('%Y-%m-%d'),
+                "total_orders": invoice.total_orders,
+                "subtotal": float(subtotal),
+                "hst_amount": float(hst_amount),
+                "total_amount": float(invoice.total_amount),
+                "due_date": invoice.due_date.strftime('%Y-%m-%d'),
+                "status": invoice.status,
+                "pdf_url": pdf_url,
+                "orders": orders_data
+            })
+
+        # Move to next week window
+        week_start += timedelta(days=7)
+
+    logger.info(f"Generated {len(invoices_list)} invoices for pharmacy {pharmacy.name}")
+    return JsonResponse({"invoices": invoices_list})
+
 
 
 
@@ -1879,7 +2591,7 @@ USER_TZ = pytz.timezone("America/Toronto")
 # GCP Storage configuration
 GCP_BUCKET_NAME = "canadrop-bucket"
 GCP_FOLDER_NAME = "DriverSummary"
-GCP_KEY_PATH = "/Users/jainamdoshi/Desktop/Projects/CanaDrop/CanaDrop/gcp_key.json"
+GCP_KEY_PATH = settings.GCP_KEY_PATH
 
 
 def _start_of_week(d: date):
@@ -1924,14 +2636,14 @@ def _get_gcp_client():
     try:
         # Check if the key file exists
         if not os.path.exists(GCP_KEY_PATH):
-            print(f"GCP key file not found at: {GCP_KEY_PATH}")
+            # print(f"GCP key file not found at: {GCP_KEY_PATH}")
             return None
         
         # Initialize client with service account key
         client = storage.Client.from_service_account_json(GCP_KEY_PATH)
         return client
     except Exception as e:
-        print(f"Error initializing GCP client: {str(e)}")
+        # print(f"Error initializing GCP client: {str(e)}")
         return None
 
 
@@ -1940,7 +2652,7 @@ def _upload_to_gcp(pdf_buffer, filename):
     try:
         client = _get_gcp_client()
         if not client:
-            print("Failed to initialize GCP client")
+            # print("Failed to initialize GCP client")
             return None
             
         bucket = client.bucket(GCP_BUCKET_NAME)
@@ -1954,11 +2666,11 @@ def _upload_to_gcp(pdf_buffer, filename):
         # Format: https://storage.googleapis.com/bucket-name/object-name
         public_url = f"https://storage.googleapis.com/{GCP_BUCKET_NAME}/{blob_name}"
         
-        print(f"Successfully uploaded {filename} to GCP Storage")
-        print(f"Public URL: {public_url}")
+        # print(f"Successfully uploaded {filename} to GCP Storage")
+        # print(f"Public URL: {public_url}")
         return public_url
     except Exception as e:
-        print(f"Error uploading to GCP: {str(e)}")
+        # print(f"Error uploading to GCP: {str(e)}")
         return None
 
 
@@ -2040,7 +2752,8 @@ def _generate_invoice_pdf(driver, week_data, orders):
     
     # Add company header with logo
     try:
-        logo_path = "/Users/jainamdoshi/Desktop/Projects/CanaDrop/CanaDrop/Logo/Website_Logo_No_Background.png"
+        logo_path = os.path.join(settings.BASE_DIR, "Logo", "Website_Logo_No_Background.png")
+
         if os.path.exists(logo_path):
             # Create header table with logo and company info
             logo = Image(logo_path, width=2.5*inch, height=1.8*inch)
@@ -2062,7 +2775,7 @@ def _generate_invoice_pdf(driver, week_data, orders):
             story.append(header_table)
             story.append(Spacer(1, 30))
     except Exception as e:
-        print(f"Logo not found: {str(e)}")
+        # print(f"Logo not found: {str(e)}")
         # Fallback header without logo
         story.append(Paragraph("CanaDrop Delivery Services", title_style))
         story.append(Paragraph("Professional Pharmacy Delivery Solutions", subtitle_style))
@@ -2397,9 +3110,10 @@ def driver_invoice_weeks(request):
                 if pdf_url:
                     new_invoice.pdf_url = pdf_url
                     new_invoice.save()
-                    print(f"Successfully created invoice with PDF URL: {pdf_url}")
+                    # print(f"Successfully created invoice with PDF URL: {pdf_url}")
                 else:
                     print("Failed to upload PDF to GCP, continuing without PDF URL")
+                    
                     
             except Exception as e:
                 print(f"Error generating/uploading PDF: {str(e)}")
