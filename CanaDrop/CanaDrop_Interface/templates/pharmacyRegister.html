@@ -1,0 +1,457 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Pharmacy Registration - CanaDrop</title>
+  <link rel="icon" href="https://i.postimg.cc/c4jt62GM/Website-Logo-No-Background.png">
+  <script src="https://cdn.tailwindcss.com"></script>
+</head>
+<body class="min-h-screen bg-gradient-to-br from-teal-50 to-cyan-100 flex items-center justify-center p-4">
+  <div class="w-full max-w-2xl">
+    <div class="bg-white rounded-2xl shadow-2xl p-8">
+      <!-- Header -->
+      <div class="text-center mb-8">
+        <img src="https://i.postimg.cc/c4jt62GM/Website-Logo-No-Background.png" alt="CanaDrop Logo" class="h-16 mx-auto mb-4">
+        <h1 class="text-2xl font-bold text-gray-900">Create Your Pharmacy Account</h1>
+        <p class="text-gray-600 mt-1">Verify your email, then complete the registration</p>
+      </div>
+
+      <!-- Step 1: Enter Email & Send OTP -->
+      <div id="step-email" class="space-y-4">
+        <label class="block text-sm font-medium text-gray-700">Email address</label>
+        <div class="relative">
+          <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+            <svg class="h-5 w-5 text-teal-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 8l7.89 4.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"/>
+            </svg>
+          </div>
+          <input id="reg-email" type="email" placeholder="you@pharmacy.com"
+                 class="w-full pl-10 pr-4 py-3 border border-gray-200 rounded-lg focus:ring-2 focus:ring-teal-500 focus:border-transparent bg-gray-50 focus:bg-white"/>
+        </div>
+        <button id="btn-send-otp"
+                class="w-full bg-gradient-to-r from-teal-600 to-cyan-600 text-white py-3 rounded-lg font-semibold hover:from-teal-700 hover:to-cyan-700 transform hover:scale-[1.01] transition-all shadow">
+          Send OTP
+        </button>
+        <p class="text-sm text-gray-600 text-center">
+          <a href="/pharmacyLogin/" class="text-teal-600 hover:text-teal-700 font-medium">Back to Login?</a>
+        </p>
+      </div>
+
+      <!-- Step 2: Verify OTP -->
+      <div id="step-otp" class="space-y-4 hidden">
+        <p class="text-sm text-gray-600">
+          We sent a 6-digit code to <span id="otp-email-label" class="font-medium text-gray-900"></span>.
+        </p>
+        <label class="block text-sm font-medium text-gray-700">Enter OTP</label>
+        <input id="reg-otp" type="text" inputmode="numeric" maxlength="6" placeholder="••••••"
+               class="w-full px-4 py-3 border border-gray-200 rounded-lg focus:ring-2 focus:ring-teal-500 focus:border-transparent bg-gray-50 focus:bg-white tracking-widest text-center text-lg"/>
+        <div class="flex items-center justify-between text-sm">
+          <button id="btn-resend-otp" class="text-teal-600 hover:text-teal-700 font-medium">Resend OTP</button>
+          <span id="resend-timer" class="text-gray-500"></span>
+        </div>
+        <button id="btn-verify-otp"
+                class="w-full bg-gradient-to-r from-teal-600 to-cyan-600 text-white py-3 rounded-lg font-semibold hover:from-teal-700 hover:to-cyan-700 transform hover:scale-[1.01] transition-all shadow">
+          Verify OTP
+        </button>
+        <p class="text-sm text-gray-600 text-center">
+          <a href="/pharmacyLogin/" class="text-teal-600 hover:text-teal-700 font-medium">Back to Login?</a>
+        </p>
+      </div>
+
+      <!-- Step 3: Registration Form -->
+      <div id="step-register" class="space-y-6 hidden">
+        <!-- Verified email (read-only) -->
+        <div>
+          <label class="block text-sm font-medium text-gray-700">Verified Email</label>
+          <input id="reg-email-verified" type="email" disabled
+                 class="w-full px-4 py-3 border border-gray-200 rounded-lg bg-gray-100 text-gray-700"/>
+          <p class="text-xs text-gray-500 mt-1">Email is locked after verification.</p>
+        </div>
+
+        <!-- Grid fields -->
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <div>
+            <label class="block text-sm font-medium text-gray-700">Pharmacy Name</label>
+            <input id="reg-name" type="text" placeholder="Acme Pharmacy"
+                   class="w-full px-4 py-3 border border-gray-200 rounded-lg focus:ring-2 focus:ring-teal-500 focus:border-transparent bg-gray-50 focus:bg-white"/>
+          </div>
+          <div>
+            <label class="block text-sm font-medium text-gray-700">Phone Number</label>
+            <input id="reg-phone" type="text" placeholder="416-555-1212"
+                   class="w-full px-4 py-3 border border-gray-200 rounded-lg focus:ring-2 focus:ring-teal-500 focus:border-transparent bg-gray-50 focus:bg-white"/>
+          </div>
+        </div>
+
+        <div>
+          <label class="block text-sm font-medium text-gray-700">Store Address</label>
+          <textarea id="reg-address" rows="2" placeholder="123 Main St, Suite 100"
+                    class="w-full px-4 py-3 border border-gray-200 rounded-lg focus:ring-2 focus:ring-teal-500 focus:border-transparent bg-gray-50 focus:bg-white"></textarea>
+        </div>
+
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <div>
+            <label class="block text-sm font-medium text-gray-700">City</label>
+            <input id="reg-city" type="text" placeholder="Toronto"
+                   class="w-full px-4 py-3 border border-gray-200 rounded-lg focus:ring-2 focus:ring-teal-500 focus:border-transparent bg-gray-50 focus:bg-white"/>
+          </div>
+          <div>
+            <label class="block text-sm font-medium text-gray-700">Province/State</label>
+            <input id="reg-province" type="text" placeholder="ON"
+                   class="w-full px-4 py-3 border border-gray-200 rounded-lg focus:ring-2 focus:ring-teal-500 focus:border-transparent bg-gray-50 focus:bg-white"/>
+          </div>
+        </div>
+
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <div>
+            <label class="block text-sm font-medium text-gray-700">Postal Code</label>
+            <input id="reg-postal" type="text" placeholder="M5V 2T6"
+                   class="w-full px-4 py-3 border border-gray-200 rounded-lg focus:ring-2 focus:ring-teal-500 focus:border-transparent bg-gray-50 focus:bg-white"/>
+          </div>
+          <div>
+            <label class="block text-sm font-medium text-gray-700">Country</label>
+            <input id="reg-country" type="text" placeholder="Canada"
+                   class="w-full px-4 py-3 border border-gray-200 rounded-lg focus:ring-2 focus:ring-teal-500 focus:border-transparent bg-gray-50 focus:bg-white"/>
+          </div>
+        </div>
+
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <div class="relative">
+            <label class="block text-sm font-medium text-gray-700">Password</label>
+            <input id="reg-pass" type="password" placeholder="New password"
+                   class="w-full pr-12 px-4 py-3 border border-gray-200 rounded-lg focus:ring-2 focus:ring-teal-500 focus:border-transparent bg-gray-50 focus:bg-white"/>
+            <button type="button" id="toggle-pass" class="absolute bottom-3 right-3 text-teal-500 hover:text-teal-600">
+              <svg class="h-5 w-5" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+                <path stroke-width="2" stroke-linecap="round" stroke-linejoin="round" d="M1.5 12S5 4.5 12 4.5 22.5 12 22.5 12 19 19.5 12 19.5 1.5 12 1.5 12Z"/>
+                <circle cx="12" cy="12" r="3.25" stroke-width="2"></circle>
+              </svg>
+            </button>
+          </div>
+          <div class="relative">
+            <label class="block text-sm font-medium text-gray-700">Confirm Password</label>
+            <input id="reg-pass2" type="password" placeholder="Confirm password"
+                   class="w-full pr-12 px-4 py-3 border border-gray-200 rounded-lg focus:ring-2 focus:ring-teal-500 focus:border-transparent bg-gray-50 focus:bg-white"/>
+            <button type="button" id="toggle-pass2" class="absolute bottom-3 right-3 text-teal-500 hover:text-teal-600">
+              <svg class="h-5 w-5" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+                <path stroke-width="2" stroke-linecap="round" stroke-linejoin="round" d="M1.5 12S5 4.5 12 4.5 22.5 12 22.5 12 19 19.5 12 19.5 1.5 12 1.5 12Z"/>
+                <circle cx="12" cy="12" r="3.25" stroke-width="2"></circle>
+              </svg>
+            </button>
+          </div>
+        </div>
+
+        <button id="btn-register"
+                class="w-full bg-gradient-to-r from-teal-600 to-cyan-600 text-white py-3 rounded-lg font-semibold hover:from-teal-700 hover:to-cyan-700 transform hover:scale-[1.01] transition-all shadow">
+          Create Account
+        </button>
+        <p class="text-sm text-gray-600 text-center">
+          <a href="/pharmacyLogin/" class="text-teal-600 hover:text-teal-700 font-medium">Back to Login?</a>
+        </p>
+      </div>
+    </div>
+
+    <!-- Footer -->
+    <div class="text-center mt-8">
+      <p class="text-sm text-gray-500">© 2025 Pharmacy Logic. All rights reserved.</p>
+    </div>
+  </div>
+
+  <!-- Modal -->
+  <div id="modal" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50 hidden">
+    <div class="bg-white rounded-2xl p-6 max-w-sm w-full relative">
+      <button id="closeModalBtn" class="absolute top-4 right-4 text-gray-400 hover:text-gray-600">
+        <svg class="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
+        </svg>
+      </button>
+      <div class="text-center" id="modalContent"></div>
+    </div>
+  </div>
+
+  <script>
+    // ---------- Config ----------
+    const API_BASE        = window.location.origin;
+    const API_SEND_OTP    = new URL('/api/auth/send-otp/', API_BASE).toString();
+    const API_VERIFY_OTP  = new URL('/api/auth/verify-otp/', API_BASE).toString();
+    const API_REGISTER    = new URL('/api/auth/register-pharmacy/', API_BASE).toString();
+    const REDIRECT_URL    = '/pharmacyLogin';
+    const RESEND_SECONDS  = 30;
+
+    // ---------- State ----------
+    let currentEmail = '';
+    let otpToken = null;
+    let resendCountdown = RESEND_SECONDS;
+    let timerId = null;
+
+    // ---------- Elements ----------
+    const stepEmail     = document.getElementById('step-email');
+    const stepOtp       = document.getElementById('step-otp');
+    const stepRegister  = document.getElementById('step-register');
+
+    const emailInput    = document.getElementById('reg-email');
+    const otpEmailLabel = document.getElementById('otp-email-label');
+    const otpInput      = document.getElementById('reg-otp');
+    const resendTimerEl = document.getElementById('resend-timer');
+
+    const verifiedEmail = document.getElementById('reg-email-verified');
+
+    const nameInput     = document.getElementById('reg-name');
+    const phoneInput    = document.getElementById('reg-phone');
+    const addrInput     = document.getElementById('reg-address');
+    const cityInput     = document.getElementById('reg-city');
+    const provInput     = document.getElementById('reg-province');
+    const postalInput   = document.getElementById('reg-postal');
+    const countryInput  = document.getElementById('reg-country');
+    const passInput     = document.getElementById('reg-pass');
+    const pass2Input    = document.getElementById('reg-pass2');
+
+    const btnSendOtp    = document.getElementById('btn-send-otp');
+    const btnResendOtp  = document.getElementById('btn-resend-otp');
+    const btnVerifyOtp  = document.getElementById('btn-verify-otp');
+    const btnRegister   = document.getElementById('btn-register');
+
+    // Modal
+    const modal         = document.getElementById('modal');
+    const modalContent  = document.getElementById('modalContent');
+    const closeModalBtn = document.getElementById('closeModalBtn');
+
+    // ---------- Helpers ----------
+    function setLoading(button, isLoading, textWhenIdle) {
+      if (isLoading) {
+        button.disabled = true;
+        button.classList.add('opacity-80', 'cursor-not-allowed');
+        button.textContent = 'Please wait...';
+      } else {
+        button.disabled = false;
+        button.classList.remove('opacity-80', 'cursor-not-allowed');
+        button.textContent = textWhenIdle;
+      }
+    }
+
+    function show(section) {
+      [stepEmail, stepOtp, stepRegister].forEach(s => s.classList.add('hidden'));
+      section.classList.remove('hidden');
+    }
+
+    function isValidEmail(email) {
+      return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
+    }
+
+    function showModal(status, title, message) {
+      const iconSuccess = `
+        <svg class="h-16 w-16 text-green-500 mx-auto mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/>
+        </svg>`;
+      const iconFail = `
+        <svg class="h-16 w-16 text-red-500 mx-auto mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 14l2-2m0 0l2-2m-2 2l-2-2m2 2l2 2m7-2a9 9 0 11-18 0 9 9 0 0118 0z"/>
+        </svg>`;
+      modalContent.innerHTML = `
+        ${status === 'success' ? iconSuccess : iconFail}
+        <h3 class="text-xl font-bold text-gray-800 mb-2">${title}</h3>
+        <p class="text-gray-600 mb-4">${message || ''}</p>
+        <button id="modalAction" class="bg-teal-600 text-white px-6 py-2 rounded-lg hover:bg-teal-700 transition-colors">
+          Continue
+        </button>
+        <p class="text-xs text-gray-500 mt-3 text-center">
+          <a href="/pharmacyLogin/" class="text-teal-600 hover:text-teal-700">Back to Login?</a>
+        </p>
+      `;
+      modal.classList.remove('hidden');
+
+      document.getElementById('modalAction').onclick = () => {
+        modal.classList.add('hidden');
+        window.location.href = REDIRECT_URL;
+      };
+    }
+
+    closeModalBtn.addEventListener('click', () => {
+      modal.classList.add('hidden');
+      window.location.href = REDIRECT_URL;
+    });
+
+    // Only digits in OTP
+    otpInput.addEventListener('input', () => {
+      otpInput.value = otpInput.value.replace(/\D/g, '').slice(0, 6);
+    });
+
+    // Toggle password visibility
+    const toggle1 = document.getElementById('toggle-pass');
+    const toggle2 = document.getElementById('toggle-pass2');
+    let s1 = false, s2 = false;
+    toggle1.addEventListener('click', () => { s1 = !s1; passInput.type = s1 ? 'text' : 'password'; });
+    toggle2.addEventListener('click', () => { s2 = !s2; pass2Input.type = s2 ? 'text' : 'password'; });
+
+    // Resend timer
+    function startResendTimer() {
+      let remaining = RESEND_SECONDS;
+      resendTimerEl.textContent = `You can resend in ${remaining}s`;
+      btnResendOtp.classList.add('pointer-events-none', 'opacity-50');
+      timerId = setInterval(() => {
+        remaining--;
+        if (remaining <= 0) {
+          clearInterval(timerId);
+          resendTimerEl.textContent = '';
+          btnResendOtp.classList.remove('pointer-events-none', 'opacity-50');
+        } else {
+          resendTimerEl.textContent = `You can resend in ${remaining}s`;
+        }
+      }, 1000);
+    }
+
+    // ---------- Events ----------
+    btnSendOtp.addEventListener('click', async () => {
+      const email = emailInput.value.trim();
+      if (!email || !isValidEmail(email)) {
+        return showModal('fail', 'Invalid Email', 'Please enter a valid email address.');
+      }
+
+      setLoading(btnSendOtp, true, 'Send OTP');
+      try {
+        const res = await fetch(API_SEND_OTP, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ email })
+        });
+        const data = await res.json();
+
+        if (data.success) {
+          currentEmail = email;
+          otpEmailLabel.textContent = currentEmail;
+          show(stepOtp);
+          startResendTimer();
+        } else {
+          showModal('fail', 'Failed to Send OTP', data.message || 'Please try again.');
+        }
+      } catch (e) {
+        console.error('Send OTP error:', e);
+        showModal('fail', 'Network Error', 'Could not send OTP. Please try again.');
+      } finally {
+        setLoading(btnSendOtp, false, 'Send OTP');
+      }
+    });
+
+    btnResendOtp.addEventListener('click', async () => {
+      if (!currentEmail) return;
+      setLoading(btnResendOtp, true, 'Resend OTP');
+      try {
+        const res = await fetch(API_SEND_OTP, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ email: currentEmail })
+        });
+        const data = await res.json();
+        if (data.success) {
+          startResendTimer();
+        } else {
+          showModal('fail', 'Failed to Resend OTP', data.message || 'Please try again.');
+        }
+      } catch (e) {
+        console.error('Resend OTP error:', e);
+        showModal('fail', 'Network Error', 'Could not resend OTP.');
+      } finally {
+        setLoading(btnResendOtp, false, 'Resend OTP');
+      }
+    });
+
+    btnVerifyOtp.addEventListener('click', async () => {
+      const otp = otpInput.value.trim();
+      if (otp.length < 4) {
+        return showModal('fail', 'Invalid OTP', 'Please enter the code sent to your email.');
+      }
+
+      setLoading(btnVerifyOtp, true, 'Verify OTP');
+      try {
+        const res = await fetch(API_VERIFY_OTP, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ email: currentEmail, otp })
+        });
+        const data = await res.json();
+
+        if (data.success) {
+          otpToken = data.token || null;
+          verifiedEmail.value = currentEmail;
+          show(stepRegister);
+          setTimeout(() => document.getElementById('reg-name').focus(), 50);
+        } else {
+          showModal('fail', 'OTP Verification Failed', data.message || 'The code is incorrect or expired.');
+        }
+      } catch (e) {
+        console.error('Verify OTP error:', e);
+        showModal('fail', 'Network Error', 'Could not verify OTP.');
+      } finally {
+        setLoading(btnVerifyOtp, false, 'Verify OTP');
+      }
+    });
+
+    btnRegister.addEventListener('click', async () => {
+      // client-side checks
+      if (!otpToken) return showModal('fail', 'Not Verified', 'Please verify your email with the OTP first.');
+      const name = nameInput.value.trim();
+      const phone = phoneInput.value.trim();
+      const address = addrInput.value.trim();
+      const city = cityInput.value.trim();
+      const prov = provInput.value.trim();
+      const postal = postalInput.value.trim();
+      const country = countryInput.value.trim();
+      const p1 = passInput.value.trim();
+      const p2 = pass2Input.value.trim();
+
+      const missing = [];
+      if (!name) missing.push('name');
+      if (!address) missing.push('store_address');
+      if (!city) missing.push('city');
+      if (!prov) missing.push('province');
+      if (!postal) missing.push('postal_code');
+      if (!country) missing.push('country');
+      if (!phone) missing.push('phone_number');
+      if (!p1) missing.push('password');
+
+      if (missing.length) {
+        return showModal('fail', 'Missing Fields', `Please fill: ${missing.join(', ')}`);
+      }
+      if (p1 !== p2) {
+        return showModal('fail', 'Password Mismatch', 'Password and confirm password must match.');
+      }
+      if (p1.length < 8) {
+        return showModal('fail', 'Weak Password', 'Please use at least 8 characters.');
+      }
+
+      setLoading(btnRegister, true, 'Create Account');
+      try {
+        const payload = {
+          name: name,
+          store_address: address,
+          city: city,
+          province: prov,
+          postal_code: postal,
+          country: country,
+          phone_number: phone,
+          email: currentEmail,
+          password: p1,
+          otpToken: otpToken
+        };
+
+        const res = await fetch(API_REGISTER, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(payload)
+        });
+        const data = await res.json();
+
+        if (data.success) {
+          showModal('success', 'Registration Complete', 'Your pharmacy account has been created.');
+        } else {
+          showModal('fail', 'Registration Failed', data.message || 'Please try again.');
+        }
+      } catch (e) {
+        console.error('Register error:', e);
+        showModal('fail', 'Network Error', 'Could not register at this time.');
+      } finally {
+        setLoading(btnRegister, false, 'Create Account');
+      }
+    });
+  </script>
+</body>
+</html>

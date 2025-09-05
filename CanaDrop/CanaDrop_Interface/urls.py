@@ -14,6 +14,8 @@ urlpatterns = [
     path('api/pharmacy/<int:pharmacy_id>/orders/', views.pharmacy_orders_api, name='pharmacy_orders_api'),
     path('api/upload-handover-image/', views.upload_handover_image_api, name='upload_handover_image'),
     path('pharmacyForgotPassword/', views.pharmacyForgotPasswordView, name="PharmacyForgotPasswordPage"),
+    path('api/auth/register-pharmacy/', views.register_pharmacy, name='register_pharmacy'),
+    path('pharmacyRegister/', views.pharmacyRegisterView, name="PharmacyRegisterPage"),
 
 
     path('driverLogin/', views.driverLoginView, name='DriverLoginPage'),  
@@ -33,6 +35,8 @@ urlpatterns = [
     path('driverFinances/', views.driverFinancesView, name="DriverFinancesPage"),
     path("api/driver/invoices/weeks/", views.driver_invoice_weeks, name="driver_invoice_weeks"),
     path('driverForgotPassword/', views.driverForgotPasswordView, name="driverForgotPasswordPage"),
+    path('driverRegister/', views.driverRegisterView, name="driverRegisterPage"),
+    path('api/driver/register/', views.register_driver, name='register_driver'),
 
     path('contactAdmin/', views.contactAdminView, name='contactAdminPage'), 
     path('api/contact-admin/', views.contact_admin_api, name='contact_admin_api'),

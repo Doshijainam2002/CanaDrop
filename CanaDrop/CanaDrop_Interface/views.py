@@ -59,6 +59,9 @@ logger = logging.getLogger(__name__)
 def pharmacyLoginView(request):
     return render(request, 'pharmacyLogin.html')
 
+def pharmacyRegisterView(request):
+    return render(request, 'pharmacyRegister.html')
+
 def pharmacyDashboardView(request):
     return render(request, 'pharmacyDashboard.html')
 
@@ -85,6 +88,9 @@ def driverFinancesView(request):
 
 def driverForgotPasswordView(request):
     return render(request, 'driverForgotPassword.html')
+
+def driverRegisterView(request):
+    return render(request, 'driverRegister.html')
 
 def contactAdminView(request):
     return render(request, 'contactAdmin.html')
@@ -2813,6 +2819,173 @@ def change_password_driver(request: HttpRequest):
 
     return _ok("Driver password changed successfully.")
 
+
+@csrf_exempt
+def register_pharmacy(request: HttpRequest):
+    """
+    POST /api/auth/register-pharmacy/
+    JSON body:
+    {
+      "name": "Acme Pharmacy",
+      "store_address": "123 Main St",
+      "city": "Toronto",
+      "province": "ON",
+      "postal_code": "M5V 2T6",
+      "country": "Canada",
+      "phone_number": "416-555-1212",
+      "email": "owner@example.com",
+      "password": "StrongPass#1",
+      "otpToken": "<token returned by /api/auth/verify-otp/>"
+    }
+    """
+    if request.method != "POST":
+        return _err("Method not allowed", 405)
+
+    data = _json(request)
+
+    # Extract
+    name          = (data.get("name") or "").strip()
+    store_address = (data.get("store_address") or "").strip()
+    city          = (data.get("city") or "").strip()
+    province      = (data.get("province") or "").strip()
+    postal_code   = (data.get("postal_code") or "").strip()
+    country       = (data.get("country") or "").strip()
+    phone_number  = (data.get("phone_number") or "").strip()
+
+    email         = (data.get("email") or "").strip().lower()
+    password      = (data.get("password") or "").strip()
+    otp_token     = (data.get("otpToken") or "").strip()
+
+    # Basic validations
+    required_fields = {
+        "name": name,
+        "store_address": store_address,
+        "city": city,
+        "province": province,
+        "postal_code": postal_code,
+        "country": country,
+        "phone_number": phone_number,
+        "email": email,
+        "password": password,
+        "otpToken": otp_token,
+    }
+    missing = [k for k, v in required_fields.items() if not v]
+    if missing:
+        return _err("Missing required fields.", 400, missing=missing)
+
+    if not _valid_email(email):
+        return _err("Please provide a valid email address.")
+
+    if len(password) < 8:
+        return _err("Password must be at least 8 characters long.")
+
+    # Verify OTP token and email match
+    try:
+        token_data = loads(otp_token, salt=SIGNING_SALT, max_age=VERIFY_TOKEN_TTL_SECONDS)
+    except SignatureExpired:
+        return _err("Verification token is invalid or expired.", 400)
+    except BadSignature:
+        return _err("Verification token is invalid or expired.", 400)
+
+    token_email = (token_data.get("email") or "").strip().lower()
+    if token_email != email:
+        return _err("Verification token does not match this email.", 400)
+
+    # Create pharmacy
+    try:
+        with transaction.atomic():
+            pharmacy = Pharmacy.objects.create(
+                name=name,
+                store_address=store_address,
+                city=city,
+                province=province,
+                postal_code=postal_code,
+                country=country,
+                phone_number=phone_number,
+                email=email,
+                password=password,  # hashed by Pharmacy.save()
+            )
+    except IntegrityError as e:
+        # Likely unique email violation
+        return _err("An account with this email already exists.", 409)
+
+    return _ok("Registration successful.", id=pharmacy.id, email=pharmacy.email)
+
+
+
+
+@csrf_exempt
+def register_driver(request: HttpRequest):
+    """
+    POST /api/driver/register/
+    {
+      "name": "John Doe",
+      "phone_number": "416-555-1212",
+      "email": "driver@example.com",
+      "password": "StrongPass#1",
+      "vehicle_number": "ABC-1234",      # REQUIRED
+      "otpToken": "<token from /api/auth/verify-otp/>"
+    }
+    """
+    if request.method != "POST":
+        return _err("Method not allowed", 405)
+
+    data = _json(request)
+
+    name           = (data.get("name") or "").strip()
+    phone_number   = (data.get("phone_number") or "").strip()
+    email          = (data.get("email") or "").strip().lower()
+    password       = (data.get("password") or "").strip()
+    vehicle_number = (data.get("vehicle_number") or "").strip()  # REQUIRED
+    otp_token      = (data.get("otpToken") or "").strip()
+
+    # Required fields (vehicle_number included)
+    required = {
+        "name": name,
+        "phone_number": phone_number,
+        "email": email,
+        "password": password,
+        "vehicle_number": vehicle_number,
+        "otpToken": otp_token,
+    }
+    missing = [k for k, v in required.items() if not v]
+    if missing:
+        return _err("Missing required fields.", 400, missing=missing)
+
+    if not _valid_email(email):
+        return _err("Please provide a valid email address.")
+    if len(password) < 8:
+        return _err("Password must be at least 8 characters long.")
+
+    # Optional: quick format sanity check for vehicle number (relaxed)
+    # if not re.fullmatch(r"[A-Za-z0-9\- ]{2,20}", vehicle_number):
+    #     return _err("Please provide a valid vehicle number.")
+
+    # Validate OTP token matches email
+    try:
+        token_data = loads(otp_token, salt=SIGNING_SALT, max_age=VERIFY_TOKEN_TTL_SECONDS)
+    except SignatureExpired:
+        return _err("Verification token is invalid or expired.", 400)
+    except BadSignature:
+        return _err("Verification token is invalid or expired.", 400)
+
+    if (token_data.get("email") or "").strip().lower() != email:
+        return _err("Verification token does not match this email.", 400)
+
+    # Create Driver
+    try:
+        with transaction.atomic():
+            driver = Driver.objects.create(
+                name=name,
+                phone_number=phone_number,
+                email=email,
+                password=password,        # hashed by Driver.save()
+                vehicle_number=vehicle_number,
+            )
+    except IntegrityError:
+        return _err("An account with this email already exists.", 409)
+
+    return _ok("Driver registration successful.", id=driver.id, email=driver.email)
 
 
 

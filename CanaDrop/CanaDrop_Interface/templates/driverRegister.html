@@ -1,0 +1,379 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Driver Register - CanaDrop</title>
+  <link rel="icon" href="https://i.postimg.cc/c4jt62GM/Website-Logo-No-Background.png">
+  <script src="https://cdn.tailwindcss.com"></script>
+</head>
+<body class="min-h-screen bg-gradient-to-br from-slate-900 to-gray-900 flex items-center justify-center p-4">
+  <div class="w-full max-w-md">
+    <div class="bg-slate-800 rounded-2xl shadow-2xl p-8 backdrop-blur-sm border border-slate-700">
+      <!-- Header -->
+      <div class="text-center mb-8">
+        <img src="https://i.postimg.cc/c4jt62GM/Website-Logo-No-Background.png" alt="CanaDrop Logo" class="h-16 mx-auto mb-4">
+        <h1 class="text-2xl font-bold text-slate-100 mb-2">Create Driver Account</h1>
+        <p class="text-slate-400">Register with email verification</p>
+      </div>
+
+      <!-- Step 1: Email & Send OTP -->
+      <div id="step-email" class="space-y-4">
+        <label class="block text-sm font-medium text-slate-200">Email address</label>
+        <div class="relative">
+          <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+            <svg class="h-5 w-5 text-emerald-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 8l7.89 4.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"/>
+            </svg>
+          </div>
+          <input id="reg-email" type="email" placeholder="you@example.com"
+                 class="w-full pl-10 pr-4 py-3 border border-slate-600 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-transparent bg-slate-700 focus:bg-slate-600 text-slate-100 placeholder-slate-400"/>
+        </div>
+
+        <div class="flex items-center justify-between text-sm">
+          <a href="/driverLogin/" class="text-slate-400 hover:text-slate-300">Back to Login?</a>
+          <span class="text-slate-500">Step 1 of 3</span>
+        </div>
+
+        <button id="btn-send-otp"
+                class="w-full bg-gradient-to-r from-slate-700 to-emerald-600 text-white py-3 rounded-lg font-semibold hover:from-slate-600 hover:to-emerald-500 transform hover:scale-[1.01] transition-all shadow-lg">
+          Send OTP
+        </button>
+      </div>
+
+      <!-- Step 2: Verify OTP -->
+      <div id="step-otp" class="space-y-4 hidden">
+        <p class="text-sm text-slate-300">
+          We sent a 6-digit code to <span id="otp-email-label" class="font-medium text-slate-100"></span>.
+        </p>
+        <label class="block text-sm font-medium text-slate-200">Enter OTP</label>
+        <input id="reg-otp" type="text" inputmode="numeric" maxlength="6" placeholder="••••••"
+               class="w-full px-4 py-3 border border-slate-600 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-transparent bg-slate-700 focus:bg-slate-600 text-center tracking-widest text-lg text-slate-100 placeholder-slate-400"/>
+
+        <div class="flex items-center justify-between text-sm">
+          <div class="flex items-center gap-4">
+            <button id="btn-resend-otp" class="text-emerald-400 hover:text-emerald-300 font-medium">Resend OTP</button>
+            <span id="resend-timer" class="text-slate-500"></span>
+          </div>
+          <a href="/driverLogin/" class="text-slate-400 hover:text-slate-300">Back to Login?</a>
+        </div>
+
+        <div class="text-right text-sm text-slate-500">Step 2 of 3</div>
+
+        <button id="btn-verify-otp"
+                class="w-full bg-gradient-to-r from-slate-700 to-emerald-600 text-white py-3 rounded-lg font-semibold hover:from-slate-600 hover:to-emerald-500 transform hover:scale-[1.01] transition-all shadow-lg">
+          Verify OTP
+        </button>
+      </div>
+
+      <!-- Step 3: Registration Form -->
+      <div id="step-register" class="space-y-4 hidden">
+        <div class="grid grid-cols-1 gap-4">
+          <div>
+            <label class="block text-sm font-medium text-slate-200">Full Name</label>
+            <input id="reg-name" type="text" placeholder="John Doe"
+                   class="w-full px-4 py-3 border border-slate-600 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-transparent bg-slate-700 focus:bg-slate-600 text-slate-100 placeholder-slate-400"/>
+          </div>
+
+          <div>
+            <label class="block text-sm font-medium text-slate-200">Phone Number</label>
+            <input id="reg-phone" type="text" placeholder="416-555-1212"
+                   class="w-full px-4 py-3 border border-slate-600 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-transparent bg-slate-700 focus:bg-slate-600 text-slate-100 placeholder-slate-400"/>
+          </div>
+
+          <div>
+            <label class="block text-sm font-medium text-slate-200">Vehicle Number <span class="text-red-400">*</span></label>
+            <input id="reg-vehicle" type="text" placeholder="ABC-1234"
+                   class="w-full px-4 py-3 border border-slate-600 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-transparent bg-slate-700 focus:bg-slate-600 text-slate-100 placeholder-slate-400"/>
+          </div>
+
+          <div>
+            <label class="block text-sm font-medium text-slate-200">Email (verified)</label>
+            <input id="reg-email-readonly" type="email" readonly
+                   class="w-full px-4 py-3 border border-slate-700 rounded-lg bg-slate-700/60 text-slate-300 cursor-not-allowed"/>
+          </div>
+
+          <div>
+            <label class="block text-sm font-medium text-slate-200">Password</label>
+            <input id="reg-pass1" type="password" placeholder="Minimum 8 characters"
+                   class="w-full px-4 py-3 border border-slate-600 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-transparent bg-slate-700 focus:bg-slate-600 text-slate-100 placeholder-slate-400"/>
+          </div>
+
+          <div>
+            <label class="block text-sm font-medium text-slate-200">Confirm Password</label>
+            <input id="reg-pass2" type="password" placeholder="Re-enter password"
+                   class="w-full px-4 py-3 border border-slate-600 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-transparent bg-slate-700 focus:bg-slate-600 text-slate-100 placeholder-slate-400"/>
+          </div>
+        </div>
+
+        <div class="flex items-center justify-between text-sm">
+          <a href="/driverLogin/" class="text-slate-400 hover:text-slate-300">Back to Login?</a>
+          <span class="text-slate-500">Step 3 of 3</span>
+        </div>
+
+        <button id="btn-register"
+                class="w-full bg-gradient-to-r from-slate-700 to-emerald-600 text-white py-3 rounded-lg font-semibold hover:from-slate-600 hover:to-emerald-500 transform hover:scale-[1.01] transition-all shadow-lg">
+          Create Account
+        </button>
+
+        <!-- Already have account -->
+        <p class="mt-2 text-center text-sm">
+          <span class="text-slate-400">Already have an account?</span>
+          <a href="/driverLogin/" class="ml-2 text-emerald-400 hover:text-emerald-300 font-medium">Sign in</a>
+        </p>
+      </div>
+    </div>
+
+    <!-- Footer -->
+    <div class="text-center mt-8">
+      <p class="text-sm text-slate-500">© 2025 Delivery Logic. All rights reserved.</p>
+    </div>
+  </div>
+
+  <!-- Modal -->
+  <div id="modal" class="fixed inset-0 bg-black bg-opacity-70 flex items-center justify-center p-4 z-50 hidden">
+    <div class="bg-slate-800 border border-slate-700 rounded-2xl p-6 max-w-sm w-full mx-4 relative">
+      <button id="closeModalBtn" class="absolute top-4 right-4 text-slate-400 hover:text-slate-300">
+        <svg class="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
+        </svg>
+      </button>
+      <div class="text-center" id="modalContent"></div>
+    </div>
+  </div>
+
+  <script>
+    // -------- API base (same-origin) --------
+    const API_BASE = window.location.origin;
+    const API_SEND_OTP    = new URL('/api/auth/send-otp/', API_BASE).toString();
+    const API_VERIFY_OTP  = new URL('/api/auth/verify-otp/', API_BASE).toString();
+    const API_REGISTER    = new URL('/api/driver/register/', API_BASE).toString();
+    const REDIRECT_URL    = '/driverLogin/';
+    const RESEND_SECONDS  = 30;
+
+    // -------- State --------
+    let currentEmail = '';
+    let otpToken = null;
+    let resendCountdown = RESEND_SECONDS;
+    let timerId = null;
+
+    // -------- Elements --------
+    const stepEmail   = document.getElementById('step-email');
+    const stepOtp     = document.getElementById('step-otp');
+    const stepRegister= document.getElementById('step-register');
+
+    const emailInput  = document.getElementById('reg-email');
+    const otpInput    = document.getElementById('reg-otp');
+    const otpEmailLbl = document.getElementById('otp-email-label');
+
+    const nameInput   = document.getElementById('reg-name');
+    const phoneInput  = document.getElementById('reg-phone');
+    const vehicleInput= document.getElementById('reg-vehicle');
+    const emailRO     = document.getElementById('reg-email-readonly');
+    const pass1       = document.getElementById('reg-pass1');
+    const pass2       = document.getElementById('reg-pass2');
+
+    const btnSendOtp    = document.getElementById('btn-send-otp');
+    const btnResendOtp  = document.getElementById('btn-resend-otp');
+    const btnVerifyOtp  = document.getElementById('btn-verify-otp');
+    const btnRegister   = document.getElementById('btn-register');
+    const resendTimerEl = document.getElementById('resend-timer');
+
+    // Modal
+    const modal        = document.getElementById('modal');
+    const modalContent = document.getElementById('modalContent');
+    const closeModalBtn= document.getElementById('closeModalBtn');
+
+    // -------- Helpers --------
+    function setLoading(button, isLoading, idleText) {
+      if (isLoading) {
+        button.disabled = true;
+        button.classList.add('opacity-70', 'cursor-not-allowed');
+        button.textContent = 'Please wait...';
+      } else {
+        button.disabled = false;
+        button.classList.remove('opacity-70', 'cursor-not-allowed');
+        button.textContent = idleText;
+      }
+    }
+    function isValidEmail(v){ return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(v); }
+    function show(section){
+      [stepEmail, stepOtp, stepRegister].forEach(s => s.classList.add('hidden'));
+      section.classList.remove('hidden');
+    }
+    function showModal(status, title, message, redirect=true){
+      const iconSuccess = `
+        <svg class="h-16 w-16 text-green-500 mx-auto mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/>
+        </svg>`;
+      const iconFail = `
+        <svg class="h-16 w-16 text-red-500 mx-auto mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 14l2-2m0 0l2-2m-2 2l-2-2m2 2l2 2m7-2a9 9 0 11-18 0 9 9 0 0118 0z"/>
+        </svg>`;
+      modalContent.innerHTML = `
+        ${status === 'success' ? iconSuccess : iconFail}
+        <h3 class="text-xl font-bold text-slate-100 mb-2">${title}</h3>
+        <p class="text-slate-300 mb-4">${message || ''}</p>
+        <button id="modalAction" class="bg-emerald-600 text-white px-6 py-2 rounded-lg hover:bg-emerald-700 transition-colors">
+          Continue
+        </button>
+      `;
+      modal.classList.remove('hidden');
+      document.getElementById('modalAction').onclick = () => {
+        modal.classList.add('hidden');
+        if (redirect) window.location.href = REDIRECT_URL;
+      };
+    }
+    closeModalBtn.addEventListener('click', () => {
+      modal.classList.add('hidden');
+    });
+
+    // digits-only OTP input
+    otpInput.addEventListener('input', () => {
+      otpInput.value = otpInput.value.replace(/\D/g, '').slice(0, 6);
+    });
+
+    // Resend timer
+    function startResendTimer(){
+      resendCountdown = RESEND_SECONDS;
+      resendTimerEl.textContent = `You can resend in ${resendCountdown}s`;
+      btnResendOtp.classList.add('pointer-events-none','opacity-50');
+      timerId = setInterval(() => {
+        resendCountdown--;
+        if (resendCountdown <= 0){
+          clearInterval(timerId);
+          resendTimerEl.textContent = '';
+          btnResendOtp.classList.remove('pointer-events-none','opacity-50');
+        } else {
+          resendTimerEl.textContent = `You can resend in ${resendCountdown}s`;
+        }
+      }, 1000);
+    }
+
+    // -------- Handlers --------
+    btnSendOtp.addEventListener('click', async () => {
+      const email = emailInput.value.trim();
+      if (!email || !isValidEmail(email)) {
+        return showModal('fail', 'Invalid Email', 'Please enter a valid email address.', false);
+      }
+      setLoading(btnSendOtp, true, 'Send OTP');
+      try{
+        const res = await fetch(API_SEND_OTP, {
+          method:'POST', headers:{'Content-Type':'application/json'},
+          body: JSON.stringify({ email })
+        });
+        const data = await res.json();
+        if (data.success){
+          currentEmail = email;
+          otpEmailLbl.textContent = currentEmail;
+          show(stepOtp);
+          startResendTimer();
+        } else {
+          showModal('fail','Failed to Send OTP', data.message || 'Please try again.', false);
+        }
+      } catch (e){
+        console.error('send-otp error:', e);
+        showModal('fail','Network Error','Could not send OTP. Please try again.', false);
+      } finally {
+        setLoading(btnSendOtp, false, 'Send OTP');
+      }
+    });
+
+    btnResendOtp.addEventListener('click', async () => {
+      if (!currentEmail) return;
+      setLoading(btnResendOtp, true, 'Resend OTP');
+      try{
+        const res = await fetch(API_SEND_OTP, {
+          method:'POST', headers:{'Content-Type':'application/json'},
+          body: JSON.stringify({ email: currentEmail })
+        });
+        const data = await res.json();
+        if (data.success) startResendTimer();
+        else showModal('fail','Failed to Resend OTP', data.message || 'Try again.', false);
+      } catch (e){
+        console.error('resend-otp error:', e);
+        showModal('fail','Network Error','Could not resend OTP.', false);
+      } finally {
+        setLoading(btnResendOtp, false, 'Resend OTP');
+      }
+    });
+
+    btnVerifyOtp.addEventListener('click', async () => {
+      const otp = otpInput.value.trim();
+      if (otp.length < 4){
+        return showModal('fail','Invalid OTP','Please enter the code sent to your email.', false);
+      }
+      setLoading(btnVerifyOtp, true, 'Verify OTP');
+      try{
+        const res = await fetch(API_VERIFY_OTP, {
+          method:'POST', headers:{'Content-Type':'application/json'},
+          body: JSON.stringify({ email: currentEmail, otp })
+        });
+        const data = await res.json();
+        if (data.success){
+          otpToken = data.token || null;
+          emailRO.value = currentEmail;
+          show(stepRegister);
+          setTimeout(()=> document.getElementById('reg-name').focus(), 50);
+        } else {
+          showModal('fail','OTP Verification Failed', data.message || 'The code is incorrect or expired.', false);
+        }
+      } catch (e){
+        console.error('verify-otp error:', e);
+        showModal('fail','Network Error','Could not verify OTP.', false);
+      } finally {
+        setLoading(btnVerifyOtp, false, 'Verify OTP');
+      }
+    });
+
+    btnRegister.addEventListener('click', async () => {
+      const payload = {
+        name: nameInput.value.trim(),
+        phone_number: phoneInput.value.trim(),
+        email: currentEmail,
+        password: pass1.value.trim(),
+        vehicle_number: vehicleInput.value.trim(),
+        otpToken: otpToken
+      };
+
+      // Client-side checks
+      const missing = [];
+      if (!payload.name) missing.push('name');
+      if (!payload.phone_number) missing.push('phone_number');
+      if (!payload.vehicle_number) missing.push('vehicle_number');
+      if (!payload.email) missing.push('email');
+      if (!payload.password) missing.push('password');
+      if (!payload.otpToken) missing.push('otpToken');
+      if (missing.length){
+        return showModal('fail','Missing Fields',`Please fill: ${missing.join(', ')}`, false);
+      }
+      if (payload.password.length < 8){
+        return showModal('fail','Weak Password','Please use at least 8 characters.', false);
+      }
+      if (pass1.value.trim() !== pass2.value.trim()){
+        return showModal('fail','Password Mismatch','Passwords do not match.', false);
+      }
+
+      setLoading(btnRegister, true, 'Create Account');
+      try{
+        const res = await fetch(API_REGISTER, {
+          method:'POST',
+          headers:{'Content-Type':'application/json'},
+          body: JSON.stringify(payload)
+        });
+        const data = await res.json();
+        if (data.success){
+          showModal('success','Registration Complete','Your driver account has been created. You can sign in now.');
+        } else {
+          showModal('fail','Registration Failed', data.message || 'Please try again.', false);
+        }
+      } catch (e){
+        console.error('register error:', e);
+        showModal('fail','Network Error','Could not complete registration.', false);
+      } finally {
+        setLoading(btnRegister, false, 'Create Account');
+      }
+    });
+  </script>
+</body>
+</html>
