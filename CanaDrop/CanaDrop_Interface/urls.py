@@ -13,6 +13,7 @@ urlpatterns = [
     path("pharmacy/<int:pharmacy_id>/orders/", views.get_pharmacy_orders, name="get_pharmacy_orders"),
     path('api/pharmacy/<int:pharmacy_id>/orders/', views.pharmacy_orders_api, name='pharmacy_orders_api'),
     path('api/upload-handover-image/', views.upload_handover_image_api, name='upload_handover_image'),
+    path('pharmacyForgotPassword/', views.pharmacyForgotPasswordView, name="PharmacyForgotPasswordPage"),
 
 
     path('driverLogin/', views.driverLoginView, name='DriverLoginPage'),  
@@ -36,6 +37,10 @@ urlpatterns = [
     path('api/contact-admin/', views.contact_admin_api, name='contact_admin_api'),
 
     path('', views.landingView, name='landingPage'),
+
+    path('api/auth/send-otp/', views.send_otp, name='send_otp'),
+    path('api/auth/verify-otp/', views.verify_otp, name='verify_otp'),
+    path('api/auth/change-password/', views.change_password, name='change_password'),
 
 
     

@@ -110,7 +110,9 @@ DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 GOOGLE_MAPS_API_KEY = secrets.get("GOOGLE_MAPS_API_KEY")
 STRIPE_PUBLISHABLE_KEY = secrets.get("STRIPE_PUBLISHABLE_KEY")
 STRIPE_SECRET_KEY = secrets.get("STRIPE_SECRET_KEY")
-STRIPE_WEBHOOK_SECRET = secrets.get("STRIPE_WEBHOOK_SECRET")
+STRIPE_WEBHOOK_SECRET = secrets.get("STRIPE_WEBHOOK_SECRET")    
+GMAIL_APP_PASSWORD = secrets.get("GMAIL_APP_PASSWORD")
+GMAIL_ADDRESS = "help.canadrop@gmail.com"
 
 # ----------------------------
 # GCP SERVICE ACCOUNT TEMP FILE
@@ -124,6 +126,29 @@ with tempfile.NamedTemporaryFile(delete=False, suffix=".json") as f:
 # Example:
 # from google.cloud import storage
 # client = storage.Client.from_service_account_json(settings.GCP_KEY_PATH)
+
+# ----------------------------
+# DJANGO EMAIL SERVICE SETUP
+# ----------------------------
+
+# settings.py
+EMAIL_BACKEND = "django.core.mail.backends.smtp.EmailBackend"
+EMAIL_HOST = "smtp.gmail.com"
+EMAIL_PORT = 587
+EMAIL_USE_TLS = True
+EMAIL_HOST_USER = GMAIL_ADDRESS            # "help.canadrop@gmail.com"
+EMAIL_HOST_PASSWORD = GMAIL_APP_PASSWORD   # 16-char app password
+DEFAULT_FROM_EMAIL = EMAIL_HOST_USER
+
+CACHES = {
+    "default": {
+        "BACKEND": "django.core.cache.backends.db.DatabaseCache",
+        "LOCATION": "django_cache",   # table name
+        "TIMEOUT": None,              # per-key TTLs still apply (e.g., OTP_TTL_SECONDS)
+    }
+}
+
+
 
 
 

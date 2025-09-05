@@ -596,19 +596,30 @@ function getStatusBadge(status) {
     return `<span class="inline-flex px-3 py-1 text-xs font-medium rounded-full ${badges[status]}">${labels[status]}</span>`;
 }
 
+// Parse "YYYY-MM-DD" as a UTC date (no timezone shifts)
+function parseDateUTC(isoDate) {
+    const [y, m, d] = isoDate.split('-').map(Number);
+    return new Date(Date.UTC(y, (m - 1), d)); // midnight UTC
+}
+
 function formatDate(dateString) {
-    return new Date(dateString).toLocaleDateString('en-US', {
+    const dt = parseDateUTC(dateString);
+    return dt.toLocaleDateString('en-US', {
         month: 'short',
         day: 'numeric',
         year: 'numeric'
     });
 }
 
+
 function isPastDue(dueDateString) {
-    const dueDate = new Date(dueDateString);
-    const today = new Date();
-    today.setHours(0, 0, 0, 0); // Set to start of day for fair comparison
-    return dueDate < today;
+    const dueDate = parseDateUTC(dueDateString);
+
+    // Compare using UTC midnight to avoid TZ drift
+    const todayUtc = new Date();
+    todayUtc.setUTCHours(0, 0, 0, 0);
+
+    return dueDate < todayUtc;
 }
 
 function getInvoiceStatus(invoice) {
