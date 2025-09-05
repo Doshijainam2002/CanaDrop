@@ -2672,6 +2672,11 @@ def _send_html_email(subject: str, to_email: str, html: str, text_fallback: str 
     msg.send(fail_silently=False)
 
 # ---------- Views ----------
+from datetime import datetime
+import random
+from django.views.decorators.csrf import csrf_exempt
+from django.http import HttpRequest
+
 @csrf_exempt
 def send_otp(request: HttpRequest):
     if request.method != "POST":
@@ -2687,22 +2692,131 @@ def send_otp(request: HttpRequest):
     otp = "".join(random.choice("0123456789") for _ in range(6))
     cache.set(_otp_key(email), otp, timeout=OTP_TTL_SECONDS)
 
-    # Build email (always respond generically; no account existence leak)
+    # --- Brand colors (bluish-green family used across the app) ---
+    brand_primary = "#0d9488"       # teal-600
+    brand_primary_dark = "#0f766e"  # teal-700
+    brand_accent = "#06b6d4"        # cyan-500
+
+    # Modern, responsive-friendly HTML (works in Gmail/Outlook/Apple Mail)
     html = f"""
-      <div style="font-family:Arial,sans-serif;">
-        <h2>CanaDrop Verification Code</h2>
-        <p>Your OTP:</p>
-        <p style="font-size:24px;letter-spacing:3px;"><b>{otp}</b></p>
-        <p>This code expires in <b>{OTP_TTL_SECONDS//60} minutes</b>.</p>
-      </div>
-    """
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <title>CanaDrop Verification Code</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <style>
+      @media (prefers-color-scheme: dark) {{
+        body {{ background: #0b1220 !important; color: #e5e7eb !important; }}
+        .card {{ background: #0f172a !important; border-color: #1f2937 !important; }}
+        .muted {{ color: #94a3b8 !important; }}
+      }}
+    </style>
+  </head>
+  <body style="margin:0;padding:0;background:#f4f7f9;">
+    <!-- Preheader (hidden, improves inbox preview) -->
+    <div style="display:none;visibility:hidden;opacity:0;height:0;width:0;overflow:hidden;">
+      Your CanaDrop verification code. Expires in {OTP_TTL_SECONDS//60} minute(s).
+    </div>
+
+    <table role="presentation" width="100%" cellspacing="0" cellpadding="0" border="0" style="background:#f4f7f9;padding:24px 12px;">
+      <tr>
+        <td align="center">
+          <!-- Card -->
+          <table role="presentation" width="100%" cellspacing="0" cellpadding="0" border="0" style="max-width:560px;background:#ffffff;border:1px solid #e5e7eb;border-radius:16px;overflow:hidden;" class="card">
+            <!-- Header bar -->
+            <tr>
+              <td style="background:{brand_primary};padding:18px 20px;">
+                <table role="presentation" width="100%" cellspacing="0" cellpadding="0" border="0">
+                  <tr>
+                    <td align="left" style="vertical-align:middle;">
+                      <img src="https://i.postimg.cc/c4jt62GM/Website-Logo-No-Background.png"
+                           alt="CanaDrop"
+                           width="40" height="40"
+                           style="display:block;border:0;outline:none;text-decoration:none;">
+                    </td>
+                    <td align="right" style="font:600 16px/1.2 system-ui,-apple-system,'Segoe UI',Roboto,Helvetica,Arial,'Apple Color Emoji','Segoe UI Emoji';color:#e6fffb;">
+                      Security Verification
+                    </td>
+                  </tr>
+                </table>
+              </td>
+            </tr>
+
+            <!-- Content -->
+            <tr>
+              <td style="padding:28px 24px 8px 24px;">
+                <h1 style="margin:0 0 10px 0;font:700 22px/1.25 system-ui,-apple-system,'Segoe UI',Roboto,Helvetica,Arial;color:#0f172a;">
+                  Your CanaDrop verification code
+                </h1>
+                <p style="margin:0 0 18px 0;font:400 14px/1.6 system-ui,-apple-system,'Segoe UI',Roboto,Helvetica,Arial;color:#475569;">
+                  Use the code below to continue. For your security, don’t share it with anyone.
+                </p>
+
+                <!-- OTP box -->
+                <div style="
+                  margin:18px 0 10px 0;
+                  background:#f0fdfa;
+                  border:1px solid {brand_primary};
+                  color:{brand_primary_dark};
+                  border-radius:12px;
+                  padding:16px 20px;
+                  text-align:center;
+                  font:700 28px/1.1 'SFMono-Regular',Consolas,'Liberation Mono',Menlo,monospace;">
+                  <span style="letter-spacing:6px;display:inline-block;">{otp}</span>
+                </div>
+
+                <p style="margin:8px 0 0 0;font:500 13px/1.6 system-ui,-apple-system,'Segoe UI',Roboto,Helvetica,Arial;color:#334155;">
+                  Expires in <strong>{OTP_TTL_SECONDS//60} minute(s)</strong>.
+                </p>
+
+                <hr style="border:0;border-top:1px solid #e5e7eb;margin:24px 0;">
+
+                <p class="muted" style="margin:0 0 6px 0;font:400 12px/1.6 system-ui,-apple-system,'Segoe UI',Roboto,Helvetica,Arial;color:#6b7280;">
+                  Didn’t request this? You can safely ignore this email.
+                </p>
+              </td>
+            </tr>
+
+            <!-- Footer -->
+            <tr>
+              <td style="padding:0 24px 24px 24px;">
+                <table role="presentation" width="100%" cellspacing="0" cellpadding="0" border="0" style="background:#f8fafc;border:1px dashed #e2e8f0;border-radius:12px;">
+                  <tr>
+                    <td style="padding:12px 16px;">
+                      <p style="margin:0;font:400 12px/1.6 system-ui,-apple-system,'Segoe UI',Roboto,Helvetica,Arial;color:#64748b;">
+                        Need help? Reply to this email and our team will assist you.
+                      </p>
+                    </td>
+                  </tr>
+                </table>
+              </td>
+            </tr>
+
+          </table>
+
+          <!-- Brand footer -->
+          <p style="margin:14px 0 0 0;font:400 12px/1.6 system-ui,-apple-system,'Segoe UI',Roboto,Helvetica,Arial;color:#94a3b8;">
+            © {datetime.utcnow().year} CanaDrop. All rights reserved.
+          </p>
+        </td>
+      </tr>
+    </table>
+  </body>
+</html>
+"""
+
+    subject = f"Your CanaDrop code • Expires in {OTP_TTL_SECONDS // 60} min"
+    text = f"Your CanaDrop verification code is: {otp}\nThis code expires in {OTP_TTL_SECONDS//60} minute(s).\nIf you didn’t request it, you can ignore this message."
+
     try:
-        _send_html_email("Your CanaDrop OTP", email, html, f"Your OTP is: {otp}")
+        _send_html_email(subject, email, html, text)
     except Exception:
-        # swallow send errors but keep response generic
+        # Swallow send errors but keep response generic (avoid account existence leak)
         pass
 
     return _ok("If a pharmacy exists for this email, an OTP will be sent shortly.")
+
 
 @csrf_exempt
 def verify_otp(request: HttpRequest):
