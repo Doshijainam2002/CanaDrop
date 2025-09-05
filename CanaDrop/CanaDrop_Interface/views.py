@@ -83,6 +83,9 @@ def driverAcceptedDeliveriesView(request):
 def driverFinancesView(request):
     return render(request, 'driverFinances.html')
 
+def driverForgotPasswordView(request):
+    return render(request, 'driverForgotPassword.html')
+
 def contactAdminView(request):
     return render(request, 'contactAdmin.html')
 
@@ -2765,6 +2768,50 @@ def change_password(request: HttpRequest):
     pharmacy.save(update_fields=["password"])
 
     return _ok("Password changed successfully.")
+
+
+@csrf_exempt
+def change_password_driver(request: HttpRequest):
+    if request.method != "POST":
+        return _err("Method not allowed", 405)
+
+    data = _json(request)
+    email = (data.get("email") or "").strip().lower()
+    new_password = (data.get("newPassword") or "").strip()
+    confirm_password = (data.get("confirmPassword") or "").strip()
+    token = (data.get("otpToken") or "").strip()
+
+    if not email or not _valid_email(email):
+        return _err("Please provide a valid email address.")
+    if not token:
+        return _err("Missing verification token.")
+    if not new_password or not confirm_password:
+        return _err("Please provide both password fields.")
+    if new_password != confirm_password:
+        return _err("New Password and Confirm Password must match.")
+    if len(new_password) < 8:
+        return _err("Password must be at least 8 characters long.")
+
+    try:
+        token_data = loads(token, salt=SIGNING_SALT, max_age=VERIFY_TOKEN_TTL_SECONDS)
+    except SignatureExpired:
+        return _err("Verification token is invalid or expired.", 400)
+    except BadSignature:
+        return _err("Verification token is invalid or expired.", 400)
+
+    if token_data.get("email") != email:
+        return _err("Verification token does not match this email.", 400)
+
+    # Update DRIVER password
+    try:
+        driver = Driver.objects.get(email__iexact=email)
+    except Driver.DoesNotExist:
+        return _err("No driver account found with this email.", 404)
+
+    driver.password = make_password(new_password)
+    driver.save(update_fields=["password"])
+
+    return _ok("Driver password changed successfully.")
 
 
 

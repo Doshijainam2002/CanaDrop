@@ -32,6 +32,7 @@ urlpatterns = [
     path('api/payment-status/', views.get_payment_status, name='payment_status'),
     path('driverFinances/', views.driverFinancesView, name="DriverFinancesPage"),
     path("api/driver/invoices/weeks/", views.driver_invoice_weeks, name="driver_invoice_weeks"),
+    path('driverForgotPassword/', views.driverForgotPasswordView, name="driverForgotPasswordPage"),
 
     path('contactAdmin/', views.contactAdminView, name='contactAdminPage'), 
     path('api/contact-admin/', views.contact_admin_api, name='contact_admin_api'),
@@ -41,6 +42,7 @@ urlpatterns = [
     path('api/auth/send-otp/', views.send_otp, name='send_otp'),
     path('api/auth/verify-otp/', views.verify_otp, name='verify_otp'),
     path('api/auth/change-password/', views.change_password, name='change_password'),
+    path('api/driver/change-password/', views.change_password_driver, name='change_password_driver'),
 
 
     
