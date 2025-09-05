@@ -377,6 +377,59 @@
     </div>
 
     <script>
+
+
+
+  // User's time zone
+  function userTimeZone() {
+    return Intl.DateTimeFormat().resolvedOptions().timeZone;
+  }
+
+  function normalizeUtc(isoLike) {
+    if (!isoLike) return null;
+    let s = String(isoLike).trim();
+    // already tz-tagged
+    if (/[zZ]$/.test(s) || /[+\-]\d{2}:\d{2}$/.test(s)) return s;
+    // space -> T
+    if (/^\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2}(\.\d+)?$/.test(s)) s = s.replace(' ', 'T');
+    // plain datetime without tz -> append Z (treat as UTC)
+    if (/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}(\.\d+)?$/.test(s)) s = s + 'Z';
+    return s;
+  }
+
+  // Robust date-only formatter: if a datetime slips in, we strip time part first
+  function formatPlainDate(s, locale = undefined) {
+    if (!s) return 'N/A';
+    const raw = String(s).trim();
+    const dateOnly = raw.includes('T') || raw.includes(' ')
+      ? raw.split(/[T ]/)[0]
+      : raw;
+
+    const parts = dateOnly.split('-').map(Number);
+    if (parts.length !== 3 || parts.some(Number.isNaN)) return 'N/A';
+
+    const [y, m, d] = parts;
+    // Render as a calendar date without timezone shifting
+    const dt = new Date(Date.UTC(y, m - 1, d));
+    if (isNaN(dt)) return 'N/A';
+
+    return new Intl.DateTimeFormat(locale, {
+      year: 'numeric',
+      month: 'short',
+      day: 'numeric',
+      timeZone: 'UTC'
+    }).format(dt);
+  }
+
+  function formatUtcToLocal(utcString, opts = { dateStyle: 'medium', timeStyle: 'short', hour12: true }) {
+    const norm = normalizeUtc(utcString);
+    if (!norm) return 'N/A';
+    const d = new Date(norm);
+    if (isNaN(d)) return 'N/A';
+    return new Intl.DateTimeFormat(undefined, { timeZone: userTimeZone(), ...opts }).format(d);
+  }
+
+
 // Global variables
 let currentPharmacyId = null;
 let currentPharmacyName = null;
@@ -550,7 +603,7 @@ ordersHtml += `
                 <div class="flex justify-between items-start">
                     <div>
                         <p class="text-sm font-mono font-medium text-gray-900">#${order.id}</p>
-                        <p class="text-xs text-gray-500">${formatDate(order.created_at)}</p>
+                        <p class="text-xs text-gray-500">${formatDateTime(order.created_at)}</p>
                     </div>
                     <div class="flex items-center space-x-3">
                         ${getStatusBadge(order.status)}
@@ -593,7 +646,7 @@ ordersHtml += `
                 <!-- Order ID -->
                 <div class="col-span-2">
                     <p class="text-sm font-mono font-medium text-gray-900">#${order.id}</p>
-                    <p class="text-xs text-gray-500">${formatDate(order.created_at)}</p>
+                    <p class="text-xs text-gray-500">${formatDateTime(order.created_at)}</p>
                 </div>
                 
                 <!-- Addresses -->
@@ -977,29 +1030,13 @@ async function refreshOrders() {
     await loadPharmacyOrders();
 }
 
-// Utility functions
-function formatDate(dateString) {
-    if (!dateString) return 'N/A';
-    const date = new Date(dateString);
-    return date.toLocaleDateString('en-US', { 
-        month: 'short', 
-        day: 'numeric', 
-        year: 'numeric' 
-    });
-}
-
-function formatDateTime(dateString) {
-    if (!dateString) return 'N/A';
-    const date = new Date(dateString);
-    return date.toLocaleDateString('en-US', { 
-        month: 'short', 
-        day: 'numeric', 
-        year: 'numeric',
-        hour: 'numeric', 
-        minute: '2-digit',
-        hour12: true 
-    });
-}
+  // Keep these wrappers and use them consistently
+  function formatDate(dateOnly) {
+    return formatPlainDate(dateOnly);
+  }
+  function formatDateTime(utcString) {
+    return formatUtcToLocal(utcString, { dateStyle: 'medium', timeStyle: 'short', hour12: true });
+  }
 
 function capitalizeFirst(str) {
     if (!str) return '';

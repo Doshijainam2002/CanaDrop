@@ -250,6 +250,16 @@
             });
         }
 
+        function formatDateNoTZ(ymd) {
+        if (!ymd) return 'N/A';
+        // Works with "YYYY-MM-DD" or "YYYY-MM-DDTHH:MM:SS"
+        const [y, m, d] = ymd.split('T')[0].split('-').map(Number);
+        if (!y || !m || !d) return ymd; // fallback: show as-is
+        const months = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+        return `${months[m - 1]} ${d}, ${y}`;
+        }
+
+
         function createDeliveryCard(delivery) {
             const card = document.createElement('div');
             card.className = 'bg-slate-800 border border-slate-700 rounded-lg p-6 hover:border-emerald-500 transition-all duration-200 h-full flex flex-col';
@@ -288,7 +298,7 @@
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3a4 4 0 118 0v4m-8 0h8m-8 0L8 21h8l8-14H8z"/>
                         </svg>
                         <span class="font-medium">Pickup Date:</span>
-                        <span class="ml-2">${new Date(delivery.pickup_day).toLocaleDateString()}</span>
+                        <span class="ml-2">${formatDateNoTZ(delivery.pickup_day)}</span>
                     </div>
                 </div>
                 

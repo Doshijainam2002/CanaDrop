@@ -602,25 +602,35 @@ function parseDateUTC(isoDate) {
     return new Date(Date.UTC(y, (m - 1), d)); // midnight UTC
 }
 
+// ⬇️ REPLACE your existing formatDate with this
 function formatDate(dateString) {
-    const dt = parseDateUTC(dateString);
-    return dt.toLocaleDateString('en-US', {
-        month: 'short',
-        day: 'numeric',
-        year: 'numeric'
-    });
+    if (!dateString) return 'N/A';
+    // Expecting "YYYY-MM-DD" from BE
+    const parts = dateString.split('-');
+    if (parts.length !== 3) return dateString; // fallback: show as-is
+
+    const [y, m, d] = parts;
+    const month = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'][Number(m) - 1];
+    return `${month} ${Number(d)}, ${y}`;
 }
 
 
+
+// ⬇️ REPLACE your existing isPastDue with this
 function isPastDue(dueDateString) {
-    const dueDate = parseDateUTC(dueDateString);
+    if (!dueDateString) return false;
 
-    // Compare using UTC midnight to avoid TZ drift
-    const todayUtc = new Date();
-    todayUtc.setUTCHours(0, 0, 0, 0);
+    // Build today's date string in UTC as "YYYY-MM-DD" to match BE format
+    const now = new Date();
+    const yyyy = now.getUTCFullYear();
+    const mm = String(now.getUTCMonth() + 1).padStart(2, '0');
+    const dd = String(now.getUTCDate()).padStart(2, '0');
+    const todayUtcStr = `${yyyy}-${mm}-${dd}`;
 
-    return dueDate < todayUtc;
+    // Simple lexicographic compare works for "YYYY-MM-DD"
+    return dueDateString < todayUtcStr;
 }
+
 
 function getInvoiceStatus(invoice) {
     if (invoice.status === 'paid') {

@@ -137,6 +137,16 @@
     </div>
 
     <script>
+
+        // Pretty-print "YYYY-MM-DD" (or "YYYY-MM-DDTHH:MM:SS") with NO timezone math
+function formatDateNoTZ(ymd) {
+  if (!ymd) return 'N/A';
+  const [y, m, d] = ymd.split('T')[0].split('-').map(Number);
+  if (!y || !m || !d) return ymd; // fallback exactly as received
+  const months = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+  return `${months[m - 1]} ${d}, ${y}`;
+}
+
 let deliveries = [];
 
         function getCookie(name) {
@@ -154,15 +164,21 @@ let deliveries = [];
             return cookieValue;
         }
 
-        function getCardStyle(pickupDate) {
-            const today = new Date();
-            const pickup = new Date(pickupDate);
-            const diffDays = Math.ceil((pickup - today) / (1000 * 60 * 60 * 24));
+// Parse "YYYY-MM-DD" as UTC midnight and compare by whole days (no TZ drift)
+function getCardStyle(pickupDate) {
+  const [py, pm, pd] = pickupDate.split('T')[0].split('-').map(Number);
+  const pickupUTC = Date.UTC(py, pm - 1, pd);
 
-            if (diffDays === 0) return 'border-red-500 bg-red-900/20';
-            if (diffDays > 0 && diffDays <= 3) return 'border-yellow-500 bg-yellow-900/20';
-            return 'border-slate-600 bg-slate-800';
-        }
+  const now = new Date();
+  const todayUTC = Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate());
+
+  const diffDays = Math.ceil((pickupUTC - todayUTC) / 86400000); // 86_400_000 ms/day
+
+  if (diffDays === 0) return 'border-red-500 bg-red-900/20';
+  if (diffDays > 0 && diffDays <= 3) return 'border-yellow-500 bg-yellow-900/20';
+  return 'border-slate-600 bg-slate-800';
+}
+
 
         function getStatusInfo(status) {
             const statusMap = {
@@ -272,9 +288,10 @@ let deliveries = [];
                                 })()}
                             </span>
                             <span>
-                                ${delivery.pickup_day === new Date().toISOString().split('T')[0] 
-                                    ? 'Today' 
-                                    : new Date(delivery.pickup_day).toLocaleDateString()}
+                                ${delivery.pickup_day === new Date().toISOString().split('T')[0]
+                                    ? 'Today'
+                                    : formatDateNoTZ(delivery.pickup_day)}
+
                             </span>
                         </div>
 

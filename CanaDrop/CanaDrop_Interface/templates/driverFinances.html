@@ -229,6 +229,33 @@
     </div>
 
     <script>
+
+// Interpret a UTC datetime string (with or without Z) and return a Date in local time
+function parseUtcDateTime(utcLike) {
+    if (!utcLike) return null;
+    // "YYYY-MM-DD HH:MM:SS" -> "YYYY-MM-DDTHH:MM:SSZ"
+    if (/^\d{4}-\d{2}-\d{2}\s+\d{2}:\d{2}:\d{2}$/.test(utcLike)) {
+        return new Date(utcLike.replace(' ', 'T') + 'Z');
+    }
+    // ISO starting with T, but missing Z/offset -> force Z
+    if (/^\d{4}-\d{2}-\d{2}T/.test(utcLike) && !/[zZ]|[+\-]\d{2}:\d{2}$/.test(utcLike)) {
+        return new Date(utcLike + 'Z');
+    }
+    return new Date(utcLike);
+}
+
+// Pretty print a date-only "YYYY-MM-DD" without timezone math
+function formatDatePlain(dateOnly) {
+    if (!dateOnly) return 'N/A';
+    const base = dateOnly.split('T')[0];
+    const [y, m, d] = base.split('-').map(Number);
+    if (!y || !m || !d) return dateOnly;
+    const months = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+    return `${months[m - 1]} ${d}, ${y}`;
+}
+
+
+
 let invoiceData = [];
 let currentDriverId = null;
 
@@ -267,10 +294,10 @@ function getStatusBadge(status) {
 }
 
 function formatDate(dateString) {
-    return new Date(dateString + 'T00:00:00').toLocaleDateString('en-US', {
-        month: 'short', day: 'numeric', year: 'numeric'
-    });
+    // date-only → render as-is (no timezone math)
+    return formatDatePlain(dateString);
 }
+
 
 function renderSummaries() {
     const tbody = document.getElementById('summariesTable');
@@ -409,7 +436,7 @@ function viewInvoiceDetails(startDate) {
                                         <td class="px-4 py-3 text-sm text-slate-300">${order.drop_city || 'N/A'}</td>
                                         <td class="px-4 py-3 text-sm text-slate-300">$${grossRate.toFixed(2)}</td>
                                         <td class="px-4 py-3 text-sm text-emerald-400">$${netEarning.toFixed(2)}</td>
-                                        <td class="px-4 py-3 text-sm text-slate-300">${order.updated_at ? new Date(order.updated_at).toLocaleDateString() : 'N/A'}</td>
+                                        <td class="px-4 py-3 text-sm text-slate-300">${order.updated_at ? parseUtcDateTime(order.updated_at).toLocaleDateString() : 'N/A'}
                                     </tr>
                                 `;
                             }).join('')}
