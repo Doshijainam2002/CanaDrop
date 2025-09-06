@@ -615,6 +615,243 @@ def pharmacy_orders_api(request, pharmacy_id):
 
 
 
+# @csrf_exempt
+# @require_http_methods(["POST"])
+# def upload_handover_image_api(request):
+#     try:
+#         # Debug logging
+#         logger.info(f"Upload request received - POST data: {request.POST}")
+#         logger.info(f"Files in request: {list(request.FILES.keys())}")
+        
+#         # Validate required fields
+#         if 'image' not in request.FILES:
+#             logger.error("No image file in request")
+#             return JsonResponse({
+#                 'success': False,
+#                 'error': 'No image file provided'
+#             }, status=400)
+        
+#         order_number = request.POST.get('order_number')
+#         pharmacy_id = request.POST.get('pharmacy_id')
+#         pharmacy_name = request.POST.get('pharmacy_name')  # Still get for validation but won't use for filename
+#         driver_id = request.POST.get('driver_id')  # Optional driver ID
+        
+#         logger.info(f"Request params - Order: {order_number}, Pharmacy: {pharmacy_id}, Name: {pharmacy_name}, Driver: {driver_id}")
+        
+#         if not all([order_number, pharmacy_id, pharmacy_name]):
+#             logger.error("Missing required fields")
+#             return JsonResponse({
+#                 'success': False,
+#                 'error': 'Missing required fields: order_number, pharmacy_id, pharmacy_name'
+#             }, status=400)
+        
+#         # Validate pharmacy exists
+#         try:
+#             pharmacy = get_object_or_404(Pharmacy, id=pharmacy_id)
+#             logger.info(f"Pharmacy found: {pharmacy.name}")
+#         except Exception as e:
+#             logger.error(f"Pharmacy lookup failed: {e}")
+#             return JsonResponse({
+#                 'success': False,
+#                 'error': 'Pharmacy not found'
+#             }, status=404)
+        
+#         # Validate order exists and belongs to pharmacy
+#         try:
+#             order = get_object_or_404(DeliveryOrder, id=order_number, pharmacy=pharmacy)
+#             logger.info(f"Order found: #{order.id}")
+#         except Exception as e:
+#             logger.error(f"Order lookup failed: {e}")
+#             return JsonResponse({
+#                 'success': False,
+#                 'error': 'Order not found or does not belong to this pharmacy'
+#             }, status=404)
+        
+#         # Validate driver if driver_id is provided and not empty
+#         driver = None
+#         if driver_id and driver_id not in ['null', '', 'undefined']:
+#             try:
+#                 driver = get_object_or_404(Driver, id=driver_id)
+#                 logger.info(f"Driver found: {driver.name}")
+#             except Exception as e:
+#                 logger.warning(f"Driver lookup failed for ID {driver_id}: {e}")
+#                 # Don't return error - just proceed without driver
+#                 # This allows pharmacy to upload without assigning a driver
+#                 driver = None
+#         else:
+#             logger.info("No driver_id provided or driver_id is empty/null")
+        
+#         # Get the uploaded image
+#         image_file = request.FILES['image']
+#         logger.info(f"Image file: {image_file.name}, size: {image_file.size}, type: {image_file.content_type}")
+        
+#         # Validate image file
+#         allowed_extensions = ['.jpg', '.jpeg', '.png', '.gif']
+#         if '.' in image_file.name:
+#             file_extension = '.' + image_file.name.split('.')[-1].lower()
+#         else:
+#             logger.error("File has no extension")
+#             return JsonResponse({
+#                 'success': False,
+#                 'error': 'Invalid file - no extension found'
+#             }, status=400)
+        
+#         if file_extension not in allowed_extensions:
+#             logger.error(f"Invalid file extension: {file_extension}")
+#             return JsonResponse({
+#                 'success': False,
+#                 'error': 'Invalid file type. Allowed: jpg, jpeg, png, gif'
+#             }, status=400)
+        
+#         # Create filename: orderNumber_pharmacyId_pharmacyName_handover
+#         # Use pharmacy.name from database instead of pharmacy_name from request
+#         safe_pharmacy_name = "".join(c for c in pharmacy.name if c.isalnum() or c in ('-', '_')).strip()
+#         filename = f"{order_number}_{pharmacy_id}_{safe_pharmacy_name}_handover{file_extension}"
+#         blob_name = f"Proof/{filename}"
+        
+#         logger.info(f"Generated filename: {filename}")
+#         logger.info(f"Blob path: {blob_name}")
+        
+#         # Initialize GCP Storage client
+#         try:
+#             from google.cloud import storage
+#             from google.oauth2 import service_account
+#             from datetime import timedelta
+            
+#             logger.info("Initializing Google Cloud Storage client...")
+            
+#             # Define the path to your GCP service account key file
+#             gcp_key_path = settings.GCP_KEY_PATH
+            
+#             # Check if the key file exists
+#             if not os.path.exists(gcp_key_path):
+#                 logger.error(f"GCP key file not found at: {gcp_key_path}")
+#                 return JsonResponse({
+#                     'success': False,
+#                     'error': 'GCP service account key file not found'
+#                 }, status=500)
+            
+#             # Create credentials from the key file
+#             credentials = service_account.Credentials.from_service_account_file(settings.GCP_KEY_PATH)
+#             client = storage.Client(credentials=credentials)
+#             bucket = client.bucket('canadrop-bucket')
+#             blob = bucket.blob(blob_name)
+            
+#             logger.info("Google Cloud client initialized successfully")
+            
+#             # Reset file pointer to beginning
+#             image_file.seek(0)
+            
+#             # Upload the file
+#             logger.info(f"Starting upload to GCS...")
+#             blob.upload_from_file(
+#                 image_file,
+#                 content_type=image_file.content_type
+#             )
+#             logger.info("Upload to GCS completed")
+            
+#             # Generate signed URL (valid for 7 days)
+#             signed_url = blob.generate_signed_url(
+#                 expiration=timedelta(days=7),
+#                 method='GET'
+#             )
+#             logger.info("Signed URL generated successfully")
+            
+#         except ImportError as e:
+#             logger.error(f"Missing Google Cloud libraries: {e}")
+#             return JsonResponse({
+#                 'success': False,
+#                 'error': 'Google Cloud Storage libraries not installed. Run: pip install google-cloud-storage'
+#             }, status=500)
+            
+#         except Exception as gcp_error:
+#             logger.error(f"GCP upload error: {gcp_error}")
+#             return JsonResponse({
+#                 'success': False,
+#                 'error': f'Failed to upload to GCP: {str(gcp_error)}'
+#             }, status=500)
+        
+#         # Save OrderImage record
+#         try:
+#             order_image = OrderImage.objects.create(
+#                 order=order,
+#                 image_url=signed_url,
+#                 stage='handover'
+#             )
+#             logger.info(f"OrderImage created with ID: {order_image.id}")
+#         except Exception as e:
+#             logger.error(f"Failed to create OrderImage: {e}")
+#             return JsonResponse({
+#                 'success': False,
+#                 'error': f'Failed to save image record: {str(e)}'
+#             }, status=500)
+        
+#         # Add tracking entry for handover
+#         try:
+#             # Determine who performed the action
+#             # Since this is pharmacy handover API, performed_by should always be pharmacy
+#             performed_by = f"Pharmacy: {pharmacy.name}"
+            
+#             tracking_entry = OrderTracking.objects.create(
+#                 order=order,
+#                 pharmacy=pharmacy,
+#                 driver=driver,  # This will be None if no driver_id was provided
+#                 step='handover',
+#                 performed_by=performed_by,
+#                 note=f"Handover image uploaded: {filename}",
+#                 image_url=signed_url
+#             )
+#             logger.info(f"OrderTracking created with ID: {tracking_entry.id}")
+#         except Exception as e:
+#             logger.error(f"Failed to create OrderTracking: {e}")
+#             return JsonResponse({
+#                 'success': False,
+#                 'error': f'Failed to create tracking entry: {str(e)}'
+#             }, status=500)
+        
+#         # Update order status to picked_up
+#         try:
+#             order.status = 'picked_up'
+#             order.save()
+#             logger.info(f"Order status updated to: {order.status}")
+#         except Exception as e:
+#             logger.error(f"Failed to update order status: {e}")
+#             return JsonResponse({
+#                 'success': False,
+#                 'error': f'Failed to update order status: {str(e)}'
+#             }, status=500)
+        
+#         logger.info("Upload process completed successfully")
+        
+#         return JsonResponse({
+#             'success': True,
+#             'message': 'Handover image uploaded successfully',
+#             'data': {
+#                 'order_id': order.id,
+#                 'pharmacy_id': pharmacy.id,
+#                 'pharmacy_name': pharmacy.name,  # Return actual pharmacy name from database
+#                 'driver_id': driver.id if driver else None,
+#                 'driver_name': driver.name if driver else None,  # Fixed: use driver.name
+#                 'image_url': signed_url,
+#                 'filename': filename,
+#                 'order_status': order.status,
+#                 'tracking_entry_id': tracking_entry.id,
+#                 'uploaded_at': order_image.uploaded_at.strftime('%Y-%m-%d %H:%M:%S')
+#             }
+#         })
+        
+#     except Exception as e:
+#         logger.error(f"Unexpected error in upload_handover_image_api: {e}")
+#         import traceback
+#         logger.error(f"Full traceback: {traceback.format_exc()}")
+        
+#         return JsonResponse({
+#             'success': False,
+#             'error': f'An unexpected error occurred: {str(e)}'
+#         }, status=500)
+
+
+
 @csrf_exempt
 @require_http_methods(["POST"])
 def upload_handover_image_api(request):
@@ -716,7 +953,6 @@ def upload_handover_image_api(request):
         try:
             from google.cloud import storage
             from google.oauth2 import service_account
-            from datetime import timedelta
             
             logger.info("Initializing Google Cloud Storage client...")
             
@@ -750,12 +986,10 @@ def upload_handover_image_api(request):
             )
             logger.info("Upload to GCS completed")
             
-            # Generate signed URL (valid for 7 days)
-            signed_url = blob.generate_signed_url(
-                expiration=timedelta(days=7),
-                method='GET'
-            )
-            logger.info("Signed URL generated successfully")
+            # Get public URL (works with uniform bucket-level access)
+            # The bucket must be configured with appropriate IAM policies for public access
+            public_url = f"https://storage.googleapis.com/{bucket.name}/{blob_name}"
+            logger.info("Public URL generated successfully")
             
         except ImportError as e:
             logger.error(f"Missing Google Cloud libraries: {e}")
@@ -775,7 +1009,7 @@ def upload_handover_image_api(request):
         try:
             order_image = OrderImage.objects.create(
                 order=order,
-                image_url=signed_url,
+                image_url=public_url,
                 stage='handover'
             )
             logger.info(f"OrderImage created with ID: {order_image.id}")
@@ -799,7 +1033,7 @@ def upload_handover_image_api(request):
                 step='handover',
                 performed_by=performed_by,
                 note=f"Handover image uploaded: {filename}",
-                image_url=signed_url
+                image_url=public_url
             )
             logger.info(f"OrderTracking created with ID: {tracking_entry.id}")
         except Exception as e:
@@ -832,7 +1066,7 @@ def upload_handover_image_api(request):
                 'pharmacy_name': pharmacy.name,  # Return actual pharmacy name from database
                 'driver_id': driver.id if driver else None,
                 'driver_name': driver.name if driver else None,  # Fixed: use driver.name
-                'image_url': signed_url,
+                'image_url': public_url,
                 'filename': filename,
                 'order_status': order.status,
                 'tracking_entry_id': tracking_entry.id,
@@ -849,6 +1083,11 @@ def upload_handover_image_api(request):
             'success': False,
             'error': f'An unexpected error occurred: {str(e)}'
         }, status=500)
+
+
+
+
+
 
 
 @csrf_exempt
@@ -1059,6 +1298,148 @@ def driver_accepted_orders(request):
 
     return JsonResponse({"orders": orders})
 
+# @csrf_exempt
+# def driver_pickup_proof(request):
+#     if request.method != "POST":
+#         return HttpResponseBadRequest("Only POST method allowed")
+
+#     driver_id = request.POST.get("driverId")
+#     order_id = request.POST.get("orderId")
+#     pharmacy_id = request.POST.get("pharmacyId")
+#     image_file = request.FILES.get("image")
+
+#     if not (driver_id and order_id and pharmacy_id and image_file):
+#         return HttpResponseBadRequest("driverId, orderId, pharmacyId and image are required")
+
+#     try:
+#         # fetch objects
+#         driver = get_object_or_404(Driver, id=driver_id)
+#         order = get_object_or_404(DeliveryOrder, id=order_id)
+#         pharmacy = get_object_or_404(Pharmacy, id=pharmacy_id)
+
+#         # step 1: update order status to inTransit
+#         order.status = "inTransit"
+#         order.save()
+
+#         # step 2: upload image to GCP
+#         key_path = settings.GCP_KEY_PATH
+#         bucket_name = "canadrop-bucket"  # Fixed bucket name
+
+#         client = storage.Client.from_service_account_json(key_path)
+#         bucket = client.bucket(bucket_name)
+
+#         safe_pharmacy_name = pharmacy.name.replace(" ", "_")
+#         filename = f"{driver_id}_{order_id}_{safe_pharmacy_name}_driverpickup.jpg"
+#         blob = bucket.blob(f"Proof/{filename}")
+#         blob.upload_from_file(image_file, content_type=image_file.content_type)
+
+#         # generate signed URL valid for 7 days
+#         signed_url = blob.generate_signed_url(expiration=timedelta(days=7), method="GET")
+
+#         # step 3a: create order tracking entry
+#         note_text = f"Driver Pickup Image Uploaded : {driver_id}_{order_id}_{pharmacy_id}_DriverPickup"
+#         performed_by = f"Driver: {driver.name}"
+#         OrderTracking.objects.create(
+#             order=order,
+#             driver=driver,
+#             pharmacy=pharmacy,
+#             step="inTransit",
+#             performed_by=performed_by,
+#             note=note_text,
+#             image_url=signed_url,
+#         )
+
+#         # step 3b: create order image entry
+#         OrderImage.objects.create(
+#             order=order,
+#             image_url=signed_url,
+#             stage="pickup"
+#         )
+
+#         return JsonResponse({
+#             "success": True,
+#             "message": "Pickup proof uploaded successfully",
+#             "image_url": signed_url
+#         })
+
+#     except Exception as e:
+#         return JsonResponse({
+#             "success": False,
+#             "message": f"Error uploading pickup proof: {str(e)}"
+#         }, status=500)
+
+
+# @csrf_exempt
+# def driver_delivery_proof(request):
+#     if request.method != "POST":
+#         return HttpResponseBadRequest("Only POST method allowed")
+
+#     driver_id = request.POST.get("driverId")
+#     order_id = request.POST.get("orderId")
+#     pharmacy_id = request.POST.get("pharmacyId")
+#     image_file = request.FILES.get("image")
+
+#     if not (driver_id and order_id and pharmacy_id and image_file):
+#         return HttpResponseBadRequest("driverId, orderId, pharmacyId and image are required")
+
+#     try:
+#         # fetch objects
+#         driver = get_object_or_404(Driver, id=driver_id)
+#         order = get_object_or_404(DeliveryOrder, id=order_id)
+#         pharmacy = get_object_or_404(Pharmacy, id=pharmacy_id)
+
+#         # step 1: update order status to delivered
+#         order.status = "delivered"
+#         order.save()
+
+#         # step 2: upload image to GCP
+#         key_path = settings.GCP_KEY_PATH
+#         bucket_name = "canadrop-bucket"  # Fixed bucket name
+
+#         client = storage.Client.from_service_account_json(key_path)
+#         bucket = client.bucket(bucket_name)
+
+#         safe_pharmacy_name = pharmacy.name.replace(" ", "_")
+#         filename = f"{driver_id}_{order_id}_{safe_pharmacy_name}_delivered.jpg"
+#         blob = bucket.blob(f"Proof/{filename}")
+#         blob.upload_from_file(image_file, content_type=image_file.content_type)
+
+#         # signed URL (valid for 7 days)
+#         signed_url = blob.generate_signed_url(expiration=timedelta(days=7), method="GET")
+
+#         # step 3a: order tracking entry
+#         note_text = f"Driver Delivery Image Uploaded : {driver_id}_{order_id}_{pharmacy_id}_Delivered"
+#         performed_by = f"Driver: {driver.name}"
+#         OrderTracking.objects.create(
+#             order=order,
+#             driver=driver,
+#             pharmacy=pharmacy,
+#             step="delivered",
+#             performed_by=performed_by,
+#             note=note_text,
+#             image_url=signed_url,
+#         )
+
+#         # step 3b: order image entry
+#         OrderImage.objects.create(
+#             order=order,
+#             image_url=signed_url,
+#             stage="delivered"
+#         )
+
+#         return JsonResponse({
+#             "success": True,
+#             "message": "Delivery proof uploaded successfully",
+#             "image_url": signed_url
+#         })
+
+#     except Exception as e:
+#         return JsonResponse({
+#             "success": False,
+#             "message": f"Error uploading delivery proof: {str(e)}"
+#         }, status=500)
+
+
 @csrf_exempt
 def driver_pickup_proof(request):
     if request.method != "POST":
@@ -1091,11 +1472,12 @@ def driver_pickup_proof(request):
 
         safe_pharmacy_name = pharmacy.name.replace(" ", "_")
         filename = f"{driver_id}_{order_id}_{safe_pharmacy_name}_driverpickup.jpg"
-        blob = bucket.blob(f"Proof/{filename}")
+        blob_name = f"Proof/{filename}"
+        blob = bucket.blob(blob_name)
         blob.upload_from_file(image_file, content_type=image_file.content_type)
 
-        # generate signed URL valid for 7 days
-        signed_url = blob.generate_signed_url(expiration=timedelta(days=7), method="GET")
+        # get public URL
+        public_url = f"https://storage.googleapis.com/{bucket_name}/{blob_name}"
 
         # step 3a: create order tracking entry
         note_text = f"Driver Pickup Image Uploaded : {driver_id}_{order_id}_{pharmacy_id}_DriverPickup"
@@ -1107,20 +1489,20 @@ def driver_pickup_proof(request):
             step="inTransit",
             performed_by=performed_by,
             note=note_text,
-            image_url=signed_url,
+            image_url=public_url,
         )
 
         # step 3b: create order image entry
         OrderImage.objects.create(
             order=order,
-            image_url=signed_url,
+            image_url=public_url,
             stage="pickup"
         )
 
         return JsonResponse({
             "success": True,
             "message": "Pickup proof uploaded successfully",
-            "image_url": signed_url
+            "image_url": public_url
         })
 
     except Exception as e:
@@ -1162,11 +1544,12 @@ def driver_delivery_proof(request):
 
         safe_pharmacy_name = pharmacy.name.replace(" ", "_")
         filename = f"{driver_id}_{order_id}_{safe_pharmacy_name}_delivered.jpg"
-        blob = bucket.blob(f"Proof/{filename}")
+        blob_name = f"Proof/{filename}"
+        blob = bucket.blob(blob_name)
         blob.upload_from_file(image_file, content_type=image_file.content_type)
 
-        # signed URL (valid for 7 days)
-        signed_url = blob.generate_signed_url(expiration=timedelta(days=7), method="GET")
+        # get public URL
+        public_url = f"https://storage.googleapis.com/{bucket_name}/{blob_name}"
 
         # step 3a: order tracking entry
         note_text = f"Driver Delivery Image Uploaded : {driver_id}_{order_id}_{pharmacy_id}_Delivered"
@@ -1178,20 +1561,20 @@ def driver_delivery_proof(request):
             step="delivered",
             performed_by=performed_by,
             note=note_text,
-            image_url=signed_url,
+            image_url=public_url,
         )
 
         # step 3b: order image entry
         OrderImage.objects.create(
             order=order,
-            image_url=signed_url,
+            image_url=public_url,
             stage="delivered"
         )
 
         return JsonResponse({
             "success": True,
             "message": "Delivery proof uploaded successfully",
-            "image_url": signed_url
+            "image_url": public_url
         })
 
     except Exception as e:
