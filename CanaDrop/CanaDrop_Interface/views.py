@@ -3228,6 +3228,8 @@ def verify_otp(request: HttpRequest):
 
     return _ok("OTP verified.", token=token, expires_in=VERIFY_TOKEN_TTL_SECONDS)
 
+
+
 @csrf_exempt
 def change_password(request: HttpRequest):
     if request.method != "POST":
@@ -3270,7 +3272,141 @@ def change_password(request: HttpRequest):
     pharmacy.password = make_password(new_password)
     pharmacy.save(update_fields=["password"])
 
+    # --- Light-theme confirmation email (matches send_otp style) ---
+    try:
+        # Brand colors (bluish green family)
+        brand_primary = "#0d9488"       # teal-600
+        brand_primary_dark = "#0f766e"  # teal-700
+
+        logo_url = "https://i.postimg.cc/c4jt62GM/Website-Logo-No-Background.png"
+        changed_at = timezone.now().strftime("%b %d, %Y %H:%M %Z")
+        site_url = getattr(settings, "SITE_URL", "").rstrip("/")
+        reset_link = f"{site_url}/forgotPassword/" if site_url else "/forgotPassword/"
+
+        html = f"""
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <title>Password Changed Successfully • CanaDrop</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <style>
+      @media (prefers-color-scheme: dark) {{
+        body {{ background: #0b1220 !important; color: #e5e7eb !important; }}
+        .card {{ background: #0f172a !important; border-color: #1f2937 !important; }}
+        .muted {{ color: #94a3b8 !important; }}
+        .panel {{ background:#0b1220 !important; border-color:#1f2937 !important; }}
+      }}
+    </style>
+  </head>
+  <body style="margin:0;padding:0;background:#f4f7f9;">
+    <!-- Preheader (hidden) -->
+    <div style="display:none;visibility:hidden;opacity:0;height:0;width:0;overflow:hidden;">
+      Your CanaDrop password was changed on {changed_at}.
+    </div>
+
+    <table role="presentation" width="100%" cellspacing="0" cellpadding="0" border="0" style="background:#f4f7f9;padding:24px 12px;">
+      <tr>
+        <td align="center">
+          <!-- Card -->
+          <table role="presentation" width="100%" cellspacing="0" cellpadding="0" border="0" style="max-width:560px;background:#ffffff;border:1px solid #e5e7eb;border-radius:16px;overflow:hidden;" class="card">
+            <!-- Header bar -->
+            <tr>
+              <td style="background:{brand_primary};padding:18px 20px;">
+                <table role="presentation" width="100%" cellspacing="0" cellpadding="0" border="0">
+                  <tr>
+                    <td align="left" style="vertical-align:middle;">
+                      <img src="{logo_url}"
+                           alt="CanaDrop"
+                           width="40" height="40"
+                           style="display:block;border:0;outline:none;text-decoration:none;">
+                    </td>
+                    <td align="right" style="font:600 16px/1.2 system-ui,-apple-system,'Segoe UI',Roboto,Helvetica,Arial;color:#e6fffb;">
+                      Security Notification
+                    </td>
+                  </tr>
+                </table>
+              </td>
+            </tr>
+
+            <!-- Content -->
+            <tr>
+              <td style="padding:28px 24px 10px 24px;">
+                <h1 style="margin:0 0 10px 0;font:700 22px/1.25 system-ui,-apple-system,'Segoe UI',Roboto,Helvetica,Arial;color:#0f172a;">
+                  Password Changed Successfully
+                </h1>
+                <p style="margin:0 0 16px 0;font:400 14px/1.6 system-ui,-apple-system,'Segoe UI',Roboto,Helvetica,Arial;color:#475569;">
+                  Your CanaDrop account password was changed on
+                  <strong style="color:{brand_primary_dark}">{changed_at}</strong>.
+                </p>
+
+                <table role="presentation" width="100%" cellspacing="0" cellpadding="0" border="0" style="background:#f8fafc;border:1px dashed #e2e8f0;border-radius:12px;" class="panel">
+                  <tr>
+                    <td style="padding:14px 16px;">
+                      <p style="margin:0 0 6px 0;font:400 13px/1.65 system-ui,-apple-system,'Segoe UI',Roboto,Helvetica,Arial;color:#334155;">
+                        If <strong>you</strong> made this change, no further action is needed.
+                      </p>
+                      <p style="margin:0;font:400 13px/1.65 system-ui,-apple-system,'Segoe UI',Roboto,Helvetica,Arial;color:#334155;">
+                        If this wasn’t you, please reset your password immediately
+                        
+                      </p>
+                    </td>
+                  </tr>
+                </table>
+
+                <p class="muted" style="margin:16px 0 0 0;font:400 12px/1.6 system-ui,-apple-system,'Segoe UI',Roboto,Helvetica,Arial;color:#6b7280;">
+                  For your security, never share your password with anyone.
+                </p>
+              </td>
+            </tr>
+
+            <!-- Footer -->
+            <tr>
+              <td style="padding:0 24px 24px 24px;">
+                <table role="presentation" width="100%" cellspacing="0" cellpadding="0" border="0" style="background:#f8fafc;border:1px dashed #e2e8f0;border-radius:12px;" class="panel">
+                  <tr>
+                    <td style="padding:12px 16px;">
+                      <p style="margin:0;font:400 12px/1.6 system-ui,-apple-system,'Segoe UI',Roboto,Helvetica,Arial;color:#64748b;">
+                        Need help? Reply to this email and our team will assist you.
+                      </p>
+                    </td>
+                  </tr>
+                </table>
+              </td>
+            </tr>
+
+          </table>
+
+          <!-- Brand footer -->
+          <p style="margin:14px 0 0 0;font:400 12px/1.6 system-ui,-apple-system,'Segoe UI',Roboto,Helvetica,Arial;color:#94a3b8;">
+            © {timezone.now().year} CanaDrop. All rights reserved.
+          </p>
+        </td>
+      </tr>
+    </table>
+  </body>
+</html>
+"""
+        text = (
+            "CanaDrop — Password Changed Successfully\n\n"
+            f"Timestamp: {changed_at}\n\n"
+            "If you did not make this change, please reset your password immediately:\n"
+            f"{reset_link}\n"
+        )
+
+        _send_html_email(
+            subject="Your CanaDrop password was changed",
+            to_email=email,
+            html=html,
+            text_fallback=text,
+        )
+    except Exception:
+        # Keep API response the same; just log email errors for visibility
+        logger.exception("Password-change email failed to send")
+
     return _ok("Password changed successfully.")
+
+
 
 
 @csrf_exempt
@@ -3314,8 +3450,136 @@ def change_password_driver(request: HttpRequest):
     driver.password = make_password(new_password)
     driver.save(update_fields=["password"])
 
+    # ---- Dark theme email (bluish grey + teal accent) ----
+    try:
+        brand_primary = "#0d9488"        # teal-600
+        brand_primary_dark = "#0f766e"   # teal-700
+        bg_dark = "#0b1220"              # page background
+        card_dark = "#0f172a"            # card background
+        border_dark = "#1f2937"          # borders
+        text_light = "#e5e7eb"           # primary text
+        text_muted = "#94a3b8"           # muted text
+
+        logo_url = "https://i.postimg.cc/c4jt62GM/Website-Logo-No-Background.png"
+        changed_at = timezone.now().strftime("%b %d, %Y %H:%M %Z")
+
+        html = f"""
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <title>Password Changed • CanaDrop Driver</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+  </head>
+  <body style="margin:0;padding:0;background:{bg_dark};">
+    <!-- Preheader (hidden) -->
+    <div style="display:none;visibility:hidden;opacity:0;height:0;width:0;overflow:hidden;">
+      Your CanaDrop driver password was changed on {changed_at}.
+    </div>
+
+    <table role="presentation" width="100%" cellspacing="0" cellpadding="0" border="0" style="background:{bg_dark};padding:24px 12px;">
+      <tr>
+        <td align="center">
+          <!-- Card -->
+          <table role="presentation" width="100%" cellspacing="0" cellpadding="0" border="0" style="max-width:560px;background:{card_dark};border:1px solid {border_dark};border-radius:16px;overflow:hidden;">
+            <!-- Header bar -->
+            <tr>
+              <td style="background:{brand_primary};padding:18px 20px;">
+                <table role="presentation" width="100%" cellspacing="0" cellpadding="0" border="0">
+                  <tr>
+                    <td align="left" style="vertical-align:middle;">
+                      <img src="{logo_url}" alt="CanaDrop" width="40" height="40" style="display:block;border:0;outline:none;text-decoration:none;">
+                    </td>
+                    <td align="right" style="font:600 16px/1.2 system-ui,-apple-system,'Segoe UI',Roboto,Helvetica,Arial;color:#e6fffb;">
+                      Security Notification
+                    </td>
+                  </tr>
+                </table>
+              </td>
+            </tr>
+
+            <!-- Content -->
+            <tr>
+              <td style="padding:28px 24px 10px 24px;">
+                <h1 style="margin:0 0 10px 0;font:700 22px/1.25 system-ui,-apple-system,'Segoe UI',Roboto,Helvetica,Arial;color:{text_light};">
+                  Password Changed Successfully
+                </h1>
+                <p style="margin:0 0 16px 0;font:400 14px/1.6 system-ui,-apple-system,'Segoe UI',Roboto,Helvetica,Arial;color:{text_muted};">
+                  Your CanaDrop <strong style="color:{text_light};">driver</strong> account password was changed on
+                  <strong style="color:{brand_primary};">{changed_at}</strong>.
+                </p>
+
+                <table role="presentation" width="100%" cellspacing="0" cellpadding="0" border="0" style="background:{bg_dark};border:1px dashed {border_dark};border-radius:12px;">
+                  <tr>
+                    <td style="padding:14px 16px;">
+                      <p style="margin:0 0 6px 0;font:400 13px/1.7 system-ui,-apple-system,'Segoe UI',Roboto,Helvetica,Arial;color:{text_light};">
+                        If <strong>you</strong> made this change, no further action is needed.
+                      </p>
+                      <p style="margin:0;font:400 13px/1.7 system-ui,-apple-system,'Segoe UI',Roboto,Helvetica,Arial;color:{text_muted};">
+                        If this wasn’t you, please reset your password immediately.
+                      </p>
+                    </td>
+                  </tr>
+                </table>
+
+                <p style="margin:16px 0 0 0;font:400 12px/1.6 system-ui,-apple-system,'Segoe UI',Roboto,Helvetica,Arial;color:{text_muted};">
+                  For your security, never share your password with anyone.
+                </p>
+              </td>
+            </tr>
+
+            <!-- Footer -->
+            <tr>
+              <td style="padding:0 24px 24px 24px;">
+                <table role="presentation" width="100%" cellspacing="0" cellpadding="0" border="0" style="background:{bg_dark};border:1px dashed {border_dark};border-radius:12px;">
+                  <tr>
+                    <td style="padding:12px 16px;">
+                      <p style="margin:0;font:400 12px/1.6 system-ui,-apple-system,'Segoe UI',Roboto,Helvetica,Arial;color:{text_muted};">
+                        Need help? Reply to this email and our team will assist you.
+                      </p>
+                    </td>
+                  </tr>
+                </table>
+              </td>
+            </tr>
+
+          </table>
+
+          <!-- Brand footer -->
+          <p style="margin:14px 0 0 0;font:400 12px/1.6 system-ui,-apple-system,'Segoe UI',Roboto,Helvetica,Arial;color:{text_muted};">
+            © {timezone.now().year} CanaDrop. All rights reserved.
+          </p>
+        </td>
+      </tr>
+    </table>
+  </body>
+</html>
+"""
+        text = (
+            "CanaDrop — Driver Password Changed Successfully\n\n"
+            f"Timestamp: {changed_at}\n\n"
+            "If you did not make this change, please reset your password immediately."
+        )
+
+        _send_html_email(
+            subject="Your CanaDrop driver password was changed",
+            to_email=email,
+            html=html,
+            text_fallback=text,
+        )
+    except Exception:
+        logger.exception("Driver password-change email failed to send")
+
     return _ok("Driver password changed successfully.")
 
+
+
+
+
+from django.utils import timezone
+import logging
+
+logger = logging.getLogger(__name__)
 
 @csrf_exempt
 def register_pharmacy(request: HttpRequest):
@@ -3402,9 +3666,128 @@ def register_pharmacy(request: HttpRequest):
                 email=email,
                 password=password,  # hashed by Pharmacy.save()
             )
-    except IntegrityError as e:
-        # Likely unique email violation
+    except IntegrityError:
         return _err("An account with this email already exists.", 409)
+
+    # ---- Light-theme welcome email (Pharmacy) ----
+    try:
+        brand_primary = "#0d9488"       # teal-600
+        brand_primary_dark = "#0f766e"  # teal-700
+        brand_accent = "#06b6d4"        # cyan-500
+        now_str = timezone.now().strftime("%b %d, %Y %H:%M %Z")
+        logo_url = "https://i.postimg.cc/c4jt62GM/Website-Logo-No-Background.png"
+
+        html = f"""\
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <title>Welcome to CanaDrop • Pharmacy Registration</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <style>
+      @media (prefers-color-scheme: dark) {{
+        body {{ background: #0b1220 !important; color: #e5e7eb !important; }}
+        .card {{ background: #0f172a !important; border-color: #1f2937 !important; }}
+        .muted {{ color: #94a3b8 !important; }}
+      }}
+    </style>
+  </head>
+  <body style="margin:0;padding:0;background:#f4f7f9;">
+    <div style="display:none;visibility:hidden;opacity:0;height:0;width:0;overflow:hidden;">
+      Registration confirmed — welcome to CanaDrop and the Cana Family by CGC.
+    </div>
+
+    <table role="presentation" width="100%" cellspacing="0" cellpadding="0" border="0" style="background:#f4f7f9;padding:24px 12px;">
+      <tr>
+        <td align="center">
+          <table role="presentation" width="100%" cellspacing="0" cellpadding="0" border="0" class="card" style="max-width:640px;background:#ffffff;border:1px solid #e5e7eb;border-radius:16px;overflow:hidden;">
+            <tr>
+              <td style="background:{brand_primary};padding:18px 20px;">
+                <table width="100%" cellspacing="0" cellpadding="0" border="0">
+                  <tr>
+                    <td align="left">
+                      <img src="{logo_url}" alt="CanaDrop" width="40" height="40" style="display:block;border:0;">
+                    </td>
+                    <td align="right" style="font:600 16px/1.2 system-ui,-apple-system,'Segoe UI',Roboto,Helvetica,Arial;color:#e6fffb;">
+                      Welcome to CanaDrop
+                    </td>
+                  </tr>
+                </table>
+              </td>
+            </tr>
+
+            <tr>
+              <td style="padding:28px 24px 6px;">
+                <h1 style="margin:0 0 10px;font:800 24px/1.25 system-ui,-apple-system,'Segoe UI',Roboto,Helvetica,Arial;color:#0f172a;">
+                  Hi {name or "there"}, your pharmacy is all set 🎉
+                </h1>
+                <p style="margin:0 0 16px;font:400 14px/1.7 system-ui,-apple-system,'Segoe UI',Roboto,Helvetica,Arial;color:#475569;">
+                  Thanks for registering with <strong>CanaDrop</strong> and joining the <strong>Cana Family by CGC</strong>.
+                  We’re excited to help your team coordinate secure, trackable, and timely deliveries with a dashboard
+                  designed for pharmacies.
+                </p>
+
+                <div style="margin:18px 0;background:#f0fdfa;border:1px solid {brand_primary};border-radius:12px;padding:16px 18px;">
+                  <ul style="margin:0;padding-left:18px;font:400 14px/1.8 system-ui,-apple-system,'Segoe UI',Roboto,Helvetica,Arial;color:#334155;">
+                    <li>Live order tracking with photo proof at each stage</li>
+                    <li>Smart weekly invoices and transparent earnings</li>
+                    <li>Secure driver handover and delivery confirmations</li>
+                  </ul>
+                </div>
+
+                <p style="margin:8px 0 0;font:400 12px/1.7 system-ui,-apple-system,'Segoe UI',Roboto,Helvetica,Arial;color:#64748b;">
+                  Registered on <strong style="color:{brand_primary_dark};">{now_str}</strong>.
+                </p>
+
+                <hr style="border:0;border-top:1px solid #e5e7eb;margin:24px 0;">
+                <p class="muted" style="margin:0;font:400 12px/1.7 system-ui,-apple-system,'Segoe UI',Roboto,Helvetica,Arial;color:#6b7280;">
+                  Questions or need a hand? Just reply to this email—our team is happy to help.
+                </p>
+              </td>
+            </tr>
+
+            <tr>
+              <td style="padding:0 24px 24px;">
+                <table width="100%" cellspacing="0" cellpadding="0" border="0" style="background:#f8fafc;border:1px dashed #e2e8f0;border-radius:12px;">
+                  <tr>
+                    <td style="padding:12px 16px;">
+                      <p style="margin:0;font:400 12px/1.6 system-ui,-apple-system,'Segoe UI',Roboto,Helvetica,Arial;color:#64748b;">
+                        Welcome aboard — we’re thrilled to partner with you.
+                      </p>
+                    </td>
+                  </tr>
+                </table>
+              </td>
+            </tr>
+
+          </table>
+
+          <p style="margin:14px 0 0;font:400 12px/1.6 system-ui,-apple-system,'Segoe UI',Roboto,Helvetica,Arial;color:#94a3b8;">
+            © {timezone.now().year} CanaDrop. All rights reserved.
+          </p>
+        </td>
+      </tr>
+    </table>
+  </body>
+</html>
+"""
+        text = (
+            "Welcome to CanaDrop and the Cana Family by CGC!\n\n"
+            f"Hi {name or 'there'}, your pharmacy registration is confirmed.\n"
+            "• Live order tracking with photo proof\n"
+            "• Weekly invoices and transparent earnings\n"
+            "• Secure handover and delivery confirmations\n\n"
+            "Questions? Just reply to this email.\n"
+        )
+
+        _send_html_email(
+            subject="Welcome to CanaDrop • Pharmacy Registration Confirmed",
+            to_email=email,
+            html=html,
+            text_fallback=text,
+        )
+    except Exception:
+        logger.exception("Failed to send pharmacy registration email")
 
     return _ok("Registration successful.", id=pharmacy.id, email=pharmacy.email)
 
@@ -3454,10 +3837,6 @@ def register_driver(request: HttpRequest):
     if len(password) < 8:
         return _err("Password must be at least 8 characters long.")
 
-    # Optional: quick format sanity check for vehicle number (relaxed)
-    # if not re.fullmatch(r"[A-Za-z0-9\- ]{2,20}", vehicle_number):
-    #     return _err("Please provide a valid vehicle number.")
-
     # Validate OTP token matches email
     try:
         token_data = loads(otp_token, salt=SIGNING_SALT, max_age=VERIFY_TOKEN_TTL_SECONDS)
@@ -3481,6 +3860,108 @@ def register_driver(request: HttpRequest):
             )
     except IntegrityError:
         return _err("An account with this email already exists.", 409)
+
+    # ---- Dark-theme welcome email (Driver) ----
+    try:
+        brand_primary = "#0d9488"       # teal-600
+        bg_dark = "#0b1220"
+        card_dark = "#0f172a"
+        border_dark = "#1f2937"
+        text_light = "#e5e7eb"
+        text_muted = "#94a3b8"
+        logo_url = "https://i.postimg.cc/c4jt62GM/Website-Logo-No-Background.png"
+        now_str = timezone.now().strftime("%b %d, %Y %H:%M %Z")
+
+        html = f"""\
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <title>Welcome to CanaDrop • Driver Registration</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+  </head>
+  <body style="margin:0;padding:0;background:{bg_dark};">
+    <div style="display:none;visibility:hidden;opacity:0;height:0;width:0;overflow:hidden;">
+      Registration confirmed — welcome to CanaDrop and the Cana Family by CGC.
+    </div>
+
+    <table role="presentation" width="100%" cellspacing="0" cellpadding="0" border="0" style="background:{bg_dark};padding:24px 12px;">
+      <tr>
+        <td align="center">
+          <table role="presentation" width="100%" cellspacing="0" cellpadding="0" border="0" style="max-width:640px;background:{card_dark};border:1px solid {border_dark};border-radius:16px;overflow:hidden;">
+            <tr>
+              <td style="background:{brand_primary};padding:18px 20px;">
+                <table width="100%" cellspacing="0" cellpadding="0" border="0">
+                  <tr>
+                    <td align="left">
+                      <img src="{logo_url}" alt="CanaDrop" width="40" height="40" style="display:block;border:0;">
+                    </td>
+                    <td align="right" style="font:600 16px/1.2 system-ui,-apple-system,'Segoe UI',Roboto,Helvetica,Arial;color:#e6fffb;">
+                      Welcome to CanaDrop
+                    </td>
+                  </tr>
+                </table>
+              </td>
+            </tr>
+
+            <tr>
+              <td style="padding:28px 24px 6px;">
+                <h1 style="margin:0 0 10px;font:800 24px/1.25 system-ui,-apple-system,'Segoe UI',Roboto,Helvetica,Arial;color:{text_light};">
+                  Hey {name or "driver"}, you’re in! 🚚
+                </h1>
+                <p style="margin:0 0 16px;font:400 14px/1.7 system-ui,-apple-system,'Segoe UI',Roboto,Helvetica,Arial;color:{text_muted};">
+                  Welcome to <strong style="color:{text_light};">CanaDrop</strong> and the <strong style="color:{text_light};">Cana Family by CGC</strong>.
+                  You now have access to a streamlined delivery experience with clear routes, photo-verified steps, and
+                  weekly earnings summaries.
+                </p>
+
+                <div style="margin:18px 0;background:{bg_dark};border:1px dashed {border_dark};border-radius:12px;padding:16px 18px;">
+                  <ul style="margin:0;padding-left:18px;font:400 14px/1.8 system-ui,-apple-system,'Segoe UI',Roboto,Helvetica,Arial;color:{text_light};">
+                    <li>Pickup → in-transit → delivered — all verified with photos</li>
+                    <li>Clear delivery details and navigation shortcuts</li>
+                    <li>Automatic weekly payouts with transparent summaries</li>
+                  </ul>
+                </div>
+
+                <p style="margin:8px 0 0;font:400 12px/1.7 system-ui,-apple-system,'Segoe UI',Roboto,Helvetica,Arial;color:{text_muted};">
+                  Registered on <strong style="color:{text_light};">{now_str}</strong>.
+                </p>
+
+                <hr style="border:0;border-top:1px solid {border_dark};margin:24px 0;">
+                <p style="margin:0;font:400 12px/1.7 system-ui,-apple-system,'Segoe UI',Roboto,Helvetica,Arial;color:{text_muted};">
+                  Drive safe and welcome aboard. Need help? Reply to this email and our team will assist you.
+                </p>
+              </td>
+            </tr>
+
+          </table>
+
+          <p style="margin:14px 0 0;font:400 12px/1.6 system-ui,-apple-system,'Segoe UI',Roboto,Helvetica,Arial;color:{text_muted};">
+            © {timezone.now().year} CanaDrop. All rights reserved.
+          </p>
+        </td>
+      </tr>
+    </table>
+  </body>
+</html>
+"""
+        text = (
+            "Welcome to CanaDrop and the Cana Family by CGC!\n\n"
+            f"Hey {name or 'driver'}, your driver registration is confirmed.\n"
+            "• Photo-verified delivery steps\n"
+            "• Clear delivery details and navigation\n"
+            "• Weekly earnings summaries\n\n"
+            "Questions? Just reply to this email.\n"
+        )
+
+        _send_html_email(
+            subject="Welcome to CanaDrop • Driver Registration Confirmed",
+            to_email=email,
+            html=html,
+            text_fallback=text,
+        )
+    except Exception:
+        logger.exception("Failed to send driver registration email")
 
     return _ok("Driver registration successful.", id=driver.id, email=driver.email)
 
