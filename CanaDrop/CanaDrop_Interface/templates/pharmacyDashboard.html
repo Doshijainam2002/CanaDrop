@@ -4,7 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Pharmacy Dashboard - Orders</title>
-    <link rel="icon" href="https://i.postimg.cc/c4jt62GM/Website-Logo-No-Background.png">
+    <link rel="icon" href="https://i.postimg.cc/YqYBPWJv/Website-Logo-Background.png">
     <script src="https://cdn.tailwindcss.com"></script>
     <script>
         tailwind.config = {
@@ -30,7 +30,7 @@
         <!-- Logo with close button for mobile -->
         <div class="flex items-center justify-between h-16 px-6 border-b border-gray-200 lg:justify-start">
             <div class="flex items-center">
-                <img src="https://i.postimg.cc/c4jt62GM/Website-Logo-No-Background.png" alt="Logo" class="h-12 w-auto">
+                <img src="https://i.postimg.cc/d00XJkSj/Website-Logo-No-Background.png" alt="Logo" class="h-12 w-auto">
                 <span class="ml-3 text-xl font-semibold text-gray-900">CanaDrop</span>
             </div>
             <button id="closeSidebarBtn" class="lg:hidden p-2 text-gray-600 hover:text-gray-900 hover:bg-gray-100 rounded-lg transition-colors">
@@ -213,15 +213,18 @@
     <div class="hidden lg:block overflow-auto" style="max-height: calc(100vh - 400px);">
         <table class="w-full">
             <thead class="bg-gray-50">
-                <tr>
-                    <th class="px-6 py-4 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">Order ID</th>
-                    <th class="px-6 py-4 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">Pickup Address</th>
-                    <th class="px-6 py-4 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">Drop Address</th>
-                    <th class="px-6 py-4 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">Pickup Day</th>
-                    <th class="px-6 py-4 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">Status</th>
-                    <th class="px-6 py-4 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">Rate</th>
-                </tr>
+            <tr>
+                <th class="px-6 py-4 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">Order ID</th>
+                <!-- ADDED -->
+                <th class="px-6 py-4 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">Customer Name</th>
+                <th class="px-6 py-4 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">Pickup Address</th>
+                <th class="px-6 py-4 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">Drop Address</th>
+                <th class="px-6 py-4 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">Pickup Day (YYYY-MM-DD)</th>
+                <th class="px-6 py-4 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">Status</th>
+                <th class="px-6 py-4 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">Rate</th>
+            </tr>
             </thead>
+
             <tbody id="ordersTable" class="divide-y divide-gray-100">
             </tbody>
         </table>
@@ -231,84 +234,94 @@
         </div>
     </div>
 
-    <!-- Create Order Modal -->
-    <div id="createModal" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50 hidden">
-        <div class="bg-white rounded-2xl p-6 max-w-lg w-full mx-4 animate-slide-up">
-            <div class="flex justify-between items-center mb-6">
-                <h3 class="text-xl font-semibold text-gray-900">Create New Order</h3>
-                <button onclick="closeCreateModal()" class="text-gray-400 hover:text-gray-600 transition-colors">
-                    <svg class="h-6 w-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
-                    </svg>
-                </button>
-            </div>
-            
-            <div class="grid grid-cols-1 gap-4">
-                <div>
-                    <label class="block text-sm font-medium text-gray-700 mb-2">Pickup Address</label>
-                    <textarea id="pickupAddress" class="w-full border border-gray-300 rounded-lg p-3 text-sm focus:ring-2 focus:ring-teal-500 focus:border-transparent transition-all" rows="2" placeholder="Street Address, Postal Code"></textarea>
-                </div>
-
-                <div class="grid grid-cols-2 gap-4">
-                    <div>
-                        <label class="block text-sm font-medium text-gray-700 mb-2">Pickup City</label>
-                        <select id="pickupCity" class="w-full border border-gray-300 rounded-lg p-3 text-sm focus:ring-2 focus:ring-teal-500 focus:border-transparent transition-all">
-                            <option value="">Select city</option>
-                            <option value="Kitchener">Kitchener</option>
-                            <option value="Waterloo">Waterloo</option>
-                            <option value="Cambridge">Cambridge</option>
-                        </select>
-                    </div>
-                </div>
-
-                
-                <div class="grid grid-cols-2 gap-4">
-                    <div>
-                    <label class="block text-sm font-medium text-gray-700 mb-2">Pickup Day</label>
-                    <input type="date" id="pickupDay"
-                            class="w-full border border-gray-300 rounded-lg p-3 text-sm focus:ring-2 focus:ring-teal-500 focus:border-transparent transition-all">
-                    </div>
-                    
-                    <div>
-                        <label class="block text-sm font-medium text-gray-700 mb-2">Drop City</label>
-                        <select id="dropCity" class="w-full border border-gray-300 rounded-lg p-3 text-sm focus:ring-2 focus:ring-teal-500 focus:border-transparent transition-all">
-                            <option value="">Select city</option>
-                            <option value="Kitchener">Kitchener</option>
-                            <option value="Waterloo">Waterloo</option>
-                            <option value="Cambridge">Cambridge</option>
-                        </select>
-                    </div>
-                </div>
-                
-                <div>
-                    <label class="block text-sm font-medium text-gray-700 mb-2">Drop Address</label>
-                    <textarea id="dropAddress" class="w-full border border-gray-300 rounded-lg p-3 text-sm focus:ring-2 focus:ring-teal-500 focus:border-transparent transition-all" rows="2" placeholder="Street Address, Postal Code"></textarea>
-                </div>
-                
-
-                <div>
-                    <label class="block text-sm font-medium text-gray-700 mb-2">Rate</label>
-                    <div class="relative">
-                        <span class="absolute left-3 top-3 text-gray-500">$</span>
-                        <input type="number" id="rate" class="w-full border border-gray-300 rounded-lg p-3 pl-8 text-sm bg-gray-50" placeholder="Auto-filled" readonly>
-                    </div>
-                    <!-- Add this button -->
-                    <button id="calculateRateBtn" onclick="calculateRate()" class="hidden mt-2 w-full bg-gradient-to-r from-teal-500 to-cyan-500 text-white py-2 px-4 rounded-lg text-sm font-medium hover:from-teal-600 hover:to-cyan-600 transition-all duration-200 shadow-md hover:shadow-lg transform hover:scale-105 disabled:opacity-50 disabled:cursor-not-allowed disabled:transform-none">
-                        Calculate Rate
-                    </button>
-                </div>
-                                
-                <div class="flex space-x-3 pt-6">
-                    <button onclick="createOrder()" class="flex-1 bg-gradient-to-r from-teal-600 to-cyan-600 text-white py-3 rounded-lg font-medium hover:from-teal-700 hover:to-cyan-700 transition-all duration-200 shadow-lg hover:shadow-xl transform hover:scale-105">
-                        Create Order
-                    </button>
-                    <button onclick="closeCreateModal()" class="flex-1 border border-gray-300 text-gray-700 py-3 rounded-lg font-medium hover:bg-gray-50 transition-colors">
-                        Cancel
-                    </button>
-                </div>
-            </div>
-        </div>
+<!-- Create Order Modal -->
+<div id="createModal" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50 hidden">
+  <div class="bg-white rounded-2xl p-6 max-w-lg w-full mx-4 animate-slide-up">
+    <div class="flex justify-between items-center mb-6">
+      <h3 class="text-xl font-semibold text-gray-900">Create New Order</h3>
+      <button onclick="closeCreateModal()" class="text-gray-400 hover:text-gray-600 transition-colors">
+        <svg class="h-6 w-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
+        </svg>
+      </button>
     </div>
+
+    <div class="grid grid-cols-1 gap-4">
+      <!-- ADDED: Customer Name -->
+    <div>
+    <label class="block text-sm font-medium text-gray-700 mb-2">
+        Customer Name <span class="text-red-500">*</span>
+    </label>
+    <input id="customerName" type="text" required
+            class="w-full border border-gray-300 rounded-lg p-3 text-sm focus:ring-2 focus:ring-teal-500 focus:border-transparent transition-all"
+            placeholder="Enter customer name">
+    </div>
+
+
+      <div>
+        <label class="block text-sm font-medium text-gray-700 mb-2">Pickup Address</label>
+        <textarea id="pickupAddress" class="w-full border border-gray-300 rounded-lg p-3 text-sm focus:ring-2 focus:ring-teal-500 focus:border-transparent transition-all" rows="2" placeholder="Street Address, Postal Code"></textarea>
+      </div>
+
+      <div class="grid grid-cols-2 gap-4">
+        <div>
+          <label class="block text-sm font-medium text-gray-700 mb-2">Pickup City</label>
+          <select id="pickupCity" class="w-full border border-gray-300 rounded-lg p-3 text-sm focus:ring-2 focus:ring-teal-500 focus:border-transparent transition-all">
+            <option value="">Select city</option>
+            <option value="Kitchener">Kitchener</option>
+            <option value="Waterloo">Waterloo</option>
+            <option value="Cambridge">Cambridge</option>
+          </select>
+        </div>
+      </div>
+
+      <div class="grid grid-cols-2 gap-4">
+        <div>
+          <label class="block text-sm font-medium text-gray-700 mb-2">Pickup Day</label>
+          <input type="date" id="pickupDay"
+                 class="w-full border border-gray-300 rounded-lg p-3 text-sm focus:ring-2 focus:ring-teal-500 focus:border-transparent transition-all">
+        </div>
+
+        <div>
+          <label class="block text-sm font-medium text-gray-700 mb-2">Drop City</label>
+          <select id="dropCity" class="w-full border border-gray-300 rounded-lg p-3 text-sm focus:ring-2 focus:ring-teal-500 focus:border-transparent transition-all">
+            <option value="">Select city</option>
+            <option value="Kitchener">Kitchener</option>
+            <option value="Waterloo">Waterloo</option>
+            <option value="Cambridge">Cambridge</option>
+          </select>
+        </div>
+      </div>
+
+      <div>
+        <label class="block text-sm font-medium text-gray-700 mb-2">Drop Address</label>
+        <textarea id="dropAddress" class="w-full border border-gray-300 rounded-lg p-3 text-sm focus:ring-2 focus:ring-teal-500 focus:border-transparent transition-all" rows="2" placeholder="Street Address, Postal Code"></textarea>
+      </div>
+
+      <div>
+        <label class="block text-sm font-medium text-gray-700 mb-2">Rate</label>
+        <div class="relative">
+          <span class="absolute left-3 top-3 text-gray-500">$</span>
+          <input type="number" id="rate" class="w-full border border-gray-300 rounded-lg p-3 pl-8 text-sm bg-gray-50" placeholder="Auto-filled" readonly>
+        </div>
+        <!-- Add this button -->
+        <button id="calculateRateBtn" onclick="calculateRate()" class="hidden mt-2 w-full bg-gradient-to-r from-teal-500 to-cyan-500 text-white py-2 px-4 rounded-lg text-sm font-medium hover:from-teal-600 hover:to-cyan-600 transition-all duration-200 shadow-md hover:shadow-lg transform hover:scale-105 disabled:opacity-50 disabled:cursor-not-allowed disabled:transform-none">
+          Calculate Rate
+        </button>
+      </div>
+
+      <div class="flex space-x-3 pt-6">
+        <button onclick="createOrder()" class="flex-1 bg-gradient-to-r from-teal-600 to-cyan-600 text-white py-3 rounded-lg font-medium hover:from-teal-700 hover:to-cyan-700 transition-all duration-200 shadow-lg hover:shadow-xl transform hover:scale-105">
+          Create Order
+        </button>
+        <button onclick="closeCreateModal()" class="flex-1 border border-gray-300 text-gray-700 py-3 rounded-lg font-medium hover:bg-gray-50 transition-colors">
+          Cancel
+        </button>
+      </div>
+    </div>
+  </div>
+</div>
+
 
     <!-- Upload Image Modal -->
     <div id="uploadModal" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50 hidden">
@@ -414,6 +427,7 @@ function renderFilteredOrders(orders) {
             const row = `
                 <tr class="hover:bg-gray-50 transition-colors">
                     <td class="px-6 py-4 text-sm font-medium text-gray-900">#${order.id}</td>
+                    <td class="px-6 py-4 text-sm text-gray-900">${order.customer_name}</td>
                     <td class="px-6 py-4 text-sm text-gray-600">${order.pickup_address}, ${order.pickup_city}</td>
                     <td class="px-6 py-4 text-sm text-gray-600">${order.drop_address}, ${order.drop_city}</td>
                     <td class="px-6 py-4 text-sm text-gray-600">${order.pickup_day}</td>
@@ -432,10 +446,11 @@ function renderFilteredOrders(orders) {
         orders.forEach(order => {
             const card = `
                 <div class="p-4 border-b border-gray-100 hover:bg-gray-50 transition-colors">
-                    <div class="flex justify-between items-start mb-3">
+                    <div class="flex justify-between items-start mb-1">
                         <span class="text-sm font-semibold text-gray-900">#${order.id}</span>
                         ${getStatusBadge(order.status)}
                     </div>
+                    <div class="mb-3 text-sm text-gray-900"><span class="text-xs text-gray-500 mr-1">Customer:</span>${order.customer_name}</div>
                     <div class="space-y-2">
                         <div class="text-xs text-gray-500">Pickup</div>
                         <div class="text-sm text-gray-900 mb-2">${order.pickup_address}, ${order.pickup_city}</div>
@@ -452,6 +467,7 @@ function renderFilteredOrders(orders) {
         });
     }
 }
+
 
 // Update dashboard statistics
 function updateOrderStats(orders) {
@@ -596,16 +612,13 @@ function checkAddressFields() {
 
 // Create delivery order
 async function createOrder() {
-    
-
     const pharmacyId = getCookie('pharmacyId');
-    
-
     if (!pharmacyId) {
         showNotification('Please login first', 'error');
         return;
     }
 
+    const customerName = document.getElementById('customerName').value.trim();
     const pickupAddress = document.getElementById('pickupAddress').value.trim();
     const pickupCity = document.getElementById('pickupCity').value;
     const pickupDay = document.getElementById('pickupDay').value;
@@ -613,42 +626,34 @@ async function createOrder() {
     const dropCity = document.getElementById('dropCity').value;
     const rate = document.getElementById('rate').value;
 
-    
-
-    if (!pickupAddress || !pickupCity || !pickupDay || !dropAddress || !dropCity || !rate || rate === 'Calculating...') {
-        
-        showNotification('Please fill all fields and calculate rate', 'warning');
+    // 🔹 Updated validation — Customer Name now required
+    if (!customerName || !pickupAddress || !pickupCity || !pickupDay || !dropAddress || !dropCity || !rate || rate === 'Calculating...') {
+        showNotification('Please fill all fields (including Customer Name) and calculate rate', 'warning');
         return;
     }
 
     try {
-        
         const response = await fetch('/api/createDeliveryOrder/', {
             method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-            },
+            headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({
                 pharmacyId: parseInt(pharmacyId),
                 pickupAddress,
                 pickupCity,
                 pickupDay,
                 dropAddress,
-                dropCity
+                dropCity,
+                customerName // required field now
             })
         });
 
-        
         const data = await response.json();
-        
 
         if (data.success) {
-            
             showNotification(`Order created successfully! Order ID: ${data.orderId}`, 'success');
             closeCreateModal();
             loadOrders();
         } else {
-            
             showNotification(data.error || 'Failed to create order', 'error');
         }
     } catch (error) {
@@ -656,6 +661,8 @@ async function createOrder() {
         showNotification('Error creating order', 'error');
     }
 }
+
+
 
 
 // Close modal
