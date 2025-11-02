@@ -16,6 +16,8 @@ urlpatterns = [
     path('pharmacyForgotPassword/', views.pharmacyForgotPasswordView, name="PharmacyForgotPasswordPage"),
     path('api/auth/register-pharmacy/', views.register_pharmacy, name='register_pharmacy'),
     path('pharmacyRegister/', views.pharmacyRegisterView, name="PharmacyRegisterPage"),
+    path('pharmacyProfile/', views.pharmacyProfileView, name="PharmacyProfilePage"),
+    path("api/getPharmacyDetails/<int:pharmacy_id>/", views.get_pharmacy_details, name="get_pharmacy_details"),
 
 
     path('driverLogin/', views.driverLoginView, name='DriverLoginPage'),  

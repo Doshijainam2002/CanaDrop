@@ -99,6 +99,10 @@ def landingView(request):
     return render(request, 'landingPage.html')
 
 
+def pharmacyProfileView(request):
+    return render(request, 'pharmacyProfile.html')
+
+
 @csrf_exempt
 def pharmacy_login_api(request):
     if request.method != "POST":
@@ -233,117 +237,6 @@ def create_order_tracking_entry(order_id, step='pending', performed_by=None, not
         }
 
 
-# @csrf_exempt
-# def create_delivery_order(request):
-#     if request.method == "POST":
-#         try:
-#             data = json.loads(request.body)
-#             # print(f"Request data: {data}")
-
-#             pharmacy_id = data.get('pharmacyId')
-#             pickup_address = data.get('pickupAddress')
-#             pickup_city = data.get('pickupCity')
-#             pickup_day = data.get('pickupDay')
-#             drop_address = data.get('dropAddress')
-#             drop_city = data.get('dropCity')
-
-#             # Validate required fields
-#             if not all([pharmacy_id, pickup_address, pickup_city, pickup_day, drop_address, drop_city]):
-#                 # print("Validation failed: Missing required fields")
-#                 return JsonResponse({"success": False, "error": "Missing required fields"}, status=400)
-
-#             # print(f"Fetching pharmacy with ID: {pharmacy_id}")
-#             pharmacy = Pharmacy.objects.get(id=pharmacy_id)
-#             # print(f"Pharmacy found: {pharmacy.name}")
-
-#             # Get distance directly - no separate address validation
-#             # print("Calculating distance...")
-#             distance_km, error = get_distance_km(pickup_address, pickup_city, drop_address, drop_city)
-#             if error:
-#                 # print(f"Distance calculation failed: {error}")
-#                 return JsonResponse({"success": False, "error": error}, status=400)
-#             # print(f"Distance calculated: {distance_km} km")
-
-#             # Determine rate based on distance
-#             rate_entry = DeliveryDistanceRate.objects.filter(
-#                 min_distance_km__lte=distance_km
-#             ).order_by('min_distance_km').last()
-#             rate = rate_entry.rate if rate_entry else 0
-#             # print(f"Rate determined: {rate}")
-
-#             # Create the delivery order with status 'pending'
-#             # print("Creating DeliveryOrder...")
-#             order = DeliveryOrder.objects.create(
-#                 pharmacy=pharmacy,
-#                 pickup_address=pickup_address,
-#                 pickup_city=pickup_city,
-#                 pickup_day=parse_date(pickup_day),
-#                 drop_address=drop_address,
-#                 drop_city=drop_city,
-#                 status='pending',  # Set initial status
-#                 rate=rate
-#             )
-            
-#             # Force commit the order creation
-#             transaction.commit()
-#             # print(f"Order created and committed: ID={order.id}")
-            
-#             # Verify order exists in database
-#             order_exists = DeliveryOrder.objects.filter(id=order.id).exists()
-#             # print(f"Order {order.id} exists in database: {order_exists}")
-            
-#             if order_exists:
-#                 # Create initial tracking entry using the function
-#                 # print("Creating initial tracking entry...")
-#                 tracking_result = create_order_tracking_entry(
-#                     order_id=order.id,
-#                     step='pending',
-#                     performed_by=f'Pharmacy: {pharmacy.name}',
-#                     note='Order created and pending driver acceptance'
-#                 )
-                
-#                 if tracking_result["success"]:
-#                     # print(f"Tracking entry created successfully: {tracking_result}")
-#                     return JsonResponse({
-#                         "success": True,
-#                         "orderId": order.id,
-#                         "distance_km": distance_km,
-#                         "rate": str(rate),
-#                         "status": order.status,
-#                         "tracking_id": tracking_result["tracking_id"],
-#                         "message": "Order and tracking created successfully"
-#                     })
-#                 else:
-#                     # print(f"Tracking entry creation failed: {tracking_result['error']}")
-#                     # Return success for order but note tracking failure
-#                     return JsonResponse({
-#                         "success": True,
-#                         "orderId": order.id,
-#                         "distance_km": distance_km,
-#                         "rate": str(rate),
-#                         "status": order.status,
-#                         "tracking_created": False,
-#                         "tracking_error": tracking_result["error"],
-#                         "message": "Order created successfully but tracking entry failed"
-#                     })
-#             else:
-#                 # print("Order was not properly saved to database")
-#                 return JsonResponse({
-#                     "success": False, 
-#                     "error": "Order creation failed - not saved to database"
-#                 }, status=500)
-
-#         except Pharmacy.DoesNotExist:
-#             # print("Pharmacy not found")
-#             return JsonResponse({"success": False, "error": "Pharmacy not found"}, status=404)
-#         except Exception as e:
-#             # print(f"Error in create_delivery_order: {e}")
-#             import traceback
-#             traceback.print_exc()
-#             return JsonResponse({"success": False, "error": str(e)}, status=500)
-
-#     # print("Invalid HTTP method")
-#     return JsonResponse({"success": False, "error": "Invalid HTTP method"}, status=405)
 
 
 @csrf_exempt
@@ -3855,6 +3748,44 @@ def register_driver(request: HttpRequest):
         logger.exception("Failed to send driver registration email")
 
     return _ok("Driver registration successful.", id=driver.id, email=driver.email)
+
+
+
+from django.http import JsonResponse
+from django.views.decorators.csrf import csrf_exempt
+from django.views.decorators.http import require_GET
+
+
+@csrf_exempt
+@require_GET
+def get_pharmacy_details(request, pharmacy_id):
+    """
+    GET API: Returns all information of a pharmacy by pharmacyId.
+    Example: /api/getPharmacyDetails/1/
+    """
+    try:
+        pharmacy = Pharmacy.objects.get(id=pharmacy_id)
+        data = {
+            "success": True,
+            "pharmacy": {
+                "id": pharmacy.id,
+                "name": pharmacy.name,
+                "store_address": pharmacy.store_address,
+                "city": pharmacy.city,
+                "province": pharmacy.province,
+                "postal_code": pharmacy.postal_code,
+                "country": pharmacy.country,
+                "phone_number": pharmacy.phone_number,
+                "email": pharmacy.email,
+                "created_at": pharmacy.created_at.strftime("%Y-%m-%d %H:%M:%S"),
+            },
+        }
+        return JsonResponse(data, status=200)
+    except Pharmacy.DoesNotExist:
+        return JsonResponse({"success": False, "error": "Pharmacy not found."}, status=404)
+    except Exception as e:
+        return JsonResponse({"success": False, "error": str(e)}, status=500)
+
 
 
 
