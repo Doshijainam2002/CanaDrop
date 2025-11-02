@@ -17,7 +17,35 @@
                 }
             }
         }
+
     </script>
+
+    <style>
+    /* Style for disabled select dropdowns */
+    select:disabled {
+        -webkit-appearance: none;
+        -moz-appearance: none;
+        appearance: none;
+        background-image: url('data:image/svg+xml;charset=UTF-8,<svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 20 20"><path stroke="%239CA3AF" stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M6 8l4 4 4-4"/></svg>');
+        background-position: right 0.5rem center;
+        background-repeat: no-repeat;
+        background-size: 1.5em 1.5em;
+        padding-right: 2.5rem;
+    }
+    
+    /* Style for enabled select dropdowns */
+    select:not(:disabled) {
+        -webkit-appearance: none;
+        -moz-appearance: none;
+        appearance: none;
+        background-image: url('data:image/svg+xml;charset=UTF-8,<svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 20 20"><path stroke="%236B7280" stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M6 8l4 4 4-4"/></svg>');
+        background-position: right 0.5rem center;
+        background-repeat: no-repeat;
+        background-size: 1.5em 1.5em;
+        padding-right: 2.5rem;
+        cursor: pointer;
+    }
+</style>
 </head>
 <body class="bg-gray-50 font-inter">
     <div class="flex h-screen overflow-hidden">
@@ -140,7 +168,7 @@
                                     <span class="text-3xl font-bold text-white" id="profileInitial">P</span>
                                 </div>
                                 <div class="mt-4 sm:mt-0 sm:ml-6 text-center sm:text-left">
-                                    <h2 class="text-2xl font-bold text-gray-900" id="profileName">Pharmacy Name</h2>
+                                    <h2 class="text-2xl font-bold text-white" id="profileName">Pharmacy Name</h2>
                                     <p class="text-sm text-gray-500" id="profileEmail">pharmacy@example.com</p>
                                     <div class="mt-2 inline-flex items-center px-3 py-1 bg-green-100 text-green-700 text-xs font-medium rounded-full border border-green-200">
                                         <svg class="w-3 h-3 mr-1" fill="currentColor" viewBox="0 0 20 20">
@@ -188,14 +216,34 @@
                                         City
                                         <span class="text-red-500">*</span>
                                     </label>
-                                    <input type="text" id="city" disabled class="w-full border border-gray-300 rounded-lg p-3 text-sm focus:ring-2 focus:ring-teal-500 focus:border-transparent transition-all disabled:bg-gray-50 disabled:text-gray-500" placeholder="Enter city">
+                                    <select id="city" disabled class="w-full border border-gray-300 rounded-lg p-3 text-sm focus:ring-2 focus:ring-teal-500 focus:border-transparent transition-all disabled:bg-gray-50 disabled:text-gray-500">
+                                        <option value="">Select city</option>
+                                        <option value="Kitchener">Kitchener</option>
+                                        <option value="Waterloo">Waterloo</option>
+                                        <option value="Cambridge">Cambridge</option>
+                                    </select>
                                 </div>
                                 <div>
                                     <label class="block text-sm font-medium text-gray-700 mb-2">
                                         Province
                                         <span class="text-red-500">*</span>
                                     </label>
-                                    <input type="text" id="province" disabled class="w-full border border-gray-300 rounded-lg p-3 text-sm focus:ring-2 focus:ring-teal-500 focus:border-transparent transition-all disabled:bg-gray-50 disabled:text-gray-500" placeholder="Enter province">
+                                    <select id="province" disabled class="w-full border border-gray-300 rounded-lg p-3 text-sm focus:ring-2 focus:ring-teal-500 focus:border-transparent transition-all disabled:bg-gray-50 disabled:text-gray-500">
+                                        <option value="">Select province</option>
+                                        <option value="AB">Alberta (AB)</option>
+                                        <option value="BC">British Columbia (BC)</option>
+                                        <option value="MB">Manitoba (MB)</option>
+                                        <option value="NB">New Brunswick (NB)</option>
+                                        <option value="NL">Newfoundland and Labrador (NL)</option>
+                                        <option value="NS">Nova Scotia (NS)</option>
+                                        <option value="ON">Ontario (ON)</option>
+                                        <option value="PE">Prince Edward Island (PE)</option>
+                                        <option value="QC">Quebec (QC)</option>
+                                        <option value="SK">Saskatchewan (SK)</option>
+                                        <option value="NT">Northwest Territories (NT)</option>
+                                        <option value="NU">Nunavut (NU)</option>
+                                        <option value="YT">Yukon (YT)</option>
+                                    </select>
                                 </div>
                             </div>
 
@@ -321,8 +369,9 @@
         </div>
     </div>
 
-    <script>
-
+<script>
+// Store original profile data for comparison
+let originalProfileData = {};
 
 // Get cookie value by name
 function getCookie(name) {
@@ -347,6 +396,18 @@ async function loadPharmacyProfile() {
 
         if (data.success && data.pharmacy) {
             const pharmacy = data.pharmacy;
+            
+            // Store original data for comparison
+            originalProfileData = {
+                name: pharmacy.name || '',
+                store_address: pharmacy.store_address || '',
+                city: pharmacy.city || '',
+                province: pharmacy.province || '',
+                postal_code: pharmacy.postal_code || '',
+                country: pharmacy.country || '',
+                phone_number: pharmacy.phone_number || '',
+                email: pharmacy.email || ''
+            };
             
             // Populate form fields
             document.getElementById('name').value = pharmacy.name || '';
@@ -385,49 +446,276 @@ async function loadPharmacyProfile() {
         console.error("Error loading profile:", error);
     }
 }
-        // Enable edit mode
-        function enableEditMode() {
-            const formInputs = document.querySelectorAll('#profileForm input:not(#createdAt), #profileForm textarea');
-            formInputs.forEach(input => input.disabled = false);
+
+// Show notification function
+function showNotification(message, type = 'info') {
+    const existing = document.getElementById('notification');
+    if (existing) {
+        existing.remove();
+    }
+
+    const notification = document.createElement('div');
+    notification.id = 'notification';
+    notification.className = `fixed top-4 right-4 max-w-sm w-full bg-white rounded-lg shadow-lg border-l-4 p-4 z-50 transform translate-x-full transition-transform duration-300 ease-in-out`;
+
+    const borderColors = {
+        'success': 'border-green-500',
+        'error': 'border-red-500',
+        'warning': 'border-yellow-500',
+        'info': 'border-blue-500'
+    };
+
+    const iconColors = {
+        'success': 'text-green-500',
+        'error': 'text-red-500',
+        'warning': 'text-yellow-500',
+        'info': 'text-blue-500'
+    };
+
+    const icons = {
+        'success': '✓',
+        'error': '✕',
+        'warning': '⚠',
+        'info': 'ℹ'
+    };
+
+    notification.classList.add(borderColors[type] || borderColors.info);
+    notification.innerHTML = `
+        <div class="flex items-start">
+            <div class="flex-shrink-0">
+                <span class="inline-flex items-center justify-center w-8 h-8 rounded-full ${iconColors[type] || iconColors.info} font-bold">
+                    ${icons[type] || icons.info}
+                </span>
+            </div>
+            <div class="ml-3 flex-1">
+                <p class="text-sm font-medium text-gray-900">${message}</p>
+            </div>
+            <div class="ml-4 flex-shrink-0">
+                <button onclick="closeNotification()" class="inline-flex text-gray-400 hover:text-gray-600 transition-colors">
+                    <span class="sr-only">Close</span>
+                    <svg class="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
+                    </svg>
+                </button>
+            </div>
+        </div>
+    `;
+
+    document.body.appendChild(notification);
+
+    setTimeout(() => {
+        notification.classList.remove('translate-x-full');
+    }, 100);
+
+    setTimeout(() => {
+        closeNotification();
+    }, 5000);
+}
+
+function closeNotification() {
+    const notification = document.getElementById('notification');
+    if (notification) {
+        notification.classList.add('translate-x-full');
+        setTimeout(() => {
+            notification.remove();
+        }, 300);
+    }
+}
+
+// Enable edit mode
+function enableEditMode() {
+    const formInputs = document.querySelectorAll('#profileForm input:not(#createdAt), #profileForm textarea, #profileForm select');
+    formInputs.forEach(input => input.disabled = false);
+    
+    document.getElementById('actionButtons').classList.remove('hidden');
+    document.getElementById('editBtn').classList.add('hidden');
+}
+
+// Cancel edit mode
+function cancelEdit() {
+    const formInputs = document.querySelectorAll('#profileForm input:not(#createdAt), #profileForm textarea, #profileForm select');
+    formInputs.forEach(input => input.disabled = true);
+    
+    document.getElementById('actionButtons').classList.add('hidden');
+    document.getElementById('editBtn').classList.remove('hidden');
+    
+    // Restore original values
+    document.getElementById('name').value = originalProfileData.name || '';
+    document.getElementById('storeAddress').value = originalProfileData.store_address || '';
+    document.getElementById('city').value = originalProfileData.city || '';
+    document.getElementById('province').value = originalProfileData.province || '';
+    document.getElementById('postalCode').value = originalProfileData.postal_code || '';
+    document.getElementById('country').value = originalProfileData.country || '';
+    document.getElementById('phoneNumber').value = originalProfileData.phone_number || '';
+    document.getElementById('email').value = originalProfileData.email || '';
+}
+
+// Show change password modal
+function showChangePasswordModal() {
+    document.getElementById('changePasswordModal').classList.remove('hidden');
+}
+
+// Close change password modal
+function closeChangePasswordModal() {
+    document.getElementById('changePasswordModal').classList.add('hidden');
+    document.getElementById('changePasswordForm').reset();
+}
+
+// Change password function
+async function changePassword() {
+    const pharmacyId = getCookie("pharmacyId");
+    if (!pharmacyId) {
+        showNotification("Please login first", "error");
+        return;
+    }
+
+    const currentPassword = document.getElementById('currentPassword').value.trim();
+    const newPassword = document.getElementById('newPassword').value.trim();
+    const confirmPassword = document.getElementById('confirmPassword').value.trim();
+
+    // Validation
+    if (!currentPassword || !newPassword || !confirmPassword) {
+        showNotification("Please fill all password fields", "warning");
+        return;
+    }
+
+    if (newPassword !== confirmPassword) {
+        showNotification("New passwords do not match", "warning");
+        return;
+    }
+
+    if (newPassword.length < 6) {
+        showNotification("New password must be at least 6 characters", "warning");
+        return;
+    }
+
+    try {
+        const response = await fetch('/api/changeExistingPassword/', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({
+                pharmacyId: parseInt(pharmacyId),
+                old_password: currentPassword,
+                new_password: newPassword
+            })
+        });
+
+        const data = await response.json();
+
+        if (data.success) {
+            showNotification("Password changed successfully! A confirmation email has been sent.", "success");
+            closeChangePasswordModal();
+        } else {
+            showNotification(data.error || "Failed to change password", "error");
+        }
+    } catch (error) {
+        console.error("Error changing password:", error);
+        showNotification("Error changing password. Please try again.", "error");
+    }
+}
+
+// Save profile changes
+async function saveProfile() {
+    const pharmacyId = getCookie("pharmacyId");
+    if (!pharmacyId) {
+        showNotification("Please login first", "error");
+        return;
+    }
+
+    // Get current form values
+    const formData = {
+        name: document.getElementById('name').value.trim(),
+        store_address: document.getElementById('storeAddress').value.trim(),
+        city: document.getElementById('city').value.trim(),
+        province: document.getElementById('province').value.trim(),
+        postal_code: document.getElementById('postalCode').value.trim(),
+        country: document.getElementById('country').value.trim(),
+        phone_number: document.getElementById('phoneNumber').value.trim(),
+        email: document.getElementById('email').value.trim()
+    };
+
+    // Validation
+    if (!formData.name || !formData.store_address || !formData.city || !formData.province || 
+        !formData.postal_code || !formData.country || !formData.phone_number || !formData.email) {
+        showNotification("Please fill all required fields", "warning");
+        return;
+    }
+
+    // Check if any field has changed
+    const changedFields = {};
+    let hasChanges = false;
+
+    for (const [key, value] of Object.entries(formData)) {
+        if (originalProfileData[key] !== value) {
+            changedFields[key] = value;
+            hasChanges = true;
+        }
+    }
+
+    if (!hasChanges) {
+        showNotification("No changes detected", "info");
+        cancelEdit();
+        return;
+    }
+
+    // Add pharmacyId to the payload
+    changedFields.pharmacyId = parseInt(pharmacyId);
+
+    try {
+        const response = await fetch('/api/editPharmacyProfile/', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify(changedFields)
+        });
+
+        const data = await response.json();
+
+        if (data.success) {
+            showNotification("Profile updated successfully!", "success");
             
-            document.getElementById('actionButtons').classList.remove('hidden');
-            document.getElementById('editBtn').classList.add('hidden');
-        }
-
-        // Cancel edit mode
-        function cancelEdit() {
-            const formInputs = document.querySelectorAll('#profileForm input:not(#createdAt), #profileForm textarea');
-            formInputs.forEach(input => input.disabled = true);
+            // Update original data with new values
+            originalProfileData = { ...formData };
             
-            document.getElementById('actionButtons').classList.add('hidden');
-            document.getElementById('editBtn').classList.remove('hidden');
+            // Update profile header display
+            const initials = formData.name.split(' ').map(word => word.charAt(0).toUpperCase()).join('');
+            document.getElementById('profileName').textContent = formData.name;
+            document.getElementById('profileEmail').textContent = formData.email;
+            document.getElementById('profileInitial').textContent = initials;
+            
+            // Update sidebar display
+            document.getElementById('pharmacyName').textContent = formData.name;
+            document.getElementById('pharmacyEmail').textContent = formData.email;
+            document.getElementById('pharmacyInitial').textContent = initials;
+            
+            // Exit edit mode
+            cancelEdit();
+        } else {
+            showNotification(data.error || data.message || "Failed to update profile", "error");
         }
+    } catch (error) {
+        console.error("Error updating profile:", error);
+        showNotification("Error updating profile. Please try again.", "error");
+    }
+}
 
-        // Show change password modal
-        function showChangePasswordModal() {
-            document.getElementById('changePasswordModal').classList.remove('hidden');
-        }
+// Mobile menu functions
+function toggleMobileMenu() {
+    const sidebar = document.getElementById('sidebar');
+    const overlay = document.getElementById('sidebarOverlay');
+    sidebar.classList.toggle('-translate-x-full');
+    overlay.classList.toggle('hidden');
+}
 
-        // Close change password modal
-        function closeChangePasswordModal() {
-            document.getElementById('changePasswordModal').classList.add('hidden');
-            document.getElementById('changePasswordForm').reset();
-        }
-
-        // Mobile menu functions
-        function toggleMobileMenu() {
-            const sidebar = document.getElementById('sidebar');
-            const overlay = document.getElementById('sidebarOverlay');
-            sidebar.classList.toggle('-translate-x-full');
-            overlay.classList.toggle('hidden');
-        }
-
-        function closeMobileMenu() {
-            const sidebar = document.getElementById('sidebar');
-            const overlay = document.getElementById('sidebarOverlay');
-            sidebar.classList.add('-translate-x-full');
-            overlay.classList.add('hidden');
-        }
+function closeMobileMenu() {
+    const sidebar = document.getElementById('sidebar');
+    const overlay = document.getElementById('sidebarOverlay');
+    sidebar.classList.add('-translate-x-full');
+    overlay.classList.add('hidden');
+}
 
 // Initialize on page load
 document.addEventListener("DOMContentLoaded", function() {
@@ -458,21 +746,14 @@ document.addEventListener("DOMContentLoaded", function() {
     });
 });
 
-        // Placeholder functions (to be implemented later)
-        function saveProfile() {
-            // Will be implemented with backend integration
-            alert('Save Profile functionality will be implemented');
-        }
+// Logout function
+function logoutPharmacy() {
+    // Remove the pharmacyId cookie
+    document.cookie = "pharmacyId=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/;";
 
-        function changePassword() {
-            // Will be implemented with backend integration
-            alert('Change Password functionality will be implemented');
-        }
-
-        function logoutPharmacy() {
-            // Will be implemented with backend integration
-            alert('Logout functionality will be implemented');
-        }
-    </script>
+    // Redirect to pharmacy login
+    window.location.href = "/pharmacyLogin/";
+}
+</script>
 </body>
 </html>

@@ -18,6 +18,8 @@ urlpatterns = [
     path('pharmacyRegister/', views.pharmacyRegisterView, name="PharmacyRegisterPage"),
     path('pharmacyProfile/', views.pharmacyProfileView, name="PharmacyProfilePage"),
     path("api/getPharmacyDetails/<int:pharmacy_id>/", views.get_pharmacy_details, name="get_pharmacy_details"),
+    path("api/changeExistingPassword/", views.change_existing_password, name="change_existing_password"),
+    path("api/editPharmacyProfile/", views.edit_pharmacy_profile, name="edit_pharmacy_profile"),
 
 
     path('driverLogin/', views.driverLoginView, name='DriverLoginPage'),  

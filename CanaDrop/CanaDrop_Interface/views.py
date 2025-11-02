@@ -3788,6 +3788,266 @@ def get_pharmacy_details(request, pharmacy_id):
 
 
 
+from django.http import JsonResponse
+from django.views.decorators.csrf import csrf_exempt
+from django.views.decorators.http import require_POST
+from django.utils import timezone
+from django.core.mail import EmailMultiAlternatives
+from django.conf import settings
+from django.contrib.auth.hashers import check_password, make_password
+import json
+from .models import Pharmacy
+
+
+@csrf_exempt
+@require_POST
+def change_existing_password(request):
+    """
+    POST API to change an existing pharmacy password.
+    Request Body (JSON):
+    {
+        "pharmacyId": 1,
+        "old_password": "current_pass",
+        "new_password": "new_secure_pass"
+    }
+    """
+    try:
+        data = json.loads(request.body.decode("utf-8"))
+        pharmacy_id = data.get("pharmacyId")
+        old_password = data.get("old_password")
+        new_password = data.get("new_password")
+
+        if not (pharmacy_id and old_password and new_password):
+            return JsonResponse({"success": False, "error": "Missing required fields."}, status=400)
+
+        # Retrieve pharmacy
+        try:
+            pharmacy = Pharmacy.objects.get(id=pharmacy_id)
+        except Pharmacy.DoesNotExist:
+            return JsonResponse({"success": False, "error": "Pharmacy not found."}, status=404)
+
+        # Verify old password
+        if not pharmacy.check_password(old_password):
+            return JsonResponse({"success": False, "error": "Incorrect old password."}, status=401)
+
+        # Update new password
+        pharmacy.password = make_password(new_password)
+        pharmacy.save(update_fields=["password"])
+
+        # Send confirmation email
+        _send_password_change_email(pharmacy.email)
+
+        return JsonResponse({"success": True, "message": "Password changed successfully."}, status=200)
+
+    except json.JSONDecodeError:
+        return JsonResponse({"success": False, "error": "Invalid JSON body."}, status=400)
+    except Exception as e:
+        return JsonResponse({"success": False, "error": str(e)}, status=500)
+
+
+
+def _send_password_change_email(email):
+    """
+    Sends a styled HTML + text password change confirmation email to the pharmacy.
+    """
+    brand_primary = "#0d9488"       # teal-600
+    brand_primary_dark = "#0f766e"  # teal-700
+    logo_url = "https://i.postimg.cc/c4jt62GM/Website-Logo-No-Background.png"
+    changed_at = timezone.now().strftime("%b %d, %Y %H:%M %Z")
+
+    html_content = f"""
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <title>Password Changed Successfully • CanaDrop</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <style>
+      @media (prefers-color-scheme: dark) {{
+        body {{ background: #0b1220 !important; color: #e5e7eb !important; }}
+        .card {{ background: #0f172a !important; border-color: #1f2937 !important; }}
+        .muted {{ color: #94a3b8 !important; }}
+      }}
+    </style>
+  </head>
+  <body style="margin:0;padding:0;background:#f4f7f9;">
+    <!-- Hidden preheader -->
+    <div style="display:none;visibility:hidden;opacity:0;height:0;width:0;overflow:hidden;">
+      Your CanaDrop password was changed on {changed_at}.
+    </div>
+
+    <table role="presentation" width="100%" cellspacing="0" cellpadding="0" border="0" style="background:#f4f7f9;padding:24px 12px;">
+      <tr>
+        <td align="center">
+          <!-- Card -->
+          <table role="presentation" width="100%" cellspacing="0" cellpadding="0" border="0" style="max-width:560px;background:#ffffff;border:1px solid #e5e7eb;border-radius:16px;overflow:hidden;" class="card">
+            <tr>
+              <td style="background:{brand_primary};padding:18px 20px;">
+                <table role="presentation" width="100%" cellspacing="0" cellpadding="0" border="0">
+                  <tr>
+                    <td align="left" style="vertical-align:middle;">
+                      <img src="{logo_url}" alt="CanaDrop" width="40" height="40"
+                           style="display:block;border:0;outline:none;text-decoration:none;">
+                    </td>
+                    <td align="right" style="font:600 16px/1.2 system-ui,-apple-system,'Segoe UI',Roboto,Helvetica,Arial;color:#e6fffb;">
+                      Security Notification
+                    </td>
+                  </tr>
+                </table>
+              </td>
+            </tr>
+
+            <tr>
+              <td style="padding:28px 24px 10px 24px;">
+                <h1 style="margin:0 0 10px 0;font:700 22px/1.25 system-ui,-apple-system,'Segoe UI',Roboto,Helvetica,Arial;color:#0f172a;">
+                  Password Changed Successfully
+                </h1>
+                <p style="margin:0 0 16px 0;font:400 14px/1.6 system-ui,-apple-system,'Segoe UI',Roboto,Helvetica,Arial;color:#475569;">
+                  Your CanaDrop account password was changed on
+                  <strong style="color:{brand_primary_dark}">{changed_at}</strong>.
+                </p>
+
+                <table role="presentation" width="100%" cellspacing="0" cellpadding="0" border="0"
+                       style="background:#f8fafc;border:1px dashed #e2e8f0;border-radius:12px;">
+                  <tr>
+                    <td style="padding:14px 16px;">
+                      <p style="margin:0 0 6px 0;font:400 13px/1.65 system-ui,-apple-system,'Segoe UI',Roboto,Helvetica,Arial;color:#334155;">
+                        If <strong>you</strong> made this change, no further action is needed.
+                      </p>
+                      <p style="margin:0;font:400 13px/1.65 system-ui,-apple-system,'Segoe UI',Roboto,Helvetica,Arial;color:#334155;">
+                        If this wasn’t you, please reset your password immediately from the login page.
+                      </p>
+                    </td>
+                  </tr>
+                </table>
+
+                <p style="margin:16px 0 0 0;font:400 12px/1.6 system-ui,-apple-system,'Segoe UI',Roboto,Helvetica,Arial;color:#6b7280;">
+                  For your security, never share your password with anyone.
+                </p>
+              </td>
+            </tr>
+
+            <tr>
+              <td style="padding:0 24px 24px 24px;">
+                <table role="presentation" width="100%" cellspacing="0" cellpadding="0" border="0"
+                       style="background:#f8fafc;border:1px dashed #e2e8f0;border-radius:12px;">
+                  <tr>
+                    <td style="padding:12px 16px;">
+                      <p style="margin:0;font:400 12px/1.6 system-ui,-apple-system,'Segoe UI',Roboto,Helvetica,Arial;color:#64748b;">
+                        Need help? Reply to this email and our team will assist you.
+                      </p>
+                    </td>
+                  </tr>
+                </table>
+              </td>
+            </tr>
+          </table>
+
+          <p style="margin:14px 0 0 0;font:400 12px/1.6 system-ui,-apple-system,'Segoe UI',Roboto,Helvetica,Arial;color:#94a3b8;">
+            © {timezone.now().year} CanaDrop. All rights reserved.
+          </p>
+        </td>
+      </tr>
+    </table>
+  </body>
+</html>
+"""
+
+    text_content = (
+        f"CanaDrop — Password Changed Successfully\n\n"
+        f"Your password was changed on {changed_at}.\n\n"
+        "If you did not perform this change, please reset your password immediately.\n\n"
+        "CanaDrop Support\n"
+    )
+
+    subject = "Your CanaDrop Password Was Changed Successfully"
+    from_email = settings.DEFAULT_FROM_EMAIL
+    msg = EmailMultiAlternatives(subject, text_content, from_email, [email])
+    msg.attach_alternative(html_content, "text/html")
+    msg.send(fail_silently=True)
+
+
+
+
+from django.http import JsonResponse
+from django.views.decorators.csrf import csrf_exempt
+from django.views.decorators.http import require_POST
+from .models import Pharmacy
+import json
+
+
+@csrf_exempt
+@require_POST
+def edit_pharmacy_profile(request):
+    """
+    POST API to update pharmacy profile information.
+    It accepts pharmacyId and any combination of editable fields.
+    Example Body:
+    {
+        "pharmacyId": 1,
+        "name": "New Pharmacy Name",
+        "store_address": "123 New Street",
+        "city": "Waterloo",
+        "province": "Ontario",
+        "postal_code": "N2L 3E2",
+        "country": "Canada",
+        "phone_number": "9876543210",
+        "email": "newemail@pharmacy.com"
+    }
+    """
+    try:
+        data = json.loads(request.body.decode("utf-8"))
+        pharmacy_id = data.get("pharmacyId")
+
+        if not pharmacy_id:
+            return JsonResponse({"success": False, "error": "pharmacyId is required."}, status=400)
+
+        try:
+            pharmacy = Pharmacy.objects.get(id=pharmacy_id)
+        except Pharmacy.DoesNotExist:
+            return JsonResponse({"success": False, "error": "Pharmacy not found."}, status=404)
+
+        # Allowed editable fields
+        editable_fields = [
+            "name",
+            "store_address",
+            "city",
+            "province",
+            "postal_code",
+            "country",
+            "phone_number",
+            "email"
+        ]
+
+        # Track updated fields
+        updated_fields = []
+
+        for field in editable_fields:
+            if field in data and getattr(pharmacy, field) != data[field]:
+                setattr(pharmacy, field, data[field])
+                updated_fields.append(field)
+
+        if not updated_fields:
+            return JsonResponse({"success": False, "message": "No fields were changed."}, status=200)
+
+        # Save only changed fields
+        pharmacy.save(update_fields=updated_fields)
+
+        return JsonResponse({
+            "success": True,
+            "message": f"Profile updated successfully.",
+            "updated_fields": updated_fields
+        }, status=200)
+
+    except json.JSONDecodeError:
+        return JsonResponse({"success": False, "error": "Invalid JSON body."}, status=400)
+    except Exception as e:
+        return JsonResponse({"success": False, "error": str(e)}, status=500)
+
+
+
+
+
 
 
 
