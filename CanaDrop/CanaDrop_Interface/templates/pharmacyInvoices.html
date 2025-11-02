@@ -4,7 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Pharmacy Dashboard - Invoices</title>
-    <link rel="icon" href="https://i.postimg.cc/c4jt62GM/Website-Logo-No-Background.png">
+    <link rel="icon" href="https://i.postimg.cc/YqYBPWJv/Website-Logo-Background.png">
     <script src="https://cdn.tailwindcss.com"></script>
     <script>
         tailwind.config = {
@@ -31,7 +31,7 @@
 <!-- Logo with close button for mobile -->
             <div class="flex items-center justify-between h-16 px-6 border-b border-gray-200 lg:justify-start">
                 <div class="flex items-center">
-                    <img src="https://i.postimg.cc/c4jt62GM/Website-Logo-No-Background.png" alt="Logo" class="h-12 w-auto">
+                    <img src="https://i.postimg.cc/d00XJkSj/Website-Logo-No-Background.png" alt="Logo" class="h-12 w-auto">
                     <span class="ml-3 text-xl font-semibold text-gray-900">CanaDrop</span>
                 </div>
                 <button id="closeSidebarBtn" class="lg:hidden p-2 text-gray-600 hover:text-gray-900 hover:bg-gray-100 rounded-lg transition-colors">
@@ -366,6 +366,83 @@
     </div>
 
     <script>
+
+
+
+        function showToast(message, { type = 'success', duration = 4000, title } = {}) {
+  // Create a container once
+  let container = document.getElementById('toastContainer');
+  if (!container) {
+    container = document.createElement('div');
+    container.id = 'toastContainer';
+    Object.assign(container.style, {
+      position: 'fixed',
+      top: '16px',
+      right: '16px',
+      zIndex: 9999,
+      display: 'flex',
+      flexDirection: 'column',
+      gap: '8px',
+    });
+    document.body.appendChild(container);
+  }
+
+  // Colors per type
+  const theme = {
+    success: { bg: '#ECFDF5', fg: '#065F46', accent: '#10B981' },
+    info:    { bg: '#EFF6FF', fg: '#1E3A8A', accent: '#3B82F6' },
+    warning: { bg: '#FFFBEB', fg: '#92400E', accent: '#F59E0B' },
+    error:   { bg: '#FEF2F2', fg: '#991B1B', accent: '#EF4444' },
+  }[type] || { bg: '#F3F4F6', fg: '#111827', accent: '#6B7280' };
+
+  const toast = document.createElement('div');
+  Object.assign(toast.style, {
+    minWidth: '240px',
+    maxWidth: '460px',
+    padding: '12px 14px 12px 12px',
+    borderRadius: '10px',
+    boxShadow: '0 8px 20px rgba(0,0,0,0.12)',
+    background: theme.bg,
+    color: theme.fg,
+    borderLeft: `4px solid ${theme.accent}`,
+    display: 'grid',
+    gridTemplateColumns: '1fr auto',
+    gap: '8px',
+    alignItems: 'start',
+    transition: 'opacity .2s ease',
+  });
+
+  const titleText = title || ({
+    success: 'Success',
+    info: 'Notice',
+    warning: 'Warning',
+    error: 'Error',
+  }[type]);
+
+  toast.innerHTML = `
+    <div style="line-height:1.2">
+      <div style="font-weight:600;margin-bottom:2px">${titleText}</div>
+      <div>${message}</div>
+    </div>
+    <button aria-label="Close" style="
+      border:none;background:transparent;color:${theme.fg};
+      font-size:18px;line-height:1;cursor:pointer;padding:2px 4px;
+    ">&times;</button>
+  `;
+
+  // Close handlers
+  const close = () => {
+    toast.style.opacity = '0';
+    setTimeout(() => toast.remove(), 200);
+  };
+  toast.querySelector('button').addEventListener('click', close);
+  const timer = setTimeout(close, duration);
+  toast.addEventListener('mouseenter', () => clearTimeout(timer));
+
+  container.appendChild(toast);
+}
+
+
 let invoices = [];
 let pharmacyId = null;
 let isRefreshing = false;
@@ -884,28 +961,25 @@ document.addEventListener('DOMContentLoaded', function() {
     }
 });
 
-// Enhanced payment success handling with better logging
+// --- Your function (only alerts replaced with showToast) ---
 function handlePaymentSuccess() {
-    const urlParams = new URLSearchParams(window.location.search);
-    const payment = urlParams.get('payment');
-    const invoiceId = urlParams.get('invoice_id');
-    
+  const urlParams = new URLSearchParams(window.location.search);
+  const payment = urlParams.get('payment');
+  const invoiceId = urlParams.get('invoice_id');
 
-    
-    if (payment === 'success' && invoiceId) {
-        alert(`Payment successful for Invoice #${invoiceId.padStart(6, '0')}!`);
-        // Clean URL
-        window.history.replaceState({}, document.title, window.location.pathname);
-        // Refresh the invoices to show updated status
-        setTimeout(() => {
-            
-            fetchInvoices();
-        }, 1000);
-    } else if (payment === 'cancelled') {
-        alert('Payment was cancelled.');
-        // Clean URL
-        window.history.replaceState({}, document.title, window.location.pathname);
-    }
+  if (payment === 'success' && invoiceId) {
+    showToast(`Payment successful for Invoice #${invoiceId.padStart(6, '0')}!`, { type: 'success' });
+    // Clean URL
+    window.history.replaceState({}, document.title, window.location.pathname);
+    // Refresh the invoices to show updated status
+    setTimeout(() => {
+      fetchInvoices();
+    }, 1000);
+  } else if (payment === 'cancelled') {
+    showToast('Payment was cancelled.', { type: 'warning' });
+    // Clean URL
+    window.history.replaceState({}, document.title, window.location.pathname);
+  }
 }
 
 // Load and display pharmacy details
