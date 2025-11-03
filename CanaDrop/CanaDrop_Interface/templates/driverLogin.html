@@ -3,8 +3,8 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Driver Login - CanaDrop</title>
-    <link rel="icon" href="https://i.postimg.cc/c4jt62GM/Website-Logo-No-Background.png">
+    <title>Delivery Partner Login - CanaDrop</title>
+    <link rel="icon" href="https://i.postimg.cc/YqYBPWJv/Website-Logo-Background.png">
     <script src="https://cdn.tailwindcss.com"></script>
 </head>
 <body class="min-h-screen bg-gradient-to-br from-slate-900 to-gray-900 flex items-center justify-center p-4">
@@ -12,7 +12,7 @@
         <div class="bg-slate-800 rounded-2xl shadow-2xl p-8 backdrop-blur-sm border border-slate-700">
             <!-- Logo -->
             <div class="text-center mb-8">
-                <img src="https://i.postimg.cc/c4jt62GM/Website-Logo-No-Background.png" alt="CanaDrop Logo" class="h-16 mx-auto mb-4">
+                <img src="https://i.postimg.cc/d00XJkSj/Website-Logo-No-Background.png" alt="CanaDrop Logo" class="h-16 mx-auto mb-4">
                 <h1 class="text-2xl font-bold text-slate-100 mb-2">Welcome Back</h1>
                 <p class="text-slate-400">Sign in to your driver account</p>
             </div>
@@ -107,20 +107,41 @@
             }
         }
 
+        // Email helpers
+        function isValidEmail(email) {
+            const re = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+            return re.test(String(email).toLowerCase());
+        }
+
+        function normalizeEmail(email) {
+            return email.trim().toLowerCase();
+        }
+
+
         function handleLogin() {
-            const email = document.getElementById('email').value.trim();
+            const rawEmail = document.getElementById('email').value.trim();
             const password = document.getElementById('password').value.trim();
 
-            if (!email || !password) {
-                alert('Please enter both email and password');
+            // Basic presence checks
+            if (!rawEmail || !password) {
+                // Use your modal/toast instead of alert
+                showModal('fail'); // optionally extend modal to show a custom message
                 return;
             }
 
+            // Email format validation
+            const isValidEmail = (email) => /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email.toLowerCase());
+            if (!isValidEmail(rawEmail)) {
+                showModal('fail'); // optionally pass a message if your modal supports it
+                return;
+            }
+
+            // Normalize email (trim + lowercase)
+            const email = rawEmail.toLowerCase();
+
             fetch('/api/driver/login/', {
                 method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json'
-                },
+                headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ email, password })
             })
             .then(response => response.json())
@@ -138,7 +159,6 @@
                         window.location.href = '/driverDashboard/';
                     }, 3000);
                 } else {
-                    // Show failure modal
                     showModal('fail');
                 }
             })
@@ -147,6 +167,7 @@
                 showModal('fail');
             });
         }
+
 
         function showModal(status) {
             const modal = document.getElementById('modal');

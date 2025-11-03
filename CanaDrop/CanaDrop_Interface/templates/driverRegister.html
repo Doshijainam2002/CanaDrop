@@ -3,8 +3,8 @@
 <head>
   <meta charset="UTF-8"/>
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-  <title>Driver Register - CanaDrop</title>
-  <link rel="icon" href="https://i.postimg.cc/c4jt62GM/Website-Logo-No-Background.png">
+  <title>Delivery Partner Registration - CanaDrop</title>
+  <link rel="icon" href="https://i.postimg.cc/YqYBPWJv/Website-Logo-Background.png">
   <script src="https://cdn.tailwindcss.com"></script>
 </head>
 <body class="min-h-screen bg-gradient-to-br from-slate-900 to-gray-900 flex items-center justify-center p-4">
@@ -12,7 +12,7 @@
     <div class="bg-slate-800 rounded-2xl shadow-2xl p-8 backdrop-blur-sm border border-slate-700">
       <!-- Header -->
       <div class="text-center mb-8">
-        <img src="https://i.postimg.cc/c4jt62GM/Website-Logo-No-Background.png" alt="CanaDrop Logo" class="h-16 mx-auto mb-4">
+        <img src="https://i.postimg.cc/d00XJkSj/Website-Logo-No-Background.png" alt="CanaDrop Logo" class="h-16 mx-auto mb-4">
         <h1 class="text-2xl font-bold text-slate-100 mb-2">Create Driver Account</h1>
         <p class="text-slate-400">Register with email verification</p>
       </div>
@@ -250,81 +250,99 @@
       }, 1000);
     }
 
-    // -------- Handlers --------
     btnSendOtp.addEventListener('click', async () => {
-      const email = emailInput.value.trim();
-      if (!email || !isValidEmail(email)) {
+      const rawEmail = emailInput.value.trim();
+
+      // Validate email format
+      const isValidEmail = (email) => /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email.toLowerCase());
+      if (!rawEmail || !isValidEmail(rawEmail)) {
         return showModal('fail', 'Invalid Email', 'Please enter a valid email address.', false);
       }
+
+      // Normalize email (trim + lowercase)
+      const email = rawEmail.toLowerCase();
+
       setLoading(btnSendOtp, true, 'Send OTP');
-      try{
+      try {
         const res = await fetch(API_SEND_OTP, {
-          method:'POST', headers:{'Content-Type':'application/json'},
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ email })
         });
         const data = await res.json();
-        if (data.success){
-          currentEmail = email;
+        if (data.success) {
+          currentEmail = email; // store normalized email
           otpEmailLbl.textContent = currentEmail;
           show(stepOtp);
           startResendTimer();
         } else {
-          showModal('fail','Failed to Send OTP', data.message || 'Please try again.', false);
+          showModal('fail', 'Failed to Send OTP', data.message || 'Please try again.', false);
         }
-      } catch (e){
+      } catch (e) {
         console.error('send-otp error:', e);
-        showModal('fail','Network Error','Could not send OTP. Please try again.', false);
+        showModal('fail', 'Network Error', 'Could not send OTP. Please try again.', false);
       } finally {
         setLoading(btnSendOtp, false, 'Send OTP');
       }
     });
 
+
     btnResendOtp.addEventListener('click', async () => {
       if (!currentEmail) return;
+      const email = currentEmail.toLowerCase();
+
       setLoading(btnResendOtp, true, 'Resend OTP');
-      try{
+      try {
         const res = await fetch(API_SEND_OTP, {
-          method:'POST', headers:{'Content-Type':'application/json'},
-          body: JSON.stringify({ email: currentEmail })
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ email })
         });
         const data = await res.json();
         if (data.success) startResendTimer();
-        else showModal('fail','Failed to Resend OTP', data.message || 'Try again.', false);
-      } catch (e){
+        else showModal('fail', 'Failed to Resend OTP', data.message || 'Try again.', false);
+      } catch (e) {
         console.error('resend-otp error:', e);
-        showModal('fail','Network Error','Could not resend OTP.', false);
+        showModal('fail', 'Network Error', 'Could not resend OTP.', false);
       } finally {
         setLoading(btnResendOtp, false, 'Resend OTP');
       }
     });
 
+
     btnVerifyOtp.addEventListener('click', async () => {
       const otp = otpInput.value.trim();
-      if (otp.length < 4){
-        return showModal('fail','Invalid OTP','Please enter the code sent to your email.', false);
+      if (otp.length < 4) {
+        return showModal('fail', 'Invalid OTP', 'Please enter the code sent to your email.', false);
       }
+
+      // Normalize again just in case
+      const email = currentEmail.toLowerCase();
+
       setLoading(btnVerifyOtp, true, 'Verify OTP');
-      try{
+      try {
         const res = await fetch(API_VERIFY_OTP, {
-          method:'POST', headers:{'Content-Type':'application/json'},
-          body: JSON.stringify({ email: currentEmail, otp })
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ email, otp })
         });
         const data = await res.json();
-        if (data.success){
+        if (data.success) {
           otpToken = data.token || null;
-          emailRO.value = currentEmail;
+          emailRO.value = email;
           show(stepRegister);
-          setTimeout(()=> document.getElementById('reg-name').focus(), 50);
+          setTimeout(() => document.getElementById('reg-name').focus(), 50);
         } else {
-          showModal('fail','OTP Verification Failed', data.message || 'The code is incorrect or expired.', false);
+          showModal('fail', 'OTP Verification Failed', data.message || 'The code is incorrect or expired.', false);
         }
-      } catch (e){
+      } catch (e) {
         console.error('verify-otp error:', e);
-        showModal('fail','Network Error','Could not verify OTP.', false);
+        showModal('fail', 'Network Error', 'Could not verify OTP.', false);
       } finally {
         setLoading(btnVerifyOtp, false, 'Verify OTP');
       }
     });
+
 
     btnRegister.addEventListener('click', async () => {
       const payload = {

@@ -3,8 +3,8 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Driver Dashboard - CanaDrop</title>
-    <link rel="icon" href="https://i.postimg.cc/c4jt62GM/Website-Logo-No-Background.png">
+    <title>Delivery Partner Dashboard - Overview</title>
+    <link rel="icon" href="https://i.postimg.cc/YqYBPWJv/Website-Logo-Background.png">
     <script src="https://cdn.tailwindcss.com"></script>
 </head>
 <body class="min-h-screen bg-gradient-to-br from-slate-900 to-gray-900">
@@ -13,7 +13,7 @@
 <div class="fixed inset-y-0 left-0 z-50 w-64 bg-slate-800 border-r border-slate-700 transform transition-transform duration-300 ease-in-out -translate-x-full md:translate-x-0" id="sidebar">
     <div class="flex items-center justify-between h-16 px-4 border-b border-slate-700">
         <div class="flex items-center">
-            <img src="https://i.postimg.cc/c4jt62GM/Website-Logo-No-Background.png" alt="CanaDrop Logo" class="h-8 w-auto">
+            <img src="https://i.postimg.cc/d00XJkSj/Website-Logo-No-Background.png" alt="CanaDrop Logo" class="h-8 w-auto">
             <span class="ml-2 text-xl font-bold text-slate-100">CanaDrop</span>
         </div>
         <!-- Close button for mobile -->
@@ -92,6 +92,63 @@
                 <div class="mb-6">
                     <h2 class="text-xl font-semibold text-slate-100 mb-2">New Delivery Requests</h2>
                     <p class="text-slate-400">Accept deliveries that match your schedule</p>
+
+                    <!-- Filters -->
+                    <div class="bg-slate-800 border border-slate-700 rounded-lg p-4 mb-6 flex flex-wrap gap-4">
+                    <!-- Pickup City -->
+                    <div class="flex flex-col flex-1 min-w-[200px]">
+                    <label for="filterPickup" class="text-slate-300 text-sm mb-1">Pickup City</label>
+                    <select id="filterPickup"
+                            class="bg-slate-700 border border-slate-600 rounded-lg px-3 py-2 text-slate-100 focus:ring-2 focus:ring-emerald-500 focus:border-transparent">
+                        <option value="">All Cities</option>
+                        <option value="Kitchener">Kitchener</option>
+                        <option value="Waterloo">Waterloo</option>
+                        <option value="Cambridge">Cambridge</option>
+                    </select>
+                    </div>
+
+                    <!-- Delivery City -->
+                    <div class="flex flex-col flex-1 min-w-[200px]">
+                    <label for="filterDelivery" class="text-slate-300 text-sm mb-1">Delivery City</label>
+                    <select id="filterDelivery"
+                            class="bg-slate-700 border border-slate-600 rounded-lg px-3 py-2 text-slate-100 focus:ring-2 focus:ring-emerald-500 focus:border-transparent">
+                        <option value="">All Cities</option>
+                        <option value="Kitchener">Kitchener</option>
+                        <option value="Waterloo">Waterloo</option>
+                        <option value="Cambridge">Cambridge</option>
+                    </select>
+                    </div>
+
+
+                    <!-- Pickup Date Range -->
+                    <div class="flex flex-col sm:flex-row items-center gap-2 min-w-[300px]">
+                        <div class="flex flex-col">
+                        <label for="filterDateFrom" class="text-slate-300 text-sm mb-1">Pickup From</label>
+                        <input id="filterDateFrom" type="date"
+                                class="bg-slate-700 border border-slate-600 rounded-lg px-3 py-2 text-slate-100 focus:ring-2 focus:ring-emerald-500 focus:border-transparent"/>
+                        </div>
+                        <div class="flex flex-col">
+                        <label for="filterDateTo" class="text-slate-300 text-sm mb-1">Pickup To</label>
+                        <input id="filterDateTo" type="date"
+                                class="bg-slate-700 border border-slate-600 rounded-lg px-3 py-2 text-slate-100 focus:ring-2 focus:ring-emerald-500 focus:border-transparent"/>
+                        </div>
+                    </div>
+
+                    <!-- Apply Button -->
+                    <div class="flex items-end">
+                        <button id="applyFiltersBtn"
+                                class="bg-emerald-600 hover:bg-emerald-700 text-white px-4 py-2 rounded-lg font-semibold transition-all mt-2">
+                        Apply Filters
+                        </button>
+
+                        <button id="clearFiltersBtn"
+                                class="bg-slate-700 hover:bg-slate-600 text-white px-4 py-2 rounded-lg font-semibold transition-all mt-2">
+                        Clear
+                        </button>
+
+                    </div>
+                    </div>
+
                 </div>
 
                 <!-- Loading State -->
@@ -158,6 +215,18 @@
     <script>
         let currentSection = 'dashboard';
         let deliveries = [];
+        let allDeliveries = [];
+
+        function pickupTime(d) {
+        // robust for "YYYY-MM-DD" or "YYYY-MM-DDTHH:MM:SS"
+        if (!d?.pickup_day) return Number.POSITIVE_INFINITY; // push undated to end
+        const ymd = d.pickup_day.split('T')[0];
+        return new Date(ymd).getTime();
+        }
+        function sortByPickupAsc(a, b) {
+        return pickupTime(a) - pickupTime(b);
+        }
+
 
         // Cookie utility function
         function getCookie(name) {
@@ -221,10 +290,24 @@
                 .then(response => response.json())
                 .then(data => {
                     loading.classList.add('hidden');
-                    
+
                     if (data.orders && data.orders.length > 0) {
-                        deliveries = data.orders;
-                        renderDeliveries(data.orders);
+                        // store original list
+                        allDeliveries = data.orders.slice();
+
+                        // sort by Pickup Date (earliest → latest)
+                        const toMillis = (d) => {
+                            if (!d?.pickup_day) return Number.POSITIVE_INFINITY; // push undated to end
+                            const ymd = d.pickup_day.split('T')[0];              // handle "YYYY-MM-DD" or "YYYY-MM-DDTHH:MM:SS"
+                            const t = Date.parse(ymd);
+                            return Number.isNaN(t) ? Number.POSITIVE_INFINITY : t;
+                        };
+                        allDeliveries.sort((a, b) => toMillis(a) - toMillis(b));
+
+                        // copy into working list
+                        deliveries = [...allDeliveries];
+
+                        renderDeliveries(deliveries);
                         deliveryCards.classList.remove('hidden');
                     } else {
                         noDeliveries.classList.remove('hidden');
@@ -239,6 +322,7 @@
                     document.querySelector('#noDeliveries p').textContent = 'Please try refreshing the page';
                 });
         }
+
 
         function renderDeliveries(deliveries) {
             const container = document.getElementById('deliveryCards');
@@ -480,6 +564,69 @@ document.addEventListener('DOMContentLoaded', function() {
         }
     });
 });
+
+
+function applyFilters() {
+    const pickupCity = document.getElementById('filterPickup')?.value.trim().toLowerCase() || '';
+    const deliveryCity = document.getElementById('filterDelivery')?.value.trim().toLowerCase() || '';
+    const dateFrom = document.getElementById('filterDateFrom')?.value || '';
+    const dateTo = document.getElementById('filterDateTo')?.value || '';
+
+    // Convert date inputs to comparable format (YYYY-MM-DD)
+    const from = dateFrom ? new Date(dateFrom) : null;
+    const to = dateTo ? new Date(dateTo) : null;
+
+    deliveries = allDeliveries.filter(d => {
+        const matchPickup = pickupCity ? d.pickup_city.toLowerCase() === pickupCity.toLowerCase() : true;
+        const matchDelivery = deliveryCity ? d.drop_city.toLowerCase() === deliveryCity.toLowerCase() : true;
+
+
+        let matchDate = true;
+        if (from && to && d.pickup_day) {
+            const pickupDate = new Date(d.pickup_day.split('T')[0]);
+            matchDate = pickupDate >= from && pickupDate <= to;
+        }
+
+        return matchPickup && matchDelivery && matchDate;
+    });
+
+    filtered.sort(sortByPickupAsc);
+
+    renderDeliveries(deliveries);
+
+    const deliveryCards = document.getElementById('deliveryCards');
+    const noDeliveries = document.getElementById('noDeliveries');
+    
+    if (deliveries.length > 0) {
+        deliveryCards.classList.remove('hidden');
+        noDeliveries.classList.add('hidden');
+    } else {
+        deliveryCards.classList.add('hidden');
+        noDeliveries.classList.remove('hidden');
+    }
+}
+
+document.getElementById('applyFiltersBtn')?.addEventListener('click', () => {
+    applyFilters();
+});
+
+document.getElementById('filterPickup')?.addEventListener('change', applyFilters);
+document.getElementById('filterDelivery')?.addEventListener('change', applyFilters);
+
+
+document.getElementById('clearFiltersBtn')?.addEventListener('click', () => {
+    document.getElementById('filterPickup').value = '';
+    document.getElementById('filterDelivery').value = '';
+    document.getElementById('filterDateFrom').value = '';
+    document.getElementById('filterDateTo').value = '';
+    deliveries = [...allDeliveries];
+    renderDeliveries(deliveries);
+    document.getElementById('noDeliveries').classList.add('hidden');
+    document.getElementById('deliveryCards').classList.remove('hidden');
+});
+
+
+
 
 document.addEventListener("DOMContentLoaded", loadDriverInfo);
     </script>
