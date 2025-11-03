@@ -4,7 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Pharmacy Login - CanaDrop</title>
-    <link rel="icon" href="https://i.postimg.cc/c4jt62GM/Website-Logo-No-Background.png">
+    <link rel="icon" href="https://i.postimg.cc/YqYBPWJv/Website-Logo-Background.png">
     <script src="https://cdn.tailwindcss.com"></script>
 </head>
 <body class="min-h-screen bg-gradient-to-br from-teal-50 to-cyan-100 flex items-center justify-center p-4">
@@ -12,7 +12,7 @@
         <div class="bg-white rounded-2xl shadow-2xl p-8 backdrop-blur-sm">
             <!-- Logo -->
             <div class="text-center mb-8">
-                <img src="https://i.postimg.cc/c4jt62GM/Website-Logo-No-Background.png" alt="CanaDrop Logo" class="h-16 mx-auto mb-4">
+                <img src="https://i.postimg.cc/d00XJkSj/Website-Logo-No-Background.png" alt="CanaDrop Logo" class="h-16 mx-auto mb-4">
                 <h1 class="text-2xl font-bold text-gray-800 mb-2">Welcome Back</h1>
                 <p class="text-gray-600">Sign in to your pharmacy account</p>
             </div>
@@ -106,38 +106,52 @@
             }
         }
 
+        // Email helpers
+        function isValidEmail(email) {
+            // RFC 5322-ish simple validator (good enough for UI-level checks)
+            const re = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+            return re.test(String(email).toLowerCase());
+        }
+
+        function normalizeEmail(email) {
+            // Trim whitespace and force lowercase
+            return email.trim().toLowerCase();
+        }
+
+
         function handleLogin() {
-            const email = document.getElementById('email').value.trim();
+            const rawEmail = document.getElementById('email').value;
             const password = document.getElementById('password').value.trim();
 
-            if (!email || !password) {
-                alert('Please enter both email and password');
+            // Basic presence check
+            if (!rawEmail || !password) {
+                showModal('fail');  // keep your existing modal UX
                 return;
             }
 
+            // Validate & normalize email
+            if (!isValidEmail(rawEmail)) {
+                showModal('fail');  // invalid format
+                return;
+            }
+            const email = normalizeEmail(rawEmail);
+
             fetch('/api/pharmacy/login/', {
                 method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json'
-                },
+                headers: { 'Content-Type': 'application/json' },
+                // Use the normalized, lowercase email here
                 body: JSON.stringify({ email, password })
             })
             .then(response => response.json())
             .then(data => {
                 if (data.success) {
-                    // Save pharmacyId in cookies (expires in 1 day)
                     document.cookie = `pharmacyId=${data.id};path=/;max-age=${24*60*60}`;
-
-                    // Show success modal
                     showModal('success');
-
-                    // Close modal and redirect after 3 seconds
                     setTimeout(() => {
                         closeModal();
                         window.location.href = '/pharmacyDashboard/';
                     }, 3000);
                 } else {
-                    // Show failure modal
                     showModal('fail');
                 }
             })
@@ -146,6 +160,7 @@
                 showModal('fail');
             });
         }
+
 
         function showModal(status) {
             const modal = document.getElementById('modal');
