@@ -324,9 +324,6 @@ async function loadDeliveries() {
             }));
             renderDeliveries();
             
-            if (deliveries.length > 0 && !isOptimized) {
-                setTimeout(() => optimizeRoute(), 800);
-            }
         } else {
             showNotification('Failed to load deliveries', 'error');
         }

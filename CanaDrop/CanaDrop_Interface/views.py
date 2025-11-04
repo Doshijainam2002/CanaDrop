@@ -2123,15 +2123,597 @@ def get_payment_status(request):
 
 
 
+# import os
+# import pytz
+# from datetime import date, timedelta
+# from decimal import Decimal
+# from io import BytesIO
+
+# from django.http import HttpResponseBadRequest, JsonResponse
+# from django.views.decorators.csrf import csrf_exempt
+# from django.utils import timezone
+# from google.cloud import storage
+# from reportlab.lib import colors
+# from reportlab.lib.pagesizes import letter, A4
+# from reportlab.lib.styles import getSampleStyleSheet, ParagraphStyle
+# from reportlab.lib.units import inch
+# from reportlab.platypus import SimpleDocTemplate, Paragraph, Spacer, Table, TableStyle, Image
+# from reportlab.lib.enums import TA_CENTER, TA_LEFT, TA_RIGHT
+
+# from .models import DeliveryOrder, Driver, DriverInvoice
+
+# # Default user timezone (from your conversation context)
+# USER_TZ = pytz.timezone("America/Toronto")
+
+# # GCP Storage configuration
+# GCP_BUCKET_NAME = "canadrop-bucket"
+# GCP_FOLDER_NAME = "DriverSummary"
+# GCP_KEY_PATH = settings.GCP_KEY_PATH
+
+
+# def _start_of_week(d: date):
+#     """Return the Monday of the week containing date d."""
+#     return d - timedelta(days=d.weekday())
+
+
+# def _end_of_week(d: date):
+#     """Return the Sunday of the week containing date d."""
+#     return _start_of_week(d) + timedelta(days=6)
+
+
+# def _ensure_local(dt):
+#     """Ensure datetime is timezone-aware, then convert to USER_TZ."""
+#     if dt is None:
+#         return None
+#     if timezone.is_naive(dt):
+#         dt = timezone.make_aware(dt, timezone.utc)
+#     return dt.astimezone(USER_TZ)
+
+
+# def _order_to_dict(order: DeliveryOrder):
+#     """Serialize order fields we want to return (expand as needed)."""
+#     return {
+#         "id": order.id,
+#         "pharmacy_id": order.pharmacy_id,
+#         "driver_id": order.driver_id,
+#         "pickup_address": order.pickup_address,
+#         "pickup_city": order.pickup_city,
+#         "pickup_day": order.pickup_day.isoformat() if order.pickup_day else None,
+#         "drop_address": getattr(order, "drop_address", None) or getattr(order, "dropoff_address", None),
+#         "drop_city": getattr(order, "drop_city", None) or getattr(order, "dropoff_city", None),
+#         "status": order.status,
+#         "rate": str(order.rate) if order.rate is not None else "0.00",
+#         "created_at": _ensure_local(order.created_at).isoformat() if order.created_at else None,
+#         "updated_at": _ensure_local(order.updated_at).isoformat() if order.updated_at else None,
+#     }
+
+
+# def _get_gcp_client():
+#     """Initialize and return GCP Storage client with service account key."""
+#     try:
+#         # Check if the key file exists
+#         if not os.path.exists(GCP_KEY_PATH):
+#             # print(f"GCP key file not found at: {GCP_KEY_PATH}")
+#             return None
+        
+#         # Initialize client with service account key
+#         client = storage.Client.from_service_account_json(GCP_KEY_PATH)
+#         return client
+#     except Exception as e:
+#         # print(f"Error initializing GCP client: {str(e)}")
+#         return None
+
+
+# def _upload_to_gcp(pdf_buffer, filename):
+#     """Upload PDF to GCP Storage and return the public URL."""
+#     try:
+#         client = _get_gcp_client()
+#         if not client:
+#             # print("Failed to initialize GCP client")
+#             return None
+            
+#         bucket = client.bucket(GCP_BUCKET_NAME)
+#         blob_name = f"{GCP_FOLDER_NAME}/{filename}"
+#         blob = bucket.blob(blob_name)
+        
+#         pdf_buffer.seek(0)
+#         blob.upload_from_file(pdf_buffer, content_type='application/pdf')
+        
+#         # For uniform bucket-level access, construct the public URL directly
+#         # Format: https://storage.googleapis.com/bucket-name/object-name
+#         public_url = f"https://storage.googleapis.com/{GCP_BUCKET_NAME}/{blob_name}"
+        
+#         # print(f"Successfully uploaded {filename} to GCP Storage")
+#         # print(f"Public URL: {public_url}")
+#         return public_url
+#     except Exception as e:
+#         # print(f"Error uploading to GCP: {str(e)}")
+#         return None
+
+
+# def _generate_invoice_pdf(driver, week_data, orders):
+#     """Generate comprehensive PDF invoice for a driver's weekly summary."""
+#     buffer = BytesIO()
+    
+#     # Create the PDF document with better margins
+#     doc = SimpleDocTemplate(buffer, pagesize=A4, rightMargin=50, leftMargin=50,
+#                           topMargin=50, bottomMargin=50)
+    
+#     # Container for the 'Flowable' objects
+#     story = []
+    
+#     # Define comprehensive styles
+#     styles = getSampleStyleSheet()
+    
+#     # Main title style
+#     title_style = ParagraphStyle(
+#         'CustomTitle',
+#         parent=styles['Heading1'],
+#         fontSize=28,
+#         spaceAfter=20,
+#         alignment=TA_CENTER,
+#         textColor=colors.HexColor('#1a365d'),
+#         fontName='Helvetica-Bold'
+#     )
+    
+#     # Subtitle style
+#     subtitle_style = ParagraphStyle(
+#         'SubTitle',
+#         parent=styles['Heading2'],
+#         fontSize=14,
+#         spaceAfter=25,
+#         alignment=TA_CENTER,
+#         textColor=colors.HexColor('#2d3748'),
+#         fontName='Helvetica'
+#     )
+    
+#     # Section heading style
+#     heading_style = ParagraphStyle(
+#         'CustomHeading',
+#         parent=styles['Heading2'],
+#         fontSize=18,
+#         spaceAfter=15,
+#         spaceBefore=20,
+#         textColor=colors.HexColor('#1a365d'),
+#         fontName='Helvetica-Bold',
+#         borderWidth=0,
+#         borderColor=colors.HexColor('#e2e8f0'),
+#         borderPadding=5
+#     )
+    
+#     # Normal text style
+#     normal_style = ParagraphStyle(
+#         'CustomNormal',
+#         parent=styles['Normal'],
+#         fontSize=11,
+#         spaceAfter=8,
+#         leading=14,
+#         fontName='Helvetica'
+#     )
+    
+#     # Info box style
+#     info_style = ParagraphStyle(
+#         'InfoBox',
+#         parent=styles['Normal'],
+#         fontSize=11,
+#         spaceAfter=12,
+#         leading=14,
+#         leftIndent=20,
+#         rightIndent=20,
+#         fontName='Helvetica',
+#         backColor=colors.HexColor('#f7fafc'),
+#         borderWidth=1,
+#         borderColor=colors.HexColor('#e2e8f0'),
+#         borderPadding=10
+#     )
+    
+#     # Add company header with logo
+#     try:
+#         logo_path = os.path.join(settings.BASE_DIR, "Logo", "Website_Logo_No_Background.png")
+
+#         if os.path.exists(logo_path):
+#             # Create header table with logo and company info
+#             logo = Image(logo_path, width=2.5*inch, height=1.8*inch)
+            
+#             company_info = Paragraph("""
+#             <b>CanaDrop Delivery Services</b><br/>
+#             By CGC - Cana Group of Companies<br/>
+#             Email: help.canadrop@gmail.com<br/>
+            
+#             """, normal_style)
+            
+#             header_data = [[logo, company_info]]
+#             header_table = Table(header_data, colWidths=[3*inch, 4*inch])
+#             header_table.setStyle(TableStyle([
+#                 ('ALIGN', (0, 0), (0, 0), 'CENTER'),
+#                 ('ALIGN', (1, 0), (1, 0), 'RIGHT'),
+#                 ('VALIGN', (0, 0), (-1, -1), 'MIDDLE'),
+#             ]))
+#             story.append(header_table)
+#             story.append(Spacer(1, 30))
+#     except Exception as e:
+#         # print(f"Logo not found: {str(e)}")
+#         # Fallback header without logo
+#         story.append(Paragraph("CanaDrop Delivery Services", title_style))
+#         story.append(Paragraph("Professional Pharmacy Delivery Solutions", subtitle_style))
+    
+#     # Main document title
+#     story.append(Paragraph("DRIVER PAYMENT INVOICE", title_style))
+#     story.append(Spacer(1, 30))
+    
+#     # Invoice metadata in a professional layout
+#     from datetime import datetime
+#     current_date = datetime.now().strftime("%B %d, %Y")
+#     invoice_number = f"INV-{driver.id}-{week_data['payment_period']['start_date'].replace('-', '')}"
+    
+#     metadata_data = [
+#         ['Invoice Number:', invoice_number, 'Issue Date:', current_date],
+#         ['Driver ID:', f"#{driver.id}", 'Payment Due:', week_data['due_date']],
+#     ]
+    
+#     metadata_table = Table(metadata_data, colWidths=[1.5*inch, 2*inch, 1.5*inch, 2*inch])
+#     metadata_table.setStyle(TableStyle([
+#         ('FONTNAME', (0, 0), (-1, -1), 'Helvetica'),
+#         ('FONTSIZE', (0, 0), (-1, -1), 10),
+#         ('FONTNAME', (0, 0), (0, -1), 'Helvetica-Bold'),
+#         ('FONTNAME', (2, 0), (2, -1), 'Helvetica-Bold'),
+#         ('ALIGN', (0, 0), (-1, -1), 'LEFT'),
+#         ('BOTTOMPADDING', (0, 0), (-1, -1), 8),
+#         ('TOPPADDING', (0, 0), (-1, -1), 8),
+#     ]))
+#     story.append(metadata_table)
+#     story.append(Spacer(1, 25))
+    
+#     # Driver Information Section
+#     story.append(Paragraph("DRIVER INFORMATION", heading_style))
+    
+#     driver_details = f"""
+#     <b>Full Name:</b> {driver.name}<br/>
+#     <b>Email Address:</b> {driver.email}<br/>
+#     <b>Driver ID:</b> #{driver.id}<br/>
+#     <b>Status:</b> Active Driver
+#     """
+#     story.append(Paragraph(driver_details, info_style))
+#     story.append(Spacer(1, 20))
+    
+#     # Payment Period Section
+#     story.append(Paragraph("PAYMENT PERIOD DETAILS", heading_style))
+    
+#     start_date = week_data['payment_period']['start_date']
+#     end_date = week_data['payment_period']['end_date']
+#     period_details = f"""
+#     <b>Service Period:</b> {start_date} to {end_date}<br/>
+#     <b>Total Service Days:</b> 7 days<br/>
+#     <b>Payment Status:</b> {week_data['status'].title()}<br/>
+#     <b>Payment Due Date:</b> {week_data['due_date']}<br/>
+#     <b>Processing Date:</b> {current_date}
+#     """
+#     story.append(Paragraph(period_details, info_style))
+#     story.append(Spacer(1, 25))
+    
+#     # Financial Summary Section
+#     story.append(Paragraph("PAYMENT BREAKDOWN", heading_style))
+    
+#     # Calculate detailed financial information
+#     gross_amount = sum(Decimal(str(order.rate or 0)) for order in orders)
+#     commission_rate = Decimal('0.15')
+#     commission_amount = gross_amount * commission_rate
+#     net_amount = gross_amount - commission_amount
+    
+#     # Create detailed summary table
+#     summary_data = [
+#         ['Description', 'Amount (CAD)'],
+#         ['Total Deliveries Completed', f"{week_data['total_orders']} orders"],
+#         ['Gross Revenue', f"${gross_amount:.2f}"],
+#         ['Platform Commission (15%)', f"-${commission_amount:.2f}"],
+#         ['', ''],  # Separator row
+#         ['NET PAYMENT DUE', f"${net_amount:.2f}"],
+#     ]
+    
+#     summary_table = Table(summary_data, colWidths=[4*inch, 2*inch])
+#     summary_table.setStyle(TableStyle([
+#         # Header row
+#         ('BACKGROUND', (0, 0), (-1, 0), colors.HexColor('#1a365d')),
+#         ('TEXTCOLOR', (0, 0), (-1, 0), colors.whitesmoke),
+#         ('FONTNAME', (0, 0), (-1, 0), 'Helvetica-Bold'),
+#         ('FONTSIZE', (0, 0), (-1, 0), 12),
+#         ('ALIGN', (0, 0), (-1, 0), 'CENTER'),
+        
+#         # Regular rows
+#         ('FONTNAME', (0, 1), (-1, -2), 'Helvetica'),
+#         ('FONTSIZE', (0, 1), (-1, -2), 11),
+#         ('ALIGN', (0, 1), (0, -2), 'LEFT'),
+#         ('ALIGN', (1, 1), (1, -2), 'RIGHT'),
+        
+#         # Total row (last row)
+#         ('BACKGROUND', (0, -1), (-1, -1), colors.HexColor('#e6fffa')),
+#         ('FONTNAME', (0, -1), (-1, -1), 'Helvetica-Bold'),
+#         ('FONTSIZE', (0, -1), (-1, -1), 14),
+#         ('TEXTCOLOR', (0, -1), (-1, -1), colors.HexColor('#1a365d')),
+#         ('ALIGN', (0, -1), (0, -1), 'LEFT'),
+#         ('ALIGN', (1, -1), (1, -1), 'RIGHT'),
+        
+#         # Borders and padding
+#         ('GRID', (0, 0), (-1, -2), 1, colors.HexColor('#e2e8f0')),
+#         ('BOX', (0, -1), (-1, -1), 2, colors.HexColor('#1a365d')),
+#         ('LEFTPADDING', (0, 0), (-1, -1), 12),
+#         ('RIGHTPADDING', (0, 0), (-1, -1), 12),
+#         ('TOPPADDING', (0, 0), (-1, -1), 10),
+#         ('BOTTOMPADDING', (0, 0), (-1, -1), 10),
+        
+#         # Hide separator row borders
+#         ('LINEBELOW', (0, 3), (-1, 3), 0, colors.white),
+#         ('LINEABOVE', (0, 4), (-1, 4), 0, colors.white),
+#     ]))
+    
+#     story.append(summary_table)
+#     story.append(Spacer(1, 30))
+    
+#     # Detailed Order Breakdown
+#     if orders:
+#         story.append(Paragraph("DETAILED ORDER BREAKDOWN", heading_style))
+        
+#         # Create comprehensive order table
+#         order_data = [['Order #', 'Date', 'Pickup Location', 'Delivery Location', 'Status', 'Rate (CAD)']]
+        
+#         total_distance = 0  # You might want to add this to your model
+#         for i, order in enumerate(orders, 1):
+#             delivery_date = _ensure_local(order.updated_at).strftime('%m/%d/%Y') if order.updated_at else 'N/A'
+#             pickup_location = f"{order.pickup_city}" if order.pickup_city else 'N/A'
+#             delivery_location = getattr(order, 'drop_city', None) or getattr(order, 'dropoff_city', None) or 'N/A'
+            
+#             order_data.append([
+#                 f"#{order.id}",
+#                 delivery_date,
+#                 pickup_location,
+#                 delivery_location,
+#                 order.status.title(),
+#                 f"${order.rate or 0:.2f}"
+#             ])
+        
+#         # Create styled order table
+#         order_table = Table(order_data, colWidths=[0.8*inch, 1*inch, 1.8*inch, 1.8*inch, 1*inch, 1*inch])
+#         order_table.setStyle(TableStyle([
+#             # Header
+#             ('BACKGROUND', (0, 0), (-1, 0), colors.HexColor('#1a365d')),
+#             ('TEXTCOLOR', (0, 0), (-1, 0), colors.whitesmoke),
+#             ('FONTNAME', (0, 0), (-1, 0), 'Helvetica-Bold'),
+#             ('FONTSIZE', (0, 0), (-1, 0), 10),
+#             ('ALIGN', (0, 0), (-1, 0), 'CENTER'),
+            
+#             # Data rows
+#             ('FONTNAME', (0, 1), (-1, -1), 'Helvetica'),
+#             ('FONTSIZE', (0, 1), (-1, -1), 9),
+#             ('ALIGN', (0, 1), (0, -1), 'CENTER'),  # Order numbers
+#             ('ALIGN', (1, 1), (1, -1), 'CENTER'),  # Dates
+#             ('ALIGN', (2, 1), (3, -1), 'LEFT'),    # Locations
+#             ('ALIGN', (4, 1), (4, -1), 'CENTER'),  # Status
+#             ('ALIGN', (5, 1), (5, -1), 'RIGHT'),   # Rates
+            
+#             # Styling
+#             ('GRID', (0, 0), (-1, -1), 1, colors.HexColor('#e2e8f0')),
+#             ('ROWBACKGROUNDS', (0, 1), (-1, -1), [colors.white, colors.HexColor('#f7fafc')]),
+#             ('LEFTPADDING', (0, 0), (-1, -1), 8),
+#             ('RIGHTPADDING', (0, 0), (-1, -1), 8),
+#             ('TOPPADDING', (0, 0), (-1, -1), 8),
+#             ('BOTTOMPADDING', (0, 0), (-1, -1), 8),
+#         ]))
+        
+#         story.append(order_table)
+#         story.append(Spacer(1, 25))
+    
+#     # Payment Terms and Conditions
+#     story.append(Paragraph("PAYMENT TERMS & CONDITIONS", heading_style))
+    
+#     terms_text = """
+#     <b>Payment Schedule:</b> Weekly payments are processed every Monday for the previous week's completed deliveries.<br/><br/>
+#     <b>Commission Structure:</b> CanaDrop retains 15% of gross delivery fees to cover platform costs, insurance, and support services.<br/><br/>
+#     <b>Payment Method:</b> Payments are made via direct deposit to the driver's registered bank account.<br/><br/>
+#     <b>Dispute Resolution:</b> Any payment disputes must be reported within 7 days of invoice issuance.<br/><br/>
+#     <b>Tax Responsibility:</b> As an independent contractor, you are responsible for reporting this income on your tax returns.
+#     """
+#     story.append(Paragraph(terms_text, normal_style))
+#     story.append(Spacer(1, 25))
+    
+#     # Contact Information
+#     story.append(Paragraph("SUPPORT & CONTACT", heading_style))
+    
+#     contact_text = """
+#     For questions about this payment summary or any delivery-related inquiries:<br/><br/>
+#     <b>Email:</b> help.canadrop@gmail.com<br/>
+#     <b>Business Hours:</b> Monday - Friday, 9:00 AM - 6:00 PM EST<br/>
+#     """
+#     story.append(Paragraph(contact_text, info_style))
+#     story.append(Spacer(1, 30))
+    
+#     # Professional Footer
+#     footer_text = f"""
+#     <i>This invoice was automatically generated on {current_date} by CanaDrop's payment processing system.<br/>
+#     Invoice #{invoice_number} | Driver Payment Summary | Confidential Document<br/>
+#     © 2025 CanaDrop Delivery Services. All rights reserved.</i>
+#     """
+#     footer_style = ParagraphStyle(
+#         'Footer',
+#         parent=styles['Normal'],
+#         fontSize=8,
+#         alignment=TA_CENTER,
+#         textColor=colors.HexColor('#6b7280'),
+#         spaceAfter=0
+#     )
+#     story.append(Paragraph(footer_text, footer_style))
+    
+#     # Build the PDF
+#     doc.build(story)
+    
+#     return buffer
+
+
+# @csrf_exempt
+# def driver_invoice_weeks(request):
+#     """
+#     GET param: driverId
+#     Returns weekly invoice buckets for delivered orders for that driver.
+#     Now includes PDF generation and GCP storage using service account key.
+#     """
+#     driver_id = request.GET.get("driverId") or request.POST.get("driverId")
+#     if not driver_id:
+#         return HttpResponseBadRequest('Missing "driverId" parameter.')
+
+#     # Validate driver exists
+#     try:
+#         driver = Driver.objects.get(pk=driver_id)
+#     except Driver.DoesNotExist:
+#         return HttpResponseBadRequest("Driver not found.")
+
+#     # Fetch delivered orders for this driver
+#     orders_qs = DeliveryOrder.objects.filter(status="delivered", driver_id=driver_id).order_by("updated_at")
+
+#     if not orders_qs.exists():
+#         return JsonResponse({"message": "No delivered orders found for this driver.", "weeks": []})
+
+#     # Convert updated_at to user's local tz and collect (order, local_date)
+#     orders_with_local_dt = []
+#     for o in orders_qs:
+#         if not o.updated_at:
+#             continue
+#         local_dt = _ensure_local(o.updated_at)
+#         orders_with_local_dt.append((o, local_dt))
+
+#     if not orders_with_local_dt:
+#         return JsonResponse({"message": "No orders with updated_at timestamps.", "weeks": []})
+
+#     # Determine overall earliest and latest based on local updated_at
+#     local_datetimes = [ldt for (_, ldt) in orders_with_local_dt]
+#     earliest_local = min(local_datetimes)
+#     latest_local = max(local_datetimes)
+
+#     overall_start_date = _start_of_week(earliest_local.date())
+#     overall_end_date = _end_of_week(latest_local.date())
+
+#     # Build week buckets
+#     weeks = []
+#     cur_start = overall_start_date
+#     while cur_start <= overall_end_date:
+#         cur_end = cur_start + timedelta(days=6)
+#         weeks.append((cur_start, cur_end))
+#         cur_start = cur_start + timedelta(days=7)
+
+#     # Prepare result weeks
+#     result_weeks = []
+#     for wstart, wend in weeks:
+#         # Select orders whose local updated_at date falls inside this week
+#         week_orders = [
+#             o for (o, ldt) in orders_with_local_dt
+#             if (ldt.date() >= wstart and ldt.date() <= wend)
+#         ]
+
+#         if not week_orders:  # Skip weeks with no orders
+#             continue
+
+#         total_orders = len(week_orders)
+#         total_amount = Decimal("0.00")
+#         for o in week_orders:
+#             rate = o.rate if o.rate is not None else Decimal("0.00")
+#             if not isinstance(rate, Decimal):
+#                 rate = Decimal(str(rate))
+#             total_amount += (rate * Decimal("0.85"))
+
+#         due_date = wend + timedelta(days=7)
+
+#         # Check if DriverInvoice already exists for this period
+#         existing_invoice = DriverInvoice.objects.filter(
+#             driver=driver,
+#             start_date=wstart,
+#             end_date=wend
+#         ).first()
+
+#         pdf_url = None
+#         if existing_invoice:
+#             # Use existing PDF URL if available
+#             pdf_url = existing_invoice.pdf_url
+#         else:
+#             # Create new DriverInvoice and generate PDF
+#             new_invoice = DriverInvoice.objects.create(
+#                 driver=driver,
+#                 start_date=wstart,
+#                 end_date=wend,
+#                 total_deliveries=total_orders,
+#                 total_amount=total_amount.quantize(Decimal("0.01")),
+#                 due_date=due_date,
+#                 status="generated"
+#             )
+
+#             # Generate PDF
+#             week_data = {
+#                 "payment_period": {
+#                     "start_date": wstart.isoformat(),
+#                     "end_date": wend.isoformat()
+#                 },
+#                 "total_orders": total_orders,
+#                 "total_amount": str(total_amount.quantize(Decimal("0.01"))),
+#                 "due_date": due_date.isoformat(),
+#                 "status": "generated",
+#             }
+
+#             try:
+#                 pdf_buffer = _generate_invoice_pdf(driver, week_data, week_orders)
+                
+#                 # Create filename: driverId_driverName_StartDate_EndDate.pdf
+#                 filename = f"{driver.id}_{driver.name.replace(' ', '_')}_{wstart.isoformat()}_{wend.isoformat()}.pdf"
+                
+#                 # Upload to GCP
+#                 pdf_url = _upload_to_gcp(pdf_buffer, filename)
+                
+#                 if pdf_url:
+#                     new_invoice.pdf_url = pdf_url
+#                     new_invoice.save()
+#                     # print(f"Successfully created invoice with PDF URL: {pdf_url}")
+#                 else:
+#                     print("Failed to upload PDF to GCP, continuing without PDF URL")
+                    
+                    
+#             except Exception as e:
+#                 print(f"Error generating/uploading PDF: {str(e)}")
+
+#         # Serialize orders
+#         orders_serialized = [_order_to_dict(o) for o in week_orders]
+
+#         result_weeks.append({
+#             "payment_period": {
+#                 "start_date": wstart.isoformat(),
+#                 "end_date": wend.isoformat()
+#             },
+#             "total_orders": total_orders,
+#             "total_amount": str(total_amount.quantize(Decimal("0.01"))),
+#             "due_date": due_date.isoformat(),
+#             "status": "generated",
+#             "pdf_url": pdf_url,
+#             "orders": orders_serialized,
+#         })
+
+#     response_payload = {
+#         "driver_id": int(driver_id),
+#         "overall_period": {
+#             "start_date": overall_start_date.isoformat(),
+#             "end_date": overall_end_date.isoformat()
+#         },
+#         "weeks": result_weeks,
+#     }
+
+#     return JsonResponse(response_payload, safe=True)
+
+
+
 import os
 import pytz
-from datetime import date, timedelta
+from datetime import date, timedelta, datetime
 from decimal import Decimal
 from io import BytesIO
 
 from django.http import HttpResponseBadRequest, JsonResponse
 from django.views.decorators.csrf import csrf_exempt
 from django.utils import timezone
+from django.conf import settings
 from google.cloud import storage
 from reportlab.lib import colors
 from reportlab.lib.pagesizes import letter, A4
@@ -2159,6 +2741,20 @@ def _start_of_week(d: date):
 def _end_of_week(d: date):
     """Return the Sunday of the week containing date d."""
     return _start_of_week(d) + timedelta(days=6)
+
+
+def _is_period_complete(end_date: date):
+    """Check if the invoice period has ended (past 11:59 PM on end_date)."""
+    # Get current time in user's timezone
+    now = timezone.now().astimezone(USER_TZ)
+    
+    # Create datetime for 11:59:59 PM on the end date
+    end_datetime = USER_TZ.localize(
+        datetime.combine(end_date, datetime.max.time())
+    )
+    
+    # Return True only if current time is past the end of period
+    return now > end_datetime
 
 
 def _ensure_local(dt):
@@ -2193,14 +2789,12 @@ def _get_gcp_client():
     try:
         # Check if the key file exists
         if not os.path.exists(GCP_KEY_PATH):
-            # print(f"GCP key file not found at: {GCP_KEY_PATH}")
             return None
         
         # Initialize client with service account key
         client = storage.Client.from_service_account_json(GCP_KEY_PATH)
         return client
     except Exception as e:
-        # print(f"Error initializing GCP client: {str(e)}")
         return None
 
 
@@ -2209,7 +2803,6 @@ def _upload_to_gcp(pdf_buffer, filename):
     try:
         client = _get_gcp_client()
         if not client:
-            # print("Failed to initialize GCP client")
             return None
             
         bucket = client.bucket(GCP_BUCKET_NAME)
@@ -2220,14 +2813,10 @@ def _upload_to_gcp(pdf_buffer, filename):
         blob.upload_from_file(pdf_buffer, content_type='application/pdf')
         
         # For uniform bucket-level access, construct the public URL directly
-        # Format: https://storage.googleapis.com/bucket-name/object-name
         public_url = f"https://storage.googleapis.com/{GCP_BUCKET_NAME}/{blob_name}"
         
-        # print(f"Successfully uploaded {filename} to GCP Storage")
-        # print(f"Public URL: {public_url}")
         return public_url
     except Exception as e:
-        # print(f"Error uploading to GCP: {str(e)}")
         return None
 
 
@@ -2332,7 +2921,6 @@ def _generate_invoice_pdf(driver, week_data, orders):
             story.append(header_table)
             story.append(Spacer(1, 30))
     except Exception as e:
-        # print(f"Logo not found: {str(e)}")
         # Fallback header without logo
         story.append(Paragraph("CanaDrop Delivery Services", title_style))
         story.append(Paragraph("Professional Pharmacy Delivery Solutions", subtitle_style))
@@ -2342,7 +2930,6 @@ def _generate_invoice_pdf(driver, week_data, orders):
     story.append(Spacer(1, 30))
     
     # Invoice metadata in a professional layout
-    from datetime import datetime
     current_date = datetime.now().strftime("%B %d, %Y")
     invoice_number = f"INV-{driver.id}-{week_data['payment_period']['start_date'].replace('-', '')}"
     
@@ -2456,7 +3043,6 @@ def _generate_invoice_pdf(driver, week_data, orders):
         # Create comprehensive order table
         order_data = [['Order #', 'Date', 'Pickup Location', 'Delivery Location', 'Status', 'Rate (CAD)']]
         
-        total_distance = 0  # You might want to add this to your model
         for i, order in enumerate(orders, 1):
             delivery_date = _ensure_local(order.updated_at).strftime('%m/%d/%Y') if order.updated_at else 'N/A'
             pickup_location = f"{order.pickup_city}" if order.pickup_city else 'N/A'
@@ -2553,7 +3139,7 @@ def driver_invoice_weeks(request):
     """
     GET param: driverId
     Returns weekly invoice buckets for delivered orders for that driver.
-    Now includes PDF generation and GCP storage using service account key.
+    Generates PDF and uploads to GCP only after period ends (11:59 PM on end_date).
     """
     driver_id = request.GET.get("driverId") or request.POST.get("driverId")
     if not driver_id:
@@ -2628,52 +3214,56 @@ def driver_invoice_weeks(request):
         ).first()
 
         pdf_url = None
-        if existing_invoice:
-            # Use existing PDF URL if available
-            pdf_url = existing_invoice.pdf_url
-        else:
-            # Create new DriverInvoice and generate PDF
-            new_invoice = DriverInvoice.objects.create(
-                driver=driver,
-                start_date=wstart,
-                end_date=wend,
-                total_deliveries=total_orders,
-                total_amount=total_amount.quantize(Decimal("0.01")),
-                due_date=due_date,
-                status="generated"
-            )
+        invoice_status = "pending"
 
-            # Generate PDF
-            week_data = {
-                "payment_period": {
-                    "start_date": wstart.isoformat(),
-                    "end_date": wend.isoformat()
-                },
-                "total_orders": total_orders,
-                "total_amount": str(total_amount.quantize(Decimal("0.01"))),
-                "due_date": due_date.isoformat(),
-                "status": "generated",
-            }
+        # Only generate invoice if period is complete (after 11:59 PM on end date)
+        if _is_period_complete(wend):
+            if existing_invoice:
+                # Use existing PDF URL if available
+                pdf_url = existing_invoice.pdf_url
+                invoice_status = "generated" if pdf_url else "pending"
+            else:
+                # Create new DriverInvoice and generate PDF
+                new_invoice = DriverInvoice.objects.create(
+                    driver=driver,
+                    start_date=wstart,
+                    end_date=wend,
+                    total_deliveries=total_orders,
+                    total_amount=total_amount.quantize(Decimal("0.01")),
+                    due_date=due_date,
+                    status="generated"
+                )
 
-            try:
-                pdf_buffer = _generate_invoice_pdf(driver, week_data, week_orders)
-                
-                # Create filename: driverId_driverName_StartDate_EndDate.pdf
-                filename = f"{driver.id}_{driver.name.replace(' ', '_')}_{wstart.isoformat()}_{wend.isoformat()}.pdf"
-                
-                # Upload to GCP
-                pdf_url = _upload_to_gcp(pdf_buffer, filename)
-                
-                if pdf_url:
-                    new_invoice.pdf_url = pdf_url
-                    new_invoice.save()
-                    # print(f"Successfully created invoice with PDF URL: {pdf_url}")
-                else:
-                    print("Failed to upload PDF to GCP, continuing without PDF URL")
+                # Generate PDF
+                week_data = {
+                    "payment_period": {
+                        "start_date": wstart.isoformat(),
+                        "end_date": wend.isoformat()
+                    },
+                    "total_orders": total_orders,
+                    "total_amount": str(total_amount.quantize(Decimal("0.01"))),
+                    "due_date": due_date.isoformat(),
+                    "status": "generated",
+                }
+
+                try:
+                    pdf_buffer = _generate_invoice_pdf(driver, week_data, week_orders)
                     
+                    # Create filename: driverId_driverName_StartDate_EndDate.pdf
+                    filename = f"{driver.id}_{driver.name.replace(' ', '_')}_{wstart.isoformat()}_{wend.isoformat()}.pdf"
                     
-            except Exception as e:
-                print(f"Error generating/uploading PDF: {str(e)}")
+                    # Upload to GCP
+                    pdf_url = _upload_to_gcp(pdf_buffer, filename)
+                    
+                    if pdf_url:
+                        new_invoice.pdf_url = pdf_url
+                        new_invoice.save()
+                        invoice_status = "generated"
+                    else:
+                        invoice_status = "error"
+                        
+                except Exception as e:
+                    invoice_status = "error"
 
         # Serialize orders
         orders_serialized = [_order_to_dict(o) for o in week_orders]
@@ -2686,7 +3276,7 @@ def driver_invoice_weeks(request):
             "total_orders": total_orders,
             "total_amount": str(total_amount.quantize(Decimal("0.01"))),
             "due_date": due_date.isoformat(),
-            "status": "generated",
+            "status": invoice_status,
             "pdf_url": pdf_url,
             "orders": orders_serialized,
         })
