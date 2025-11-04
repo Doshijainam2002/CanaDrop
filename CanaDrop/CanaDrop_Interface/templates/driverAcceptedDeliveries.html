@@ -4,7 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Accepted Deliveries - CanaDrop</title>
-    <link rel="icon" href="https://i.postimg.cc/c4jt62GM/Website-Logo-No-Background.png">
+    <link rel="icon" href="https://i.postimg.cc/YqYBPWJv/Website-Logo-Background.png">
     <script src="https://cdn.tailwindcss.com"></script>
     <style>
         .nav-item.active {
@@ -14,106 +14,180 @@
         .status-dot {
             animation: pulse 2s infinite;
         }
+        @keyframes pulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.5; }
+        }
+        .route-badge {
+            animation: fadeIn 0.3s ease-in;
+        }
+        @keyframes fadeIn {
+            from { opacity: 0; transform: scale(0.8); }
+            to { opacity: 1; transform: scale(1); }
+        }
+        .spinner {
+            animation: spin 1s linear infinite;
+        }
+        @keyframes spin {
+            from { transform: rotate(0deg); }
+            to { transform: rotate(360deg); }
+        }
     </style>
 </head>
 <body class="min-h-screen bg-gradient-to-br from-slate-900 to-gray-900">
     <!-- Sidebar -->
-<!-- Sidebar -->
-<div class="fixed inset-y-0 left-0 z-50 w-64 bg-slate-800 border-r border-slate-700 transform transition-transform duration-300 ease-in-out -translate-x-full md:translate-x-0" id="sidebar">
-    <div class="flex items-center justify-between h-16 px-4 border-b border-slate-700">
-        <div class="flex items-center">
-            <img src="https://i.postimg.cc/c4jt62GM/Website-Logo-No-Background.png" alt="CanaDrop Logo" class="h-8 w-auto">
-            <span class="ml-2 text-xl font-bold text-slate-100">CanaDrop</span>
+    <div class="fixed inset-y-0 left-0 z-50 w-64 bg-slate-800 border-r border-slate-700 transform transition-transform duration-300 ease-in-out -translate-x-full md:translate-x-0" id="sidebar">
+        <div class="flex items-center justify-between h-16 px-4 border-b border-slate-700">
+            <div class="flex items-center">
+                <img src="https://i.postimg.cc/d00XJkSj/Website-Logo-No-Background.png" alt="CanaDrop Logo" class="h-8 w-auto">
+                <span class="ml-2 text-xl font-bold text-slate-100">CanaDrop</span>
+            </div>
+            <button id="closeSidebarBtn" class="md:hidden p-2 text-slate-300 hover:text-emerald-400 transition-colors">
+                <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
+                </svg>
+            </button>
         </div>
-        <!-- Close button for mobile -->
-        <button id="closeSidebarBtn" class="md:hidden p-2 text-slate-300 hover:text-emerald-400 transition-colors">
-            <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
-            </svg>
-        </button>
+        
+        <nav class="mt-8">
+            <a href="/driverDashboard/" onclick="navigateTo('dashboard')" class="nav-item flex items-center px-6 py-3 text-slate-300 hover:bg-slate-700 hover:text-emerald-400 transition-colors">
+                <svg class="w-5 h-5 mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 7v10a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2H5a2 2 0 00-2-2z"/>
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 5a2 2 0 012-2h4a2 2 0 012 2v4H8V5z"/>
+                </svg>
+                Dashboard
+            </a>
+            <a href="/driverAcceptedDeliveries/" onclick="navigateTo('accepted')" class="nav-item active flex items-center px-6 py-3 text-slate-300 hover:bg-slate-700 hover:text-emerald-400 transition-colors">
+                <svg class="w-5 h-5 mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 8l6 6 10-10"/>
+                </svg>
+                Accepted Deliveries
+            </a>
+            <a href="/driverFinances/" onclick="navigateTo('finances')" class="nav-item flex items-center px-6 py-3 text-slate-300 hover:bg-slate-700 hover:text-emerald-400 transition-colors">
+                <svg class="w-5 h-5 mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1"/>
+                </svg>
+                Finances
+            </a>
+            <a href="/contactAdmin/" onclick="showSection('contactAdmin')" class="nav-item flex items-center px-6 py-3 text-slate-300 hover:bg-slate-700 hover:text-emerald-400 transition-colors">
+                <svg class="w-5 h-5 mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 10h.01M12 10h.01M16 10h.01M21 12c0 4.418-4.03 8-9 8s-9-3.582-9-8 4.03-8 9-8 9 3.582 9 8zM12 14v-4m0 4h.01"/>
+                </svg>
+                Contact Admin
+            </a>
+            <a href="#" onclick="handleLogout()" class="nav-item flex items-center px-6 py-3 text-slate-300 hover:bg-slate-700 hover:text-red-400 transition-colors mt-8">
+                <svg class="w-5 h-5 mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013 3v1"/>
+                </svg>
+                Logout
+            </a>
+        </nav>
     </div>
-    
-    <nav class="mt-8">
-        <!-- Navigation items remain the same -->
-        <a href="/driverDashboard/" onclick="navigateTo('dashboard')" class="nav-item flex items-center px-6 py-3 text-slate-300 hover:bg-slate-700 hover:text-emerald-400 transition-colors">
-            <svg class="w-5 h-5 mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 7v10a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2H5a2 2 0 00-2-2z"/>
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 5a2 2 0 012-2h4a2 2 0 012 2v4H8V5z"/>
-            </svg>
-            Dashboard
-        </a>
-        <a href="/driverAcceptedDeliveries/" onclick="navigateTo('accepted')" class="nav-item active flex items-center px-6 py-3 text-slate-300 hover:bg-slate-700 hover:text-emerald-400 transition-colors">
-            <svg class="w-5 h-5 mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 8l6 6 10-10"/>
-            </svg>
-            Accepted Deliveries
-        </a>
-        <a href="/driverFinances/" onclick="navigateTo('finances')" class="nav-item flex items-center px-6 py-3 text-slate-300 hover:bg-slate-700 hover:text-emerald-400 transition-colors">
-            <svg class="w-5 h-5 mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1"/>
-            </svg>
-            Finances
-        </a>
-        <a href="/contactAdmin/" onclick="showSection('contactAdmin')" class="nav-item flex items-center px-6 py-3 text-slate-300 hover:bg-slate-700 hover:text-emerald-400 transition-colors">
-            <svg class="w-5 h-5 mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 10h.01M12 10h.01M16 10h.01M21 12c0 4.418-4.03 8-9 8s-9-3.582-9-8 4.03-8 9-8 9 3.582 9 8zM12 14v-4m0 4h.01"/>
-            </svg>
-            Contact Admin
-        </a>
-        <a href="#" onclick="handleLogout()" class="nav-item flex items-center px-6 py-3 text-slate-300 hover:bg-slate-700 hover:text-red-400 transition-colors mt-8">
-            <svg class="w-5 h-5 mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013 3v1"/>
-            </svg>
-            Logout
-        </a>
-    </nav>
-</div>
 
-<!-- Mobile overlay -->
-<div id="mobileOverlay" class="fixed inset-0 bg-black bg-opacity-50 z-40 hidden md:hidden"></div>
+    <!-- Mobile overlay -->
+    <div id="mobileOverlay" class="fixed inset-0 bg-black bg-opacity-50 z-40 hidden md:hidden"></div>
 
-    <!-- Main Content -->
     <!-- Main Content -->
     <div class="md:ml-64">
         <!-- Header -->
-<!-- Header -->
-<header class="bg-slate-800 border-b border-slate-700 px-4 md:px-6 py-4">
-    <div class="flex items-center justify-between">
-        <!-- Mobile menu button -->
-        <button id="mobileMenuBtn" class="md:hidden p-2 text-slate-300 hover:text-emerald-400 transition-colors">
-            <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16"/>
-            </svg>
-        </button>
-        
-        <div>
-            <h1 class="text-xl md:text-2xl font-bold text-slate-100">Accepted Deliveries</h1>
-            <p class="text-slate-400 text-xs md:text-sm hidden sm:block">Manage your current delivery assignments</p>
-        </div>
-        <div class="flex items-center space-x-2 md:space-x-4">
-            <button onclick="refreshDeliveries()" 
-                    class="p-2 text-slate-400 hover:text-emerald-400 transition-colors">
-                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" 
-                        d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"/>
-                </svg>
-            </button>
-            <!-- Dynamic text -->
-            <span id="welcomeText" class="text-slate-300 text-sm hidden lg:inline">Welcome back, ...</span>
-            <div class="w-8 h-8 bg-emerald-500 rounded-full flex items-center justify-center">
-                <span id="profileInitial" class="text-white font-semibold">?</span>
+        <header class="bg-slate-800 border-b border-slate-700 px-4 md:px-6 py-4">
+            <div class="flex items-center justify-between">
+                <button id="mobileMenuBtn" class="md:hidden p-2 text-slate-300 hover:text-emerald-400 transition-colors">
+                    <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16"/>
+                    </svg>
+                </button>
+                
+                <div>
+                    <h1 class="text-xl md:text-2xl font-bold text-slate-100">Accepted Deliveries</h1>
+                    <p class="text-slate-400 text-xs md:text-sm hidden sm:block">Manage your current delivery assignments</p>
+                </div>
+                <div class="flex items-center space-x-2 md:space-x-4">
+                    <button onclick="refreshDeliveries()" 
+                            class="p-2 text-slate-400 hover:text-emerald-400 transition-colors"
+                            title="Refresh Deliveries">
+                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" 
+                                d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"/>
+                        </svg>
+                    </button>
+                    <button id="optimizeBtn" onclick="optimizeRoute()" 
+                            class="bg-emerald-600 hover:bg-emerald-700 text-white px-4 py-2 rounded-lg text-sm font-medium transition-colors flex items-center disabled:opacity-50 disabled:cursor-not-allowed">
+                        <svg id="optimizeIcon" class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" 
+                                d="M9 20l-5.447-2.724A1 1 0 013 16.382V5.618a1 1 0 011.447-.894L9 7m0 13l6-3m-6 3V7m6 10l4.553 2.276A1 1 0 0021 18.382V7.618a1 1 0 00-.553-.894L15 4m0 13V4m0 0L9 7"/>
+                        </svg>
+                        <svg id="loadingSpinner" class="w-4 h-4 mr-2 spinner hidden" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                            <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                        </svg>
+                        <span id="optimizeBtnText">Optimize Route</span>
+                    </button>
+                    <span id="welcomeText" class="text-slate-300 text-sm hidden lg:inline">Welcome back, ...</span>
+                    <div class="w-8 h-8 bg-emerald-500 rounded-full flex items-center justify-center">
+                        <span id="profileInitial" class="text-white font-semibold">?</span>
+                    </div>
+                </div>
+            </div>
+        </header>
+
+        <!-- Color Legend -->
+        <div class="bg-slate-800 border-b border-slate-700 px-4 md:px-6 py-3">
+            <div class="flex items-center justify-between flex-wrap gap-2">
+                <div class="flex items-center text-xs text-slate-400">
+                    <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/>
+                    </svg>
+                    <span class="font-semibold mr-3">Color Guide:</span>
+                </div>
+                <div class="flex flex-wrap gap-3 text-xs">
+                    <div class="flex items-center">
+                        <div class="w-3 h-3 border-2 border-red-500 bg-red-900/20 rounded mr-2"></div>
+                        <span class="text-slate-300">Due Today</span>
+                    </div>
+                    <div class="flex items-center">
+                        <div class="w-3 h-3 border-2 border-yellow-500 bg-yellow-900/20 rounded mr-2"></div>
+                        <span class="text-slate-300">Due in 1-3 Days</span>
+                    </div>
+                    <div class="flex items-center">
+                        <div class="w-3 h-3 border-2 border-slate-600 bg-slate-800 rounded mr-2"></div>
+                        <span class="text-slate-300">Future Deliveries</span>
+                    </div>
+                    <div class="flex items-center">
+                        <div class="w-3 h-3 border-2 border-purple-500 bg-purple-900/20 rounded mr-2"></div>
+                        <span class="text-slate-300">Batch Pickup</span>
+                    </div>
+                </div>
             </div>
         </div>
-    </div>
-</header>
 
+        <!-- Route Summary Banner (hidden by default) -->
+        <div id="routeSummary" class="hidden bg-gradient-to-r from-emerald-600 to-emerald-700 px-4 md:px-6 py-3 shadow-lg">
+            <div class="flex items-center justify-between">
+                <div class="flex items-center space-x-4">
+                    <svg class="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/>
+                    </svg>
+                    <div>
+                        <p class="text-white font-semibold text-sm">Route Optimized!</p>
+                        <p class="text-emerald-100 text-xs">
+                            <span id="totalStops">0</span> stops • 
+                            <span id="totalDistance">0</span> km total
+                        </p>
+                    </div>
+                </div>
+                <button onclick="clearOptimization()" class="text-white hover:text-emerald-200 text-xs underline">
+                    Clear
+                </button>
+            </div>
+        </div>
 
         <!-- Deliveries Cards -->
-<main class="p-4 md:p-6">
-    <div id="deliveriesContainer" class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
-        <!-- Cards will be populated by JavaScript -->
-    </div>
-</main>
+        <main class="p-4 md:p-6">
+            <div id="deliveriesContainer" class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
+                <!-- Cards will be populated by JavaScript -->
+            </div>
+        </main>
     </div>
 
     <!-- Delivery Details Modal -->
@@ -137,330 +211,703 @@
     </div>
 
     <script>
-
-        // Pretty-print "YYYY-MM-DD" (or "YYYY-MM-DDTHH:MM:SS") with NO timezone math
-function formatDateNoTZ(ymd) {
-  if (!ymd) return 'N/A';
-  const [y, m, d] = ymd.split('T')[0].split('-').map(Number);
-  if (!y || !m || !d) return ymd; // fallback exactly as received
-  const months = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
-  return `${months[m - 1]} ${d}, ${y}`;
-}
-
 let deliveries = [];
+let isOptimized = false;
+let routeOrder = {};
 
-        function getCookie(name) {
-            let cookieValue = null;
-            if (document.cookie && document.cookie !== '') {
-                const cookies = document.cookie.split(';');
-                for (let i = 0; i < cookies.length; i++) {
-                    const cookie = cookies[i].trim();
-                    if (cookie.substring(0, name.length + 1) === (name + '=')) {
-                        cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
-                        break;
-                    }
-                }
-            }
-            return cookieValue;
-        }
-
-// Parse "YYYY-MM-DD" as UTC midnight and compare by whole days (no TZ drift)
-function getCardStyle(pickupDate) {
-  const [py, pm, pd] = pickupDate.split('T')[0].split('-').map(Number);
-  const pickupUTC = Date.UTC(py, pm - 1, pd);
-
-  const now = new Date();
-  const todayUTC = Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate());
-
-  const diffDays = Math.ceil((pickupUTC - todayUTC) / 86400000); // 86_400_000 ms/day
-
-  if (diffDays === 0) return 'border-red-500 bg-red-900/20';
-  if (diffDays > 0 && diffDays <= 3) return 'border-yellow-500 bg-yellow-900/20';
-  return 'border-slate-600 bg-slate-800';
+function showNotification(message, type = 'info') {
+    const notification = document.createElement('div');
+    notification.className = `fixed top-4 right-4 z-50 p-3 rounded-lg shadow-lg ${
+        type === 'success' ? 'bg-emerald-600' : 
+        type === 'error' ? 'bg-red-600' : 
+        'bg-blue-600'
+    } text-white text-sm`;
+    
+    notification.textContent = message;
+    document.body.appendChild(notification);
+    setTimeout(() => notification.remove(), 2500);
 }
 
-
-        function getStatusInfo(status) {
-            const statusMap = {
-                'accepted': { color: 'bg-blue-500', dot: 'bg-blue-400', text: 'READY' },
-                'picked_up': { color: 'bg-blue-500', dot: 'bg-blue-400', text: 'READY' },
-                'inTransit': { color: 'bg-purple-500', dot: 'bg-purple-400', text: 'IN TRANSIT' },
-                'delivered': { color: 'bg-emerald-500', dot: 'bg-emerald-400', text: 'DONE' }
-            };
-            return statusMap[status] || statusMap['accepted'];
-        }
-
-        async function loadDeliveries() {
-            const driverId = getCookie('driverId');
-            if (!driverId) {
-                showNotification('Driver ID not found', 'error');
-                return;
-            }
-
-            try {
-                const response = await fetch(`/api/driver-orders/?driverId=${driverId}`);
-                const data = await response.json();
-                
-                if (response.ok) {
-                    deliveries = data.orders.map(order => ({
-                        id: order.id,
-                        pharmacy_name: order.pharmacy_name,
-                        pickup_address: order.pickup_address,
-                        pickup_city : order.pickup_city,
-                        dropoff_address: order.drop_address,
-                        drop_city: order.drop_city,
-                        pickup_day: order.pickup_day,
-                        rate: order.rate,
-                        status: order.status,
-                        distance_km: order.distance_km,
-                        pharmacy_id: order.pharmacy_id
-                    }));
-                    renderDeliveries();
-                } else {
-                    showNotification('Failed to load deliveries', 'error');
-                }
-            } catch (error) {
-                console.error('Error loading deliveries:', error);
-                showNotification('Error loading deliveries', 'error');
-            }
-        }
-
-        function renderDeliveries() {
-            const container = document.getElementById('deliveriesContainer');
-            
-            if (deliveries.length === 0) {
-                container.innerHTML = `
-                    <div class="col-span-full text-center py-12">
-                        <svg class="w-16 h-16 mx-auto text-slate-600 mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20 13V6a2 2 0 00-2-2H6a2 2 0 00-2-2v7m16 0v5a2 2 0 01-2 2H6a2 2 0 01-2-2v-5m16 0h-2M4 13h2"/>
-                        </svg>
-                        <p class="text-slate-400 text-lg">No deliveries found</p>
-                    </div>
-                `;
-                return;
-            }
-
-            container.innerHTML = deliveries.map(delivery => {
-                const statusInfo = getStatusInfo(delivery.status);
-                return `
-                <div class="rounded-xl border-2 ${getCardStyle(delivery.pickup_day)} p-5 hover:border-emerald-500 hover:shadow-lg transition-all duration-200 cursor-pointer" onclick="viewDelivery('${delivery.id}')">
-                    <div class="flex justify-between items-center mb-4">
-                        <div class="flex items-center space-x-2">
-                            <div class="w-2 h-2 ${statusInfo.dot} rounded-full status-dot"></div>
-                            <span class="text-xs font-bold ${statusInfo.color} text-white px-3 py-1 rounded-full">
-                                ${statusInfo.text}
-                            </span>
-                        </div>
-                        <span class="text-emerald-400 font-bold text-lg">$${delivery.rate}</span>
-                    </div>
-                    
-                    <h3 class="text-lg font-bold text-slate-100 mb-1">ORD-${delivery.id}</h3>
-                    <p class="text-slate-400 text-sm mb-4">${delivery.pharmacy_name}</p>
-                    
-                    <div class="space-y-3 mb-4">
-                        <div class="flex items-start text-sm text-slate-300">
-                            <div class="w-2 h-2 bg-blue-400 rounded-full mt-2 mr-3 flex-shrink-0"></div>
-                            <div>
-                                <div class="text-xs text-slate-500 mb-1">PICKUP</div>
-                                <span class="leading-tight">
-                                    ${delivery.pickup_address}, ${delivery.pickup_city}
-                                </span>
-                            </div>
-                        </div>
-                            <div class="flex items-start text-sm text-slate-300">
-                                <div class="w-2 h-2 bg-emerald-400 rounded-full mt-2 mr-3 flex-shrink-0"></div>
-                                <div>
-                                    <div class="text-xs text-slate-500 mb-1">DROP-OFF</div>
-                                    <span class="leading-tight">
-                                        ${delivery.dropoff_address}, ${delivery.drop_city}
-                                    </span>
-                                </div>
-                            </div>
-                    </div>
-                    
-                        <div class="flex justify-between items-center text-xs text-slate-400 pt-3 border-t border-slate-700">
-                            <span>
-                                ${(() => {
-                                    const exact = delivery.distance_km;
-                                    const lower = Math.max(0, (exact * 0.9).toFixed(1));
-                                    const upper = exact.toFixed(1);
-                                    return `${lower} - ${upper} km`;
-                                })()}
-                            </span>
-                            <span>
-                                ${delivery.pickup_day === new Date().toISOString().split('T')[0]
-                                    ? 'Today'
-                                    : formatDateNoTZ(delivery.pickup_day)}
-
-                            </span>
-                        </div>
-
-                </div>
-            `}).join('');
-        }
-
-        function viewDelivery(orderId) {
-            const delivery = deliveries.find(d => d.id == orderId);
-            if (!delivery) return;
-
-            document.getElementById('modalOrderId').textContent = `ORD-${delivery.id}`;
-            document.getElementById('modalPharmacy').textContent = delivery.pharmacy_name;
-            
-            const content = document.getElementById('modalContent');
-            content.innerHTML = `
-                <div class="space-y-4">
-<div class="flex flex-col sm:flex-row gap-2">
-    <button onclick="navigate('${delivery.pickup_address}')" class="flex-1 bg-blue-600 hover:bg-blue-700 text-white py-2 px-3 rounded-lg text-sm font-medium transition-colors flex items-center justify-center">
-        <svg class="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z"/>
-        </svg>
-        <span class="hidden sm:inline">Navigate to </span>Pickup
-    </button>
-    <button onclick="navigate('${delivery.dropoff_address}')" class="flex-1 bg-emerald-600 hover:bg-emerald-700 text-white py-2 px-3 rounded-lg text-sm font-medium transition-colors flex items-center justify-center">
-        <svg class="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z"/>
-        </svg>
-        <span class="hidden sm:inline">Navigate to </span>Drop-off
-    </button>
-</div>
-                    
-                    ${renderDeliveryProcess(delivery)}
+function showPageLoading(show) {
+    let overlay = document.getElementById('pageLoadingOverlay');
+    if (show) {
+        if (!overlay) {
+            overlay = document.createElement('div');
+            overlay.id = 'pageLoadingOverlay';
+            overlay.className = 'fixed inset-0 bg-slate-900/80 backdrop-blur-sm z-50 flex items-center justify-center';
+            overlay.innerHTML = `
+                <div class="bg-slate-800 rounded-lg p-6 shadow-xl">
+                    <div class="animate-spin rounded-full h-12 w-12 border-b-2 border-emerald-500 mx-auto mb-4"></div>
+                    <p class="text-white text-center">Optimizing route...</p>
                 </div>
             `;
-            
-            document.getElementById('detailsModal').classList.remove('hidden');
+            document.body.appendChild(overlay);
         }
+    } else {
+        if (overlay) {
+            overlay.remove();
+        }
+    }
+}
 
-        function renderDeliveryProcess(delivery) {
-            switch (delivery.status) {
-                case 'accepted':
-                case 'picked_up':
-                    return `
-                        <button onclick="uploadPhoto('${delivery.id}', 'pickup')" class="w-full bg-blue-600 hover:bg-blue-700 text-white py-3 px-4 rounded-lg font-medium transition-colors">
-                            Take Pickup Photo
-                        </button>
-                    `;
-                
-                case 'inTransit':
-                    return `
-                        <button onclick="uploadPhoto('${delivery.id}', 'delivery')" class="w-full bg-emerald-600 hover:bg-emerald-700 text-white py-3 px-4 rounded-lg font-medium transition-colors">
-                            Take Delivery Photo
-                        </button>
-                    `;
-                
-                case 'delivered':
-                    return `
-                        <div class="text-center text-emerald-400 py-4">
-                            <svg class="w-12 h-12 mx-auto mb-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/>
-                            </svg>
-                            <p class="font-medium">Delivery Completed</p>
-                        </div>
-                    `;
+function formatDateNoTZ(ymd) {
+    if (!ymd) return 'N/A';
+    const [y, m, d] = ymd.split('T')[0].split('-').map(Number);
+    if (!y || !m || !d) return ymd;
+    const months = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+    return `${months[m - 1]} ${d}, ${y}`;
+}
+
+function getCookie(name) {
+    let cookieValue = null;
+    if (document.cookie && document.cookie !== '') {
+        const cookies = document.cookie.split(';');
+        for (let i = 0; i < cookies.length; i++) {
+            const cookie = cookies[i].trim();
+            if (cookie.substring(0, name.length + 1) === (name + '=')) {
+                cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
+                break;
             }
         }
+    }
+    return cookieValue;
+}
 
-        function uploadPhoto(orderId, type) {
-            const input = document.createElement('input');
-            input.type = 'file';
-            input.accept = 'image/*';
-            input.capture = 'environment';
-            input.onchange = function(e) {
-                const file = e.target.files[0];
-                if (file) {
-                    submitPhoto(orderId, type, file);
-                }
-            };
-            input.click();
-        }
+function getCardStyle(pickupDate) {
+    const [py, pm, pd] = pickupDate.split('T')[0].split('-').map(Number);
+    const pickupUTC = Date.UTC(py, pm - 1, pd);
 
-        async function submitPhoto(orderId, type, file) {
-            const driverId = getCookie('driverId');
-            const delivery = deliveries.find(d => d.id == orderId);
+    const now = new Date();
+    const todayUTC = Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate());
+
+    const diffDays = Math.ceil((pickupUTC - todayUTC) / 86400000);
+
+    if (diffDays === 0) return 'border-red-500 bg-red-900/20';
+    if (diffDays > 0 && diffDays <= 3) return 'border-yellow-500 bg-yellow-900/20';
+    return 'border-slate-600 bg-slate-800';
+}
+
+function getStatusInfo(status) {
+    const statusMap = {
+        'accepted': { color: 'bg-blue-500', dot: 'bg-blue-400', text: 'READY' },
+        'picked_up': { color: 'bg-blue-500', dot: 'bg-blue-400', text: 'READY' },
+        'inTransit': { color: 'bg-purple-500', dot: 'bg-purple-400', text: 'IN TRANSIT' },
+        'delivered': { color: 'bg-emerald-500', dot: 'bg-emerald-400', text: 'DONE' }
+    };
+    return statusMap[status] || statusMap['accepted'];
+}
+
+async function loadDeliveries() {
+    const driverId = getCookie('driverId');
+    if (!driverId) {
+        showNotification('Driver ID not found', 'error');
+        return;
+    }
+
+    try {
+        const response = await fetch(`/api/driver-orders/?driverId=${driverId}`);
+        const data = await response.json();
+        
+        if (response.ok) {
+            deliveries = data.orders.map(order => ({
+                id: order.id,
+                pharmacy_name: order.pharmacy_name,
+                pickup_address: order.pickup_address,
+                pickup_city: order.pickup_city,
+                dropoff_address: order.drop_address,
+                drop_city: order.drop_city,
+                pickup_day: order.pickup_day,
+                rate: order.rate,
+                status: order.status,
+                distance_km: order.distance_km,
+                pharmacy_id: order.pharmacy_id
+            }));
+            renderDeliveries();
             
-            if (!driverId || !delivery) {
-                showNotification('Error: Missing data', 'error');
-                return;
+            if (deliveries.length > 0 && !isOptimized) {
+                setTimeout(() => optimizeRoute(), 800);
             }
-
-            const formData = new FormData();
-            formData.append('driverId', driverId);
-            formData.append('orderId', orderId);
-            formData.append('pharmacyId', delivery.pharmacy_id);
-            formData.append('image', file);
-
-            const endpoint = type === 'pickup' ? '/api/driver-pickup-proof/' : '/api/driver-delivery-proof/';
-            
-            try {
-                const response = await fetch(endpoint, {
-                    method: 'POST',
-                    body: formData
-                });
-
-                const data = await response.json();
-                
-                if (response.ok) {
-                    showNotification(data.message, 'success');
-                    await loadDeliveries(); // Refresh the deliveries
-                    closeModal();
-                } else {
-                    showNotification('Failed to upload photo', 'error');
-                }
-            } catch (error) {
-                console.error('Error uploading photo:', error);
-                showNotification('Error uploading photo', 'error');
-            }
+        } else {
+            showNotification('Failed to load deliveries', 'error');
         }
+    } catch (error) {
+        console.error('Error loading deliveries:', error);
+        showNotification('Error loading deliveries', 'error');
+    }
+}
 
-        function navigate(address) {
-            const encodedAddress = encodeURIComponent(address);
-            window.open(`https://www.google.com/maps/dir/?api=1&destination=${encodedAddress}`, '_blank');
-        }
+async function optimizeRoute() {
+    if (deliveries.length === 0) {
+        showNotification('No deliveries to optimize', 'error');
+        return;
+    }
 
-        function closeModal() {
-            document.getElementById('detailsModal').classList.add('hidden');
-        }
+    const optimizeBtn = document.getElementById('optimizeBtn');
+    const optimizeBtnText = document.getElementById('optimizeBtnText');
+    const optimizeIcon = document.getElementById('optimizeIcon');
+    const loadingSpinner = document.getElementById('loadingSpinner');
+    
+    showPageLoading(true);
+    
+    if (optimizeBtn) optimizeBtn.disabled = true;
+    if (optimizeBtnText) optimizeBtnText.textContent = 'Optimizing...';
+    if (optimizeIcon) optimizeIcon.classList.add('hidden');
+    if (loadingSpinner) loadingSpinner.classList.remove('hidden');
+    
+    showNotification('Optimizing route with live traffic...', 'info');
 
-        function showNotification(message, type = 'info') {
-            const notification = document.createElement('div');
-            notification.className = `fixed top-4 right-4 z-50 p-3 rounded-lg shadow-lg ${
-                type === 'success' ? 'bg-emerald-600' : 
-                type === 'error' ? 'bg-red-600' : 
-                'bg-blue-600'
-            } text-white text-sm`;
-            
-            notification.textContent = message;
-            document.body.appendChild(notification);
-            setTimeout(() => notification.remove(), 2500);
-        }
+    const driverStart = deliveries[0]?.pickup_city || 'Kitchener, ON, Canada';
+    const payload = {
+        driver_start: driverStart,
+        deliveries: deliveries.map(d => ({
+            order_id: d.id,
+            pickup_address: `${d.pickup_address}, ${d.pickup_city}`,
+            dropoff_address: `${d.dropoff_address}, ${d.drop_city}`,
+            pickup_date: d.pickup_day
+        }))
+    };
 
-        function refreshDeliveries() {
-            loadDeliveries();
-            showNotification('Deliveries refreshed!', 'success');
-        }
-
-        function navigateTo(section) {
-            return;
-        }
-
-        function handleLogout() {
-            // Remove driverId cookie
-            document.cookie = 'driverId=; path=/; expires=Thu, 01 Jan 1970 00:00:01 GMT;';
-            
-            // Redirect to login page
-            window.location.href = '/driverLogin/';
-        }
-
-
-        // Initialize
-        document.addEventListener('DOMContentLoaded', loadDeliveries);
-
-        // Close modal when clicking outside
-        document.getElementById('detailsModal').addEventListener('click', function(e) {
-            if (e.target === this) closeModal();
+    try {
+        const response = await fetch('/api/driver/optimize-route/', {
+            method: 'POST',
+            headers: { 
+                'Content-Type': 'application/json',
+                'X-CSRFToken': getCookie('csrftoken')
+            },
+            body: JSON.stringify(payload)
         });
 
-        async function loadDriverInfo() {
+        const data = await response.json();
+
+        if (data.success && data.stops) {
+            routeOrder = {};
+            
+            data.stops.forEach(stop => {
+                if (stop.kind === 'start') return;
+                
+                const date = stop.date;
+                if (!routeOrder[date]) {
+                    routeOrder[date] = [];
+                }
+                
+                if (stop.order_ids && Array.isArray(stop.order_ids) && stop.order_ids.length > 0) {
+                    if (stop.kind === 'pickup' && stop.order_ids.length > 1) {
+                        routeOrder[date].push({
+                            order_ids: stop.order_ids,
+                            kind: stop.kind,
+                            is_batch: true
+                        });
+                    } else {
+                        stop.order_ids.forEach(orderId => {
+                            routeOrder[date].push({
+                                order_id: orderId,
+                                kind: stop.kind
+                            });
+                        });
+                    }
+                }
+            });
+
+            isOptimized = true;
+
+            const summaryEl = document.getElementById('routeSummary');
+            const totalStopsEl = document.getElementById('totalStops');
+            const totalDistanceEl = document.getElementById('totalDistance');
+            
+            if (totalStopsEl) totalStopsEl.textContent = data.stops.filter(s => s.kind !== 'start').length;
+            if (totalDistanceEl) totalDistanceEl.textContent = data.total_distance_km;
+            if (summaryEl) summaryEl.classList.remove('hidden');
+
+            renderDeliveries();
+            showNotification(`Route optimized! ${data.stops.length} stops, ${data.total_distance_km}km`, 'success');
+            if (optimizeBtnText) optimizeBtnText.textContent = 'Re-optimize';
+        } else {
+            throw new Error(data.error || 'Optimization failed');
+        }
+    } catch (error) {
+        console.error('Optimization error:', error);
+        showNotification(error.message || 'Failed to optimize route', 'error');
+        if (optimizeBtnText) optimizeBtnText.textContent = 'Optimize Route';
+    } finally {
+        showPageLoading(false);
+        if (optimizeBtn) optimizeBtn.disabled = false;
+        if (optimizeIcon) optimizeIcon.classList.remove('hidden');
+        if (loadingSpinner) loadingSpinner.classList.add('hidden');
+    }
+}
+
+function clearOptimization() {
+    isOptimized = false;
+    routeOrder = {};
+    const summaryEl = document.getElementById('routeSummary');
+    const btnTextEl = document.getElementById('optimizeBtnText');
+    if (summaryEl) summaryEl.classList.add('hidden');
+    if (btnTextEl) btnTextEl.textContent = 'Optimize Route';
+    renderDeliveries();
+    showNotification('Optimization cleared', 'info');
+}
+
+function getRoutePosition(orderId, isPickup, date) {
+    if (!isOptimized || !date) return null;
+    
+    const dateKey = date.split('T')[0];
+    const dateRoute = routeOrder[dateKey];
+    
+    if (!dateRoute) return null;
+    
+    const kind = isPickup ? 'pickup' : 'dropoff';
+    
+    for (let i = 0; i < dateRoute.length; i++) {
+        const entry = dateRoute[i];
+        
+        if (entry.kind !== kind) continue;
+        
+        if (entry.is_batch && entry.order_ids && entry.order_ids.includes(orderId)) {
+            return i + 1;
+        }
+        
+        if (entry.order_id === orderId) {
+            return i + 1;
+        }
+    }
+    
+    return null;
+}
+
+function getDeliverySortOrder(delivery) {
+    if (!isOptimized) return 999999;
+    
+    const date = delivery.pickup_day.split('T')[0];
+    const dateRoute = routeOrder[date];
+    
+    if (!dateRoute) return 999999;
+    
+    for (let i = 0; i < dateRoute.length; i++) {
+        const entry = dateRoute[i];
+        
+        if (entry.kind !== 'pickup') continue;
+        
+        if (entry.is_batch && entry.order_ids && entry.order_ids.includes(delivery.id)) {
+            return i;
+        }
+        
+        if (entry.order_id === delivery.id) {
+            return i;
+        }
+    }
+    
+    return 999999;
+}
+
+function groupDeliveriesByPickupForDate(dateDeliveries) {
+    const grouped = {};
+    dateDeliveries.forEach(delivery => {
+        const pickupKey = `${delivery.pickup_address}, ${delivery.pickup_city}`;
+        if (!grouped[pickupKey]) {
+            grouped[pickupKey] = {
+                address: `${delivery.pickup_address}, ${delivery.pickup_city}`,
+                pharmacy_name: delivery.pharmacy_name,
+                pickup_day: delivery.pickup_day,
+                deliveries: []
+            };
+        }
+        grouped[pickupKey].deliveries.push(delivery);
+    });
+    return Object.values(grouped);
+}
+
+function renderDeliveries() {
+    const container = document.getElementById('deliveriesContainer');
+    
+    if (!container) {
+        console.error('deliveriesContainer not found');
+        return;
+    }
+    
+    if (deliveries.length === 0) {
+        container.innerHTML = `
+            <div class="col-span-full text-center py-12">
+                <svg class="w-16 h-16 mx-auto text-slate-600 mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20 13V6a2 2 0 00-2-2H6a2 2 0 00-2-2v7m16 0v5a2 2 0 01-2 2H6a2 2 0 01-2-2v-5m16 0h-2M4 13h2"/>
+                </svg>
+                <p class="text-slate-400 text-lg">No deliveries found</p>
+            </div>
+        `;
+        return;
+    }
+
+    const sortedDeliveries = [...deliveries].sort((a, b) => {
+        const dateA = new Date(a.pickup_day);
+        const dateB = new Date(b.pickup_day);
+        
+        if (dateA.getTime() !== dateB.getTime()) {
+            return dateA - dateB;
+        }
+        
+        if (isOptimized) {
+            return getDeliverySortOrder(a) - getDeliverySortOrder(b);
+        }
+        
+        return 0;
+    });
+
+    const deliveriesByDate = {};
+    sortedDeliveries.forEach(delivery => {
+        const date = delivery.pickup_day.split('T')[0];
+        if (!deliveriesByDate[date]) {
+            deliveriesByDate[date] = [];
+        }
+        deliveriesByDate[date].push(delivery);
+    });
+
+    let html = '';
+    const today = new Date().toISOString().split('T')[0];
+    const tomorrow = new Date(Date.now() + 86400000).toISOString().split('T')[0];
+
+    Object.keys(deliveriesByDate).sort().forEach(date => {
+        const dateDeliveries = deliveriesByDate[date];
+        
+        let dateLabel = formatDateNoTZ(date);
+        if (date === today) dateLabel = '📍 Today - ' + dateLabel;
+        else if (date === tomorrow) dateLabel = '📅 Tomorrow - ' + dateLabel;
+        else dateLabel = '📆 ' + dateLabel;
+        
+        html += `
+            <div class="col-span-full">
+                <div class="flex items-center my-4">
+                    <div class="flex-grow border-t border-slate-600"></div>
+                    <span class="px-4 text-slate-300 font-semibold text-sm">${dateLabel}</span>
+                    <div class="flex-grow border-t border-slate-600"></div>
+                </div>
+            </div>
+        `;
+
+        const grouped = groupDeliveriesByPickupForDate(dateDeliveries);
+        
+        if (isOptimized) {
+            grouped.sort((a, b) => {
+                const orderA = Math.min(...a.deliveries.map(d => getDeliverySortOrder(d)));
+                const orderB = Math.min(...b.deliveries.map(d => getDeliverySortOrder(d)));
+                return orderA - orderB;
+            });
+        }
+        
+        grouped.forEach(group => {
+            if (group.deliveries.length === 1) {
+                html += renderSingleDeliveryCard(group.deliveries[0], date);
+            } else {
+                html += renderGroupedDeliveryCard(group, date);
+            }
+        });
+    });
+
+    container.innerHTML = html;
+}
+
+function renderSingleDeliveryCard(delivery, date) {
+    const statusInfo = getStatusInfo(delivery.status);
+    const pickupPos = getRoutePosition(delivery.id, true, delivery.pickup_day);
+    const dropoffPos = getRoutePosition(delivery.id, false, delivery.pickup_day);
+    
+    return `
+    <div class="rounded-xl border-2 ${getCardStyle(delivery.pickup_day)} p-5 hover:border-emerald-500 hover:shadow-lg transition-all duration-200 cursor-pointer" onclick="viewDelivery('${delivery.id}')">
+        <div class="flex justify-between items-center mb-4">
+            <div class="flex items-center space-x-2">
+                <div class="w-2 h-2 ${statusInfo.dot} rounded-full status-dot"></div>
+                <span class="text-xs font-bold ${statusInfo.color} text-white px-3 py-1 rounded-full">
+                    ${statusInfo.text}
+                </span>
+            </div>
+            <span class="text-emerald-400 font-bold text-lg">${delivery.rate}</span>
+        </div>
+        
+        <h3 class="text-lg font-bold text-slate-100 mb-1">ORD-${delivery.id}</h3>
+        <p class="text-slate-400 text-sm mb-4">${delivery.pharmacy_name}</p>
+        
+        <div class="space-y-3 mb-4">
+            <div class="flex items-start text-sm text-slate-300">
+                <div class="flex items-center mr-3 flex-shrink-0">
+                    <div class="w-2 h-2 bg-blue-400 rounded-full mt-2"></div>
+                    ${pickupPos ? `<span class="route-badge ml-2 bg-blue-500 text-white text-xs font-bold px-2 py-0.5 rounded-full">#${pickupPos}</span>` : ''}
+                </div>
+                <div class="flex-1">
+                    <div class="text-xs text-slate-500 mb-1">PICKUP</div>
+                    <span class="leading-tight">
+                        ${delivery.pickup_address}, ${delivery.pickup_city}
+                    </span>
+                </div>
+            </div>
+            <div class="flex items-start text-sm text-slate-300">
+                <div class="flex items-center mr-3 flex-shrink-0">
+                    <div class="w-2 h-2 bg-emerald-400 rounded-full mt-2"></div>
+                    ${dropoffPos ? `<span class="route-badge ml-2 bg-emerald-500 text-white text-xs font-bold px-2 py-0.5 rounded-full">#${dropoffPos}</span>` : ''}
+                </div>
+                <div class="flex-1">
+                    <div class="text-xs text-slate-500 mb-1">DROP-OFF</div>
+                    <span class="leading-tight">
+                        ${delivery.dropoff_address}, ${delivery.drop_city}
+                    </span>
+                </div>
+            </div>
+        </div>
+        
+        <div class="flex justify-between items-center text-xs text-slate-400 pt-3 border-t border-slate-700">
+            <span>
+                ${(() => {
+                    const exact = delivery.distance_km;
+                    const lower = Math.max(0, (exact * 0.9).toFixed(1));
+                    const upper = exact.toFixed(1);
+                    return `${lower} - ${upper} km`;
+                })()}
+            </span>
+            <span>
+                ${delivery.pickup_day === new Date().toISOString().split('T')[0]
+                    ? 'Today'
+                    : formatDateNoTZ(delivery.pickup_day)}
+            </span>
+        </div>
+    </div>
+`;
+}
+
+function renderGroupedDeliveryCard(group, date) {
+    const totalRate = group.deliveries.reduce((sum, d) => sum + parseFloat(d.rate), 0).toFixed(2);
+    const firstDelivery = group.deliveries[0];
+    const pickupPos = getRoutePosition(firstDelivery.id, true, firstDelivery.pickup_day);
+    
+    const sortedGroupDeliveries = [...group.deliveries].sort((a, b) => {
+        const posA = getRoutePosition(a.id, false, a.pickup_day) || 999;
+        const posB = getRoutePosition(b.id, false, b.pickup_day) || 999;
+        return posA - posB;
+    });
+    
+    return `
+    <div class="rounded-xl border-2 border-purple-500 bg-purple-900/20 p-5 hover:border-purple-400 hover:shadow-lg transition-all duration-200">
+        <div class="flex justify-between items-center mb-4">
+            <div class="flex items-center space-x-2">
+                <svg class="w-4 h-4 text-purple-400" fill="currentColor" viewBox="0 0 20 20">
+                    <path d="M2 6a2 2 0 012-2h5l2 2h5a2 2 0 012 2v6a2 2 0 01-2 2H4a2 2 0 01-2-2V6z"/>
+                </svg>
+                <span class="text-xs font-bold bg-purple-500 text-white px-3 py-1 rounded-full">
+                    ${group.deliveries.length} ORDERS
+                </span>
+                ${pickupPos ? `<span class="route-badge bg-blue-500 text-white text-xs font-bold px-2 py-0.5 rounded-full">#${pickupPos}</span>` : ''}
+            </div>
+            <span class="text-purple-400 font-bold text-lg">${totalRate}</span>
+        </div>
+        
+        <h3 class="text-lg font-bold text-purple-300 mb-1">Batch Pickup</h3>
+        <p class="text-slate-400 text-sm mb-4">${group.pharmacy_name}</p>
+        
+        <div class="mb-4">
+            <div class="flex items-start text-sm text-slate-300">
+                <div class="w-2 h-2 bg-blue-400 rounded-full mt-2 mr-3 flex-shrink-0"></div>
+                <div class="flex-1">
+                    <div class="text-xs text-slate-500 mb-1">PICKUP LOCATION</div>
+                    <span class="leading-tight">${group.address}</span>
+                </div>
+            </div>
+        </div>
+        
+        <div class="bg-slate-800/50 rounded-lg p-3 mb-4 border border-slate-700">
+            <div class="text-xs text-slate-400 font-semibold mb-2">DROP-OFF LOCATIONS:</div>
+            <div class="space-y-2 max-h-32 overflow-y-auto">
+                ${sortedGroupDeliveries.map(d => {
+                    const dropPos = getRoutePosition(d.id, false, d.pickup_day);
+                    return `
+                    <div class="flex items-start text-xs text-slate-300 cursor-pointer hover:text-emerald-400 transition-colors" onclick="event.stopPropagation(); viewDelivery('${d.id}')">
+                        <div class="flex items-center mr-2 flex-shrink-0">
+                            <div class="w-1.5 h-1.5 bg-emerald-400 rounded-full"></div>
+                            ${dropPos ? `<span class="route-badge ml-1 bg-emerald-500 text-white text-xs font-bold px-1.5 py-0.5 rounded-full">#${dropPos}</span>` : ''}
+                        </div>
+                        <div class="flex-1">
+                            <span class="font-semibold text-slate-200">ORD-${d.id}</span>
+                            <span class="mx-1">→</span>
+                            <span>${d.dropoff_address}, ${d.drop_city}</span>
+                        </div>
+                    </div>
+                `}).join('')}
+            </div>
+        </div>
+        
+        <div class="flex justify-between items-center text-xs text-slate-400 pt-3 border-t border-slate-700">
+            <span>${group.deliveries.length} deliveries</span>
+            <span>
+                ${firstDelivery.pickup_day === new Date().toISOString().split('T')[0]
+                    ? 'Today'
+                    : formatDateNoTZ(firstDelivery.pickup_day)}
+            </span>
+        </div>
+    </div>
+`;
+}
+
+function viewDelivery(orderId) {
+    const delivery = deliveries.find(d => d.id == orderId);
+    if (!delivery) return;
+
+    document.getElementById('modalOrderId').textContent = `ORD-${delivery.id}`;
+    document.getElementById('modalPharmacy').textContent = delivery.pharmacy_name;
+    
+    const pickupPos = getRoutePosition(delivery.id, true, delivery.pickup_day);
+    const dropoffPos = getRoutePosition(delivery.id, false, delivery.pickup_day);
+    
+    const content = document.getElementById('modalContent');
+    content.innerHTML = `
+        <div class="space-y-4">
+            ${isOptimized ? `
+                <div class="bg-emerald-900/30 border border-emerald-600 rounded-lg p-3 text-sm">
+                    <div class="flex items-center text-emerald-400 font-semibold mb-2">
+                        <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 20l-5.447-2.724A1 1 0 013 16.382V5.618a1 1 0 011.447-.894L9 7m0 13l6-3m-6 3V7m6 10l4.553 2.276A1 1 0 0021 18.382V7.618a1 1 0 00-.553-.894L15 4m0 13V4m0 0L9 7"/>
+                        </svg>
+                        Optimized Route Order
+                    </div>
+                    <div class="text-slate-300 space-y-1">
+                        <p>Pickup: Stop #${pickupPos || 'N/A'}</p>
+                        <p>Drop-off: Stop #${dropoffPos || 'N/A'}</p>
+                    </div>
+                </div>
+            ` : ''}
+            
+            <div class="bg-slate-700 rounded-lg p-3 space-y-2">
+                <div>
+                    <div class="text-xs text-slate-400 mb-1">PICKUP ADDRESS</div>
+                    <div class="text-slate-200 text-sm">${delivery.pickup_address}, ${delivery.pickup_city}</div>
+                </div>
+                <div>
+                    <div class="text-xs text-slate-400 mb-1">DROP-OFF ADDRESS</div>
+                    <div class="text-slate-200 text-sm">${delivery.dropoff_address}, ${delivery.drop_city}</div>
+                </div>
+            </div>
+            
+            <div class="flex flex-col sm:flex-row gap-2">
+                <button onclick="navigate('${delivery.pickup_address}, ${delivery.pickup_city}')" class="flex-1 bg-blue-600 hover:bg-blue-700 text-white py-2 px-3 rounded-lg text-sm font-medium transition-colors flex items-center justify-center">
+                    <svg class="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z"/>
+                    </svg>
+                    <span class="hidden sm:inline">Navigate to </span>Pickup
+                </button>
+                <button onclick="navigate('${delivery.dropoff_address}, ${delivery.drop_city}')" class="flex-1 bg-emerald-600 hover:bg-emerald-700 text-white py-2 px-3 rounded-lg text-sm font-medium transition-colors flex items-center justify-center">
+                    <svg class="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z"/>
+                    </svg>
+                    <span class="hidden sm:inline">Navigate to </span>Drop-off
+                </button>
+            </div>
+            
+            ${renderDeliveryProcess(delivery)}
+        </div>
+    `;
+    
+    document.getElementById('detailsModal').classList.remove('hidden');
+}
+
+function renderDeliveryProcess(delivery) {
+    switch (delivery.status) {
+        case 'accepted':
+        case 'picked_up':
+            return `
+                <button onclick="uploadPhoto('${delivery.id}', 'pickup')" class="w-full bg-blue-600 hover:bg-blue-700 text-white py-3 px-4 rounded-lg font-medium transition-colors">
+                    Take Pickup Photo
+                </button>
+            `;
+        
+        case 'inTransit':
+            return `
+                <button onclick="uploadPhoto('${delivery.id}', 'delivery')" class="w-full bg-emerald-600 hover:bg-emerald-700 text-white py-3 px-4 rounded-lg font-medium transition-colors">
+                    Take Delivery Photo
+                </button>
+            `;
+        
+        case 'delivered':
+            return `
+                <div class="text-center text-emerald-400 py-4">
+                    <svg class="w-12 h-12 mx-auto mb-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/>
+                    </svg>
+                    <p class="font-medium">Delivery Completed</p>
+                </div>
+            `;
+    }
+}
+
+function uploadPhoto(orderId, type) {
+    const input = document.createElement('input');
+    input.type = 'file';
+    input.accept = 'image/*';
+    input.capture = 'environment';
+    input.onchange = function(e) {
+        const file = e.target.files[0];
+        if (file) {
+            submitPhoto(orderId, type, file);
+        }
+    };
+    input.click();
+}
+
+async function submitPhoto(orderId, type, file) {
+    const driverId = getCookie('driverId');
+    const delivery = deliveries.find(d => d.id == orderId);
+    
+    if (!driverId || !delivery) {
+        showNotification('Error: Missing data', 'error');
+        return;
+    }
+
+    const formData = new FormData();
+    formData.append('driverId', driverId);
+    formData.append('orderId', orderId);
+    formData.append('pharmacyId', delivery.pharmacy_id);
+    formData.append('image', file);
+
+    const endpoint = type === 'pickup' ? '/api/driver-pickup-proof/' : '/api/driver-delivery-proof/';
+    
+    try {
+        const response = await fetch(endpoint, {
+            method: 'POST',
+            body: formData
+        });
+
+        const data = await response.json();
+        
+        if (response.ok) {
+            showNotification(data.message, 'success');
+            await loadDeliveries();
+            closeModal();
+        } else {
+            showNotification('Failed to upload photo', 'error');
+        }
+    } catch (error) {
+        console.error('Error uploading photo:', error);
+        showNotification('Error uploading photo', 'error');
+    }
+}
+
+function navigate(address) {
+    const encodedAddress = encodeURIComponent(address);
+    window.open(`https://www.google.com/maps/dir/?api=1&destination=${encodedAddress}`, '_blank');
+}
+
+function closeModal() {
+    document.getElementById('detailsModal').classList.add('hidden');
+}
+
+function refreshDeliveries() {
+    loadDeliveries();
+    showNotification('Deliveries refreshed!', 'success');
+}
+
+function navigateTo(section) {
+    return;
+}
+
+function handleLogout() {
+    document.cookie = 'driverId=; path=/; expires=Thu, 01 Jan 1970 00:00:01 GMT;';
+    window.location.href = '/driverLogin/';
+}
+
+async function loadDriverInfo() {
     try {
         const driverId = getCookie("driverId");
         if (!driverId) {
@@ -475,42 +922,46 @@ function getCardStyle(pickupDate) {
 
         const data = await response.json();
 
-        // Update welcome text and profile circle
-        document.getElementById("welcomeText").textContent =
-            `Welcome back, ${data.name} (${data.email})`;
-        document.getElementById("profileInitial").textContent =
-            data.name.charAt(0).toUpperCase();
+        const welcomeEl = document.getElementById("welcomeText");
+        const profileEl = document.getElementById("profileInitial");
+        
+        if (welcomeEl) {
+            welcomeEl.textContent = `Welcome back, ${data.name} (${data.email})`;
+        }
+        if (profileEl) {
+            profileEl.textContent = data.name.charAt(0).toUpperCase();
+        }
 
     } catch (error) {
         console.error("Error loading driver info:", error);
     }
 }
 
-document.addEventListener("DOMContentLoaded", loadDriverInfo);
-
-// Mobile menu functionality
 function toggleMobileMenu() {
     const sidebar = document.getElementById('sidebar');
     const overlay = document.getElementById('mobileOverlay');
     
-    sidebar.classList.toggle('-translate-x-full');
-    overlay.classList.toggle('hidden');
+    if (sidebar) sidebar.classList.toggle('-translate-x-full');
+    if (overlay) overlay.classList.toggle('hidden');
 }
 
 function closeMobileMenu() {
     const sidebar = document.getElementById('sidebar');
     const overlay = document.getElementById('mobileOverlay');
     
-    sidebar.classList.add('-translate-x-full');
-    overlay.classList.add('hidden');
+    if (sidebar) sidebar.classList.add('-translate-x-full');
+    if (overlay) overlay.classList.add('hidden');
 }
 
-// Add event listeners for mobile menu
 document.addEventListener('DOMContentLoaded', function() {
+    loadDeliveries();
+    loadDriverInfo();
+    
     const mobileMenuBtn = document.getElementById('mobileMenuBtn');
     const closeSidebarBtn = document.getElementById('closeSidebarBtn');
     const mobileOverlay = document.getElementById('mobileOverlay');
     const navItems = document.querySelectorAll('.nav-item');
+    const detailsModal = document.getElementById('detailsModal');
     
     if (mobileMenuBtn) {
         mobileMenuBtn.addEventListener('click', toggleMobileMenu);
@@ -524,7 +975,6 @@ document.addEventListener('DOMContentLoaded', function() {
         mobileOverlay.addEventListener('click', closeMobileMenu);
     }
     
-    // Close menu when navigation item is clicked on mobile
     navItems.forEach(item => {
         item.addEventListener('click', () => {
             if (window.innerWidth < 768) {
@@ -533,12 +983,17 @@ document.addEventListener('DOMContentLoaded', function() {
         });
     });
     
-    // Close menu on window resize if desktop size
     window.addEventListener('resize', () => {
         if (window.innerWidth >= 768) {
             closeMobileMenu();
         }
     });
+    
+    if (detailsModal) {
+        detailsModal.addEventListener('click', function(e) {
+            if (e.target === this) closeModal();
+        });
+    }
 });
     </script>
 </body>

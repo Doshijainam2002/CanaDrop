@@ -41,6 +41,7 @@ urlpatterns = [
     path('driverForgotPassword/', views.driverForgotPasswordView, name="driverForgotPasswordPage"),
     path('driverRegister/', views.driverRegisterView, name="driverRegisterPage"),
     path('api/driver/register/', views.register_driver, name='register_driver'),
+    path("api/driver/optimize-route/", views.optimize_route_api, name="optimize_route_api"),
 
     path('contactAdmin/', views.contactAdminView, name='contactAdminPage'), 
     path('api/contact-admin/', views.contact_admin_api, name='contact_admin_api'),

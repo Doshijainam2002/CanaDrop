@@ -4047,6 +4047,773 @@ def edit_pharmacy_profile(request):
 
 
 
+# import json
+# import googlemaps
+# from django.http import JsonResponse
+# from django.conf import settings
+# from django.views.decorators.csrf import csrf_exempt
+# from django.views.decorators.http import require_http_methods
+# from ortools.constraint_solver import pywrapcp, routing_enums_pb2
+# import logging
+# from collections import defaultdict
+# from concurrent.futures import ThreadPoolExecutor, as_completed
+# from django.core.cache import cache
+# import hashlib
+
+# logger = logging.getLogger(__name__)
+
+
+# def get_cache_key(addresses):
+#     """Generate cache key for distance matrix"""
+#     addr_str = "|".join(sorted(addresses))
+#     return f"dist_matrix_{hashlib.md5(addr_str.encode()).hexdigest()}"
+
+
+# def get_distance_matrix_parallel(gmaps, addresses):
+#     """
+#     Fetch distance matrix with parallel batch requests and caching.
+#     This significantly reduces API call time.
+#     """
+#     # Check cache first
+#     cache_key = get_cache_key(addresses)
+#     cached_matrix = cache.get(cache_key)
+#     if cached_matrix:
+#         logger.info(f"Using cached distance matrix for {len(addresses)} addresses")
+#         return cached_matrix
+    
+#     n = len(addresses)
+#     distance_matrix = [[999999 for _ in range(n)] for _ in range(n)]
+#     batch_size = 10
+    
+#     def fetch_batch(i, j):
+#         """Fetch a single batch"""
+#         origins = addresses[i:min(i + batch_size, n)]
+#         destinations = addresses[j:min(j + batch_size, n)]
+        
+#         try:
+#             matrix = gmaps.distance_matrix(
+#                 origins,
+#                 destinations,
+#                 mode="driving",
+#                 units="metric",
+#                 departure_time="now"  # Use real-time traffic
+#             )
+            
+#             if matrix.get("status") != "OK":
+#                 logger.error(f"Batch request failed: {matrix.get('status')}")
+#                 return None
+            
+#             return (i, j, matrix)
+            
+#         except Exception as e:
+#             logger.error(f"Error fetching batch ({i}, {j}): {str(e)}")
+#             return None
+    
+#     # Create batch requests
+#     batch_requests = []
+#     for i in range(0, n, batch_size):
+#         for j in range(0, n, batch_size):
+#             batch_requests.append((i, j))
+    
+#     logger.info(f"Fetching {len(batch_requests)} batches in parallel for {n} addresses")
+    
+#     # Execute batches in parallel (max 5 concurrent to respect API limits)
+#     with ThreadPoolExecutor(max_workers=5) as executor:
+#         futures = {executor.submit(fetch_batch, i, j): (i, j) for i, j in batch_requests}
+        
+#         for future in as_completed(futures):
+#             result = future.result()
+#             if result:
+#                 i, j, matrix = result
+                
+#                 # Fill in the distance matrix
+#                 for row_idx, row in enumerate(matrix.get("rows", [])):
+#                     for col_idx, elem in enumerate(row.get("elements", [])):
+#                         actual_i = i + row_idx
+#                         actual_j = j + col_idx
+                        
+#                         if elem.get("status") == "OK":
+#                             distance_value = elem.get("distance", {}).get("value", 999999)
+#                             distance_matrix[actual_i][actual_j] = distance_value
+#                         else:
+#                             distance_matrix[actual_i][actual_j] = 999999
+    
+#     # Cache for 1 hour
+#     cache.set(cache_key, distance_matrix, 3600)
+#     logger.info(f"Distance matrix cached successfully")
+    
+#     return distance_matrix
+
+
+# def solve_single_date_group(date_key, date_deliveries, start_location, gmaps):
+#     """
+#     Solve optimization for a single date group.
+#     Extracted to allow parallel processing if needed.
+#     """
+#     logger.info(f"Optimizing {len(date_deliveries)} deliveries for date: {date_key}")
+    
+#     # Build addresses list
+#     addresses = [start_location]
+#     pickup_indices = []
+#     drop_indices = []
+#     order_ids = []
+    
+#     for d in date_deliveries:
+#         pickup_indices.append(len(addresses))
+#         addresses.append(d["pickup_address"])
+#         drop_indices.append(len(addresses))
+#         addresses.append(d["dropoff_address"])
+#         order_ids.append(d.get("order_id"))
+    
+#     n = len(addresses)
+#     logger.info(f"Date {date_key}: {n} addresses (1 start + {len(pickup_indices)} pickups + {len(drop_indices)} dropoffs)")
+
+#     # Get distance matrix with caching and parallelization
+#     try:
+#         distance_matrix = get_distance_matrix_parallel(gmaps, addresses)
+#     except Exception as e:
+#         logger.error(f"Distance matrix error for date {date_key}: {str(e)}")
+#         raise
+
+#     # Validate matrix
+#     if len(distance_matrix) != n or any(len(row) != n for row in distance_matrix):
+#         raise ValueError("Invalid distance matrix dimensions")
+
+#     # Initialize OR-Tools Routing Model
+#     manager = pywrapcp.RoutingIndexManager(n, 1, 0)
+#     routing = pywrapcp.RoutingModel(manager)
+
+#     def distance_callback(from_index, to_index):
+#         f = manager.IndexToNode(from_index)
+#         t = manager.IndexToNode(to_index)
+#         return distance_matrix[f][t]
+
+#     transit_cb = routing.RegisterTransitCallback(distance_callback)
+#     routing.SetArcCostEvaluatorOfAllVehicles(transit_cb)
+
+#     # Add Distance dimension
+#     routing.AddDimension(
+#         transit_cb,
+#         0,
+#         10000000,
+#         True,
+#         "Distance"
+#     )
+#     distance_dim = routing.GetDimensionOrDie("Distance")
+
+#     # Add pickup-delivery constraints
+#     for idx, (p, d) in enumerate(zip(pickup_indices, drop_indices)):
+#         pickup_idx = manager.NodeToIndex(p)
+#         delivery_idx = manager.NodeToIndex(d)
+        
+#         routing.AddPickupAndDelivery(pickup_idx, delivery_idx)
+#         routing.solver().Add(
+#             routing.VehicleVar(pickup_idx) == routing.VehicleVar(delivery_idx)
+#         )
+#         routing.solver().Add(
+#             distance_dim.CumulVar(pickup_idx) <= distance_dim.CumulVar(delivery_idx)
+#         )
+
+#     logger.info(f"Added {len(pickup_indices)} pickup-delivery constraints for date {date_key}")
+
+#     # Optimized solver parameters - faster but still good quality
+#     search_params = pywrapcp.DefaultRoutingSearchParameters()
+#     search_params.first_solution_strategy = routing_enums_pb2.FirstSolutionStrategy.PATH_CHEAPEST_ARC
+#     search_params.local_search_metaheuristic = routing_enums_pb2.LocalSearchMetaheuristic.GUIDED_LOCAL_SEARCH
+    
+#     # Adaptive timeout based on problem size
+#     timeout = min(15 + (n // 10), 30)  # 15-30 seconds based on size
+#     search_params.time_limit.seconds = timeout
+    
+#     # Limit solution attempts for faster response
+#     search_params.solution_limit = 50
+
+#     logger.info(f"Solving route for date {date_key} with {timeout}s timeout...")
+#     solution = routing.SolveWithParameters(search_params)
+    
+#     if not solution:
+#         raise ValueError(f"No feasible route found for date {date_key}")
+
+#     logger.info(f"Solution found for date {date_key}! Building route...")
+
+#     # Build metadata map
+#     node_meta = {0: {"kind": "start", "order_id": None, "date": date_key}}
+#     addr_i = 1
+#     for idx, order_id in enumerate(order_ids):
+#         node_meta[addr_i] = {"kind": "pickup", "order_id": order_id, "date": date_key}
+#         addr_i += 1
+#         node_meta[addr_i] = {"kind": "dropoff", "order_id": order_id, "date": date_key}
+#         addr_i += 1
+
+#     # Extract optimized route
+#     index = routing.Start(0)
+#     date_stops = []
+#     date_distance = 0
+#     last_address = None
+    
+#     while not routing.IsEnd(index):
+#         node = manager.IndexToNode(index)
+#         meta = node_meta.get(node, {"kind": "unknown", "order_id": None, "date": date_key})
+#         next_index = solution.Value(routing.NextVar(index))
+#         next_node = manager.IndexToNode(next_index)
+        
+#         if node < len(distance_matrix) and next_node < len(distance_matrix[node]):
+#             leg_distance = distance_matrix[node][next_node]
+#         else:
+#             leg_distance = 0
+        
+#         date_distance += leg_distance
+#         last_address = addresses[node]
+        
+#         date_stops.append({
+#             "kind": meta["kind"],
+#             "address": addresses[node],
+#             "order_id": meta["order_id"],
+#             "date": meta["date"],
+#             "leg_distance_km": round(leg_distance / 1000, 2)
+#         })
+        
+#         index = next_index
+    
+#     logger.info(f"✓ Date {date_key}: {len(date_stops)} stops, {round(date_distance/1000, 2)}km")
+    
+#     return {
+#         "stops": date_stops,
+#         "distance": date_distance,
+#         "last_address": last_address
+#     }
+
+
+# @csrf_exempt
+# @require_http_methods(["POST"])
+# def optimize_route_api(request):
+#     """
+#     Optimized delivery route API with:
+#     - Parallel distance matrix fetching
+#     - Distance matrix caching
+#     - Adaptive solver timeouts
+#     - Better error handling
+#     """
+#     try:
+#         data = json.loads(request.body)
+#         driver_start = data.get("driver_start")
+#         deliveries = data.get("deliveries", [])
+
+#         logger.info(f"Received optimization request: driver_start={driver_start}, deliveries={len(deliveries)}")
+
+#         if not driver_start or not deliveries:
+#             return JsonResponse({"error": "Missing required data", "success": False}, status=400)
+
+#         if not isinstance(deliveries, list) or len(deliveries) == 0:
+#             return JsonResponse({"error": "No deliveries provided", "success": False}, status=400)
+
+#         # Use secure Google Maps API key
+#         api_key = settings.GOOGLE_MAPS_API_KEY
+#         if not api_key:
+#             logger.error("Google Maps API key not configured")
+#             return JsonResponse({"error": "API key not configured", "success": False}, status=500)
+
+#         gmaps = googlemaps.Client(key=api_key)
+
+#         # Group deliveries by pickup date
+#         deliveries_by_date = defaultdict(list)
+#         from datetime import datetime, date
+#         today = date.today()
+        
+#         for d in deliveries:
+#             if not d.get("pickup_address") or not d.get("dropoff_address"):
+#                 logger.warning(f"Skipping delivery with missing address: {d}")
+#                 continue
+            
+#             # Extract date from pickup_date
+#             pickup_date = d.get("pickup_date", "unknown")
+#             if isinstance(pickup_date, str) and 'T' in pickup_date:
+#                 pickup_date = pickup_date.split('T')[0]
+            
+#             # Skip past dates
+#             try:
+#                 delivery_date = datetime.strptime(pickup_date, '%Y-%m-%d').date()
+#                 if delivery_date < today:
+#                     logger.info(f"Skipping past date delivery: {pickup_date} for order {d.get('order_id')}")
+#                     continue
+#             except:
+#                 logger.warning(f"Invalid date format: {pickup_date}, including in optimization")
+            
+#             deliveries_by_date[pickup_date].append(d)
+        
+#         if len(deliveries_by_date) == 0:
+#             return JsonResponse({
+#                 "error": "No current or future deliveries to optimize", 
+#                 "success": False
+#             }, status=400)
+        
+#         logger.info(f"Grouped {sum(len(v) for v in deliveries_by_date.values())} deliveries into {len(deliveries_by_date)} date groups")
+
+#         # Process each date group
+#         all_stops = []
+#         total_distance = 0
+#         current_location = driver_start
+
+#         # Sort dates chronologically
+#         sorted_dates = sorted(deliveries_by_date.keys())
+        
+#         for idx, date_key in enumerate(sorted_dates):
+#             date_deliveries = deliveries_by_date[date_key]
+            
+#             try:
+#                 result = solve_single_date_group(date_key, date_deliveries, current_location, gmaps)
+                
+#                 # Skip start point after first date group
+#                 if idx > 0 and result["stops"][0]["kind"] == "start":
+#                     result["stops"] = result["stops"][1:]
+                
+#                 all_stops.extend(result["stops"])
+#                 total_distance += result["distance"]
+#                 current_location = result["last_address"]
+                
+#             except Exception as e:
+#                 logger.error(f"Error optimizing date {date_key}: {str(e)}")
+#                 return JsonResponse({
+#                     "error": f"Failed to optimize route for {date_key}: {str(e)}", 
+#                     "success": False
+#                 }, status=500)
+
+#         logger.info(f"✓✓ FULL ROUTE OPTIMIZED: {len(all_stops)} total stops, {round(total_distance/1000, 2)}km across {len(deliveries_by_date)} dates")
+
+#         return JsonResponse({
+#             "success": True,
+#             "stops": all_stops,
+#             "total_distance_km": round(total_distance / 1000, 2),
+#             "dates_optimized": len(deliveries_by_date)
+#         })
+
+#     except json.JSONDecodeError as e:
+#         logger.error(f"JSON decode error: {str(e)}")
+#         return JsonResponse({"error": "Invalid JSON payload", "success": False}, status=400)
+#     except Exception as e:
+#         logger.exception(f"Unexpected error in route optimization: {str(e)}")
+#         return JsonResponse({"error": f"Internal server error: {str(e)}", "success": False}, status=500)
+
+
+import json
+import googlemaps
+from django.http import JsonResponse
+from django.conf import settings
+from django.views.decorators.csrf import csrf_exempt
+from django.views.decorators.http import require_http_methods
+from ortools.constraint_solver import pywrapcp, routing_enums_pb2
+import logging
+from collections import defaultdict
+from concurrent.futures import ThreadPoolExecutor, as_completed
+from django.core.cache import cache
+import hashlib
+
+logger = logging.getLogger(__name__)
+
+
+def get_cache_key(addresses):
+    """Generate cache key for distance matrix"""
+    addr_str = "|".join(sorted(addresses))
+    return f"dist_matrix_{hashlib.md5(addr_str.encode()).hexdigest()}"
+
+
+def get_distance_matrix_parallel(gmaps, addresses):
+    """
+    Fetch distance matrix with parallel batch requests and caching.
+    This significantly reduces API call time.
+    """
+    # Check cache first
+    cache_key = get_cache_key(addresses)
+    cached_matrix = cache.get(cache_key)
+    if cached_matrix:
+        logger.info(f"Using cached distance matrix for {len(addresses)} addresses")
+        return cached_matrix
+    
+    n = len(addresses)
+    distance_matrix = [[999999 for _ in range(n)] for _ in range(n)]
+    batch_size = 10
+    
+    def fetch_batch(i, j):
+        """Fetch a single batch"""
+        origins = addresses[i:min(i + batch_size, n)]
+        destinations = addresses[j:min(j + batch_size, n)]
+        
+        try:
+            matrix = gmaps.distance_matrix(
+                origins,
+                destinations,
+                mode="driving",
+                units="metric",
+                departure_time="now"  # Use real-time traffic
+            )
+            
+            if matrix.get("status") != "OK":
+                logger.error(f"Batch request failed: {matrix.get('status')}")
+                return None
+            
+            return (i, j, matrix)
+            
+        except Exception as e:
+            logger.error(f"Error fetching batch ({i}, {j}): {str(e)}")
+            return None
+    
+    # Create batch requests
+    batch_requests = []
+    for i in range(0, n, batch_size):
+        for j in range(0, n, batch_size):
+            batch_requests.append((i, j))
+    
+    logger.info(f"Fetching {len(batch_requests)} batches in parallel for {n} addresses")
+    
+    # Execute batches in parallel (max 5 concurrent to respect API limits)
+    with ThreadPoolExecutor(max_workers=5) as executor:
+        futures = {executor.submit(fetch_batch, i, j): (i, j) for i, j in batch_requests}
+        
+        for future in as_completed(futures):
+            result = future.result()
+            if result:
+                i, j, matrix = result
+                
+                # Fill in the distance matrix
+                for row_idx, row in enumerate(matrix.get("rows", [])):
+                    for col_idx, elem in enumerate(row.get("elements", [])):
+                        actual_i = i + row_idx
+                        actual_j = j + col_idx
+                        
+                        if elem.get("status") == "OK":
+                            distance_value = elem.get("distance", {}).get("value", 999999)
+                            distance_matrix[actual_i][actual_j] = distance_value
+                        else:
+                            distance_matrix[actual_i][actual_j] = 999999
+    
+    # Cache for 1 hour
+    cache.set(cache_key, distance_matrix, 3600)
+    logger.info(f"Distance matrix cached successfully")
+    
+    return distance_matrix
+
+
+def normalize_address(address):
+    """Normalize address for comparison (remove extra spaces, lowercase)"""
+    if not address:
+        return ""
+    return " ".join(address.lower().strip().split())
+
+
+def consolidate_consecutive_stops(stops):
+    """
+    Consolidate consecutive stops at the same address into single stops with multiple order_ids.
+    
+    Example input:
+    [
+        {"kind": "pickup", "address": "535 Park St", "order_id": 39, "date": "2025-11-04", "leg_distance_km": 0.0},
+        {"kind": "pickup", "address": "535 Park St", "order_id": 35, "date": "2025-11-04", "leg_distance_km": 18.66}
+    ]
+    
+    Example output:
+    [
+        {"kind": "pickup", "address": "535 Park St", "order_ids": [39, 35], "date": "2025-11-04", "leg_distance_km": 18.66}
+    ]
+    """
+    if not stops:
+        return []
+    
+    consolidated = []
+    current_group = None
+    
+    for stop in stops:
+        # Normalize address for comparison
+        normalized_addr = normalize_address(stop["address"])
+        
+        # Check if this stop can be merged with current group
+        if (current_group and 
+            current_group["kind"] == stop["kind"] and
+            normalize_address(current_group["address"]) == normalized_addr and
+            current_group["date"] == stop["date"]):
+            
+            # Merge into current group
+            if stop["order_id"] is not None:
+                current_group["order_ids"].append(stop["order_id"])
+            
+            # Keep the leg_distance from the LAST stop in the group (when we leave)
+            current_group["leg_distance_km"] = stop["leg_distance_km"]
+        else:
+            # Start new group
+            if current_group:
+                consolidated.append(current_group)
+            
+            current_group = {
+                "kind": stop["kind"],
+                "address": stop["address"],  # Keep original formatting
+                "order_ids": [stop["order_id"]] if stop["order_id"] is not None else [],
+                "date": stop["date"],
+                "leg_distance_km": stop["leg_distance_km"]
+            }
+    
+    # Add last group
+    if current_group:
+        consolidated.append(current_group)
+    
+    logger.info(f"Consolidated {len(stops)} stops into {len(consolidated)} grouped stops")
+    return consolidated
+
+
+def solve_single_date_group(date_key, date_deliveries, start_location, gmaps):
+    """
+    Solve optimization for a single date group.
+    Extracted to allow parallel processing if needed.
+    """
+    logger.info(f"Optimizing {len(date_deliveries)} deliveries for date: {date_key}")
+    
+    # Build addresses list
+    addresses = [start_location]
+    pickup_indices = []
+    drop_indices = []
+    order_ids = []
+    
+    for d in date_deliveries:
+        pickup_indices.append(len(addresses))
+        addresses.append(d["pickup_address"])
+        drop_indices.append(len(addresses))
+        addresses.append(d["dropoff_address"])
+        order_ids.append(d.get("order_id"))
+    
+    n = len(addresses)
+    logger.info(f"Date {date_key}: {n} addresses (1 start + {len(pickup_indices)} pickups + {len(drop_indices)} dropoffs)")
+
+    # Get distance matrix with caching and parallelization
+    try:
+        distance_matrix = get_distance_matrix_parallel(gmaps, addresses)
+    except Exception as e:
+        logger.error(f"Distance matrix error for date {date_key}: {str(e)}")
+        raise
+
+    # Validate matrix
+    if len(distance_matrix) != n or any(len(row) != n for row in distance_matrix):
+        raise ValueError("Invalid distance matrix dimensions")
+
+    # Initialize OR-Tools Routing Model
+    manager = pywrapcp.RoutingIndexManager(n, 1, 0)
+    routing = pywrapcp.RoutingModel(manager)
+
+    def distance_callback(from_index, to_index):
+        f = manager.IndexToNode(from_index)
+        t = manager.IndexToNode(to_index)
+        return distance_matrix[f][t]
+
+    transit_cb = routing.RegisterTransitCallback(distance_callback)
+    routing.SetArcCostEvaluatorOfAllVehicles(transit_cb)
+
+    # Add Distance dimension
+    routing.AddDimension(
+        transit_cb,
+        0,
+        10000000,
+        True,
+        "Distance"
+    )
+    distance_dim = routing.GetDimensionOrDie("Distance")
+
+    # Add pickup-delivery constraints
+    for idx, (p, d) in enumerate(zip(pickup_indices, drop_indices)):
+        pickup_idx = manager.NodeToIndex(p)
+        delivery_idx = manager.NodeToIndex(d)
+        
+        routing.AddPickupAndDelivery(pickup_idx, delivery_idx)
+        routing.solver().Add(
+            routing.VehicleVar(pickup_idx) == routing.VehicleVar(delivery_idx)
+        )
+        routing.solver().Add(
+            distance_dim.CumulVar(pickup_idx) <= distance_dim.CumulVar(delivery_idx)
+        )
+
+    logger.info(f"Added {len(pickup_indices)} pickup-delivery constraints for date {date_key}")
+
+    # Optimized solver parameters - faster but still good quality
+    search_params = pywrapcp.DefaultRoutingSearchParameters()
+    search_params.first_solution_strategy = routing_enums_pb2.FirstSolutionStrategy.PATH_CHEAPEST_ARC
+    search_params.local_search_metaheuristic = routing_enums_pb2.LocalSearchMetaheuristic.GUIDED_LOCAL_SEARCH
+    
+    # Adaptive timeout based on problem size
+    timeout = min(15 + (n // 10), 30)  # 15-30 seconds based on size
+    search_params.time_limit.seconds = timeout
+    
+    # Limit solution attempts for faster response
+    search_params.solution_limit = 50
+
+    logger.info(f"Solving route for date {date_key} with {timeout}s timeout...")
+    solution = routing.SolveWithParameters(search_params)
+    
+    if not solution:
+        raise ValueError(f"No feasible route found for date {date_key}")
+
+    logger.info(f"Solution found for date {date_key}! Building route...")
+
+    # Build metadata map
+    node_meta = {0: {"kind": "start", "order_id": None, "date": date_key}}
+    addr_i = 1
+    for idx, order_id in enumerate(order_ids):
+        node_meta[addr_i] = {"kind": "pickup", "order_id": order_id, "date": date_key}
+        addr_i += 1
+        node_meta[addr_i] = {"kind": "dropoff", "order_id": order_id, "date": date_key}
+        addr_i += 1
+
+    # Extract optimized route
+    index = routing.Start(0)
+    date_stops = []
+    date_distance = 0
+    last_address = None
+    
+    while not routing.IsEnd(index):
+        node = manager.IndexToNode(index)
+        meta = node_meta.get(node, {"kind": "unknown", "order_id": None, "date": date_key})
+        next_index = solution.Value(routing.NextVar(index))
+        next_node = manager.IndexToNode(next_index)
+        
+        if node < len(distance_matrix) and next_node < len(distance_matrix[node]):
+            leg_distance = distance_matrix[node][next_node]
+        else:
+            leg_distance = 0
+        
+        date_distance += leg_distance
+        last_address = addresses[node]
+        
+        date_stops.append({
+            "kind": meta["kind"],
+            "address": addresses[node],
+            "order_id": meta["order_id"],
+            "date": meta["date"],
+            "leg_distance_km": round(leg_distance / 1000, 2)
+        })
+        
+        index = next_index
+    
+    logger.info(f"✓ Date {date_key}: {len(date_stops)} stops, {round(date_distance/1000, 2)}km")
+    
+    return {
+        "stops": date_stops,
+        "distance": date_distance,
+        "last_address": last_address
+    }
+
+
+@csrf_exempt
+@require_http_methods(["POST"])
+def optimize_route_api(request):
+    """
+    Optimized delivery route API with:
+    - Parallel distance matrix fetching
+    - Distance matrix caching
+    - Adaptive solver timeouts
+    - Better error handling
+    - Consolidated consecutive same-address stops
+    """
+    try:
+        data = json.loads(request.body)
+        driver_start = data.get("driver_start")
+        deliveries = data.get("deliveries", [])
+
+        logger.info(f"Received optimization request: driver_start={driver_start}, deliveries={len(deliveries)}")
+
+        if not driver_start or not deliveries:
+            return JsonResponse({"error": "Missing required data", "success": False}, status=400)
+
+        if not isinstance(deliveries, list) or len(deliveries) == 0:
+            return JsonResponse({"error": "No deliveries provided", "success": False}, status=400)
+
+        # Use secure Google Maps API key
+        api_key = settings.GOOGLE_MAPS_API_KEY
+        if not api_key:
+            logger.error("Google Maps API key not configured")
+            return JsonResponse({"error": "API key not configured", "success": False}, status=500)
+
+        gmaps = googlemaps.Client(key=api_key)
+
+        # Group deliveries by pickup date
+        deliveries_by_date = defaultdict(list)
+        from datetime import datetime, date
+        today = date.today()
+        
+        for d in deliveries:
+            if not d.get("pickup_address") or not d.get("dropoff_address"):
+                logger.warning(f"Skipping delivery with missing address: {d}")
+                continue
+            
+            # Extract date from pickup_date
+            pickup_date = d.get("pickup_date", "unknown")
+            if isinstance(pickup_date, str) and 'T' in pickup_date:
+                pickup_date = pickup_date.split('T')[0]
+            
+            # Skip past dates
+            try:
+                delivery_date = datetime.strptime(pickup_date, '%Y-%m-%d').date()
+                if delivery_date < today:
+                    logger.info(f"Skipping past date delivery: {pickup_date} for order {d.get('order_id')}")
+                    continue
+            except:
+                logger.warning(f"Invalid date format: {pickup_date}, including in optimization")
+            
+            deliveries_by_date[pickup_date].append(d)
+        
+        if len(deliveries_by_date) == 0:
+            return JsonResponse({
+                "error": "No current or future deliveries to optimize", 
+                "success": False
+            }, status=400)
+        
+        logger.info(f"Grouped {sum(len(v) for v in deliveries_by_date.values())} deliveries into {len(deliveries_by_date)} date groups")
+
+        # Process each date group
+        all_stops = []
+        total_distance = 0
+        current_location = driver_start
+
+        # Sort dates chronologically
+        sorted_dates = sorted(deliveries_by_date.keys())
+        
+        for idx, date_key in enumerate(sorted_dates):
+            date_deliveries = deliveries_by_date[date_key]
+            
+            try:
+                result = solve_single_date_group(date_key, date_deliveries, current_location, gmaps)
+                
+                # Skip start point after first date group
+                if idx > 0 and result["stops"][0]["kind"] == "start":
+                    result["stops"] = result["stops"][1:]
+                
+                all_stops.extend(result["stops"])
+                total_distance += result["distance"]
+                current_location = result["last_address"]
+                
+            except Exception as e:
+                logger.error(f"Error optimizing date {date_key}: {str(e)}")
+                return JsonResponse({
+                    "error": f"Failed to optimize route for {date_key}: {str(e)}", 
+                    "success": False
+                }, status=500)
+
+        # Consolidate consecutive stops at same address
+        consolidated_stops = consolidate_consecutive_stops(all_stops)
+
+        logger.info(f"✓✓ FULL ROUTE OPTIMIZED: {len(consolidated_stops)} total stops (consolidated from {len(all_stops)}), {round(total_distance/1000, 2)}km across {len(deliveries_by_date)} dates")
+
+        return JsonResponse({
+            "success": True,
+            "stops": consolidated_stops,
+            "total_distance_km": round(total_distance / 1000, 2),
+            "dates_optimized": len(deliveries_by_date)
+        })
+
+    except json.JSONDecodeError as e:
+        logger.error(f"JSON decode error: {str(e)}")
+        return JsonResponse({"error": "Invalid JSON payload", "success": False}, status=400)
+    except Exception as e:
+        logger.exception(f"Unexpected error in route optimization: {str(e)}")
+        return JsonResponse({"error": f"Internal server error: {str(e)}", "success": False}, status=500)
+
+
+
+
 
 
 

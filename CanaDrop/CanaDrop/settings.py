@@ -144,7 +144,7 @@ CACHES = {
     "default": {
         "BACKEND": "django.core.cache.backends.db.DatabaseCache",
         "LOCATION": "django_cache",   # table name
-        "TIMEOUT": None,              # per-key TTLs still apply (e.g., OTP_TTL_SECONDS)
+        "TIMEOUT": 3600,              # per-key TTLs still apply (e.g., OTP_TTL_SECONDS)
     }
 }
 
@@ -161,12 +161,22 @@ LOGGING = {
             'class': 'logging.FileHandler',
             'filename': 'invoice_generation.log',
         },
+        'route_file': {  # Add this new handler
+            'level': 'INFO',
+            'class': 'logging.FileHandler',
+            'filename': 'route_optimization.log',
+        },
     },
     'loggers': {
         'CanaDrop_Interface': {
             'handlers': ['file'],
             'level': 'INFO',
             'propagate': True,
+        },
+        'CanaDrop_Interface.views': {  # Add this for route optimization
+            'handlers': ['route_file'],
+            'level': 'INFO',
+            'propagate': False,
         },
     },
 }
