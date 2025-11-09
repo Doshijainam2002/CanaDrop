@@ -123,6 +123,8 @@ def adminInvoicesView(request):
 def adminSupportView(request):
     return render(request, 'adminSupport.html')
 
+def adminDriversView(request):
+    return render(request, 'adminDrivers.html')
 @csrf_exempt
 def pharmacy_login_api(request):
     if request.method != "POST":

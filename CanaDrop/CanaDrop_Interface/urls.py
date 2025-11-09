@@ -53,6 +53,7 @@ urlpatterns = [
     path('adminOrders/', views.adminOrdersView, name="AdminOrdersPage"),
     path('adminInvoices/', views.adminInvoicesView, name="AdminInvoicesPage"),
     path('adminSupport/', views.adminSupportView, name="AdminSupportPage"),
+    path('adminDrivers/', views.adminDriversView, name="AdminDriversPage"),
 
     path('', views.landingView, name='landingPage'),
 
