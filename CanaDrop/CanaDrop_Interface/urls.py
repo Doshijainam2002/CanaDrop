@@ -45,6 +45,14 @@ urlpatterns = [
 
     path('contactAdmin/', views.contactAdminView, name='contactAdminPage'), 
     path('api/contact-admin/', views.contact_admin_api, name='contact_admin_api'),
+    path('adminLogin/', views.adminLoginView, name='AdminLoginPage'),  
+    path("api/admin/login/", views.admin_login, name="admin_login"),
+    path('adminDashboard/', views.adminDashboardView, name="AdminDashboardPage"),
+    path('adminOrders/', views.adminOrdersView, name="AdminOrdersPage"),
+    path('adminPharmacies/', views.adminPharmaciesView, name="AdminPharmaciesPage"),
+    path('adminOrders/', views.adminOrdersView, name="AdminOrdersPage"),
+    path('adminInvoices/', views.adminInvoicesView, name="AdminInvoicesPage"),
+    path('adminSupport/', views.adminSupportView, name="AdminSupportPage"),
 
     path('', views.landingView, name='landingPage'),
 

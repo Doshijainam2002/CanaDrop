@@ -102,6 +102,26 @@ def landingView(request):
 def pharmacyProfileView(request):
     return render(request, 'pharmacyProfile.html')
 
+def adminLoginView(request):
+    return render(request, 'adminLogin.html')
+
+def adminDashboardView(request):
+    return render(request, 'adminDashboard.html')
+
+def adminOrdersView(request):
+    return render(request, 'adminOrders.html')
+
+def adminPharmaciesView(request):
+    return render(request, 'adminPharmacies.html')
+
+def adminOrdersView(request):
+    return render(request, 'adminOrders.html')
+
+def adminInvoicesView(request):
+    return render(request, 'adminInvoices.html')
+
+def adminSupportView(request):
+    return render(request, 'adminSupport.html')
 
 @csrf_exempt
 def pharmacy_login_api(request):
@@ -5400,6 +5420,74 @@ def optimize_route_api(request):
     except Exception as e:
         logger.exception(f"Unexpected error in route optimization: {str(e)}")
         return JsonResponse({"error": f"Internal server error: {str(e)}", "success": False}, status=500)
+
+
+@csrf_exempt
+@require_http_methods(["POST"])
+def admin_login(request):
+    try:
+        # Parse JSON
+        try:
+            data = json.loads(request.body or b"{}")
+        except json.JSONDecodeError:
+            return JsonResponse(
+                {"success": False, "message": "Invalid JSON format"},
+                status=400,
+            )
+
+        email = (data.get("email") or "").strip()
+        password = (data.get("password") or "").strip()
+
+        # Basic validations
+        if not email or not password:
+            return JsonResponse(
+                {"success": False, "message": "Email and password are required"},
+                status=400,
+            )
+
+        # Fetch admin (case-insensitive email match)
+        admin = AdminUser.objects.filter(email__iexact=email).first()
+        if not admin:
+            return JsonResponse(
+                {"success": False, "message": "Invalid credentials"},
+                status=401,
+            )
+
+        # Validate password (hashed or fallback to plain-text compare if ever stored that way)
+        password_valid = False
+        if admin.password:
+            if admin.password.startswith("pbkdf2_"):
+                password_valid = check_password(password, admin.password)
+            else:
+                # Legacy/plain-text fallback
+                password_valid = (admin.password == password)
+
+        if not password_valid:
+            return JsonResponse(
+                {"success": False, "message": "Invalid credentials"},
+                status=401,
+            )
+
+        # Success
+        return JsonResponse(
+            {
+                "success": True,
+                "id": admin.id,
+                "message": "Login successful",
+                # Optional convenience fields:
+                "first_name": admin.first_name,
+                "last_name": admin.last_name,
+                "email": admin.email,
+            },
+            status=200,
+        )
+
+    except Exception:
+        # Avoid leaking internals
+        return JsonResponse(
+            {"success": False, "message": "An error occurred during login"},
+            status=500,
+        )
 
 
 

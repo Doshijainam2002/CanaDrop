@@ -1,0 +1,204 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Admin Dashboard • CanaDrop</title>
+  <link rel="icon" href="https://i.postimg.cc/YqYBPWJv/Website-Logo-Background.png">
+  <script src="https://cdn.tailwindcss.com"></script>
+  <style>
+    .logistics-bg {
+      background:
+        linear-gradient(135deg, rgba(255,255,255,0.04) 25%, rgba(0,0,0,0) 25%) 0 0/28px 28px,
+        linear-gradient(135deg, rgba(0,0,0,0) 75%, rgba(255,255,255,0.04) 75%) 0 0/28px 28px;
+      box-shadow: inset 0 0 120px rgba(0,0,0,0.35);
+    }
+  </style>
+</head>
+<body class="min-h-screen bg-neutral-900 text-neutral-100 font-inter logistics-bg">
+
+  <div class="flex h-screen overflow-hidden">
+    <!-- Sidebar -->
+    <aside class="w-64 bg-neutral-800 border-r border-neutral-700 flex flex-col">
+      <div class="flex items-center h-16 border-b border-neutral-700 px-6">
+        <img src="https://i.postimg.cc/d00XJkSj/Website-Logo-No-Background.png" alt="CanaDrop" class="h-10 w-auto">
+        <span class="ml-3 text-lg font-semibold text-white">CanaDrop</span>
+      </div>
+
+      <!-- Navigation -->
+      <nav class="flex-1 p-4 space-y-2 text-sm">
+        <a href="/adminDashboard/" class="flex items-center px-3 py-2 rounded-lg bg-gradient-to-r from-orange-600 to-orange-500 text-white font-medium">
+          <svg class="w-5 h-5 mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 12l2-2m0 0l7-7 7 7M13 5v6h6"/></svg>
+          Dashboard
+        </a>
+        <a href="/adminOrders/" class="flex items-center px-3 py-2 rounded-lg text-neutral-300 hover:bg-neutral-700 transition">
+          <svg class="w-5 h-5 mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 17v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm6 0v-8a2 2 0 00-2-2h-2a2 2 0 00-2 2v8m6 0a2 2 0 002 2h2a2 2 0 002-2"/></svg>
+          Orders
+        </a>
+        <a href="/adminPharmacies/" class="flex items-center px-3 py-2 rounded-lg text-neutral-300 hover:bg-neutral-700 transition">
+          <svg class="w-5 h-5 mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 11V5a3 3 0 00-3-3H7a3 3 0 00-3 3v6m12 0v6a3 3 0 01-3 3H7a3 3 0 01-3-3v-6m12 0H4"/></svg>
+          Pharmacies
+        </a>
+        <a href="/adminDrivers/" class="flex items-center px-3 py-2 rounded-lg text-neutral-300 hover:bg-neutral-700 transition">
+          <svg class="w-5 h-5 mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/></svg>
+          Drivers
+        </a>
+        <a href="/adminInvoices/" class="flex items-center px-3 py-2 rounded-lg text-neutral-300 hover:bg-neutral-700 transition">
+          <svg class="w-5 h-5 mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 4H7a2 2 0 01-2-2V6a2 2 0 012-2h7l5 5v9a2 2 0 01-2 2z"/></svg>
+          Invoices
+        </a>
+        <a href="/adminSupport/" class="flex items-center px-3 py-2 rounded-lg text-neutral-300 hover:bg-neutral-700 transition">
+          <svg class="w-5 h-5 mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 10h.01M12 10h.01M16 10h.01M21 12c0 4.418-4.03 8-9 8s-9-3.582-9-8 4.03-8 9-8 9 3.582 9 8zM12 14v-4m0 4h.01"/></svg>
+          Support
+        </a>
+      </nav>
+
+      <!-- Profile -->
+      <div class="p-4 border-t border-neutral-700">
+        <div class="flex items-center">
+          <div class="flex-shrink-0 w-9 h-9 bg-gradient-to-r from-orange-600 to-orange-500 rounded-full flex items-center justify-center text-sm font-semibold">A</div>
+          <div class="ml-3">
+            <p class="text-sm font-medium text-neutral-100">Admin</p>
+            <p class="text-xs text-neutral-400">admin@canadrop.ca</p>
+          </div>
+        </div>
+      </div>
+    </aside>
+
+    <!-- Main Content -->
+    <main class="flex-1 flex flex-col overflow-y-auto">
+      <!-- Header -->
+      <header class="bg-neutral-800 border-b border-neutral-700 px-6 py-4 flex items-center justify-between">
+        <div>
+          <h1 class="text-2xl font-bold text-white">Admin Dashboard</h1>
+          <p class="text-sm text-neutral-400">Manage system-wide operations and insights</p>
+        </div>
+        <button class="px-4 py-2 bg-gradient-to-r from-orange-600 to-orange-500 text-white rounded-lg text-sm font-medium hover:from-orange-500 hover:to-orange-400 transition">
+          Refresh Data
+        </button>
+      </header>
+
+      <!-- Summary Cards -->
+      <section class="px-6 py-6 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-6">
+        <!-- Total Pharmacies -->
+        <div class="bg-neutral-800/80 border border-neutral-700 p-6 rounded-xl shadow">
+          <p class="text-sm text-neutral-400">Total Pharmacies</p>
+          <p class="text-2xl font-bold text-white mt-1">14</p>
+        </div>
+
+        <!-- Total Drivers -->
+        <div class="bg-neutral-800/80 border border-neutral-700 p-6 rounded-xl shadow">
+          <p class="text-sm text-neutral-400">Total Drivers</p>
+          <p class="text-2xl font-bold text-white mt-1">9</p>
+        </div>
+
+        <!-- Active Orders -->
+        <div class="bg-neutral-800/80 border border-neutral-700 p-6 rounded-xl shadow">
+          <p class="text-sm text-neutral-400">Active Orders</p>
+          <p class="text-2xl font-bold text-white mt-1">5</p>
+        </div>
+
+        <!-- Monthly Revenue -->
+        <div class="bg-neutral-800/80 border border-neutral-700 p-6 rounded-xl shadow">
+          <p class="text-sm text-neutral-400">Revenue (This Month)</p>
+          <p class="text-2xl font-bold text-white mt-1">$4,220</p>
+        </div>
+
+        <!-- Driver Payouts -->
+        <div class="bg-neutral-800/80 border border-neutral-700 p-6 rounded-xl shadow">
+          <p class="text-sm text-neutral-400">Driver Payouts (This Month)</p>
+          <p class="text-2xl font-bold text-white mt-1">$1,340</p>
+        </div>
+      </section>
+
+      <!-- 3-column insights section -->
+      <section class="px-6 grid grid-cols-1 lg:grid-cols-3 gap-6 pb-8">
+        <!-- Recent Activity Feed -->
+        <div class="bg-neutral-800/80 border border-neutral-700 rounded-xl p-6">
+          <h2 class="text-lg font-semibold text-white mb-4">Recent Activity Feed</h2>
+          <ul class="space-y-4 text-sm">
+            <li class="flex items-start">
+              <span class="w-2 h-2 mt-1.5 bg-orange-500 rounded-full mr-3"></span>
+              <p><span class="font-semibold text-orange-400">Order #1024</span> marked as <span class="text-green-400 font-medium">Delivered</span></p>
+            </li>
+            <li class="flex items-start">
+              <span class="w-2 h-2 mt-1.5 bg-orange-500 rounded-full mr-3"></span>
+              <p><span class="font-semibold text-orange-400">New Pharmacy</span> “WellCare Meds” registered.</p>
+            </li>
+            <li class="flex items-start">
+              <span class="w-2 h-2 mt-1.5 bg-orange-500 rounded-full mr-3"></span>
+              <p><span class="font-semibold text-orange-400">Driver Invoice</span> for <span class="text-neutral-200">John Doe</span> generated.</p>
+            </li>
+          </ul>
+        </div>
+
+        <!-- Live Map Placeholder -->
+        <div class="bg-neutral-800/80 border border-neutral-700 rounded-xl p-6">
+          <h2 class="text-lg font-semibold text-white mb-4">Live Order Tracking Map</h2>
+          <div class="bg-neutral-700/50 rounded-lg h-64 flex items-center justify-center text-neutral-400 text-sm">
+            [ Map Placeholder ]
+          </div>
+          <p class="text-xs text-neutral-500 mt-3 text-center">Displays ongoing deliveries by pickup/drop city</p>
+        </div>
+
+        <!-- Alerts Section -->
+        <div class="bg-neutral-800/80 border border-neutral-700 rounded-xl p-6">
+          <h2 class="text-lg font-semibold text-white mb-4">Alerts</h2>
+          <ul class="space-y-3 text-sm">
+            <li class="flex items-start bg-neutral-800 border-l-4 border-yellow-500 p-3 rounded">
+              <span class="text-yellow-400 mr-2">⚠</span>
+              <p><strong>2</strong> Unassigned Orders require driver allocation.</p>
+            </li>
+            <li class="flex items-start bg-neutral-800 border-l-4 border-red-500 p-3 rounded">
+              <span class="text-red-400 mr-2">⏰</span>
+              <p><strong>1</strong> Overdue Invoice from “HealthPlus Pharmacy”.</p>
+            </li>
+            <li class="flex items-start bg-neutral-800 border-l-4 border-orange-500 p-3 rounded">
+              <span class="text-orange-400 mr-2">📨</span>
+              <p><strong>3</strong> Pending ContactAdmin tickets awaiting response.</p>
+            </li>
+          </ul>
+        </div>
+      </section>
+
+      <!-- Recent Orders Table -->
+      <section class="px-6 pb-10">
+        <div class="bg-neutral-800/80 border border-neutral-700 rounded-xl shadow">
+          <div class="px-6 py-4 border-b border-neutral-700 flex justify-between items-center">
+            <h2 class="text-lg font-semibold text-white">Recent Orders</h2>
+            <select class="text-sm bg-neutral-800 border border-neutral-700 rounded-lg px-3 py-1 text-neutral-300 focus:ring-2 focus:ring-orange-500 focus:outline-none">
+              <option>All Status</option>
+              <option>Pending</option>
+              <option>Delivered</option>
+            </select>
+          </div>
+          <div class="overflow-x-auto">
+            <table class="min-w-full text-sm">
+              <thead class="bg-neutral-800 border-b border-neutral-700">
+                <tr>
+                  <th class="px-6 py-3 text-left text-neutral-400 uppercase tracking-wider">Order ID</th>
+                  <th class="px-6 py-3 text-left text-neutral-400 uppercase tracking-wider">Pharmacy</th>
+                  <th class="px-6 py-3 text-left text-neutral-400 uppercase tracking-wider">Driver</th>
+                  <th class="px-6 py-3 text-left text-neutral-400 uppercase tracking-wider">Status</th>
+                  <th class="px-6 py-3 text-left text-neutral-400 uppercase tracking-wider">Amount</th>
+                </tr>
+              </thead>
+              <tbody class="divide-y divide-neutral-700">
+                <tr class="hover:bg-neutral-700/50 transition">
+                  <td class="px-6 py-4 text-neutral-100 font-medium">#1024</td>
+                  <td class="px-6 py-4 text-neutral-300">HealthPlus Pharmacy</td>
+                  <td class="px-6 py-4 text-neutral-300">John Doe</td>
+                  <td class="px-6 py-4">
+                    <span class="inline-flex px-3 py-1 text-xs font-medium rounded-full bg-orange-500/20 text-orange-400 border border-orange-600/40">In Transit</span>
+                  </td>
+                  <td class="px-6 py-4 text-neutral-100 font-semibold">$22.50</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </section>
+    </main>
+  </div>
+</body>
+</html>

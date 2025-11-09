@@ -1,0 +1,166 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Admin Login • CanaDrop</title>
+  <link rel="icon" href="https://i.postimg.cc/YqYBPWJv/Website-Logo-Background.png">
+  <script src="https://cdn.tailwindcss.com"></script>
+
+  <style>
+    .logistics-bg {
+      background:
+        linear-gradient(135deg, rgba(255,255,255,0.04) 25%, rgba(0,0,0,0) 25%) 0 0/28px 28px,
+        linear-gradient(135deg, rgba(0,0,0,0) 75%, rgba(255,255,255,0.04) 75%) 0 0/28px 28px;
+      box-shadow: inset 0 0 120px rgba(0,0,0,0.35);
+    }
+  </style>
+</head>
+
+<body class="min-h-screen bg-neutral-900 flex items-center justify-center p-6 logistics-bg">
+  <div class="w-full max-w-md">
+    <div class="bg-neutral-800/80 border border-neutral-700 rounded-2xl shadow-2xl p-8 backdrop-blur-sm">
+
+      <!-- Brand -->
+      <div class="text-center mb-8">
+        <img src="https://i.postimg.cc/d00XJkSj/Website-Logo-No-Background.png" alt="CanaDrop Logo" class="h-14 mx-auto mb-3">
+        <h1 class="text-2xl font-semibold text-neutral-100">Admin Control</h1>
+        <p class="text-neutral-400 text-sm mt-1">Sign in to your Admin Account</p>
+      </div>
+
+      <!-- Form -->
+      <form id="adminLoginForm" class="space-y-5" onsubmit="handleAdminLogin(event)">
+        <div>
+          <label for="email" class="block text-sm font-medium text-neutral-200 mb-1">Admin Email</label>
+          <div class="relative">
+            <span class="absolute inset-y-0 left-0 pl-3 flex items-center text-orange-400">
+              <svg class="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                      d="M3 8l7.89 4.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"/>
+              </svg>
+            </span>
+            <input id="email" name="email" type="email" required
+              class="w-full pl-10 pr-4 py-3 rounded-lg border border-neutral-600 bg-neutral-700 text-neutral-100 placeholder-neutral-400 focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-transparent focus:bg-neutral-700"
+              placeholder="name@company.com">
+          </div>
+        </div>
+
+        <div>
+          <label for="password" class="block text-sm font-medium text-neutral-200 mb-1">Password</label>
+          <div class="relative">
+            <span class="absolute inset-y-0 left-0 pl-3 flex items-center text-orange-400">
+              <svg class="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                      d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"/>
+              </svg>
+            </span>
+            <input id="password" name="password" type="password" required
+              class="w-full pl-10 pr-4 py-3 rounded-lg border border-neutral-600 bg-neutral-700 text-neutral-100 placeholder-neutral-400 focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-transparent focus:bg-neutral-700"
+              placeholder="••••••••">
+          </div>
+        </div>
+
+        <div class="flex items-center justify-between text-sm">
+          <label class="inline-flex items-center gap-2 text-neutral-300">
+            <input type="checkbox" class="h-4 w-4 rounded border-neutral-500 text-orange-600 focus:ring-orange-500 bg-neutral-700">
+            Remember me
+          </label>
+          <a href="/adminForgotPassword/" class="font-medium text-orange-400 hover:text-orange-300">
+            Forgot password?
+          </a>
+        </div>
+
+        <button type="submit"
+          class="w-full rounded-lg bg-gradient-to-r from-orange-600 to-orange-500 py-3 text-white font-semibold shadow-sm hover:from-orange-500 hover:to-orange-400 focus:outline-none focus:ring-2 focus:ring-orange-500 focus:ring-offset-2 focus:ring-offset-neutral-900">
+          Sign In
+        </button>
+      </form>
+
+      <p class="mt-6 text-center text-sm text-neutral-400">
+        <span>Back to Main?</span>
+        <a href="/" class="ml-1 font-medium text-orange-400 hover:text-orange-300">Partner Login</a>
+      </p>
+    </div>
+
+    <div class="text-center mt-6">
+      <p class="text-xs text-neutral-500">© 2025 CanaDrop Admin. All rights reserved.</p>
+    </div>
+  </div>
+
+  <!-- Modal -->
+  <div id="modal" class="fixed inset-0 bg-black bg-opacity-70 flex items-center justify-center p-4 z-50 hidden">
+    <div class="bg-neutral-800 border border-neutral-700 rounded-2xl p-6 max-w-sm w-full mx-4 text-center">
+      <div id="modalContent"></div>
+    </div>
+  </div>
+
+  <script>
+    function handleAdminLogin(event) {
+      event.preventDefault();
+
+      const email = document.getElementById("email").value.trim();
+      const password = document.getElementById("password").value.trim();
+
+      if (!email || !password) {
+        showModal("error", "Please enter both email and password.");
+        return;
+      }
+
+      fetch("/api/admin/login/", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ email, password }),
+      })
+      .then(res => res.json())
+      .then(data => {
+        if (data.success) {
+
+          document.cookie = `adminId=${data.id}; Path=/; Max-Age=${24*60*60}; SameSite=Lax${location.protocol === 'https:' ? '; Secure' : ''}`;
+          showModal("success", "Welcome back, " + (data.first_name || "Admin") + "!");
+          setTimeout(() => {
+            closeModal();
+            window.location.href = "/adminDashboard/";
+          }, 3000);
+        } else {
+          showModal("error", data.message || "Invalid credentials");
+        }
+      })
+      .catch(() => {
+        showModal("error", "Network error. Please try again.");
+      });
+    }
+
+    function showModal(type, message) {
+      const modal = document.getElementById("modal");
+      const modalContent = document.getElementById("modalContent");
+
+      if (type === "success") {
+        modalContent.innerHTML = `
+          <svg class="h-16 w-16 text-orange-500 mx-auto mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+              d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/>
+          </svg>
+          <h3 class="text-xl font-semibold text-neutral-100 mb-2">Login Successful</h3>
+          <p class="text-neutral-300">${message}</p>
+        `;
+      } else {
+        modalContent.innerHTML = `
+          <svg class="h-16 w-16 text-red-500 mx-auto mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+              d="M10 14l2-2m0 0l2-2m-2 2l-2-2m2 2l2 2m7-2a9 9 0 11-18 0 9 9 0 0118 0z"/>
+          </svg>
+          <h3 class="text-xl font-semibold text-neutral-100 mb-2">Login Failed</h3>
+          <p class="text-neutral-300">${message}</p>
+        `;
+      }
+
+      modal.classList.remove("hidden");
+      setTimeout(() => closeModal(), 3000);
+    }
+
+    function closeModal() {
+      document.getElementById("modal").classList.add("hidden");
+    }
+  </script>
+</body>
+</html>
