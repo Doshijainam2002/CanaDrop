@@ -52,13 +52,16 @@
           <svg class="w-5 h-5 mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 10h.01M12 10h.01M16 10h.01M21 12c0 4.418-4.03 8-9 8s-9-3.582-9-8 4.03-8 9-8 9 3.582 9 8zM12 14v-4m0 4h.01"/></svg>
           Support
         </a>
-        <a href="/adminLogout/" class="flex items-center px-3 py-2 rounded-lg text-neutral-300 hover:bg-neutral-700 transition">
+        <a href="#" 
+        id="logoutBtn"
+        class="flex items-center px-3 py-2 rounded-lg text-neutral-300 hover:bg-neutral-700 transition">
             <svg class="w-5 h-5 mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a2 2 0 01-2 2H5a2 2 0 01-2-2V7a2 2 0 012-2h6a2 2 0 012 2v1" />
+                    d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a2 2 0 01-2 2H5a2 2 0 01-2-2V7a2 2 0 012-2h6a2 2 0 012 2v1" />
             </svg>
             Logout
         </a>
+
       </nav>
 
       <!-- Profile -->
@@ -196,6 +199,21 @@
           </div>
         </div>
       </section>
+
+      <script>
+        document.getElementById("logoutBtn").addEventListener("click", function (event) {
+  event.preventDefault();
+
+  // 🧹 Remove adminId cookie
+  document.cookie = "adminId=; path=/; expires=Thu, 01 Jan 1970 00:00:00 UTC; SameSite=Lax;";
+
+  // Optional: clear JWT or any other related cookies if used
+  document.cookie = "jwtToken=; path=/; expires=Thu, 01 Jan 1970 00:00:00 UTC; SameSite=Lax;";
+
+  // 🚀 Redirect to admin login page
+  window.location.href = "/adminLogin/";
+});
+      </script>
     </main>
   </div>
 </body>

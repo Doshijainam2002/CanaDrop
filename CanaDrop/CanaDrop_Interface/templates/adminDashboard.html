@@ -51,13 +51,16 @@
           <svg class="w-5 h-5 mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 10h.01M12 10h.01M16 10h.01M21 12c0 4.418-4.03 8-9 8s-9-3.582-9-8 4.03-8 9-8 9 3.582 9 8zM12 14v-4m0 4h.01"/></svg>
           Support
         </a>
-        <a href="/adminLogout/" class="flex items-center px-3 py-2 rounded-lg text-neutral-300 hover:bg-neutral-700 transition">
+        <a href="#" 
+        id="logoutBtn"
+        class="flex items-center px-3 py-2 rounded-lg text-neutral-300 hover:bg-neutral-700 transition">
             <svg class="w-5 h-5 mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a2 2 0 01-2 2H5a2 2 0 01-2-2V7a2 2 0 012-2h6a2 2 0 012 2v1" />
+                    d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a2 2 0 01-2 2H5a2 2 0 01-2-2V7a2 2 0 012-2h6a2 2 0 012 2v1" />
             </svg>
             Logout
         </a>
+
       </nav>
 
       <!-- Profile -->
@@ -80,131 +83,665 @@
           <h1 class="text-2xl font-bold text-white">Admin Dashboard</h1>
           <p class="text-sm text-neutral-400">Manage system-wide operations and insights</p>
         </div>
-        <button class="px-4 py-2 bg-gradient-to-r from-orange-600 to-orange-500 text-white rounded-lg text-sm font-medium hover:from-orange-500 hover:to-orange-400 transition">
-          Refresh Data
-        </button>
       </header>
 
-      <!-- Summary Cards -->
-      <section class="px-6 py-6 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-6">
+        <!-- Summary Cards -->
+        <section class="px-6 py-6 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-6">
         <!-- Total Pharmacies -->
         <div class="bg-neutral-800/80 border border-neutral-700 p-6 rounded-xl shadow">
-          <p class="text-sm text-neutral-400">Total Pharmacies</p>
-          <p class="text-2xl font-bold text-white mt-1">14</p>
+            <p class="text-sm text-neutral-400">Total Pharmacies</p>
+            <p id="statTotalPharmacies" class="text-2xl font-bold text-white mt-1">—</p>
         </div>
 
         <!-- Total Drivers -->
         <div class="bg-neutral-800/80 border border-neutral-700 p-6 rounded-xl shadow">
-          <p class="text-sm text-neutral-400">Total Drivers</p>
-          <p class="text-2xl font-bold text-white mt-1">9</p>
+            <p class="text-sm text-neutral-400">Total Drivers</p>
+            <p id="statTotalDrivers" class="text-2xl font-bold text-white mt-1">—</p>
         </div>
 
         <!-- Active Orders -->
         <div class="bg-neutral-800/80 border border-neutral-700 p-6 rounded-xl shadow">
-          <p class="text-sm text-neutral-400">Active Orders</p>
-          <p class="text-2xl font-bold text-white mt-1">5</p>
+            <p class="text-sm text-neutral-400">Active Orders</p>
+            <p id="statActiveOrders" class="text-2xl font-bold text-white mt-1">—</p>
         </div>
 
         <!-- Monthly Revenue -->
         <div class="bg-neutral-800/80 border border-neutral-700 p-6 rounded-xl shadow">
-          <p class="text-sm text-neutral-400">Revenue (This Month)</p>
-          <p class="text-2xl font-bold text-white mt-1">$4,220</p>
+            <p class="text-sm text-neutral-400">Revenue (This Month)</p>
+            <p id="statRevenue" class="text-2xl font-bold text-white mt-1">—</p>
         </div>
 
         <!-- Driver Payouts -->
         <div class="bg-neutral-800/80 border border-neutral-700 p-6 rounded-xl shadow">
-          <p class="text-sm text-neutral-400">Driver Payouts (This Month)</p>
-          <p class="text-2xl font-bold text-white mt-1">$1,340</p>
+            <p class="text-sm text-neutral-400">Driver Payouts (This Month)</p>
+            <p id="statDriverPayouts" class="text-2xl font-bold text-white mt-1">—</p>
         </div>
-      </section>
+        </section>
+
 
       <!-- 3-column insights section -->
       <section class="px-6 grid grid-cols-1 lg:grid-cols-3 gap-6 pb-8">
+
         <!-- Recent Activity Feed -->
-        <div class="bg-neutral-800/80 border border-neutral-700 rounded-xl p-6">
-          <h2 class="text-lg font-semibold text-white mb-4">Recent Activity Feed</h2>
-          <ul class="space-y-4 text-sm">
-            <li class="flex items-start">
-              <span class="w-2 h-2 mt-1.5 bg-orange-500 rounded-full mr-3"></span>
-              <p><span class="font-semibold text-orange-400">Order #1024</span> marked as <span class="text-green-400 font-medium">Delivered</span></p>
-            </li>
-            <li class="flex items-start">
-              <span class="w-2 h-2 mt-1.5 bg-orange-500 rounded-full mr-3"></span>
-              <p><span class="font-semibold text-orange-400">New Pharmacy</span> “WellCare Meds” registered.</p>
-            </li>
-            <li class="flex items-start">
-              <span class="w-2 h-2 mt-1.5 bg-orange-500 rounded-full mr-3"></span>
-              <p><span class="font-semibold text-orange-400">Driver Invoice</span> for <span class="text-neutral-200">John Doe</span> generated.</p>
-            </li>
-          </ul>
+        <div id="recentActivity" class="bg-neutral-800/80 border border-neutral-700 rounded-xl p-6">
+        <div class="flex items-center justify-between mb-4">
+            <h2 class="text-lg font-semibold text-white">Recent Activity Feed</h2>
+            <button id="refreshRecentActivityBtn"
+            class="px-3 py-1 text-xs rounded-lg border border-neutral-600 text-neutral-300 hover:bg-neutral-700">
+            Refresh
+            </button>
         </div>
 
-        <!-- Live Map Placeholder -->
-        <div class="bg-neutral-800/80 border border-neutral-700 rounded-xl p-6">
-          <h2 class="text-lg font-semibold text-white mb-4">Live Order Tracking Map</h2>
-          <div class="bg-neutral-700/50 rounded-lg h-64 flex items-center justify-center text-neutral-400 text-sm">
-            [ Map Placeholder ]
-          </div>
-          <p class="text-xs text-neutral-500 mt-3 text-center">Displays ongoing deliveries by pickup/drop city</p>
+        <!-- status / errors -->
+        <p id="recentActivityStatus" class="text-xs text-neutral-400 hidden">Loading…</p>
+
+        <ul id="recentActivityList" class="space-y-4 text-sm">
+            <!-- JS will render items here -->
+        </ul>
         </div>
 
-        <!-- Alerts Section -->
+
+        <!-- 🧭 Order Tracking Manager -->
         <div class="bg-neutral-800/80 border border-neutral-700 rounded-xl p-6">
-          <h2 class="text-lg font-semibold text-white mb-4">Alerts</h2>
-          <ul class="space-y-3 text-sm">
-            <li class="flex items-start bg-neutral-800 border-l-4 border-yellow-500 p-3 rounded">
-              <span class="text-yellow-400 mr-2">⚠</span>
-              <p><strong>2</strong> Unassigned Orders require driver allocation.</p>
-            </li>
-            <li class="flex items-start bg-neutral-800 border-l-4 border-red-500 p-3 rounded">
-              <span class="text-red-400 mr-2">⏰</span>
-              <p><strong>1</strong> Overdue Invoice from “HealthPlus Pharmacy”.</p>
-            </li>
-            <li class="flex items-start bg-neutral-800 border-l-4 border-orange-500 p-3 rounded">
-              <span class="text-orange-400 mr-2">📨</span>
-              <p><strong>3</strong> Pending ContactAdmin tickets awaiting response.</p>
-            </li>
-          </ul>
+        <div class="flex items-center justify-between mb-4">
+            <h2 class="text-lg font-semibold text-white">Order Tracking Manager</h2>
+            <input
+            id="orderSearch"
+            type="text"
+            placeholder="Search by Order ID, Pharmacy, or Driver..."
+            class="px-3 py-2 bg-neutral-700 text-neutral-200 text-sm rounded-md w-72 focus:outline-none focus:ring-2 focus:ring-amber-500"
+            />
         </div>
+
+        <div id="ordersContainer" class="overflow-y-auto max-h-80 divide-y divide-neutral-700">
+            <!-- Orders will be dynamically populated here -->
+        </div>
+
+        <!-- Pagination Controls -->
+        <div class="flex justify-center items-center space-x-3 mt-4">
+            <button
+            id="prevPage"
+            class="px-3 py-1.5 bg-neutral-700 text-neutral-300 rounded-md text-sm hover:bg-neutral-600 disabled:opacity-40"
+            >
+            ← Prev
+            </button>
+            <span id="pageInfo" class="text-neutral-400 text-sm">Page 1</span>
+            <button
+            id="nextPage"
+            class="px-3 py-1.5 bg-neutral-700 text-neutral-300 rounded-md text-sm hover:bg-neutral-600 disabled:opacity-40"
+            >
+            Next →
+            </button>
+        </div>
+
+        <p class="text-xs text-neutral-500 mt-3 text-center">
+            Click any order to view timeline and proof images
+        </p>
+        </div>
+
+        <!-- 🔍 Modal for Order Details -->
+        <div id="orderModal" class="hidden fixed inset-0 bg-black/70 flex items-center justify-center z-50">
+        <div class="bg-neutral-900 p-6 rounded-xl border border-neutral-700 w-11/12 md:w-2/3 lg:w-1/2 relative">
+            <button
+            id="closeModal"
+            class="absolute top-3 right-3 text-neutral-400 hover:text-white text-xl font-bold"
+            >&times;</button>
+
+            <h3 id="modalTitle" class="text-lg font-semibold text-white mb-2">Order Details</h3>
+            <p id="modalSubTitle" class="text-sm text-neutral-400 mb-4"></p>
+
+            <div id="modalTimeline" class="space-y-3 text-sm text-neutral-300 mb-4">
+            <!-- Timeline goes here -->
+            </div>
+
+            <div id="modalProofs" class="grid grid-cols-2 sm:grid-cols-3 gap-3">
+            <!-- Proof Images -->
+            </div>
+        </div>
+        </div>
+
+
+        <!-- ⚠️ Alerts Section -->
+        <div class="bg-neutral-800/80 border border-neutral-700 rounded-xl p-6">
+        <div class="flex items-center justify-between mb-4">
+            <h2 class="text-lg font-semibold text-white">Alerts</h2>
+            <button
+            id="refreshAlerts"
+            class="px-3 py-1.5 bg-neutral-700 text-neutral-300 text-xs rounded hover:bg-neutral-600 transition"
+            >
+            Refresh
+            </button>
+        </div>
+
+        <!-- Alert summary counts -->
+        <div id="alertSummary" class="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-4 text-center">
+            <div class="bg-neutral-700/50 border border-neutral-700 rounded-lg p-3">
+            <p class="text-xs text-neutral-400 uppercase">Operational</p>
+            <p id="countOperational" class="text-xl font-semibold text-yellow-400">0</p>
+            </div>
+            <div class="bg-neutral-700/50 border border-neutral-700 rounded-lg p-3">
+            <p class="text-xs text-neutral-400 uppercase">Financial</p>
+            <p id="countFinancial" class="text-xl font-semibold text-red-400">0</p>
+            </div>
+            <div class="bg-neutral-700/50 border border-neutral-700 rounded-lg p-3">
+            <p class="text-xs text-neutral-400 uppercase">Support</p>
+            <p id="countSupport" class="text-xl font-semibold text-orange-400">0</p>
+            </div>
+        </div>
+
+        <!-- Alert List -->
+        <ul id="alertsContainer" class="space-y-3 text-sm">
+            <!-- Alerts will be dynamically populated -->
+            <li class="text-neutral-400 text-center py-4">Loading alerts...</li>
+        </ul>
+        </div>
+
       </section>
 
-      <!-- Recent Orders Table -->
-      <section class="px-6 pb-10">
-        <div class="bg-neutral-800/80 border border-neutral-700 rounded-xl shadow">
-          <div class="px-6 py-4 border-b border-neutral-700 flex justify-between items-center">
-            <h2 class="text-lg font-semibold text-white">Recent Orders</h2>
-            <select class="text-sm bg-neutral-800 border border-neutral-700 rounded-lg px-3 py-1 text-neutral-300 focus:ring-2 focus:ring-orange-500 focus:outline-none">
-              <option>All Status</option>
-              <option>Pending</option>
-              <option>Delivered</option>
-            </select>
-          </div>
-          <div class="overflow-x-auto">
-            <table class="min-w-full text-sm">
-              <thead class="bg-neutral-800 border-b border-neutral-700">
-                <tr>
-                  <th class="px-6 py-3 text-left text-neutral-400 uppercase tracking-wider">Order ID</th>
-                  <th class="px-6 py-3 text-left text-neutral-400 uppercase tracking-wider">Pharmacy</th>
-                  <th class="px-6 py-3 text-left text-neutral-400 uppercase tracking-wider">Driver</th>
-                  <th class="px-6 py-3 text-left text-neutral-400 uppercase tracking-wider">Status</th>
-                  <th class="px-6 py-3 text-left text-neutral-400 uppercase tracking-wider">Amount</th>
-                </tr>
-              </thead>
-              <tbody class="divide-y divide-neutral-700">
-                <tr class="hover:bg-neutral-700/50 transition">
-                  <td class="px-6 py-4 text-neutral-100 font-medium">#1024</td>
-                  <td class="px-6 py-4 text-neutral-300">HealthPlus Pharmacy</td>
-                  <td class="px-6 py-4 text-neutral-300">John Doe</td>
-                  <td class="px-6 py-4">
-                    <span class="inline-flex px-3 py-1 text-xs font-medium rounded-full bg-orange-500/20 text-orange-400 border border-orange-600/40">In Transit</span>
-                  </td>
-                  <td class="px-6 py-4 text-neutral-100 font-semibold">$22.50</td>
-                </tr>
-              </tbody>
-            </table>
-          </div>
+    <!-- Recent Orders Table -->
+    <section class="px-6 pb-10">
+    <div class="bg-neutral-800/80 border border-neutral-700 rounded-xl shadow">
+        <div class="px-6 py-4 border-b border-neutral-700 flex justify-between items-center">
+        <h2 class="text-lg font-semibold text-white">Recent Orders</h2>
+        <select
+            id="statusFilter"
+            class="text-sm bg-neutral-800 border border-neutral-700 rounded-lg px-3 py-1 text-neutral-300 focus:ring-2 focus:ring-orange-500 focus:outline-none"
+        >
+            <option value="All">All Status</option>
+            <option value="pending">Pending</option>
+            <option value="accepted">Accepted</option>
+            <option value="picked_up">Picked Up</option>
+            <option value="inTransit">In Transit</option>
+            <option value="delivered">Delivered</option>
+            <option value="cancelled">Cancelled</option>
+        </select>
         </div>
-      </section>
+
+        <div class="overflow-x-auto">
+        <table class="min-w-full text-sm">
+            <thead class="bg-neutral-800 border-b border-neutral-700">
+            <tr>
+                <th class="px-6 py-3 text-left text-neutral-400 uppercase tracking-wider">
+                Order ID
+                </th>
+                <th class="px-6 py-3 text-left text-neutral-400 uppercase tracking-wider">
+                Pharmacy
+                </th>
+                <th class="px-6 py-3 text-left text-neutral-400 uppercase tracking-wider">
+                Driver
+                </th>
+                <th class="px-6 py-3 text-left text-neutral-400 uppercase tracking-wider">
+                Status
+                </th>
+                <th class="px-6 py-3 text-left text-neutral-400 uppercase tracking-wider">
+                Amount
+                </th>
+            </tr>
+            </thead>
+            <tbody id="recentOrdersTableBody" class="divide-y divide-neutral-700">
+            <tr>
+                <td colspan="5" class="px-6 py-4 text-center text-neutral-500">
+                Loading recent orders...
+                </td>
+            </tr>
+            </tbody>
+        </table>
+        </div>
+    </div>
+    </section>
+
+
+      <script>
+
+          // Formatters
+  const fmtInt = n => new Intl.NumberFormat().format(Number(n || 0));
+  const fmtCAD = n => new Intl.NumberFormat('en-CA', { style: 'currency', currency: 'CAD', maximumFractionDigits: 2 }).format(Number(n || 0));
+
+  async function loadAdminDashboardStats() {
+    const els = {
+      pharm: document.getElementById('statTotalPharmacies'),
+      drivers: document.getElementById('statTotalDrivers'),
+      active: document.getElementById('statActiveOrders'),
+      revenue: document.getElementById('statRevenue'),
+      payouts: document.getElementById('statDriverPayouts'),
+    };
+
+    // quick skeleton placeholders
+    Object.values(els).forEach(el => el && (el.textContent = '…'));
+
+    try {
+      const res = await fetch('/api/adminDashboardStats/', { method: 'GET' });
+      if (!res.ok) throw new Error('Network error');
+      const { success, metrics } = await res.json();
+      if (!success) throw new Error('API returned error');
+
+      els.pharm.textContent   = fmtInt(metrics.total_pharmacies);
+      els.drivers.textContent = fmtInt(metrics.total_drivers);
+      els.active.textContent  = fmtInt(metrics.active_orders);
+      els.revenue.textContent = fmtCAD(metrics.revenue_this_month);
+      els.payouts.textContent = fmtCAD(metrics.driver_payout_this_month);
+    } catch (err) {
+      console.error('Failed to load dashboard stats:', err);
+      // graceful fallback
+      els.pharm.textContent   = '0';
+      els.drivers.textContent = '0';
+      els.active.textContent  = '0';
+      els.revenue.textContent = fmtCAD(0);
+      els.payouts.textContent = fmtCAD(0);
+    }
+  }
+
+  document.addEventListener('DOMContentLoaded', loadAdminDashboardStats);
+
+
+    const typeDotClass = {
+    "Order": "bg-orange-500",
+    "Pharmacy Invoice": "bg-yellow-500",
+    "Driver Invoice": "bg-amber-500",
+    "New Pharmacy": "bg-green-500",
+    "New Driver": "bg-cyan-500",
+    "Support Ticket": "bg-red-500",
+  };
+
+  // Utility: escape HTML
+  function esc(str) {
+    return String(str ?? "").replace(/[&<>"']/g, m => ({
+      "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;"
+    }[m]));
+  }
+
+  // Optional: nice short time (e.g., "2025-11-09 14:22")
+  function fmt(ts) {
+    try {
+      const d = new Date(ts);
+      const pad = n => String(n).padStart(2, "0");
+      return `${d.getFullYear()}-${pad(d.getMonth()+1)}-${pad(d.getDate())} ${pad(d.getHours())}:${pad(d.getMinutes())}`;
+    } catch { return ts; }
+  }
+
+  async function loadRecentActivity() {
+    const listEl = document.getElementById("recentActivityList");
+    const statusEl = document.getElementById("recentActivityStatus");
+
+    if (!listEl || !statusEl) return;
+
+    statusEl.classList.remove("hidden");
+    statusEl.textContent = "Loading…";
+    listEl.innerHTML = "";
+
+    try {
+      const res = await fetch("/api/recentActivityFeed/");
+      if (!res.ok) throw new Error("Network response was not ok");
+      const data = await res.json();
+
+      if (!data.success) throw new Error(data.error || "Unknown error");
+
+      const items = data.recent_activity || [];
+
+      if (items.length === 0) {
+        listEl.innerHTML = `
+          <li class="text-neutral-400 text-sm">No recent activity.</li>
+        `;
+        statusEl.classList.add("hidden");
+        return;
+      }
+
+      const frag = document.createDocumentFragment();
+
+      items.forEach(item => {
+        const dotClass = typeDotClass[item.type] || "bg-orange-500";
+        const li = document.createElement("li");
+        li.className = "flex items-start";
+
+        li.innerHTML = `
+          <span class="w-2 h-2 mt-1.5 ${dotClass} rounded-full mr-3"></span>
+          <p class="leading-snug">
+            <span class="font-semibold text-orange-400">${esc(item.type)}</span>:
+            <span class="text-neutral-200">${esc(item.title)}</span>
+            ${item.description ? ` — <span class="text-neutral-400">${esc(item.description)}</span>` : ""}
+            <span class="block text-xs text-neutral-500 mt-0.5">${fmt(item.timestamp)}</span>
+          </p>
+        `;
+        frag.appendChild(li);
+      });
+
+      listEl.appendChild(frag);
+      statusEl.classList.add("hidden");
+    } catch (err) {
+      listEl.innerHTML = `
+        <li class="text-red-400 text-sm">Failed to load recent activity.</li>
+      `;
+      statusEl.classList.remove("hidden");
+      statusEl.textContent = "Error loading feed.";
+      console.error("Recent Activity Feed error:", err);
+    }
+  }
+
+  // Wire up refresh button + initial load
+  document.addEventListener("DOMContentLoaded", () => {
+    const btn = document.getElementById("refreshRecentActivityBtn");
+    if (btn) btn.addEventListener("click", loadRecentActivity);
+
+    loadRecentActivity();
+    // Optional auto-refresh every 60s:
+    // setInterval(loadRecentActivity, 60000);
+  });
+
+
+
+
+let allOrders = [];
+let filteredOrders = [];
+let currentPage = 1;
+const ordersPerPage = 8;
+
+// 🧾 Load and initialize
+async function loadOrders() {
+  try {
+    const response = await fetch("/api/orderTrackingOverview/");
+    const data = await response.json();
+    if (!data.success) throw new Error("Failed to load orders");
+
+    allOrders = data.orders;
+    filteredOrders = [...allOrders];
+    currentPage = 1;
+    renderOrders();
+
+    // ✅ NEW: Render the Recent Orders Table
+    renderRecentOrdersTable(allOrders);
+  } catch (error) {
+    console.error(error);
+    document.getElementById("ordersContainer").innerHTML =
+      '<p class="text-center text-neutral-500 py-6">Failed to load order data.</p>';
+    document.getElementById("recentOrdersTableBody").innerHTML =
+      '<tr><td colspan="5" class="px-6 py-4 text-center text-neutral-500">Failed to load recent orders.</td></tr>';
+  }
+}
+
+// 🧭 Render paginated orders
+function renderOrders() {
+  const container = document.getElementById("ordersContainer");
+  const pageInfo = document.getElementById("pageInfo");
+  const totalPages = Math.ceil(filteredOrders.length / ordersPerPage);
+
+  if (!filteredOrders.length) {
+    container.innerHTML =
+      '<p class="text-center text-neutral-500 py-6">No orders found.</p>';
+    pageInfo.innerText = "No pages";
+    document.getElementById("prevPage").disabled = true;
+    document.getElementById("nextPage").disabled = true;
+    return;
+  }
+
+  const start = (currentPage - 1) * ordersPerPage;
+  const end = start + ordersPerPage;
+  const visibleOrders = filteredOrders.slice(start, end);
+
+  container.innerHTML = visibleOrders
+    .map(
+      (o) => `
+      <div
+        class="p-3 hover:bg-neutral-700/40 cursor-pointer transition"
+        onclick="openOrderModal(${o.order_id})"
+      >
+        <div class="flex justify-between items-center">
+          <div>
+            <p class="font-semibold text-white">Order #${o.order_id}</p>
+            <p class="text-xs text-neutral-400">
+              ${o.pharmacy.name} → ${o.drop_city} (${o.status})
+            </p>
+          </div>
+          <p class="text-sm text-amber-400">${o.driver ? o.driver.name : "Unassigned"}</p>
+        </div>
+      </div>`
+    )
+    .join("");
+
+  pageInfo.innerText = `Page ${currentPage} of ${totalPages}`;
+  document.getElementById("prevPage").disabled = currentPage === 1;
+  document.getElementById("nextPage").disabled = currentPage === totalPages;
+}
+
+// 🔍 Search filter (resets to page 1)
+document.getElementById("orderSearch").addEventListener("input", (e) => {
+  const query = e.target.value.toLowerCase();
+  filteredOrders = allOrders.filter(
+    (o) =>
+      o.order_id.toString().includes(query) ||
+      o.pharmacy.name.toLowerCase().includes(query) ||
+      (o.driver && o.driver.name.toLowerCase().includes(query))
+  );
+  currentPage = 1;
+  renderOrders();
+});
+
+// ◀️ Prev / Next controls
+document.getElementById("prevPage").addEventListener("click", () => {
+  if (currentPage > 1) {
+    currentPage--;
+    renderOrders();
+  }
+});
+document.getElementById("nextPage").addEventListener("click", () => {
+  const totalPages = Math.ceil(filteredOrders.length / ordersPerPage);
+  if (currentPage < totalPages) {
+    currentPage++;
+    renderOrders();
+  }
+});
+
+// 🪟 Modal handling
+function openOrderModal(orderId) {
+  const order = allOrders.find((o) => o.order_id === orderId);
+  if (!order) return;
+
+  document.getElementById("modalTitle").innerText = `Order #${order.order_id}`;
+  document.getElementById(
+    "modalSubTitle"
+  ).innerText = `${order.pharmacy.name} → ${order.drop_city} (${order.status})`;
+
+  // Timeline
+  document.getElementById("modalTimeline").innerHTML =
+    order.tracking_history.length
+      ? order.tracking_history
+          .map(
+            (t) => `
+            <div class="border-l-2 border-amber-500 pl-3">
+              <p class="text-neutral-100 font-medium">${t.step}</p>
+              <p class="text-xs text-neutral-400">${t.performed_by} • ${new Date(
+              t.timestamp
+            ).toLocaleString()}</p>
+              ${
+                t.note
+                  ? `<p class="text-xs text-neutral-500 italic mt-1">${t.note}</p>`
+                  : ""
+              }
+            </div>`
+          )
+          .join("")
+      : "<p class='text-neutral-500 text-sm'>No tracking events.</p>";
+
+  // Proofs
+  document.getElementById("modalProofs").innerHTML =
+    order.proof_images.length
+      ? order.proof_images
+          .map(
+            (img) => `
+            <div>
+              <img src="${img.image_url}" alt="${img.stage}" class="rounded-lg w-full h-32 object-cover border border-neutral-700" />
+              <p class="text-xs text-neutral-400 mt-1 text-center">${img.stage}</p>
+            </div>`
+          )
+          .join("")
+      : "<p class='text-neutral-500 text-sm'>No proof images.</p>";
+
+  document.getElementById("orderModal").classList.remove("hidden");
+}
+
+document.getElementById("closeModal").addEventListener("click", () => {
+  document.getElementById("orderModal").classList.add("hidden");
+});
+
+document.addEventListener("DOMContentLoaded", loadOrders);
+
+
+// 🆕 NEW SECTION: RECENT ORDERS TABLE RENDERER
+function renderRecentOrdersTable(allOrders) {
+  const tbody = document.getElementById("recentOrdersTableBody");
+  const statusFilter = document.getElementById("statusFilter");
+  if (!tbody) return;
+
+  // Sort by created_at descending
+  let recentOrders = [...allOrders].sort(
+    (a, b) => new Date(b.created_at) - new Date(a.created_at)
+  );
+
+  // Only keep top 8
+  recentOrders = recentOrders.slice(0, 8);
+
+  // Render function
+  const render = (orders) => {
+    if (!orders.length) {
+      tbody.innerHTML =
+        '<tr><td colspan="5" class="px-6 py-4 text-center text-neutral-500">No recent orders found.</td></tr>';
+      return;
+    }
+
+    tbody.innerHTML = orders
+      .map((o) => {
+        // Dynamic status badge color
+        let color = "orange";
+        if (o.status === "delivered") color = "green";
+        else if (o.status === "pending") color = "yellow";
+        else if (o.status === "cancelled") color = "red";
+        else if (o.status === "inTransit") color = "amber";
+        else if (o.status === "picked_up") color = "blue";
+
+        return `
+          <tr class="hover:bg-neutral-700/50 transition">
+            <td class="px-6 py-4 text-neutral-100 font-medium">#${o.order_id}</td>
+            <td class="px-6 py-4 text-neutral-300">${o.pharmacy.name}</td>
+            <td class="px-6 py-4 text-neutral-300">${
+              o.driver ? o.driver.name : "Unassigned"
+            }</td>
+            <td class="px-6 py-4">
+              <span class="inline-flex px-3 py-1 text-xs font-medium rounded-full bg-${color}-500/20 text-${color}-400 border border-${color}-600/40">
+                ${o.status}
+              </span>
+            </td>
+            <td class="px-6 py-4 text-neutral-100 font-semibold">$${parseFloat(
+              o.rate || 0
+            ).toFixed(2)}</td>
+          </tr>
+        `;
+      })
+      .join("");
+  };
+
+  // Initial render
+  render(recentOrders);
+
+  // Filter handler
+  statusFilter.addEventListener("change", (e) => {
+    const value = e.target.value.toLowerCase();
+    const filtered =
+      value === "all"
+        ? recentOrders
+        : recentOrders.filter((o) => o.status.toLowerCase() === value);
+    render(filtered);
+  });
+}
+
+
+async function loadAlerts() {
+  const container = document.getElementById("alertsContainer");
+  const summary = {
+    operational: document.getElementById("countOperational"),
+    financial: document.getElementById("countFinancial"),
+    support: document.getElementById("countSupport"),
+  };
+
+  try {
+    container.innerHTML = '<li class="text-neutral-400 text-center py-4">Loading...</li>';
+
+    const response = await fetch("/api/adminAlerts/");
+    const data = await response.json();
+
+    if (!data.success) throw new Error("Failed to fetch alerts");
+
+    // Update summary counts
+    summary.operational.textContent = data.categories.operational;
+    summary.financial.textContent = data.categories.financial;
+    summary.support.textContent = data.categories.support;
+
+    const alerts = [
+      ...data.alerts.operational.map((a) => ({ ...a, category: "operational" })),
+      ...data.alerts.financial.map((a) => ({ ...a, category: "financial" })),
+      ...data.alerts.support.map((a) => ({ ...a, category: "support" })),
+    ];
+
+    if (!alerts.length) {
+      container.innerHTML =
+        '<li class="text-neutral-400 text-center py-4">✅ All systems normal — no active alerts.</li>';
+      return;
+    }
+
+    // Render alerts list
+    container.innerHTML = alerts
+      .map((a) => {
+        let color = "yellow";
+        let icon = "⚠";
+        if (a.category === "financial") {
+          color = "red";
+          icon = "💰";
+        } else if (a.category === "support") {
+          color = "orange";
+          icon = "📨";
+        }
+
+        return `
+          <li class="flex items-start bg-neutral-800 border-l-4 border-${color}-500 p-3 rounded hover:bg-neutral-700/50 transition">
+            <span class="text-${color}-400 mr-2">${icon}</span>
+            <div>
+              <p class="text-neutral-200">
+                <strong>${a.type}</strong> — ${a.message}
+              </p>
+              <p class="text-xs text-neutral-500 mt-1">${new Date(
+                a.timestamp
+              ).toLocaleString()}</p>
+            </div>
+          </li>
+        `;
+      })
+      .join("");
+  } catch (error) {
+    console.error(error);
+    container.innerHTML =
+      '<li class="text-red-400 text-center py-4">❌ Failed to load alerts.</li>';
+  }
+}
+
+// 🧭 Refresh Button
+document.getElementById("refreshAlerts").addEventListener("click", loadAlerts);
+
+// 🚀 Load on page load
+document.addEventListener("DOMContentLoaded", loadAlerts);
+
+
+document.getElementById("logoutBtn").addEventListener("click", function (event) {
+  event.preventDefault();
+
+  // 🧹 Remove adminId cookie
+  document.cookie = "adminId=; path=/; expires=Thu, 01 Jan 1970 00:00:00 UTC; SameSite=Lax;";
+
+  // Optional: clear JWT or any other related cookies if used
+  document.cookie = "jwtToken=; path=/; expires=Thu, 01 Jan 1970 00:00:00 UTC; SameSite=Lax;";
+
+  // 🚀 Redirect to admin login page
+  window.location.href = "/adminLogin/";
+});
+
+      </script>
     </main>
   </div>
 </body>

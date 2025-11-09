@@ -54,6 +54,10 @@ urlpatterns = [
     path('adminInvoices/', views.adminInvoicesView, name="AdminInvoicesPage"),
     path('adminSupport/', views.adminSupportView, name="AdminSupportPage"),
     path('adminDrivers/', views.adminDriversView, name="AdminDriversPage"),
+    path("api/adminDashboardStats/", views.admin_dashboard_stats, name="admin_dashboard_stats"),
+    path("api/recentActivityFeed/", views.recent_activity_feed, name="recent_activity_feed"),
+    path("api/orderTrackingOverview/", views.order_tracking_overview, name="order_tracking_overview"),
+    path("api/adminAlerts/", views.admin_alerts, name="admin_alerts"),
 
     path('', views.landingView, name='landingPage'),
 

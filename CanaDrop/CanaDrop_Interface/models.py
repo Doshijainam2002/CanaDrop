@@ -40,6 +40,11 @@ class AdminUser(models.Model):
     class Meta:
         db_table = 'canadrop_interface_adminuser'  
 
+# models.py
+
+from django.db import models
+from django.contrib.auth.hashers import make_password, check_password
+
 class Pharmacy(models.Model):
     name = models.CharField(max_length=255)
     store_address = models.TextField()
@@ -52,8 +57,10 @@ class Pharmacy(models.Model):
     password = models.CharField(max_length=128, default="123456")  # Django hash length
     created_at = models.DateTimeField(auto_now_add=True)
 
+    # NEW
+    active = models.BooleanField(default=True, db_index=True)
+
     def save(self, *args, **kwargs):
-        # Hash the password if it's not already hashed
         if self.password and not self.password.startswith('pbkdf2_'):
             self.password = make_password(self.password)
         super().save(*args, **kwargs)
@@ -63,9 +70,10 @@ class Pharmacy(models.Model):
 
     def __str__(self):
         return self.name
-    
+
     class Meta:
         db_table = 'canadrop_interface_pharmacy'
+
 
 class Driver(models.Model):
     name = models.CharField(max_length=255)
@@ -75,9 +83,11 @@ class Driver(models.Model):
     vehicle_number = models.CharField(max_length=50, blank=True, null=True)
     created_at = models.DateTimeField(auto_now_add=True)
 
+    # NEW
+    active = models.BooleanField(default=True, db_index=True)
+
     def save(self, *args, **kwargs):
-        # Hash the password if it's not already hashed
-        if not self.password.startswith('pbkdf2_'):  # Django default hash prefix
+        if not self.password.startswith('pbkdf2_'):
             self.password = make_password(self.password)
         super().save(*args, **kwargs)
 
@@ -86,6 +96,7 @@ class Driver(models.Model):
 
     class Meta:
         db_table = 'canadrop_interface_driver'
+
 
 class DeliveryDistanceRate(models.Model):
     min_distance_km = models.DecimalField(max_digits=5, decimal_places=2, default=0)

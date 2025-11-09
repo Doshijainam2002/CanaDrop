@@ -5493,6 +5493,569 @@ def admin_login(request):
 
 
 
+# views.py
+from django.http import JsonResponse
+from django.views.decorators.csrf import csrf_exempt
+from django.db.models import Count, Sum, Q
+from datetime import date
+from .models import Pharmacy, Driver, DeliveryOrder, DriverInvoice
+
+@csrf_exempt
+def admin_dashboard_stats(request):
+    try:
+        # 1️⃣ Total active pharmacies
+        total_pharmacies = Pharmacy.objects.filter(active=True).count()
+
+        # 2️⃣ Total active drivers
+        total_drivers = Driver.objects.filter(active=True).count()
+
+        # 3️⃣ Active orders: pending / accepted / inTransit / picked_up
+        active_statuses = ['pending', 'accepted', 'inTransit', 'picked_up']
+        active_orders = DeliveryOrder.objects.filter(status__in=active_statuses).count()
+
+        # 4️⃣ Revenue this month (sum of rate for delivered)
+        today = date.today()
+        revenue_this_month = (
+            DeliveryOrder.objects.filter(
+                status='delivered',
+                created_at__year=today.year,
+                created_at__month=today.month
+            ).aggregate(total=Sum('rate'))['total'] or 0
+        )
+
+        # 5️⃣ Driver payouts this month
+        # include invoices where start_date OR end_date is in current month
+        driver_payout_this_month = (
+            DriverInvoice.objects.filter(
+                Q(start_date__year=today.year, start_date__month=today.month)
+                | Q(end_date__year=today.year, end_date__month=today.month)
+            ).aggregate(total=Sum('total_amount'))['total'] or 0
+        )
+
+        data = {
+            "success": True,
+            "metrics": {
+                "total_pharmacies": total_pharmacies,
+                "total_drivers": total_drivers,
+                "active_orders": active_orders,
+                "revenue_this_month": float(revenue_this_month),
+                "driver_payout_this_month": float(driver_payout_this_month),
+            }
+        }
+        return JsonResponse(data, status=200)
+
+    except Exception as e:
+        return JsonResponse({"success": False, "error": str(e)}, status=500)
+
+
+
+
+# views.py
+from django.http import JsonResponse
+from django.views.decorators.csrf import csrf_exempt
+from django.utils.timezone import now
+from itertools import chain
+from random import sample
+
+@csrf_exempt
+def recent_activity_feed(request):
+    """
+    Returns a unified feed of the most recent 8 activity items across
+    Orders, Invoices, Drivers, Pharmacies, and Support Tickets.
+    Ensures a balanced mix from different tables.
+    """
+    try:
+        # Helper to safely slice even when fewer items exist
+        def safe_slice(qs, n): 
+            return list(qs[:n])
+
+        # 1️⃣ Recent Orders
+        orders = safe_slice(
+            DeliveryOrder.objects.select_related("pharmacy", "driver")
+            .order_by("-created_at"), 3
+        )
+        order_feed = [{
+            "type": "Order",
+            "title": f"Order #{o.id} ({o.status})",
+            "description": f"Placed by {o.pharmacy.name}. "
+                           f"Driver: {o.driver.name if o.driver else 'Unassigned'}",
+            "timestamp": o.created_at,
+        } for o in orders]
+
+        # 2️⃣ Recent Pharmacy Invoices
+        invoices = safe_slice(
+            Invoice.objects.select_related("pharmacy")
+            .order_by("-created_at"), 2
+        )
+        invoice_feed = [{
+            "type": "Pharmacy Invoice",
+            "title": f"Invoice #{inv.id} ({inv.status})",
+            "description": f"Generated for {inv.pharmacy.name} "
+                           f"(${inv.total_amount}, {inv.total_orders} orders)",
+            "timestamp": inv.created_at,
+        } for inv in invoices]
+
+        # 3️⃣ Recent Driver Invoices
+        driver_invoices = safe_slice(
+            DriverInvoice.objects.select_related("driver")
+            .order_by("-created_at"), 1
+        )
+        driver_invoice_feed = [{
+            "type": "Driver Invoice",
+            "title": f"Driver Invoice #{d.id} ({d.status})",
+            "description": f"For driver {d.driver.name}, total ${d.total_amount}",
+            "timestamp": d.created_at,
+        } for d in driver_invoices]
+
+        # 4️⃣ Recently Registered Pharmacies
+        pharmacies = safe_slice(
+            Pharmacy.objects.order_by("-created_at"), 1
+        )
+        pharmacy_feed = [{
+            "type": "New Pharmacy",
+            "title": f"{p.name} joined CanaDrop",
+            "description": f"Located in {p.city}, {p.province}",
+            "timestamp": p.created_at,
+        } for p in pharmacies]
+
+        # 5️⃣ Recently Registered Drivers
+        drivers = safe_slice(
+            Driver.objects.order_by("-created_at"), 1
+        )
+        driver_feed = [{
+            "type": "New Driver",
+            "title": f"{d.name} registered as driver",
+            "description": f"Vehicle #{d.vehicle_number or 'N/A'}",
+            "timestamp": d.created_at,
+        } for d in drivers]
+
+        # 6️⃣ Recent Support Tickets
+        tickets = safe_slice(
+            ContactAdmin.objects.select_related("pharmacy", "driver")
+            .order_by("-created_at"), 2
+        )
+        ticket_feed = [{
+            "type": "Support Ticket",
+            "title": f"{t.get_subject_display()} ({t.status})",
+            "description": f"From {t.pharmacy.name if t.pharmacy else t.driver.name if t.driver else 'Unknown'}",
+            "timestamp": t.created_at,
+        } for t in tickets]
+
+        # Combine all feeds
+        combined = list(chain(
+            order_feed, invoice_feed, driver_invoice_feed,
+            pharmacy_feed, driver_feed, ticket_feed
+        ))
+
+        # Sort by timestamp (latest first)
+        combined.sort(key=lambda x: x["timestamp"], reverse=True)
+
+        # Take only the most recent 8 items overall
+        recent_8 = combined[:8]
+
+        # Convert datetime to ISO
+        for item in recent_8:
+            item["timestamp"] = item["timestamp"].isoformat()
+
+        return JsonResponse({
+            "success": True,
+            "recent_activity": recent_8,
+            "count": len(recent_8),
+            "generated_at": now().isoformat()
+        })
+
+    except Exception as e:
+        return JsonResponse({"success": False, "error": str(e)}, status=500)
+
+
+
+from django.http import JsonResponse
+from django.views.decorators.csrf import csrf_exempt
+from django.utils.timezone import now
+
+@csrf_exempt
+def order_tracking_overview(request):
+    """
+    Returns a detailed list of all delivery orders
+    with their tracking history and proof images.
+    """
+    try:
+        all_orders = DeliveryOrder.objects.select_related("pharmacy", "driver").order_by("-created_at")
+
+        result = []
+        for order in all_orders:
+            # Fetch all tracking events for this order
+            trackings = OrderTracking.objects.filter(order=order).select_related("driver", "pharmacy").order_by("timestamp")
+            tracking_history = []
+            for t in trackings:
+                tracking_history.append({
+                    "step": t.step,
+                    "performed_by": t.performed_by or (t.driver.name if t.driver else t.pharmacy.name if t.pharmacy else "Unknown"),
+                    "timestamp": t.timestamp.isoformat(),
+                    "note": t.note or "",
+                    "image_url": t.image_url or None
+                })
+
+            # Fetch proof images for this order
+            proof_images = OrderImage.objects.filter(order=order).order_by("uploaded_at")
+            images = [{
+                "stage": img.stage,
+                "image_url": img.image_url,
+                "uploaded_at": img.uploaded_at.isoformat()
+            } for img in proof_images]
+
+            result.append({
+                "order_id": order.id,
+                "status": order.status,
+                "rate": float(order.rate),
+                "pickup_city": order.pickup_city,
+                "drop_city": order.drop_city,
+                "pickup_day": order.pickup_day.isoformat(),
+                "customer_name": order.customer_name,
+                "pharmacy": {
+                    "id": order.pharmacy.id,
+                    "name": order.pharmacy.name,
+                    "city": order.pharmacy.city,
+                    "email": order.pharmacy.email,
+                },
+                "driver": ({
+                    "id": order.driver.id,
+                    "name": order.driver.name,
+                    "vehicle_number": order.driver.vehicle_number
+                } if order.driver else None),
+                "tracking_history": tracking_history,
+                "proof_images": images,
+                "created_at": order.created_at.isoformat(),
+                "updated_at": order.updated_at.isoformat(),
+            })
+
+        return JsonResponse({
+            "success": True,
+            "orders": result,
+            "count": len(result),
+            "generated_at": now().isoformat()
+        })
+
+    except Exception as e:
+        return JsonResponse({"success": False, "error": str(e)}, status=500)
+
+
+from django.http import JsonResponse
+from django.views.decorators.csrf import csrf_exempt
+from django.utils import timezone
+from datetime import timedelta
+
+@csrf_exempt
+def admin_alerts(request):
+    """
+    Incremental alert building with error isolation
+    """
+    alerts = {
+        "operational": [],
+        "financial": [],
+        "support": []
+    }
+    
+    errors = []
+    current_time = timezone.now()
+    
+    # ----------------------------
+    # 1️⃣ OPERATIONAL ALERTS
+    # ----------------------------
+    
+    # Test 1: Unassigned orders
+    try:
+        from canadrop_interface.models import DeliveryOrder
+        
+        unassigned_orders = DeliveryOrder.objects.filter(
+            driver__isnull=True,
+            status__in=["pending", "accepted"]
+        )[:20]
+        
+        for order in unassigned_orders:
+            pharmacy_name = "Unknown"
+            try:
+                if order.pharmacy:
+                    pharmacy_name = order.pharmacy.name
+            except:
+                pass
+                
+            alerts["operational"].append({
+                "type": "Unassigned Order",
+                "message": f"Order #{order.id} from {pharmacy_name} has no assigned driver.",
+                "order_id": order.id,
+                "timestamp": str(order.created_at) if order.created_at else ""
+            })
+    except Exception as e:
+        errors.append(f"Unassigned orders error: {str(e)}")
+    
+    # Test 2: Stuck orders
+    try:
+        from canadrop_interface.models import DeliveryOrder
+        
+        two_hours_ago = current_time - timedelta(hours=2)
+        stuck_orders = DeliveryOrder.objects.filter(
+            status__in=["inTransit", "picked_up"],
+            updated_at__lt=two_hours_ago
+        )[:20]
+        
+        for order in stuck_orders:
+            pharmacy_name = "Unknown"
+            try:
+                if order.pharmacy:
+                    pharmacy_name = order.pharmacy.name
+            except:
+                pass
+                
+            alerts["operational"].append({
+                "type": "Stuck Order",
+                "message": f"Order #{order.id} by {pharmacy_name} is '{order.status}' for over 2 hours.",
+                "order_id": order.id,
+                "timestamp": str(order.updated_at) if order.updated_at else ""
+            })
+    except Exception as e:
+        errors.append(f"Stuck orders error: {str(e)}")
+    
+    # Test 3: Inactive drivers with orders
+    try:
+        from canadrop_interface.models import DeliveryOrder
+        
+        orders_with_drivers = DeliveryOrder.objects.filter(
+            driver__isnull=False,
+            status__in=["pending", "accepted", "inTransit"]
+        )[:50]
+        
+        for order in orders_with_drivers:
+            try:
+                if order.driver and hasattr(order.driver, 'active') and order.driver.active == False:
+                    alerts["operational"].append({
+                        "type": "Inactive Driver Assigned",
+                        "message": f"Inactive driver {order.driver.name} still has order #{order.id}.",
+                        "order_id": order.id,
+                        "timestamp": str(order.updated_at) if order.updated_at else ""
+                    })
+            except:
+                pass
+    except Exception as e:
+        errors.append(f"Inactive driver orders error: {str(e)}")
+    
+    # Test 4: Inactive pharmacy orders
+    try:
+        from canadrop_interface.models import DeliveryOrder
+        
+        three_days_ago = current_time - timedelta(days=3)
+        recent_orders = DeliveryOrder.objects.filter(
+            pharmacy__isnull=False,
+            created_at__gte=three_days_ago
+        )[:50]
+        
+        for order in recent_orders:
+            try:
+                if order.pharmacy and hasattr(order.pharmacy, 'active') and order.pharmacy.active == False:
+                    alerts["operational"].append({
+                        "type": "Inactive Pharmacy Order",
+                        "message": f"Inactive pharmacy {order.pharmacy.name} created order #{order.id}.",
+                        "order_id": order.id,
+                        "timestamp": str(order.created_at) if order.created_at else ""
+                    })
+            except:
+                pass
+    except Exception as e:
+        errors.append(f"Inactive pharmacy orders error: {str(e)}")
+    
+    # ----------------------------
+    # 2️⃣ FINANCIAL ALERTS
+    # ----------------------------
+    
+    # Test 5: Overdue invoices
+    try:
+        from canadrop_interface.models import Invoice
+        
+        overdue_invoices = Invoice.objects.filter(status="past_due")[:20]
+        
+        for inv in overdue_invoices:
+            pharmacy_name = "Unknown"
+            try:
+                if inv.pharmacy:
+                    pharmacy_name = inv.pharmacy.name
+            except:
+                pass
+            
+            amount = 0
+            try:
+                amount = float(inv.total_amount)
+            except:
+                pass
+                
+            alerts["financial"].append({
+                "type": "Overdue Invoice",
+                "message": f"Invoice #{inv.id} for {pharmacy_name} is past due (${amount:.2f}).",
+                "invoice_id": inv.id,
+                "timestamp": str(inv.due_date) if inv.due_date else ""
+            })
+    except Exception as e:
+        errors.append(f"Overdue invoices error: {str(e)}")
+    
+    # Test 6: Pending driver payouts
+    try:
+        from canadrop_interface.models import DriverInvoice
+        
+        today = current_time.date()
+        pending_driver_invoices = DriverInvoice.objects.filter(
+            status="generated",
+            due_date__lt=today
+        )[:20]
+        
+        for inv in pending_driver_invoices:
+            driver_name = "Unknown"
+            try:
+                if inv.driver:
+                    driver_name = inv.driver.name
+            except:
+                pass
+            
+            amount = 0
+            try:
+                amount = float(inv.total_amount)
+            except:
+                pass
+                
+            alerts["financial"].append({
+                "type": "Pending Driver Payout",
+                "message": f"Driver {driver_name}'s invoice #{inv.id} is pending (${amount:.2f}).",
+                "invoice_id": inv.id,
+                "timestamp": str(inv.due_date) if inv.due_date else ""
+            })
+    except Exception as e:
+        errors.append(f"Pending driver invoices error: {str(e)}")
+    
+    # ----------------------------
+    # 3️⃣ SUPPORT ALERTS
+    # ----------------------------
+    
+    # Test 7: Old pending tickets
+    try:
+        from canadrop_interface.models import ContactAdmin
+        
+        forty_eight_hours_ago = current_time - timedelta(hours=48)
+        old_pending_tickets = ContactAdmin.objects.filter(
+            status="pending",
+            created_at__lt=forty_eight_hours_ago
+        )[:20]
+        
+        subject_map = {
+            'account_creation': 'Account Creation Issue',
+            'login_problem': 'Login / Authentication Problem',
+            'password_reset': 'Password Reset Issue',
+            'profile_update': 'Profile / Information Update Issue',
+            'order_placement': 'Order Placement Issue',
+            'order_cancellation': 'Order Cancellation Issue',
+            'order_tracking': 'Order Tracking / Status Issue',
+            'order_payment': 'Order Payment / Rate Issue',
+            'pickup_issue': 'Pickup Issue by Driver',
+            'delivery_delay': 'Delivery Delay',
+            'delivery_incorrect': 'Incorrect Delivery / Item Issue',
+            'driver_unavailable': 'Driver Unavailable / Assignment Issue',
+            'invoice_generated': 'Invoice Generated Issue',
+            'invoice_payment': 'Invoice Payment / Stripe Issue',
+            'driver_invoice': 'Driver Invoice / Payment Issue',
+            'technical_bug': 'Technical / App Bug',
+            'cloud_storage': 'Cloud / Image Upload Issue',
+            'notification': 'Notification / Alert Issue',
+            'feedback': 'Feedback / Suggestion',
+            'other': 'Other',
+        }
+        
+        for ticket in old_pending_tickets:
+            sender = "Unknown"
+            try:
+                if ticket.pharmacy:
+                    sender = ticket.pharmacy.name
+                elif ticket.driver:
+                    sender = ticket.driver.name
+            except:
+                pass
+            
+            subject_display = subject_map.get(ticket.subject, ticket.subject)
+            if ticket.subject == 'other' and ticket.other_subject:
+                subject_display = ticket.other_subject
+                
+            alerts["support"].append({
+                "type": "Old Pending Ticket",
+                "message": f"Ticket '{subject_display}' from {sender} pending > 48 hours.",
+                "ticket_id": ticket.id,
+                "timestamp": str(ticket.created_at) if ticket.created_at else ""
+            })
+    except Exception as e:
+        errors.append(f"Old pending tickets error: {str(e)}")
+    
+    # Test 8: Unresponded tickets
+    try:
+        from canadrop_interface.models import ContactAdmin
+        
+        in_progress_tickets = ContactAdmin.objects.filter(status="in_progress")[:50]
+        
+        subject_map = {
+            'account_creation': 'Account Creation Issue',
+            'login_problem': 'Login / Authentication Problem',
+            'password_reset': 'Password Reset Issue',
+            'profile_update': 'Profile / Information Update Issue',
+            'order_placement': 'Order Placement Issue',
+            'order_cancellation': 'Order Cancellation Issue',
+            'order_tracking': 'Order Tracking / Status Issue',
+            'order_payment': 'Order Payment / Rate Issue',
+            'pickup_issue': 'Pickup Issue by Driver',
+            'delivery_delay': 'Delivery Delay',
+            'delivery_incorrect': 'Incorrect Delivery / Item Issue',
+            'driver_unavailable': 'Driver Unavailable / Assignment Issue',
+            'invoice_generated': 'Invoice Generated Issue',
+            'invoice_payment': 'Invoice Payment / Stripe Issue',
+            'driver_invoice': 'Driver Invoice / Payment Issue',
+            'technical_bug': 'Technical / App Bug',
+            'cloud_storage': 'Cloud / Image Upload Issue',
+            'notification': 'Notification / Alert Issue',
+            'feedback': 'Feedback / Suggestion',
+            'other': 'Other',
+        }
+        
+        for ticket in in_progress_tickets:
+            try:
+                if not ticket.admin_response or ticket.admin_response.strip() == "":
+                    subject_display = subject_map.get(ticket.subject, ticket.subject)
+                    if ticket.subject == 'other' and ticket.other_subject:
+                        subject_display = ticket.other_subject
+                        
+                    alerts["support"].append({
+                        "type": "Unresponded Ticket",
+                        "message": f"'{subject_display}' ticket has no admin response yet.",
+                        "ticket_id": ticket.id,
+                        "timestamp": str(ticket.updated_at) if ticket.updated_at else ""
+                    })
+            except:
+                pass
+    except Exception as e:
+        errors.append(f"Unresponded tickets error: {str(e)}")
+    
+    # ----------------------------
+    # ✅ Return Response
+    # ----------------------------
+    total_alerts = sum(len(v) for v in alerts.values())
+    
+    return JsonResponse({
+        "success": True,
+        "total_alerts": total_alerts,
+        "categories": {k: len(v) for k, v in alerts.items()},
+        "alerts": alerts,
+        "generated_at": str(current_time),
+        "errors": errors if errors else None
+    }, status=200)
+
+
+
+
+
+
+
 
 
 
