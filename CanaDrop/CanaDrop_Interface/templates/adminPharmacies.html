@@ -14,6 +14,10 @@
         linear-gradient(135deg, rgba(0,0,0,0) 75%, rgba(255,255,255,0.04) 75%) 0 0/28px 28px;
       box-shadow: inset 0 0 120px rgba(0,0,0,0.35);
     }
+    .custom-scrollbar::-webkit-scrollbar { width: 8px; }
+    .custom-scrollbar::-webkit-scrollbar-track { background: #262626; border-radius: 4px; }
+    .custom-scrollbar::-webkit-scrollbar-thumb { background: #525252; border-radius: 4px; }
+    .custom-scrollbar::-webkit-scrollbar-thumb:hover { background: #737373; }
   </style>
 </head>
 <body class="min-h-screen bg-neutral-900 text-neutral-100 logistics-bg">
@@ -52,16 +56,12 @@
           <svg class="w-5 h-5 mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 10h.01M12 10h.01M16 10h.01M21 12c0 4.418-4.03 8-9 8s-9-3.582-9-8 4.03-8 9-8 9 3.582 9 8zM12 14v-4m0 4h.01"/></svg>
           Support
         </a>
-        <a href="#" 
-        id="logoutBtn"
-        class="flex items-center px-3 py-2 rounded-lg text-neutral-300 hover:bg-neutral-700 transition">
-            <svg class="w-5 h-5 mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                    d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a2 2 0 01-2 2H5a2 2 0 01-2-2V7a2 2 0 012-2h6a2 2 0 012 2v1" />
-            </svg>
-            Logout
+        <a href="#" id="logoutBtn" class="flex items-center px-3 py-2 rounded-lg text-neutral-300 hover:bg-neutral-700 transition">
+          <svg class="w-5 h-5 mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a2 2 0 01-2 2H5a2 2 0 01-2-2V7a2 2 0 012-2h6a2 2 0 012 2v1" />
+          </svg>
+          Logout
         </a>
-
       </nav>
 
       <!-- Profile -->
@@ -83,9 +83,6 @@
           <h1 class="text-2xl font-bold text-white">Pharmacies Management</h1>
           <p class="text-sm text-neutral-400">Manage pharmacy accounts, orders, and payments</p>
         </div>
-        <button class="px-4 py-2 bg-gradient-to-r from-orange-600 to-orange-500 text-white rounded-lg text-sm font-medium hover:from-orange-500 hover:to-orange-400 transition">
-          Refresh List
-        </button>
       </header>
 
       <!-- Filters -->
@@ -93,28 +90,23 @@
         <div class="bg-neutral-800/80 border border-neutral-700 rounded-xl p-6">
           <h2 class="text-lg font-semibold text-white mb-4">Search & Filters</h2>
           <div class="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-5 gap-4">
-            <input type="text" placeholder="Search Pharmacy by Name or Email" class="bg-neutral-900 border border-neutral-700 rounded-lg px-3 py-2 text-sm w-full focus:ring-2 focus:ring-orange-500 focus:outline-none"/>
+            <input id="searchPharmacy" type="text" placeholder="Search Pharmacy by Name or Email" class="bg-neutral-900 border border-neutral-700 rounded-lg px-3 py-2 text-sm w-full text-neutral-300 focus:ring-2 focus:ring-orange-500 focus:outline-none"/>
             
-            <select class="bg-neutral-900 border border-neutral-700 rounded-lg px-3 py-2 text-sm text-neutral-300 focus:ring-2 focus:ring-orange-500 focus:outline-none">
-              <option>City (All)</option>
-              <option>Kitchener</option>
-              <option>Waterloo</option>
-              <option>Cambridge</option>
+            <select id="filterCity" class="bg-neutral-900 border border-neutral-700 rounded-lg px-3 py-2 text-sm text-neutral-300 focus:ring-2 focus:ring-orange-500 focus:outline-none">
+              <option value="">City (All)</option>
             </select>
 
-            <select class="bg-neutral-900 border border-neutral-700 rounded-lg px-3 py-2 text-sm text-neutral-300 focus:ring-2 focus:ring-orange-500 focus:outline-none">
-              <option>Province (All)</option>
-              <option>Ontario</option>
-              <option>Quebec</option>
+            <select id="filterProvince" class="bg-neutral-900 border border-neutral-700 rounded-lg px-3 py-2 text-sm text-neutral-300 focus:ring-2 focus:ring-orange-500 focus:outline-none">
+              <option value="">Province (All)</option>
             </select>
 
-            <select class="bg-neutral-900 border border-neutral-700 rounded-lg px-3 py-2 text-sm text-neutral-300 focus:ring-2 focus:ring-orange-500 focus:outline-none">
-              <option>Status (All)</option>
-              <option>Active</option>
-              <option>Inactive</option>
+            <select id="filterStatus" class="bg-neutral-900 border border-neutral-700 rounded-lg px-3 py-2 text-sm text-neutral-300 focus:ring-2 focus:ring-orange-500 focus:outline-none">
+              <option value="">Status (All)</option>
+              <option value="true">Active</option>
+              <option value="false">Inactive</option>
             </select>
 
-            <button class="px-4 py-2 bg-gradient-to-r from-orange-600 to-orange-500 text-white rounded-lg text-sm font-medium hover:from-orange-500 hover:to-orange-400 transition">
+            <button onclick="applyFilters()" class="px-4 py-2 bg-gradient-to-r from-orange-600 to-orange-500 text-white rounded-lg text-sm font-medium hover:from-orange-500 hover:to-orange-400 transition">
               Apply Filters
             </button>
           </div>
@@ -126,7 +118,7 @@
         <div class="bg-neutral-800/80 border border-neutral-700 rounded-xl shadow">
           <div class="px-6 py-4 border-b border-neutral-700 flex justify-between items-center">
             <h2 class="text-lg font-semibold text-white">Pharmacy List</h2>
-            <button class="text-sm text-orange-400 hover:text-orange-300">+ Add Pharmacy</button>
+            <button onclick="addPharmacy()" class="text-sm text-orange-400 hover:text-orange-300">+ Add Pharmacy</button>
           </div>
           <div class="overflow-x-auto">
             <table class="min-w-full text-sm">
@@ -141,22 +133,8 @@
                   <th class="px-6 py-3 text-left text-neutral-400 uppercase tracking-wider">Actions</th>
                 </tr>
               </thead>
-              <tbody class="divide-y divide-neutral-700">
-                <tr class="hover:bg-neutral-700/50 transition">
-                  <td class="px-6 py-4 text-neutral-100 font-medium">HealthPlus Pharmacy</td>
-                  <td class="px-6 py-4 text-neutral-300">Kitchener</td>
-                  <td class="px-6 py-4 text-neutral-300">Ontario</td>
-                  <td class="px-6 py-4">
-                    <span class="inline-flex px-3 py-1 text-xs font-medium rounded-full bg-green-500/20 text-green-400 border border-green-600/40">Active</span>
-                  </td>
-                  <td class="px-6 py-4 text-neutral-100">48</td>
-                  <td class="px-6 py-4 text-orange-400 font-semibold">$120.50</td>
-                  <td class="px-6 py-4 space-x-2">
-                    <button class="text-xs text-orange-400 border border-orange-600/40 px-3 py-1 rounded hover:bg-orange-600/20">View</button>
-                    <button class="text-xs text-neutral-300 border border-neutral-600 px-3 py-1 rounded hover:bg-neutral-700">Edit</button>
-                    <button class="text-xs text-red-400 border border-red-600/40 px-3 py-1 rounded hover:bg-red-600/20">Deactivate</button>
-                  </td>
-                </tr>
+              <tbody id="pharmacyTableBody" class="divide-y divide-neutral-700">
+                <tr><td colspan="7" class="text-center text-neutral-500 py-4">Loading pharmacies...</td></tr>
               </tbody>
             </table>
           </div>
@@ -164,31 +142,25 @@
       </section>
 
       <!-- Pharmacy Details -->
-      <section class="px-6 pb-10 grid grid-cols-1 lg:grid-cols-2 gap-6">
+      <section id="pharmacyDetailsSection" class="px-6 pb-10 grid grid-cols-1 lg:grid-cols-2 gap-6 hidden">
+        <!-- Pharmacy Profile -->
         <div class="bg-neutral-800/80 border border-neutral-700 rounded-xl p-6">
           <h2 class="text-lg font-semibold text-white mb-4">Pharmacy Profile</h2>
-          <div class="space-y-3 text-sm">
-            <p><span class="text-neutral-400">Name:</span> <span class="text-neutral-100 font-medium">HealthPlus Pharmacy</span></p>
-            <p><span class="text-neutral-400">Email:</span> admin@healthplus.ca</p>
-            <p><span class="text-neutral-400">Phone:</span> +1 (226) 555-1212</p>
-            <p><span class="text-neutral-400">Address:</span> 205 Watervale Crescent, Kitchener, ON, N2A 0C6</p>
-            <p><span class="text-neutral-400">Joined:</span> Jan 2024</p>
+          <div id="pharmacyProfileContent" class="space-y-3 text-sm">
+            <!-- Dynamic content -->
           </div>
-          <div class="flex space-x-3 pt-5">
-            <button class="flex-1 bg-gradient-to-r from-orange-600 to-orange-500 text-white py-2 rounded-lg text-sm font-medium hover:from-orange-500 hover:to-orange-400 transition">
+          <div class="flex pt-5">
+            <button onclick="editPharmacyDetails()" 
+              class="w-full bg-gradient-to-r from-orange-600 to-orange-500 text-white py-2 rounded-lg text-sm font-medium hover:from-orange-500 hover:to-orange-400 transition">
               Edit Details
             </button>
-            <button class="flex-1 border border-neutral-600 text-neutral-300 py-2 rounded-lg text-sm font-medium hover:bg-neutral-700">
-              Reset Password
-            </button>
           </div>
-
           <div class="mt-6 border-t border-neutral-700 pt-4">
             <h3 class="text-sm font-semibold text-white mb-2">Account Actions</h3>
             <div class="flex space-x-3">
-              <button class="flex-1 text-xs text-yellow-400 border border-yellow-600/40 px-3 py-2 rounded hover:bg-yellow-600/20">Deactivate</button>
-              <button class="flex-1 text-xs text-green-400 border border-green-600/40 px-3 py-2 rounded hover:bg-green-600/20">Reactivate</button>
-              <button class="flex-1 text-xs text-orange-400 border border-orange-600/40 px-3 py-2 rounded hover:bg-orange-600/20">Reset Credentials</button>
+              <button onclick="deactivatePharmacy()" class="flex-1 text-xs text-yellow-400 border border-yellow-600/40 px-3 py-2 rounded hover:bg-yellow-600/20">Deactivate</button>
+              <button onclick="reactivatePharmacy()" class="flex-1 text-xs text-green-400 border border-green-600/40 px-3 py-2 rounded hover:bg-green-600/20">Reactivate</button>
+              <button onclick="resetCredentials()" class="flex-1 text-xs text-orange-400 border border-orange-600/40 px-3 py-2 rounded hover:bg-orange-600/20">Reset Credentials</button>
             </div>
           </div>
         </div>
@@ -197,56 +169,855 @@
         <div class="bg-neutral-800/80 border border-neutral-700 rounded-xl p-6">
           <div class="flex justify-between items-center mb-4">
             <h2 class="text-lg font-semibold text-white">Invoices</h2>
-            <div class="space-x-2">
-              <button class="px-3 py-1 bg-gradient-to-r from-orange-600 to-orange-500 text-white text-xs rounded-lg hover:from-orange-500 hover:to-orange-400">Generate Invoice</button>
-              <button class="px-3 py-1 border border-neutral-600 text-neutral-300 text-xs rounded-lg hover:bg-neutral-700">Mark as Paid</button>
-            </div>
+
           </div>
-          <div class="overflow-x-auto">
+          <div class="overflow-x-auto custom-scrollbar max-h-96">
             <table class="min-w-full text-sm">
-              <thead class="bg-neutral-800 border-b border-neutral-700">
+              <thead class="bg-neutral-800 border-b border-neutral-700 sticky top-0">
                 <tr>
-                  <th class="px-6 py-3 text-left text-neutral-400 uppercase tracking-wider">Invoice ID</th>
-                  <th class="px-6 py-3 text-left text-neutral-400 uppercase tracking-wider">Date Range</th>
-                  <th class="px-6 py-3 text-left text-neutral-400 uppercase tracking-wider">Total ($)</th>
-                  <th class="px-6 py-3 text-left text-neutral-400 uppercase tracking-wider">Status</th>
-                  <th class="px-6 py-3 text-left text-neutral-400 uppercase tracking-wider">Due Date</th>
-                  <th class="px-6 py-3 text-left text-neutral-400 uppercase tracking-wider">Actions</th>
+                  <th class="px-4 py-3 text-left text-neutral-400 uppercase tracking-wider text-xs">Invoice ID</th>
+                  <th class="px-4 py-3 text-left text-neutral-400 uppercase tracking-wider text-xs">Date Range</th>
+                  <th class="px-4 py-3 text-left text-neutral-400 uppercase tracking-wider text-xs">Total ($)</th>
+                  <th class="px-4 py-3 text-left text-neutral-400 uppercase tracking-wider text-xs">Status</th>
+                  <th class="px-4 py-3 text-left text-neutral-400 uppercase tracking-wider text-xs">Actions</th>
                 </tr>
               </thead>
-              <tbody class="divide-y divide-neutral-700">
-                <tr class="hover:bg-neutral-700/50 transition">
-                  <td class="px-6 py-4 text-neutral-100 font-medium">INV-102</td>
-                  <td class="px-6 py-4 text-neutral-300">Oct 1 – Oct 31</td>
-                  <td class="px-6 py-4 text-neutral-100 font-semibold">$220.00</td>
-                  <td class="px-6 py-4">
-                    <span class="inline-flex px-3 py-1 text-xs font-medium rounded-full bg-yellow-500/20 text-yellow-400 border border-yellow-600/40">Pending</span>
-                  </td>
-                  <td class="px-6 py-4 text-neutral-300">Nov 10, 2025</td>
-                  <td class="px-6 py-4 space-x-2">
-                    <button class="text-xs text-orange-400 border border-orange-600/40 px-3 py-1 rounded hover:bg-orange-600/20">View PDF</button>
-                    <button class="text-xs text-green-400 border border-green-600/40 px-3 py-1 rounded hover:bg-green-600/20">Mark Paid</button>
-                  </td>
-                </tr>
+              <tbody id="invoicesTableBody" class="divide-y divide-neutral-700">
+                <!-- Dynamic content -->
               </tbody>
             </table>
           </div>
         </div>
       </section>
 
+      <!-- View Orders Modal -->
+      <div id="viewOrdersModal" class="hidden fixed inset-0 bg-black/70 flex justify-center items-center z-50 p-4">
+        <div class="bg-neutral-800 rounded-xl w-full max-w-6xl max-h-[90vh] overflow-hidden flex flex-col">
+          <div class="px-6 py-4 border-b border-neutral-700 flex justify-between items-center">
+            <h3 id="ordersModalTitle" class="text-xl font-semibold text-white">Pharmacy Orders</h3>
+            <button onclick="closeModal('viewOrdersModal')" class="text-neutral-400 hover:text-white">
+              <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
+              </svg>
+            </button>
+          </div>
+          
+          <div id="ordersModalContent" class="flex-1 overflow-y-auto custom-scrollbar px-6 py-4"></div>
+          
+          <div class="px-6 py-4 border-t border-neutral-700 flex justify-end">
+            <button onclick="closeModal('viewOrdersModal')" class="px-4 py-2 bg-orange-500 rounded-lg text-white hover:bg-orange-600">Close</button>
+          </div>
+        </div>
+      </div>
+
+
+      <!-- Add Pharmacy Modal -->
+      <div id="addPharmacyModal" class="hidden fixed inset-0 bg-black/70 flex justify-center items-center z-50 p-4">
+        <div class="bg-neutral-800 border border-neutral-700 rounded-xl w-full max-w-lg p-6">
+          
+          <div class="flex justify-between items-center mb-4">
+            <h2 class="text-xl font-semibold text-white">Add New Pharmacy</h2>
+            <button onclick="closeModal('addPharmacyModal')" class="text-neutral-400 hover:text-white">
+              <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
+              </svg>
+            </button>
+          </div>
+
+          <div class="space-y-4">
+            <input id="phName" type="text" placeholder="Pharmacy Name"
+              class="w-full bg-neutral-900 border border-neutral-700 rounded-lg px-3 py-2 text-neutral-200 text-sm focus:ring-2 focus:ring-orange-500"/>
+
+            <textarea id="phAddress" placeholder="Store Address"
+              class="w-full bg-neutral-900 border border-neutral-700 rounded-lg px-3 py-2 text-neutral-200 text-sm focus:ring-2 focus:ring-orange-500"></textarea>
+
+            <div class="grid grid-cols-2 gap-3">
+              <!-- City: searchable dropdown using datalist -->
+              <div class="relative">
+                <input
+                  id="phCity"
+                  type="text"
+                  list="cityOptions"
+                  placeholder="City (Kitchener / Waterloo / Cambridge)"
+                  class="w-full bg-neutral-900 border border-neutral-700 rounded-lg px-3 py-2 text-neutral-200 text-sm focus:ring-2 focus:ring-orange-500"
+                />
+                <datalist id="cityOptions">
+                  <option value="Kitchener"></option>
+                  <option value="Waterloo"></option>
+                  <option value="Cambridge"></option>
+                </datalist>
+              </div>
+
+              <!-- Province: fixed Ontario -->
+              <input
+                id="phProvince"
+                type="text"
+                value="Ontario"
+                readonly
+                class="bg-neutral-900 border border-neutral-700 rounded-lg px-3 py-2 text-neutral-400 text-sm cursor-not-allowed"
+              />
+            </div>
+
+
+            <div class="grid grid-cols-2 gap-3">
+              <input
+                id="phPostal"
+                type="text"
+                placeholder="Postal Code"
+                class="bg-neutral-900 border border-neutral-700 rounded-lg px-3 py-2 text-neutral-200 text-sm focus:ring-2 focus:ring-orange-500"
+              />
+
+              <!-- Country: fixed Canada -->
+              <input
+                id="phCountry"
+                type="text"
+                value="Canada"
+                readonly
+                class="bg-neutral-900 border border-neutral-700 rounded-lg px-3 py-2 text-neutral-400 text-sm cursor-not-allowed"
+              />
+            </div>
+
+            <div class="grid grid-cols-2 gap-3">
+              <input id="phPhone" type="text" placeholder="Phone Number"
+                class="bg-neutral-900 border border-neutral-700 rounded-lg px-3 py-2 text-neutral-200 text-sm focus:ring-2 focus:ring-orange-500"/>
+
+              <input id="phEmail" type="email" placeholder="Email Address"
+                class="bg-neutral-900 border border-neutral-700 rounded-lg px-3 py-2 text-neutral-200 text-sm focus:ring-2 focus:ring-orange-500"/>
+            </div>
+          </div>
+
+          <div class="mt-6 flex justify-end space-x-3">
+            <button onclick="closeModal('addPharmacyModal')" 
+              class="px-4 py-2 text-neutral-300 border border-neutral-600 rounded-lg text-sm hover:bg-neutral-700">
+              Cancel
+            </button>
+
+            <button onclick="submitAddPharmacy()" 
+              class="px-4 py-2 bg-gradient-to-r from-orange-600 to-orange-500 text-white rounded-lg text-sm font-medium hover:from-orange-500 hover:to-orange-400">
+              Add Pharmacy
+            </button>
+          </div>
+
+        </div>
+      </div>
+
+
+
+      <!-- Edit Pharmacy Modal -->
+      <div id="editPharmacyModal" class="hidden fixed inset-0 bg-black/70 flex justify-center items-center z-50 p-4">
+        <div class="bg-neutral-800 border border-neutral-700 rounded-xl w-full max-w-lg p-6">
+
+          <div class="flex justify-between items-center mb-4">
+            <h2 class="text-xl font-semibold text-white">Edit Pharmacy</h2>
+            <button onclick="closeModal('editPharmacyModal')" class="text-neutral-400 hover:text-white">
+              <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
+              </svg>
+            </button>
+          </div>
+
+          <div class="space-y-4">
+            <input id="editPhName" type="text" placeholder="Pharmacy Name"
+              class="w-full bg-neutral-900 border border-neutral-700 rounded-lg px-3 py-2 text-neutral-200 text-sm focus:ring-2 focus:ring-orange-500"/>
+
+            <textarea id="editPhAddress" placeholder="Store Address"
+              class="w-full bg-neutral-900 border border-neutral-700 rounded-lg px-3 py-2 text-neutral-200 text-sm focus:ring-2 focus:ring-orange-500"></textarea>
+
+            <div class="grid grid-cols-2 gap-3">
+              <!-- City dropdown -->
+              <div class="relative">
+                <input id="editPhCity" type="text" list="cityOptions" placeholder="City"
+                  class="w-full bg-neutral-900 border border-neutral-700 rounded-lg px-3 py-2 text-neutral-200 text-sm focus:ring-2 focus:ring-orange-500" />
+              </div>
+
+              <!-- Province fixed -->
+              <input id="editPhProvince" type="text" value="Ontario" readonly
+                class="bg-neutral-900 border border-neutral-700 rounded-lg px-3 py-2 text-neutral-400 text-sm cursor-not-allowed"/>
+            </div>
+
+            <div class="grid grid-cols-2 gap-3">
+              <input id="editPhPostal" type="text" placeholder="Postal Code"
+                class="bg-neutral-900 border border-neutral-700 rounded-lg px-3 py-2 text-neutral-200 text-sm focus:ring-2 focus:ring-orange-500"/>
+
+              <!-- Country fixed -->
+              <input id="editPhCountry" type="text" value="Canada" readonly
+                class="bg-neutral-900 border border-neutral-700 rounded-lg px-3 py-2 text-neutral-400 text-sm cursor-not-allowed"/>
+            </div>
+
+            <div class="grid grid-cols-2 gap-3">
+              <input id="editPhPhone" type="text" placeholder="Phone Number"
+                class="bg-neutral-900 border border-neutral-700 rounded-lg px-3 py-2 text-neutral-200 text-sm focus:ring-2 focus:ring-orange-500"/>
+
+              <input id="editPhEmail" type="email" placeholder="Email Address"
+                class="bg-neutral-900 border border-neutral-700 rounded-lg px-3 py-2 text-neutral-200 text-sm focus:ring-2 focus:ring-orange-500"/>
+            </div>
+
+          </div>
+
+          <div class="mt-6 flex justify-end space-x-3">
+            <button onclick="closeModal('editPharmacyModal')" 
+              class="px-4 py-2 text-neutral-300 border border-neutral-600 rounded-lg text-sm hover:bg-neutral-700">
+              Cancel
+            </button>
+
+            <button onclick="submitEditPharmacy()" 
+              class="px-4 py-2 bg-gradient-to-r from-orange-600 to-orange-500 text-white rounded-lg text-sm font-medium hover:from-orange-500 hover:to-orange-400">
+              Update Pharmacy
+            </button>
+          </div>
+
+        </div>
+      </div>
+
+
+      <!-- Toggle Pharmacy Status Modal -->
+      <div id="toggleStatusModal" class="hidden fixed inset-0 bg-black/70 flex justify-center items-center z-50 p-4">
+        <div class="bg-neutral-800 border border-neutral-700 rounded-xl w-full max-w-md p-6">
+
+          <h2 id="toggleStatusTitle" class="text-xl font-semibold text-white mb-3">
+            Confirm Action
+          </h2>
+
+          <p id="toggleStatusMessage" class="text-neutral-300 text-sm mb-6">
+            Are you sure you want to deactivate this pharmacy?
+          </p>
+
+          <div class="flex justify-end space-x-3">
+            <button onclick="closeModal('toggleStatusModal')" 
+              class="px-4 py-2 text-neutral-300 border border-neutral-600 rounded-lg text-sm hover:bg-neutral-700">
+              Cancel
+            </button>
+
+            <button id="toggleStatusConfirmBtn"
+              class="px-4 py-2 bg-gradient-to-r from-orange-600 to-orange-500 text-white rounded-lg text-sm font-medium hover:from-orange-500 hover:to-orange-400">
+              Confirm
+            </button>
+          </div>
+
+        </div>
+      </div>
+
+
+
+
       <script>
-        document.getElementById("logoutBtn").addEventListener("click", function (event) {
+let allPharmacies = [];
+let filteredPharmacies = [];
+let currentPharmacy = null;
+let editingPharmacyId = null;
+let togglingPharmacyId = null;
+let togglingAction = null; 
+
+// Logout
+document.getElementById("logoutBtn").addEventListener("click", function (event) {
   event.preventDefault();
-
-  // 🧹 Remove adminId cookie
   document.cookie = "adminId=; path=/; expires=Thu, 01 Jan 1970 00:00:00 UTC; SameSite=Lax;";
-
-  // Optional: clear JWT or any other related cookies if used
   document.cookie = "jwtToken=; path=/; expires=Thu, 01 Jan 1970 00:00:00 UTC; SameSite=Lax;";
-
-  // 🚀 Redirect to admin login page
   window.location.href = "/adminLogin/";
 });
+
+// Load all pharmacies on page load
+async function loadPharmacies() {
+  try {
+    const res = await fetch("/api/pharmacy/details/");
+    const data = await res.json();
+    
+    if (!data.success) throw new Error("Failed to load pharmacies");
+    
+    allPharmacies = data.pharmacies;
+    filteredPharmacies = [...allPharmacies];
+    
+    populateFilters();
+    renderPharmaciesTable();
+  } catch (err) {
+    console.error("Error loading pharmacies:", err);
+    document.getElementById("pharmacyTableBody").innerHTML = 
+      `<tr><td colspan="7" class="text-center text-red-400 py-4">Failed to load pharmacies</td></tr>`;
+  }
+}
+
+// Populate filter dropdowns
+function populateFilters() {
+  const cities = [...new Set(allPharmacies.map(p => p.city))].sort();
+  const provinces = [...new Set(allPharmacies.map(p => p.province))].sort();
+  
+  const citySelect = document.getElementById("filterCity");
+  const provinceSelect = document.getElementById("filterProvince");
+  
+  cities.forEach(city => {
+    const option = document.createElement("option");
+    option.value = city;
+    option.textContent = city;
+    citySelect.appendChild(option);
+  });
+  
+  provinces.forEach(province => {
+    const option = document.createElement("option");
+    option.value = province;
+    option.textContent = province;
+    provinceSelect.appendChild(option);
+  });
+}
+
+// Apply filters
+function applyFilters() {
+  const search = document.getElementById("searchPharmacy").value.toLowerCase();
+  const city = document.getElementById("filterCity").value;
+  const province = document.getElementById("filterProvince").value;
+  const status = document.getElementById("filterStatus").value;
+  
+  filteredPharmacies = allPharmacies.filter(p => {
+    return (
+      (!search || p.name.toLowerCase().includes(search) || p.email?.toLowerCase().includes(search)) &&
+      (!city || p.city === city) &&
+      (!province || p.province === province) &&
+      (!status || p.active.toString() === status)
+    );
+  });
+  
+  renderPharmaciesTable();
+}
+
+// Render pharmacies table
+function renderPharmaciesTable() {
+  const tbody = document.getElementById("pharmacyTableBody");
+  
+  if (filteredPharmacies.length === 0) {
+    tbody.innerHTML = `<tr><td colspan="7" class="text-center text-neutral-500 py-4">No pharmacies found</td></tr>`;
+    return;
+  }
+  
+  tbody.innerHTML = filteredPharmacies.map(p => `
+    <tr class="hover:bg-neutral-700/50 transition">
+      <td class="px-6 py-4 text-neutral-100 font-medium">${p.name}</td>
+      <td class="px-6 py-4 text-neutral-300">${p.city}</td>
+      <td class="px-6 py-4 text-neutral-300">${p.province}</td>
+      <td class="px-6 py-4">
+        <span class="inline-flex px-3 py-1 text-xs font-medium rounded-full ${p.active ? 'bg-green-500/20 text-green-400 border border-green-600/40' : 'bg-red-500/20 text-red-400 border border-red-600/40'}">
+          ${p.active ? 'Active' : 'Inactive'}
+        </span>
+      </td>
+      <td class="px-6 py-4 text-neutral-100">${p.total_valid_orders || 0}</td>
+      <td class="px-6 py-4 text-orange-400 font-semibold">$${(p.total_outstanding_amount || 0).toFixed(2)}</td>
+      <td class="px-6 py-4 space-x-2">
+        <button onclick="viewPharmacy(${p.id})" class="text-xs text-orange-400 border border-orange-600/40 px-3 py-1 rounded hover:bg-orange-600/20">View</button>
+        <button onclick="editPharmacy(${p.id})" class="text-xs text-neutral-300 border border-neutral-600 px-3 py-1 rounded hover:bg-neutral-700">Edit</button>
+        <button onclick="togglePharmacyStatus(${p.id})" class="text-xs text-red-400 border border-red-600/40 px-3 py-1 rounded hover:bg-red-600/20">
+          ${p.active ? 'Deactivate' : 'Activate'}
+        </button>
+      </td>
+    </tr>
+  `).join("");
+}
+
+// View pharmacy details
+async function viewPharmacy(id) {
+  try {
+    const res = await fetch(`/api/pharmacy/details/${id}/`);
+    const data = await res.json();
+    
+    if (!data.success) throw new Error("Failed to load pharmacy details");
+    
+    currentPharmacy = data;
+    displayPharmacyDetails(data);
+    
+  } catch (err) {
+    console.error("Error loading pharmacy details:", err);
+    showNotification("❌ Failed to load pharmacy details", "error");
+  }
+}
+
+// Display pharmacy details
+function displayPharmacyDetails(data) {
+  const { pharmacy, total_valid_orders, total_outstanding_amount, orders, invoices } = data;
+  
+  // Show details section
+  document.getElementById("pharmacyDetailsSection").classList.remove("hidden");
+  
+  // Populate profile
+  const profileContent = document.getElementById("pharmacyProfileContent");
+  profileContent.innerHTML = `
+    <p><span class="text-neutral-400">Name:</span> <span class="text-neutral-100 font-medium">${pharmacy.name}</span></p>
+    <p><span class="text-neutral-400">Email:</span> ${pharmacy.email}</p>
+    <p><span class="text-neutral-400">Phone:</span> ${pharmacy.phone_number}</p>
+    <p><span class="text-neutral-400">Address:</span> ${pharmacy.store_address}, ${pharmacy.city}, ${pharmacy.province}, ${pharmacy.postal_code}</p>
+    <p><span class="text-neutral-400">Country:</span> ${pharmacy.country}</p>
+    <p><span class="text-neutral-400">Status:</span> 
+      <span class="${pharmacy.active ? 'text-green-400' : 'text-red-400'}">${pharmacy.active ? 'Active' : 'Inactive'}</span>
+    </p>
+    <p><span class="text-neutral-400">Joined:</span> ${new Date(pharmacy.created_at).toLocaleDateString()}</p>
+    <p><span class="text-neutral-400">Total Orders:</span> <span class="text-orange-400 font-semibold">${total_valid_orders}</span></p>
+    <p><span class="text-neutral-400">Outstanding:</span> <span class="text-orange-400 font-semibold">$${total_outstanding_amount.toFixed(2)}</span></p>
+  `;
+  
+  // Populate invoices
+  const invoicesBody = document.getElementById("invoicesTableBody");
+  if (invoices.length === 0) {
+    invoicesBody.innerHTML = `<tr><td colspan="5" class="text-center text-neutral-500 py-4">No invoices found</td></tr>`;
+  } else {
+    invoicesBody.innerHTML = invoices.map(inv => `
+      <tr class="hover:bg-neutral-700/50 transition">
+        <td class="px-4 py-3 text-neutral-100 font-medium">INV-${inv.invoice_id}</td>
+        <td class="px-4 py-3 text-neutral-300 text-xs">${new Date(inv.start_date).toLocaleDateString()} – ${new Date(inv.end_date).toLocaleDateString()}</td>
+        <td class="px-4 py-3 text-neutral-100 font-semibold">$${inv.total_amount.toFixed(2)}</td>
+        <td class="px-4 py-3">
+          <span class="inline-flex px-2 py-1 text-xs font-medium rounded-full ${getInvoiceStatusColor(inv.status)}">
+            ${formatInvoiceStatus(inv.status)}
+          </span>
+        </td>
+        <td class="px-4 py-3 space-x-2">
+          ${inv.pdf_url ? `<a href="${inv.pdf_url}" target="_blank" class="text-xs text-orange-400 border border-orange-600/40 px-2 py-1 rounded hover:bg-orange-600/20">View PDF</a>` : '<span class="text-xs text-neutral-500">No PDF</span>'}
+
+        </td>
+      </tr>
+    `).join("");
+  }
+  
+  addViewOrdersButton();
+  
+  // Scroll to details
+  document.getElementById("pharmacyDetailsSection").scrollIntoView({ behavior: "smooth" });
+}
+
+// Helper functions
+function getInvoiceStatusColor(status) {
+  const colors = {
+    'pending': 'bg-yellow-500/20 text-yellow-400 border border-yellow-600/40',
+    'paid': 'bg-green-500/20 text-green-400 border border-green-600/40',
+    'past_due': 'bg-red-500/20 text-red-400 border border-red-600/40',
+    'generated': 'bg-blue-500/20 text-blue-400 border border-blue-600/40'
+  };
+  return colors[status] || 'bg-neutral-500/20 text-neutral-400 border border-neutral-600/40';
+}
+
+function formatInvoiceStatus(status) {
+  const formats = {
+    'pending': 'Pending',
+    'paid': 'Paid',
+    'past_due': 'Past Due',
+    'generated': 'Generated'
+  };
+  return formats[status] || status;
+}
+
+function closeModal(id) {
+  document.getElementById(id).classList.add("hidden");
+}
+
+function showNotification(message, type = "success") {
+  const toast = document.createElement("div");
+  toast.className = `
+    fixed top-6 right-6 px-4 py-3 rounded-lg text-sm shadow-lg z-50 transition transform duration-300
+    ${type === "success" ? "bg-green-600 text-white" : "bg-red-600 text-white"}
+  `;
+  toast.textContent = message;
+  document.body.appendChild(toast);
+
+  setTimeout(() => {
+    toast.style.opacity = "0";
+    toast.style.transform = "translateY(-10px)";
+  }, 2500);
+
+  setTimeout(() => toast.remove(), 3000);
+}
+
+
+function addPharmacy() {
+  document.getElementById("addPharmacyModal").classList.remove("hidden");
+}
+
+// Edit pharmacy - works both from table and from details view
+function editPharmacy(id) {
+  const pharmacy = allPharmacies.find(p => p.id === id);
+  if (!pharmacy) {
+    showNotification("❌ Pharmacy not found", "error");
+    return;
+  }
+
+  editingPharmacyId = id;
+
+  // Pre-fill modal
+  document.getElementById("editPhName").value = pharmacy.name;
+  document.getElementById("editPhAddress").value = pharmacy.store_address;
+  document.getElementById("editPhCity").value = pharmacy.city;
+  document.getElementById("editPhPostal").value = pharmacy.postal_code;
+  document.getElementById("editPhPhone").value = pharmacy.phone_number;
+  document.getElementById("editPhEmail").value = pharmacy.email;
+
+  // Province & country are fixed already
+  document.getElementById("editPhProvince").value = "Ontario";
+  document.getElementById("editPhCountry").value = "Canada";
+
+  document.getElementById("editPharmacyModal").classList.remove("hidden");
+}
+
+// Alias for editPharmacyDetails - calls the same editPharmacy function
+function editPharmacyDetails() {
+  if (currentPharmacy && currentPharmacy.pharmacy) {
+    editPharmacy(currentPharmacy.pharmacy.id);
+  } else {
+    showNotification("❌ No pharmacy selected", "error");
+  }
+}
+
+// Toggle pharmacy status - works from table, details view, and account actions
+function togglePharmacyStatus(id, forceAction = null) {
+  const pharmacy = allPharmacies.find(p => p.id === id);
+  if (!pharmacy) {
+    showNotification("❌ Pharmacy not found", "error");
+    return;
+  }
+
+  togglingPharmacyId = id;
+  // If forceAction is provided (from deactivate/reactivate), use it; otherwise determine from current status
+  togglingAction = forceAction || (pharmacy.active ? "deactivate" : "activate");
+
+  // Update modal text
+  document.getElementById("toggleStatusTitle").textContent =
+    `${togglingAction === "deactivate" ? "Deactivate" : "Activate"} Pharmacy`;
+
+  document.getElementById("toggleStatusMessage").textContent =
+    `Are you sure you want to ${togglingAction} ${pharmacy.name}?`;
+
+  // Set button color dynamically
+  const btn = document.getElementById("toggleStatusConfirmBtn");
+  if (togglingAction === "deactivate") {
+    btn.className = "px-4 py-2 bg-red-600 text-white rounded-lg text-sm font-medium hover:bg-red-700";
+  } else {
+    btn.className = "px-4 py-2 bg-green-600 text-white rounded-lg text-sm font-medium hover:bg-green-700";
+  }
+
+  // Open the modal
+  document.getElementById("toggleStatusModal").classList.remove("hidden");
+}
+
+// Deactivate pharmacy - calls togglePharmacyStatus with forced action
+function deactivatePharmacy() {
+  if (currentPharmacy && currentPharmacy.pharmacy) {
+    togglePharmacyStatus(currentPharmacy.pharmacy.id, "deactivate");
+  } else {
+    showNotification("❌ No pharmacy selected", "error");
+  }
+}
+
+// Reactivate pharmacy - calls togglePharmacyStatus with forced action
+function reactivatePharmacy() {
+  if (currentPharmacy && currentPharmacy.pharmacy) {
+    togglePharmacyStatus(currentPharmacy.pharmacy.id, "activate");
+  } else {
+    showNotification("❌ No pharmacy selected", "error");
+  }
+}
+
+
+function resetCredentials() {
+  if (!currentPharmacy || !currentPharmacy.pharmacy) {
+    showNotification("❌ No pharmacy selected", "error");
+    return;
+  }
+
+  const pharmacyId = currentPharmacy.pharmacy.id;
+  const pharmacyName = currentPharmacy.pharmacy.name;
+
+  // Set up modal for confirmation
+  document.getElementById("toggleStatusTitle").textContent = "Reset Password";
+  document.getElementById("toggleStatusMessage").textContent = 
+    `Are you sure you want to reset the password for ${pharmacyName}?`;
+
+  const btn = document.getElementById("toggleStatusConfirmBtn");
+  btn.className = "px-4 py-2 bg-orange-600 text-white rounded-lg text-sm font-medium hover:bg-orange-700";
+  
+  // Override the confirm button's onclick for this specific action
+  btn.onclick = async function() {
+    try {
+      const res = await fetch(`/pharmacy/reset-password/${pharmacyId}/`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" }
+      });
+
+      const data = await res.json();
+
+      if (!data.success) {
+        showNotification("❌ " + data.message, "error");
+        closeModal("toggleStatusModal");
+        return;
+      }
+
+      showNotification("✅ Password reset successfully!", "success");
+      closeModal("toggleStatusModal");
+
+    } catch (err) {
+      console.error("Reset Credentials Error:", err);
+      showNotification("❌ Failed to reset password", "error");
+      closeModal("toggleStatusModal");
+    }
+  };
+
+  // Open the modal
+  document.getElementById("toggleStatusModal").classList.remove("hidden");
+}
+
+
+
+// View orders modal
+async function viewOrders(pharmacyId) {
+  if (!currentPharmacy || !currentPharmacy.orders) {
+    showNotification("❌ No order data available", "error");
+    return;
+  }
+
+  const orders = currentPharmacy.orders;
+  const pharmacy = currentPharmacy.pharmacy;
+  
+  document.getElementById("ordersModalTitle").textContent = `${pharmacy.name} - Orders (${orders.length})`;
+  
+  const modalContent = document.getElementById("ordersModalContent");
+  
+  if (orders.length === 0) {
+    modalContent.innerHTML = `
+      <div class="text-center text-neutral-500 py-8">
+        <svg class="w-16 h-16 mx-auto mb-4 text-neutral-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20 13V6a2 2 0 00-2-2H6a2 2 0 00-2 2v7m16 0v5a2 2 0 01-2 2H6a2 2 0 01-2-2v-5m16 0h-2.586a1 1 0 00-.707.293l-2.414 2.414a1 1 0 01-.707.293h-3.172a1 1 0 01-.707-.293l-2.414-2.414A1 1 0 006.586 13H4"/>
+        </svg>
+        <p class="text-lg">No orders found for this pharmacy</p>
+      </div>
+    `;
+  } else {
+    modalContent.innerHTML = `
+      <div class="space-y-4">
+        ${orders.map(order => `
+          <div class="bg-neutral-900/50 rounded-lg p-4 border border-neutral-700">
+            <div class="flex justify-between items-start mb-3">
+              <div>
+                <h4 class="text-lg font-semibold text-white">Order #${order.id}</h4>
+                <p class="text-sm text-neutral-400">Customer: ${order.customer_name || "N/A"}</p>
+              </div>
+              <span class="inline-flex px-3 py-1 text-xs font-medium rounded-full ${getOrderStatusColor(order.status)}">
+                ${formatOrderStatus(order.status)}
+              </span>
+            </div>
+            
+            <div class="grid grid-cols-2 gap-4 text-sm">
+              <div>
+                <p class="text-neutral-400">Pickup:</p>
+                <p class="text-neutral-200">${order.pickup_address}</p>
+                <p class="text-neutral-300 text-xs">${order.pickup_city}</p>
+                <p class="text-neutral-400 text-xs mt-1">Date: ${new Date(order.pickup_day).toLocaleDateString()}</p>
+              </div>
+              
+              <div>
+                <p class="text-neutral-400">Delivery:</p>
+                <p class="text-neutral-200">${order.drop_address}</p>
+                <p class="text-neutral-300 text-xs">${order.drop_city}</p>
+              </div>
+            </div>
+            
+            <div class="mt-3 pt-3 border-t border-neutral-700 flex justify-between items-center">
+              <div class="text-sm">
+                <span class="text-neutral-400">Driver:</span> 
+                <span class="text-neutral-200">${order.driver || "Unassigned"}</span>
+              </div>
+              <div class="text-right">
+                <span class="text-neutral-400 text-sm">Rate:</span>
+                <span class="text-orange-400 font-semibold ml-2">${order.rate.toFixed(2)}</span>
+              </div>
+            </div>
+            
+            <div class="mt-2 text-xs text-neutral-500">
+              Created: ${new Date(order.created_at).toLocaleString()} • 
+              Updated: ${new Date(order.updated_at).toLocaleString()}
+            </div>
+          </div>
+        `).join("")}
+      </div>
+    `;
+  }
+  
+  document.getElementById("viewOrdersModal").classList.remove("hidden");
+}
+
+function getOrderStatusColor(status) {
+  const colors = {
+    'pending': 'bg-yellow-500/20 text-yellow-400 border border-yellow-600/40',
+    'accepted': 'bg-blue-500/20 text-blue-400 border border-blue-600/40',
+    'inTransit': 'bg-purple-500/20 text-purple-400 border border-purple-600/40',
+    'picked_up': 'bg-indigo-500/20 text-indigo-400 border border-indigo-600/40',
+    'delivered': 'bg-green-500/20 text-green-400 border border-green-600/40',
+    'cancelled': 'bg-red-500/20 text-red-400 border border-red-600/40'
+  };
+  return colors[status] || 'bg-orange-500/20 text-orange-400 border border-orange-600/40';
+}
+
+function formatOrderStatus(status) {
+  const formats = {
+    'pending': 'Pending',
+    'accepted': 'Accepted',
+    'inTransit': 'In Transit',
+    'picked_up': 'Picked Up',
+    'delivered': 'Delivered',
+    'cancelled': 'Cancelled'
+  };
+  return formats[status] || status;
+}
+
+// Add button to view orders in pharmacy profile
+function addViewOrdersButton() {
+  if (currentPharmacy && currentPharmacy.orders) {
+    const profileContent = document.getElementById("pharmacyProfileContent");
+    const viewOrdersBtn = `
+      <button onclick="viewOrders(${currentPharmacy.pharmacy.id})" 
+        class="w-full mt-4 px-4 py-2 bg-blue-600 text-white rounded-lg text-sm font-medium hover:bg-blue-700 transition">
+        📦 View All Orders (${currentPharmacy.orders.length})
+      </button>
+    `;
+    profileContent.innerHTML += viewOrdersBtn;
+  }
+}
+
+async function submitAddPharmacy() {
+  const name = document.getElementById("phName").value.trim();
+  const store_address = document.getElementById("phAddress").value.trim();
+  const city = document.getElementById("phCity").value.trim();
+  const province = document.getElementById("phProvince").value.trim();
+  const postal_code = document.getElementById("phPostal").value.trim();
+  const country = document.getElementById("phCountry").value.trim();
+  const phone_number = document.getElementById("phPhone").value.trim();
+  const email = document.getElementById("phEmail").value.trim();
+
+  if (!name || !store_address || !city || !province || !postal_code || !country || !phone_number || !email) {
+    showNotification("⚠️ All fields are required", "error");
+    return;
+  }
+
+  try {
+    const res = await fetch("/pharmacy/add/", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        name,
+        store_address,
+        city,
+        province,
+        postal_code,
+        country,
+        phone_number,
+        email
+      })
+    });
+
+    const data = await res.json();
+
+    if (!data.success) {
+      showNotification("❌ " + data.message, "error");
+      return;
+    }
+
+    showNotification("✅ Pharmacy added successfully!", "success");
+    closeModal("addPharmacyModal");
+    loadPharmacies();
+
+  } catch (err) {
+    console.error("Error adding pharmacy:", err);
+    showNotification("❌ Failed to add pharmacy", "error");
+  }
+}
+
+async function submitEditPharmacy() {
+  if (!editingPharmacyId) {
+    showNotification("❌ Invalid pharmacy ID", "error");
+    return;
+  }
+
+  const payload = {
+    name: document.getElementById("editPhName").value.trim(),
+    store_address: document.getElementById("editPhAddress").value.trim(),
+    city: document.getElementById("editPhCity").value.trim(),
+    province: document.getElementById("editPhProvince").value.trim(),
+    postal_code: document.getElementById("editPhPostal").value.trim(),
+    country: document.getElementById("editPhCountry").value.trim(),
+    phone_number: document.getElementById("editPhPhone").value.trim(),
+    email: document.getElementById("editPhEmail").value.trim(),
+  };
+
+  try {
+    const res = await fetch(`/pharmacy/edit/${editingPharmacyId}/`, {
+      method: "PUT",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(payload)
+    });
+
+    const data = await res.json();
+
+    if (!data.success) {
+      showNotification("❌ " + data.message, "error");
+      return;
+    }
+
+    showNotification("✅ Pharmacy updated successfully!", "success");
+    closeModal("editPharmacyModal");
+    
+    // Reload table and refresh current pharmacy details if viewing
+    await loadPharmacies();
+    if (currentPharmacy && currentPharmacy.pharmacy.id === editingPharmacyId) {
+      await viewPharmacy(editingPharmacyId);
+    }
+
+  } catch (err) {
+    console.error("Edit error:", err);
+    showNotification("❌ Failed to update pharmacy", "error");
+  }
+}
+
+// Toggle status confirmation handler
+document.getElementById("toggleStatusConfirmBtn").onclick = async function () {
+  if (!togglingPharmacyId) {
+    showNotification("❌ Invalid pharmacy ID", "error");
+    return;
+  }
+
+  try {
+    const res = await fetch(`/pharmacy/toggle-status/${togglingPharmacyId}/`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        active: togglingAction === "activate" ? true : false
+      })
+    });
+
+    const data = await res.json();
+
+    if (!data.success) {
+      showNotification("❌ " + data.message, "error");
+      return;
+    }
+
+    showNotification(
+      `✅ Pharmacy ${togglingAction === "activate" ? "activated" : "deactivated"} successfully!`,
+      "success"
+    );
+
+    closeModal("toggleStatusModal");
+    
+    // Reload table and refresh current pharmacy details if viewing
+    await loadPharmacies();
+    if (currentPharmacy && currentPharmacy.pharmacy.id === togglingPharmacyId) {
+      await viewPharmacy(togglingPharmacyId);
+    }
+
+  } catch (err) {
+    console.error("Toggle Status Error:", err);
+    showNotification("❌ Failed to update pharmacy status", "error");
+  }
+};
+
+// Initialize on page load
+document.addEventListener("DOMContentLoaded", () => {
+  loadPharmacies();
+  
+  // Add real-time search
+  document.getElementById("searchPharmacy").addEventListener("input", applyFilters);
+});
+
       </script>
     </main>
   </div>

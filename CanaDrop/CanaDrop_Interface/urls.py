@@ -50,7 +50,6 @@ urlpatterns = [
     path('adminDashboard/', views.adminDashboardView, name="AdminDashboardPage"),
     path('adminOrders/', views.adminOrdersView, name="AdminOrdersPage"),
     path('adminPharmacies/', views.adminPharmaciesView, name="AdminPharmaciesPage"),
-    path('adminOrders/', views.adminOrdersView, name="AdminOrdersPage"),
     path('adminInvoices/', views.adminInvoicesView, name="AdminInvoicesPage"),
     path('adminSupport/', views.adminSupportView, name="AdminSupportPage"),
     path('adminDrivers/', views.adminDriversView, name="AdminDriversPage"),
@@ -58,6 +57,20 @@ urlpatterns = [
     path("api/recentActivityFeed/", views.recent_activity_feed, name="recent_activity_feed"),
     path("api/orderTrackingOverview/", views.order_tracking_overview, name="order_tracking_overview"),
     path("api/adminAlerts/", views.admin_alerts, name="admin_alerts"),
+    path('api/adminOrderList/', views.admin_order_list, name='admin_order_list'),
+    path("api/deliveryRates/", views.delivery_rates_list, name="delivery_rates_list"),
+    path("api/editOrder/<int:order_id>/", views.edit_order, name="edit_order"),
+    path("api/orders/<int:order_id>/cancel/", views.cancel_order, name="cancel_order"),
+    path("api/deliveryRates/add/", views.add_delivery_rate, name="add_delivery_rate"),
+    path("api/deliveryRates/<int:rate_id>/edit/", views.edit_delivery_rate, name="edit_delivery_rate"),
+    path("api/deliveryRates/<int:rate_id>/delete/", views.delete_delivery_rate, name="delete_delivery_rate"),
+    path("api/pharmacy/details/", views.get_pharmacy_details_admin, name="AdminPharmacyDetailsAll"),
+    path("api/pharmacy/details/<int:pharmacy_id>/", views.get_pharmacy_details_admin, name="AdminPharmacyDetails"),
+    path("pharmacy/add/", views.add_pharmacy, name="AdminAddPharmacy"),
+    path("pharmacy/edit/<int:pharmacy_id>/", views.edit_pharmacy, name="AdminEditPharmacy"),
+    path("pharmacy/toggle-status/<int:pharmacy_id>/", views.toggle_pharmacy_status, name="AdminTogglePharmacyStatus"),
+    path("pharmacy/reset-password/<int:pharmacy_id>/", views.reset_pharmacy_password, name = "AdminResetCredentials"),
+
 
     path('', views.landingView, name='landingPage'),
 

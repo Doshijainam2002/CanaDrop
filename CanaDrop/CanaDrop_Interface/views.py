@@ -49,6 +49,13 @@ from django.core.exceptions import ValidationError
 import json
 from django.conf import settings
 from google.cloud import storage
+from django.contrib.auth.hashers import check_password, make_password
+from django.db import transaction, IntegrityError
+from django.utils import timezone
+from .models import (
+    Pharmacy, Driver, DeliveryOrder, OrderImage, OrderTracking,
+    Invoice, DriverInvoice, ContactAdmin, AdminUser, DeliveryDistanceRate
+)
 
 
 
@@ -502,25 +509,25 @@ def get_delivery_rate(request):
     return JsonResponse({"success": False, "error": "Invalid HTTP method"}, status=405)
 
 
-def get_pharmacy_details(request, pharmacy_id):
-    try:
-        pharmacy = Pharmacy.objects.get(id=pharmacy_id)
-        data = {
-            "id": pharmacy.id,
-            "name": pharmacy.name,
-            "store_address": pharmacy.store_address,
-            "city": pharmacy.city,
-            "province": pharmacy.province,
-            "postal_code": pharmacy.postal_code,
-            "country": pharmacy.country,
-            "phone_number": pharmacy.phone_number,
-            "email": pharmacy.email,
-            "created_at": pharmacy.created_at,
-        }
-        return JsonResponse({"success": True, "pharmacy": data}, status=200)
+# def get_pharmacy_details(request, pharmacy_id):
+#     try:
+#         pharmacy = Pharmacy.objects.get(id=pharmacy_id)
+#         data = {
+#             "id": pharmacy.id,
+#             "name": pharmacy.name,
+#             "store_address": pharmacy.store_address,
+#             "city": pharmacy.city,
+#             "province": pharmacy.province,
+#             "postal_code": pharmacy.postal_code,
+#             "country": pharmacy.country,
+#             "phone_number": pharmacy.phone_number,
+#             "email": pharmacy.email,
+#             "created_at": pharmacy.created_at,
+#         }
+#         return JsonResponse({"success": True, "pharmacy": data}, status=200)
 
-    except Pharmacy.DoesNotExist:
-        return JsonResponse({"success": False, "message": "Pharmacy not found"}, status=404)
+#     except Pharmacy.DoesNotExist:
+#         return JsonResponse({"success": False, "message": "Pharmacy not found"}, status=404)
 
 
 @csrf_exempt
@@ -6053,8 +6060,1031 @@ def admin_alerts(request):
 
 
 
+from django.http import JsonResponse
+from django.views.decorators.csrf import csrf_exempt
+from .models import DeliveryOrder, OrderTracking, OrderImage, Pharmacy, Driver
+from decimal import Decimal
+
+@csrf_exempt
+def admin_order_list(request):
+    """
+    Returns all delivery orders - simple version with relative imports
+    """
+    try:
+        orders = list(DeliveryOrder.objects.all().order_by("pickup_day").values(
+            'id',
+            'pharmacy_id',
+            'driver_id', 
+            'pickup_address',
+            'pickup_city',
+            'pickup_day',
+            'drop_address',
+            'drop_city',
+            'status',
+            'rate',
+            'customer_name',
+            'created_at',
+            'updated_at'
+        ))
+        
+        result = []
+        
+        for order in orders:
+            # Get pharmacy info
+            pharmacy_info = None
+            if order.get('pharmacy_id'):
+                try:
+                    p = Pharmacy.objects.filter(id=order['pharmacy_id']).values(
+                        'id', 'name', 'email', 'phone_number', 
+                        'city', 'province', 'postal_code', 'country', 
+                        'active', 'created_at'
+                    ).first()
+                    if p:
+                        pharmacy_info = {
+                            "id": p['id'],
+                            "name": p['name'],
+                            "email": p['email'],
+                            "phone_number": p['phone_number'],
+                            "city": p['city'],
+                            "province": p['province'],
+                            "postal_code": p['postal_code'],
+                            "country": p['country'],
+                            "active": p['active'],
+                            "created_at": str(p['created_at'])
+                        }
+                except:
+                    pass
+            
+            # Get driver info
+            driver_info = None
+            if order.get('driver_id'):
+                try:
+                    d = Driver.objects.filter(id=order['driver_id']).values(
+                        'id', 'name', 'email', 'phone_number',
+                        'vehicle_number', 'active', 'created_at'
+                    ).first()
+                    if d:
+                        driver_info = {
+                            "id": d['id'],
+                            "name": d['name'],
+                            "email": d['email'],
+                            "phone_number": d['phone_number'],
+                            "vehicle_number": d['vehicle_number'],
+                            "active": d['active'],
+                            "created_at": str(d['created_at'])
+                        }
+                except:
+                    pass
+            
+            # Get tracking
+            tracking_info = []
+            try:
+                tracks = OrderTracking.objects.filter(order_id=order['id']).order_by('timestamp').values(
+                    'step', 'performed_by', 'timestamp', 'note', 'image_url'
+                )
+                for t in tracks:
+                    tracking_info.append({
+                        "step": t['step'],
+                        "performed_by": t['performed_by'] or "",
+                        "timestamp": str(t['timestamp']),
+                        "note": t['note'] or "",
+                        "image_url": t['image_url'] or ""
+                    })
+            except:
+                pass
+            
+            # Get images
+            proof_images = []
+            try:
+                imgs = OrderImage.objects.filter(order_id=order['id']).order_by('uploaded_at').values(
+                    'stage', 'image_url', 'uploaded_at'
+                )
+                for img in imgs:
+                    proof_images.append({
+                        "stage": img['stage'],
+                        "image_url": img['image_url'],
+                        "uploaded_at": str(img['uploaded_at'])
+                    })
+            except:
+                pass
+            
+            # Calculate commission
+            rate = float(order['rate']) if order['rate'] else 0.0
+            commission = round(rate * 0.15, 2)
+            net = round(rate - commission, 2)
+            
+            result.append({
+                "order_id": order['id'],
+                "pharmacy": pharmacy_info,
+                "driver": driver_info,
+                "pickup_address": order['pickup_address'] or "",
+                "pickup_city": order['pickup_city'] or "",
+                "pickup_day": str(order['pickup_day']) if order['pickup_day'] else "",
+                "drop_address": order['drop_address'] or "",
+                "drop_city": order['drop_city'] or "",
+                "status": order['status'] or "",
+                "amount": rate,
+                "customer_name": order['customer_name'] or "",
+                "created_at": str(order['created_at']) if order['created_at'] else "",
+                "updated_at": str(order['updated_at']) if order['updated_at'] else "",
+                "tracking_history": tracking_info,
+                "proof_images": proof_images,
+                "commission_info": {
+                    "commission_rate": "15%",
+                    "commission_decimal": 0.15,
+                    "commission_amount": commission,
+                    "net_payout_driver": net
+                }
+            })
+        
+        return JsonResponse({
+            "success": True,
+            "total_orders": len(result),
+            "orders": result
+        }, safe=False)
+        
+    except Exception as e:
+        import traceback
+        traceback.print_exc()
+        return JsonResponse({
+            "success": False,
+            "error": str(e)
+        }, status=500)
 
 
+from django.http import JsonResponse
+from django.views.decorators.csrf import csrf_exempt
+
+@csrf_exempt
+def delivery_rates_list(request):
+    """
+    GET /api/deliveryRates/ -> returns all delivery distance rates.
+    """
+    if request.method != "GET":
+        return JsonResponse({"success": False, "error": "Only GET allowed"}, status=405)
+
+    try:
+        from .models import DeliveryDistanceRate
+        
+        rates = DeliveryDistanceRate.objects.all().order_by("min_distance_km")
+        
+        data = []
+        for r in rates:
+            try:
+                min_km = float(r.min_distance_km) if r.min_distance_km else 0.0
+            except:
+                min_km = 0.0
+            
+            try:
+                max_km = float(r.max_distance_km) if r.max_distance_km else None
+            except:
+                max_km = None
+            
+            try:
+                rate_val = float(r.rate) if r.rate else 0.0
+            except:
+                rate_val = 0.0
+            
+            # Build label
+            if max_km:
+                label = f"{min_km}-{max_km} km = ${rate_val}"
+            else:
+                label = f"{min_km}+ km = ${rate_val}"
+            
+            data.append({
+                "id": r.id,
+                "min_distance_km": min_km,
+                "max_distance_km": max_km,
+                "rate": rate_val,
+                "label": label
+            })
+
+        return JsonResponse({
+            "success": True,
+            "count": len(data),
+            "rates": data
+        }, status=200)
+
+    except Exception as e:
+        import traceback
+        traceback.print_exc()
+        return JsonResponse({
+            "success": False,
+            "error": str(e),
+            "error_type": type(e).__name__
+        }, status=500)
+
+
+
+from django.http import JsonResponse
+from django.views.decorators.csrf import csrf_exempt
+from django.utils.dateparse import parse_date
+from .models import DeliveryOrder
+import json
+
+@csrf_exempt
+def edit_order(request, order_id):
+    """
+    PUT /api/editOrder/<order_id>/
+    Updates allowed editable fields in DeliveryOrder.
+    Editable fields:
+      - pickup_address
+      - pickup_city
+      - drop_address
+      - drop_city
+      - rate
+      - status
+      - customer_name
+      - pickup_day
+    """
+    if request.method not in ["PUT", "POST"]:
+        return JsonResponse({"success": False, "error": "Only PUT or POST allowed"}, status=405)
+
+    try:
+        body = json.loads(request.body.decode("utf-8"))
+    except json.JSONDecodeError:
+        return JsonResponse({"success": False, "error": "Invalid JSON body"}, status=400)
+
+    try:
+        order = DeliveryOrder.objects.get(id=order_id)
+    except DeliveryOrder.DoesNotExist:
+        return JsonResponse({"success": False, "error": f"Order ID {order_id} not found"}, status=404)
+
+    editable_fields = [
+        "pickup_address", "pickup_city", "drop_address", "drop_city",
+        "rate", "status", "customer_name", "pickup_day"
+    ]
+
+    # Apply updates if provided
+    for field in editable_fields:
+        if field in body and body[field] is not None:
+            try:
+                if field == "pickup_day":
+                    order.pickup_day = parse_date(str(body[field]))
+                elif field == "rate":
+                    order.rate = float(body[field])
+                else:
+                    setattr(order, field, body[field])
+            except Exception as e:
+                return JsonResponse({"success": False, "error": f"Invalid value for {field}: {str(e)}"}, status=400)
+
+    order.save()
+
+    # Build response
+    updated_data = {
+        "order_id": order.id,
+        "pickup_address": order.pickup_address,
+        "pickup_city": order.pickup_city,
+        "drop_address": order.drop_address,
+        "drop_city": order.drop_city,
+        "rate": float(order.rate),
+        "status": order.status,
+        "customer_name": order.customer_name,
+        "pickup_day": str(order.pickup_day),
+        "updated_at": str(order.updated_at),
+    }
+
+    return JsonResponse({"success": True, "message": "Order updated successfully", "order": updated_data}, status=200)
+
+
+from django.http import JsonResponse, HttpResponseNotAllowed
+from django.views.decorators.csrf import csrf_exempt
+from django.utils import timezone
+from .models import DeliveryOrder, OrderTracking
+
+@csrf_exempt
+def cancel_order(request, order_id: int):
+    """
+    Cancels an order (soft delete) by updating status='cancelled'
+    and always adds an OrderTracking entry for auditing.
+    Accepts DELETE or POST.
+    """
+    if request.method not in ("DELETE", "POST"):
+        return HttpResponseNotAllowed(["DELETE", "POST"])
+
+    try:
+        order = DeliveryOrder.objects.get(id=order_id)
+    except DeliveryOrder.DoesNotExist:
+        return JsonResponse({"success": False, "error": "Order not found."}, status=404)
+
+    prev_status = order.status
+
+    # Prevent cancelling delivered orders if needed
+    if prev_status == "delivered":
+        return JsonResponse({
+            "success": False,
+            "error": "Delivered orders cannot be cancelled."
+        }, status=400)
+
+    # Update order status and timestamp
+    order.status = "cancelled"
+    order.updated_at = timezone.now()
+    order.save(update_fields=["status", "updated_at"])
+
+    # Always add tracking entry
+    OrderTracking.objects.create(
+        order=order,
+        driver=order.driver,
+        pharmacy=order.pharmacy,
+        step="cancelled",
+        performed_by="admin_panel",
+        note="Order cancelled via Admin Dashboard.",
+        timestamp=timezone.now(),
+    )
+
+    return JsonResponse({
+        "success": True,
+        "message": f"Order #{order.id} successfully cancelled.",
+        "order_id": order.id,
+        "previous_status": prev_status,
+        "new_status": "cancelled",
+        "updated_at": order.updated_at.isoformat(),
+    }, status=200)
+
+
+
+# views.py
+import json
+from decimal import Decimal, InvalidOperation
+from django.http import JsonResponse
+from django.views.decorators.csrf import csrf_exempt
+from django.views.decorators.http import require_http_methods
+
+from .models import DeliveryDistanceRate
+
+
+@csrf_exempt
+@require_http_methods(["POST"])
+def add_delivery_rate(request):
+    """
+    Create a new DeliveryDistanceRate row.
+
+    Expected JSON body:
+    {
+      "min_distance_km": number (required, >= 0),
+      "max_distance_km": number|null (optional, >= min_distance_km),
+      "rate": number (required, >= 0)
+    }
+    """
+    try:
+        payload = json.loads(request.body.decode("utf-8"))
+    except Exception:
+        return JsonResponse(
+            {"success": False, "error": "Invalid JSON body."},
+            status=400,
+        )
+
+    # Extract fields
+    min_km = payload.get("min_distance_km", None)
+    max_km = payload.get("max_distance_km", None)  # can be None
+    rate = payload.get("rate", None)
+
+    # Basic validation & decimal conversion
+    try:
+        if min_km is None:
+            return JsonResponse({"success": False, "error": "min_distance_km is required."}, status=400)
+        if rate is None:
+            return JsonResponse({"success": False, "error": "rate is required."}, status=400)
+
+        min_km = Decimal(str(min_km))
+        rate = Decimal(str(rate))
+
+        if min_km < 0:
+            return JsonResponse({"success": False, "error": "min_distance_km must be >= 0."}, status=400)
+        if rate < 0:
+            return JsonResponse({"success": False, "error": "rate must be >= 0."}, status=400)
+
+        # max_km is optional (null means open-ended)
+        if max_km is not None:
+            max_km = Decimal(str(max_km))
+            if max_km < min_km:
+                return JsonResponse({"success": False, "error": "max_distance_km must be >= min_distance_km."}, status=400)
+        else:
+            max_km = None
+
+    except InvalidOperation:
+        return JsonResponse({"success": False, "error": "Distances/rate must be valid numbers."}, status=400)
+
+    # (Optional) Simple overlap guard — comment out if you don't want it.
+    # This checks for any interval overlap with existing rows.
+    overlap_qs = DeliveryDistanceRate.objects.all()
+    for r in overlap_qs:
+        r_min = r.min_distance_km
+        r_max = r.max_distance_km  # can be None (open-ended)
+        # If both are ranges, overlap if (minA <= maxB or maxB is None) and (maxA is None or maxA >= minB)
+        if (max_km is None or r_min <= max_km) and (r_max is None or r_max >= min_km):
+            return JsonResponse(
+                {
+                    "success": False,
+                    "error": f"New range ({min_km}–{max_km if max_km is not None else '∞'}) overlaps existing range "
+                             f"({r_min}–{r_max if r_max is not None else '∞'}) [id={r.id}]."
+                },
+                status=409,
+            )
+
+    try:
+        new_rate = DeliveryDistanceRate.objects.create(
+            min_distance_km=min_km,
+            max_distance_km=max_km,
+            rate=rate,
+        )
+
+        return JsonResponse(
+            {
+                "success": True,
+                "message": "Delivery rate added successfully.",
+                "rate": {
+                    "id": new_rate.id,
+                    "min_distance_km": float(new_rate.min_distance_km),
+                    "max_distance_km": float(new_rate.max_distance_km) if new_rate.max_distance_km is not None else None,
+                    "rate": float(new_rate.rate),
+                },
+            },
+            status=201,
+        )
+    except Exception as e:
+        return JsonResponse({"success": False, "error": str(e)}, status=500)
+
+
+
+import json
+from django.http import JsonResponse
+from django.views.decorators.csrf import csrf_exempt
+from django.views.decorators.http import require_http_methods
+from decimal import Decimal, InvalidOperation
+from .models import DeliveryDistanceRate
+
+
+# ✏️ EDIT DELIVERY RATE
+@csrf_exempt
+@require_http_methods(["PUT", "POST"])  # Allow both PUT and POST for compatibility
+def edit_delivery_rate(request, rate_id):
+    """
+    Edit an existing DeliveryDistanceRate entry.
+    URL: /api/deliveryRates/<id>/edit/
+    
+    Expected JSON body:
+    {
+      "min_distance_km": number (optional, >= 0),
+      "max_distance_km": number|null (optional, >= min_distance_km),
+      "rate": number (optional, >= 0)
+    }
+    """
+    try:
+        # Parse request body
+        try:
+            payload = json.loads(request.body.decode("utf-8"))
+        except json.JSONDecodeError:
+            return JsonResponse(
+                {"success": False, "error": "Invalid JSON payload."},
+                status=400
+            )
+
+        # Check if rate exists
+        try:
+            rate_obj = DeliveryDistanceRate.objects.get(id=rate_id)
+        except DeliveryDistanceRate.DoesNotExist:
+            return JsonResponse(
+                {"success": False, "error": f"Rate with ID {rate_id} not found."},
+                status=404
+            )
+
+        # Extract fields
+        min_km = payload.get("min_distance_km")
+        max_km = payload.get("max_distance_km")
+        rate = payload.get("rate")
+
+        # Track if any changes were made
+        changes_made = False
+
+        # Update min_distance_km
+        if min_km is not None:
+            try:
+                min_val = Decimal(str(min_km))
+                if min_val < 0:
+                    return JsonResponse(
+                        {"success": False, "error": "min_distance_km must be >= 0."},
+                        status=400
+                    )
+                rate_obj.min_distance_km = min_val
+                changes_made = True
+            except (InvalidOperation, ValueError):
+                return JsonResponse(
+                    {"success": False, "error": "Invalid min_distance_km value."},
+                    status=400
+                )
+
+        # Update max_distance_km
+        if max_km is not None:
+            if max_km == "" or max_km == "null":
+                rate_obj.max_distance_km = None
+                changes_made = True
+            else:
+                try:
+                    max_val = Decimal(str(max_km))
+                    if max_val < rate_obj.min_distance_km:
+                        return JsonResponse(
+                            {"success": False, "error": "max_distance_km must be >= min_distance_km."},
+                            status=400
+                        )
+                    rate_obj.max_distance_km = max_val
+                    changes_made = True
+                except (InvalidOperation, ValueError):
+                    return JsonResponse(
+                        {"success": False, "error": "Invalid max_distance_km value."},
+                        status=400
+                    )
+
+        # Update rate
+        if rate is not None:
+            try:
+                rate_val = Decimal(str(rate))
+                if rate_val < 0:
+                    return JsonResponse(
+                        {"success": False, "error": "rate must be >= 0."},
+                        status=400
+                    )
+                rate_obj.rate = rate_val
+                changes_made = True
+            except (InvalidOperation, ValueError):
+                return JsonResponse(
+                    {"success": False, "error": "Invalid rate value."},
+                    status=400
+                )
+
+        if not changes_made:
+            return JsonResponse(
+                {"success": False, "message": "No fields were updated."},
+                status=400
+            )
+
+        # Save changes
+        rate_obj.save()
+
+        # Build response
+        response_data = {
+            "success": True,
+            "message": "Delivery rate updated successfully.",
+            "rate": {
+                "id": rate_obj.id,
+                "min_distance_km": float(rate_obj.min_distance_km) if rate_obj.min_distance_km else 0.0,
+                "max_distance_km": float(rate_obj.max_distance_km) if rate_obj.max_distance_km else None,
+                "rate": float(rate_obj.rate) if rate_obj.rate else 0.0,
+            },
+        }
+
+        return JsonResponse(response_data, status=200)
+
+    except Exception as e:
+        import traceback
+        traceback.print_exc()
+        return JsonResponse({
+            "success": False,
+            "error": f"Internal server error: {str(e)}",
+            "error_type": type(e).__name__
+        }, status=500)
+
+
+# 🗑️ DELETE DELIVERY RATE
+@csrf_exempt
+@require_http_methods(["DELETE", "POST"])  # Allow both DELETE and POST for compatibility
+def delete_delivery_rate(request, rate_id):
+    """
+    Hard delete a DeliveryDistanceRate entry.
+    URL: /api/deliveryRates/<id>/delete/
+    """
+    try:
+        # Check if rate exists
+        try:
+            rate_obj = DeliveryDistanceRate.objects.get(id=rate_id)
+        except DeliveryDistanceRate.DoesNotExist:
+            return JsonResponse(
+                {"success": False, "error": f"Rate with ID {rate_id} not found."},
+                status=404
+            )
+
+        # Store info before deletion for response
+        rate_info = {
+            "id": rate_obj.id,
+            "min_distance_km": float(rate_obj.min_distance_km) if rate_obj.min_distance_km else 0.0,
+            "max_distance_km": float(rate_obj.max_distance_km) if rate_obj.max_distance_km else None,
+            "rate": float(rate_obj.rate) if rate_obj.rate else 0.0,
+        }
+
+        # Delete the rate
+        rate_obj.delete()
+
+        return JsonResponse({
+            "success": True,
+            "message": f"Rate ID {rate_id} deleted successfully.",
+            "deleted_rate": rate_info
+        }, status=200)
+
+    except Exception as e:
+        import traceback
+        traceback.print_exc()
+        return JsonResponse({
+            "success": False,
+            "error": f"Internal server error: {str(e)}",
+            "error_type": type(e).__name__
+        }, status=500)
+
+
+
+
+
+from django.http import JsonResponse
+from django.views.decorators.csrf import csrf_exempt
+from django.db.models import Sum
+from .models import Pharmacy, DeliveryOrder, Invoice
+
+
+@csrf_exempt
+def get_pharmacy_details_admin(request, pharmacy_id=None):
+    try:
+        # 🟠 CASE 1: No ID → return ALL pharmacies (summary)
+        if pharmacy_id is None:
+            pharmacies = Pharmacy.objects.all().order_by("name")
+
+            pharmacy_list = []
+            for p in pharmacies:
+                total_orders = DeliveryOrder.objects.filter(
+                    pharmacy=p
+                ).exclude(status="cancelled").count()
+
+                total_outstanding = Invoice.objects.filter(
+                    pharmacy=p
+                ).exclude(status="paid").aggregate(
+                    total=Sum("total_amount")
+                )["total"] or 0
+
+                pharmacy_list.append({
+                    "id": p.id,
+                    "name": p.name,
+                    "store_address" : p.store_address,
+                    "city": p.city,
+                    "postal_code" : p.postal_code,
+                    "province": p.province,
+                    "phone_number": p.phone_number,
+                    "email": p.email,
+                    "active": p.active,
+                    "total_valid_orders": total_orders,
+                    "total_outstanding_amount": float(total_outstanding),
+                })
+
+            return JsonResponse({
+                "success": True,
+                "pharmacies": pharmacy_list,
+            }, status=200)
+
+        # 🟢 CASE 2: ID provided → return SINGLE pharmacy with full info
+        pharmacy = Pharmacy.objects.get(id=pharmacy_id)
+
+        total_orders = DeliveryOrder.objects.filter(
+            pharmacy=pharmacy
+        ).exclude(status="cancelled").count()
+
+        total_outstanding = Invoice.objects.filter(
+            pharmacy=pharmacy
+        ).exclude(status="paid").aggregate(
+            total=Sum("total_amount")
+        )["total"] or 0
+
+        orders_qs = DeliveryOrder.objects.filter(
+            pharmacy=pharmacy
+        ).order_by("-created_at")
+
+        orders = []
+        for o in orders_qs:
+            orders.append({
+                "id": o.id,
+                "pickup_address": o.pickup_address,
+                "pickup_city": o.pickup_city,
+                "pickup_day": str(o.pickup_day),
+                "drop_address": o.drop_address,
+                "drop_city": o.drop_city,
+                "status": o.status,
+                "rate": float(o.rate),
+                "customer_name": o.customer_name,
+                "driver": o.driver.name if o.driver else None,
+                "created_at": o.created_at.strftime("%Y-%m-%d %H:%M:%S"),
+                "updated_at": o.updated_at.strftime("%Y-%m-%d %H:%M:%S"),
+            })
+
+        invoice_qs = Invoice.objects.filter(
+            pharmacy=pharmacy
+        ).order_by("-created_at")
+
+        invoices = []
+        for inv in invoice_qs:
+            invoices.append({
+                "invoice_id": inv.id,
+                "start_date": str(inv.start_date),
+                "end_date": str(inv.end_date),
+                "total_orders": inv.total_orders,
+                "total_amount": float(inv.total_amount),
+                "due_date": str(inv.due_date),
+                "status": inv.status,
+                "pdf_url": inv.pdf_url,
+                "stripe_payment_id": inv.stripe_payment_id,
+            })
+
+        pharmacy_data = {
+            "id": pharmacy.id,
+            "name": pharmacy.name,
+            "store_address": pharmacy.store_address,
+            "city": pharmacy.city,
+            "province": pharmacy.province,
+            "postal_code": pharmacy.postal_code,
+            "country": pharmacy.country,
+            "phone_number": pharmacy.phone_number,
+            "email": pharmacy.email,
+            "active": pharmacy.active,
+            "created_at": pharmacy.created_at.strftime("%Y-%m-%d %H:%M:%S"),
+        }
+
+        return JsonResponse({
+            "success": True,
+            "pharmacy": pharmacy_data,
+            "total_valid_orders": total_orders,
+            "total_outstanding_amount": float(total_outstanding),
+            "orders": orders,
+            "invoices": invoices,
+        }, status=200)
+
+    except Pharmacy.DoesNotExist:
+        return JsonResponse({"success": False, "message": "Pharmacy not found"}, status=404)
+    except Exception as e:
+        return JsonResponse({"success": False, "error": str(e)}, status=500)
+
+
+
+@csrf_exempt
+def add_pharmacy(request):
+    if request.method != "POST":
+        return JsonResponse(
+            {"success": False, "message": "Only POST method is allowed."},
+            status=405,
+        )
+
+    try:
+        data = json.loads(request.body.decode("utf-8"))
+    except json.JSONDecodeError:
+        return JsonResponse(
+            {"success": False, "message": "Invalid JSON payload."},
+            status=400,
+        )
+
+    # Required fields
+    required_fields = [
+        "name",
+        "store_address",
+        "city",
+        "province",
+        "postal_code",
+        "country",
+        "phone_number",
+        "email",
+    ]
+
+    missing = [f for f in required_fields if not data.get(f)]
+    if missing:
+        return JsonResponse(
+            {
+                "success": False,
+                "message": "Missing required fields.",
+                "missing_fields": missing,
+            },
+            status=400,
+        )
+
+    try:
+        pharmacy = Pharmacy.objects.create(
+            name=data.get("name").strip(),
+            store_address=data.get("store_address").strip(),
+            city=data.get("city").strip(),
+            province=data.get("province").strip(),
+            postal_code=data.get("postal_code").strip(),
+            country=data.get("country").strip(),
+            phone_number=data.get("phone_number").strip(),
+            email=data.get("email").strip(),
+            # password: will use default "123456"
+            # active: defaults to True (can override from payload if needed)
+            active=data.get("active", True),
+        )
+
+        # Build response without password
+        pharmacy_data = {
+            "id": pharmacy.id,
+            "name": pharmacy.name,
+            "store_address": pharmacy.store_address,
+            "city": pharmacy.city,
+            "province": pharmacy.province,
+            "postal_code": pharmacy.postal_code,
+            "country": pharmacy.country,
+            "phone_number": pharmacy.phone_number,
+            "email": pharmacy.email,
+            "active": pharmacy.active,
+            "created_at": pharmacy.created_at.strftime("%Y-%m-%d %H:%M:%S"),
+        }
+
+        return JsonResponse(
+            {
+                "success": True,
+                "message": "Pharmacy created successfully.",
+                "pharmacy": pharmacy_data,
+            },
+            status=201,
+        )
+
+    except IntegrityError:
+        # Likely unique email constraint
+        return JsonResponse(
+            {
+                "success": False,
+                "message": "A pharmacy with this email already exists.",
+                "field": "email",
+            },
+            status=400,
+        )
+    except Exception as e:
+        return JsonResponse(
+            {"success": False, "message": "Something went wrong.", "error": str(e)},
+            status=500,
+        )
+
+
+
+@csrf_exempt
+def edit_pharmacy(request, pharmacy_id):
+    if request.method != "PUT":
+        return JsonResponse(
+            {"success": False, "message": "Only PUT method is allowed."},
+            status=405,
+        )
+
+    try:
+        pharmacy = Pharmacy.objects.get(id=pharmacy_id)
+    except Pharmacy.DoesNotExist:
+        return JsonResponse(
+            {"success": False, "message": "Pharmacy not found."},
+            status=404,
+        )
+
+    try:
+        data = json.loads(request.body.decode("utf-8"))
+    except json.JSONDecodeError:
+        return JsonResponse(
+            {"success": False, "message": "Invalid JSON payload."},
+            status=400,
+        )
+
+    # Editable fields
+    editable_fields = [
+        "name",
+        "store_address",
+        "city",
+        "province",
+        "postal_code",
+        "country",
+        "phone_number",
+        "email",
+        "active",
+    ]
+
+    # Update only provided fields
+    for field in editable_fields:
+        if field in data:
+            setattr(pharmacy, field, data[field].strip() if isinstance(data[field], str) else data[field])
+
+    try:
+        pharmacy.save()
+
+        updated_data = {
+            "id": pharmacy.id,
+            "name": pharmacy.name,
+            "store_address": pharmacy.store_address,
+            "city": pharmacy.city,
+            "province": pharmacy.province,
+            "postal_code": pharmacy.postal_code,
+            "country": pharmacy.country,
+            "phone_number": pharmacy.phone_number,
+            "email": pharmacy.email,
+            "active": pharmacy.active,
+            "created_at": pharmacy.created_at.strftime("%Y-%m-%d %H:%M:%S"),
+        }
+
+        return JsonResponse(
+            {
+                "success": True,
+                "message": "Pharmacy updated successfully.",
+                "pharmacy": updated_data,
+            },
+            status=200,
+        )
+
+    except IntegrityError:
+        return JsonResponse(
+            {
+                "success": False,
+                "message": "A pharmacy with this email already exists.",
+                "field": "email",
+            },
+            status=400,
+        )
+
+    except Exception as e:
+        return JsonResponse(
+            {"success": False, "message": "Something went wrong.", "error": str(e)},
+            status=500,
+        )
+
+
+
+@csrf_exempt
+def toggle_pharmacy_status(request, pharmacy_id):
+    if request.method not in ["POST", "PATCH"]:
+        return JsonResponse(
+            {"success": False, "message": "Only POST or PATCH method is allowed."},
+            status=405,
+        )
+
+    try:
+        pharmacy = Pharmacy.objects.get(id=pharmacy_id)
+    except Pharmacy.DoesNotExist:
+        return JsonResponse(
+            {"success": False, "message": "Pharmacy not found."},
+            status=404,
+        )
+
+    # Try to read JSON body (optional)
+    new_status = None
+    try:
+        if request.body:
+            data = json.loads(request.body.decode("utf-8"))
+            if "active" in data:
+                new_status = bool(data["active"])
+    except json.JSONDecodeError:
+        # Ignore bad JSON, we’ll just toggle instead
+        pass
+
+    # If active explicitly provided → set it, else toggle
+    if new_status is not None:
+        pharmacy.active = new_status
+    else:
+        pharmacy.active = not pharmacy.active
+
+    pharmacy.save()
+
+    return JsonResponse(
+        {
+            "success": True,
+            "message": "Pharmacy activated." if pharmacy.active else "Pharmacy deactivated.",
+            "pharmacy": {
+                "id": pharmacy.id,
+                "name": pharmacy.name,
+                "active": pharmacy.active,
+            },
+        },
+        status=200,
+    )
+
+
+
+
+@csrf_exempt
+def reset_pharmacy_password(request, pharmacy_id):
+    if request.method not in ["POST", "PATCH"]:
+        return JsonResponse(
+            {"success": False, "message": "Only POST or PATCH method is allowed."},
+            status=405,
+        )
+
+    try:
+        pharmacy = Pharmacy.objects.get(id=pharmacy_id)
+    except Pharmacy.DoesNotExist:
+        return JsonResponse(
+            {"success": False, "message": "Pharmacy not found."},
+            status=404,
+        )
+
+    # Reset password to default — your model will hash it automatically
+    pharmacy.password = "123456"
+    pharmacy.save()
+
+    return JsonResponse(
+        {
+            "success": True,
+            "message": "Password reset successfully.",
+            "pharmacy": {
+                "id": pharmacy.id,
+                "name": pharmacy.name,
+                "email": pharmacy.email,
+                "active": pharmacy.active,
+            },
+        },
+        status=200,
+    )
 
 
 

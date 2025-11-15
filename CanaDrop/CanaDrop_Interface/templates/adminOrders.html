@@ -14,6 +14,28 @@
         linear-gradient(135deg, rgba(0,0,0,0) 75%, rgba(255,255,255,0.04) 75%) 0 0/28px 28px;
       box-shadow: inset 0 0 120px rgba(0,0,0,0.35);
     }
+    
+    /* White calendar icon for date inputs */
+    input[type="date"]::-webkit-calendar-picker-indicator {
+      filter: invert(1);
+      cursor: pointer;
+    }
+    
+    /* Custom scrollbar */
+    .custom-scrollbar::-webkit-scrollbar {
+      width: 8px;
+    }
+    .custom-scrollbar::-webkit-scrollbar-track {
+      background: #262626;
+      border-radius: 4px;
+    }
+    .custom-scrollbar::-webkit-scrollbar-thumb {
+      background: #525252;
+      border-radius: 4px;
+    }
+    .custom-scrollbar::-webkit-scrollbar-thumb:hover {
+      background: #737373;
+    }
   </style>
 </head>
 <body class="min-h-screen bg-neutral-900 text-neutral-100 logistics-bg">
@@ -52,20 +74,15 @@
           <svg class="w-5 h-5 mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 10h.01M12 10h.01M16 10h.01M21 12c0 4.418-4.03 8-9 8s-9-3.582-9-8 4.03-8 9-8 9 3.582 9 8zM12 14v-4m0 4h.01"/></svg>
           Support
         </a>
-        <a href="#" 
-        id="logoutBtn"
-        class="flex items-center px-3 py-2 rounded-lg text-neutral-300 hover:bg-neutral-700 transition">
-            <svg class="w-5 h-5 mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                    d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a2 2 0 01-2 2H5a2 2 0 01-2-2V7a2 2 0 012-2h6a2 2 0 012 2v1" />
-            </svg>
-            Logout
+        <a href="#" id="logoutBtn" class="flex items-center px-3 py-2 rounded-lg text-neutral-300 hover:bg-neutral-700 transition">
+          <svg class="w-5 h-5 mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a2 2 0 01-2 2H5a2 2 0 01-2-2V7a2 2 0 012-2h6a2 2 0 012 2v1" />
+          </svg>
+          Logout
         </a>
-
-
       </nav>
 
-    <!-- Profile -->
+      <!-- Profile -->
       <div class="p-4 border-t border-neutral-700">
         <div class="flex items-center">
           <div class="flex-shrink-0 w-9 h-9 bg-gradient-to-r from-orange-600 to-orange-500 rounded-full flex items-center justify-center text-sm font-semibold">A</div>
@@ -84,9 +101,6 @@
           <h1 class="text-2xl font-bold text-white">Orders Management</h1>
           <p class="text-sm text-neutral-400">Central control of all delivery orders</p>
         </div>
-        <button class="px-4 py-2 bg-gradient-to-r from-orange-600 to-orange-500 text-white rounded-lg text-sm font-medium hover:from-orange-500 hover:to-orange-400 transition">
-          Refresh Orders
-        </button>
       </header>
 
       <!-- Filters Section -->
@@ -94,31 +108,31 @@
         <div class="bg-neutral-800/80 border border-neutral-700 rounded-xl p-6">
           <h2 class="text-lg font-semibold text-white mb-4">Search & Filters</h2>
           <div class="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-5 gap-4">
-            <input type="text" placeholder="Search by Order ID" class="bg-neutral-900 border border-neutral-700 rounded-lg px-3 py-2 text-sm w-full focus:ring-2 focus:ring-orange-500 focus:outline-none"/>
-            
-            <select class="bg-neutral-900 border border-neutral-700 rounded-lg px-3 py-2 text-sm text-neutral-300 focus:ring-2 focus:ring-orange-500 focus:outline-none">
-              <option>Status (All)</option>
-              <option>Pending</option>
-              <option>In Transit</option>
-              <option>Delivered</option>
-              <option>Cancelled</option>
+            <input id="searchOrderId" type="text" placeholder="Search by Order ID"
+              class="bg-neutral-900 border border-neutral-700 rounded-lg px-3 py-2 text-sm w-full text-neutral-300 focus:ring-2 focus:ring-orange-500 focus:outline-none" />
+
+            <select id="filterStatus"
+              class="bg-neutral-900 border border-neutral-700 rounded-lg px-3 py-2 text-sm text-neutral-300 focus:ring-2 focus:ring-orange-500 focus:outline-none">
+              <option value="">Status (All)</option>
+              <option value="pending">Pending</option>
+              <option value="accepted">Accepted</option>
+              <option value="inTransit">In Transit</option>
+              <option value="picked_up">Picked Up</option>
+              <option value="delivered">Delivered</option>
+              <option value="cancelled">Cancelled</option>
             </select>
 
-            <select class="bg-neutral-900 border border-neutral-700 rounded-lg px-3 py-2 text-sm text-neutral-300 focus:ring-2 focus:ring-orange-500 focus:outline-none">
-              <option>Pharmacy (All)</option>
-              <option>HealthPlus</option>
-              <option>WellCare Meds</option>
-            </select>
+            <input id="filterPharmacy" type="text" placeholder="Pharmacy Name"
+              class="bg-neutral-900 border border-neutral-700 rounded-lg px-3 py-2 text-sm text-neutral-300 focus:ring-2 focus:ring-orange-500 focus:outline-none" />
 
-            <select class="bg-neutral-900 border border-neutral-700 rounded-lg px-3 py-2 text-sm text-neutral-300 focus:ring-2 focus:ring-orange-500 focus:outline-none">
-              <option>Driver (All)</option>
-              <option>John Doe</option>
-              <option>Alex Kim</option>
-            </select>
+            <input id="filterDriver" type="text" placeholder="Driver Name"
+              class="bg-neutral-900 border border-neutral-700 rounded-lg px-3 py-2 text-sm text-neutral-300 focus:ring-2 focus:ring-orange-500 focus:outline-none" />
 
             <div class="flex space-x-2">
-              <input type="date" class="bg-neutral-900 border border-neutral-700 rounded-lg px-3 py-2 text-sm text-neutral-300 w-1/2 focus:ring-2 focus:ring-orange-500 focus:outline-none"/>
-              <input type="date" class="bg-neutral-900 border border-neutral-700 rounded-lg px-3 py-2 text-sm text-neutral-300 w-1/2 focus:ring-2 focus:ring-orange-500 focus:outline-none"/>
+              <input id="filterDateStart" type="date"
+                class="bg-neutral-900 border border-neutral-700 rounded-lg px-3 py-2 text-sm text-neutral-300 w-1/2 focus:ring-2 focus:ring-orange-500 focus:outline-none" />
+              <input id="filterDateEnd" type="date"
+                class="bg-neutral-900 border border-neutral-700 rounded-lg px-3 py-2 text-sm text-neutral-300 w-1/2 focus:ring-2 focus:ring-orange-500 focus:outline-none" />
             </div>
           </div>
         </div>
@@ -139,84 +153,1020 @@
                   <th class="px-6 py-3 text-left text-neutral-400 uppercase tracking-wider">Pharmacy</th>
                   <th class="px-6 py-3 text-left text-neutral-400 uppercase tracking-wider">Driver</th>
                   <th class="px-6 py-3 text-left text-neutral-400 uppercase tracking-wider">Pickup → Drop</th>
+                  <th class="px-6 py-3 text-left text-neutral-400 uppercase tracking-wider">Pickup Date</th>
                   <th class="px-6 py-3 text-left text-neutral-400 uppercase tracking-wider">Status</th>
                   <th class="px-6 py-3 text-left text-neutral-400 uppercase tracking-wider">Amount</th>
                   <th class="px-6 py-3 text-left text-neutral-400 uppercase tracking-wider">Actions</th>
                 </tr>
               </thead>
-              <tbody class="divide-y divide-neutral-700">
-                <tr class="hover:bg-neutral-700/50 transition">
-                  <td class="px-6 py-4 font-medium text-neutral-100">#1024</td>
-                  <td class="px-6 py-4 text-neutral-300">HealthPlus Pharmacy</td>
-                  <td class="px-6 py-4 text-neutral-300">John Doe</td>
-                  <td class="px-6 py-4 text-neutral-400 text-xs">
-                    <p>Kitchener, ON</p>
-                    <p class="text-neutral-500">→ Waterloo, ON</p>
-                  </td>
-                  <td class="px-6 py-4">
-                    <span class="inline-flex px-3 py-1 text-xs font-medium rounded-full bg-orange-500/20 text-orange-400 border border-orange-600/40">In Transit</span>
-                  </td>
-                  <td class="px-6 py-4 text-neutral-100 font-semibold">$22.50</td>
-                  <td class="px-6 py-4 space-x-2">
-                    <button class="text-xs text-orange-400 border border-orange-600/40 px-3 py-1 rounded hover:bg-orange-600/20">View</button>
-                    <button class="text-xs text-neutral-300 border border-neutral-600 px-3 py-1 rounded hover:bg-neutral-700">Edit</button>
-                    <button class="text-xs text-red-400 border border-red-600/40 px-3 py-1 rounded hover:bg-red-600/20">Cancel</button>
-                  </td>
-                </tr>
-              </tbody>
+              <tbody id="ordersTableBody" class="divide-y divide-neutral-700"></tbody>
             </table>
+          </div>
+
+          <div class="flex justify-between items-center px-6 py-3 border-t border-neutral-700">
+            <button id="prevPage" class="text-sm text-neutral-400 hover:text-white">Prev</button>
+            <p id="pageInfo" class="text-sm text-neutral-400"></p>
+            <button id="nextPage" class="text-sm text-neutral-400 hover:text-white">Next</button>
           </div>
         </div>
       </section>
+
+      <!-- View Modal -->
+      <div id="viewModal" class="hidden fixed inset-0 bg-black/70 flex justify-center items-center z-50 p-4">
+        <div class="bg-neutral-800 rounded-xl w-full max-w-4xl max-h-[90vh] overflow-hidden flex flex-col">
+          <div class="px-6 py-4 border-b border-neutral-700 flex justify-between items-center">
+            <h3 id="viewTitle" class="text-xl font-semibold text-white">Order Details</h3>
+            <button onclick="closeModal('viewModal')" class="text-neutral-400 hover:text-white">
+              <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
+              </svg>
+            </button>
+          </div>
+          
+          <div id="viewContent" class="flex-1 overflow-y-auto custom-scrollbar px-6 py-4"></div>
+          
+          <div class="px-6 py-4 border-t border-neutral-700 flex justify-end">
+            <button onclick="closeModal('viewModal')" class="px-4 py-2 bg-orange-500 rounded-lg text-white hover:bg-orange-600">Close</button>
+          </div>
+        </div>
+      </div>
+
+      <!-- Edit Modal -->
+      <div id="editModal" class="hidden fixed inset-0 bg-black/70 flex justify-center items-center z-50 p-4">
+        <div class="bg-neutral-800 rounded-xl w-full max-w-4xl max-h-[90vh] overflow-hidden flex flex-col">
+          <div class="px-6 py-4 border-b border-neutral-700 flex justify-between items-center">
+            <h3 id="editTitle" class="text-xl font-semibold text-white">Edit Order</h3>
+            <button onclick="closeModal('editModal')" class="text-neutral-400 hover:text-white">
+              <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
+              </svg>
+            </button>
+          </div>
+          
+          <div class="flex-1 overflow-y-auto custom-scrollbar px-6 py-4">
+            <form id="editForm" class="space-y-4"></form>
+          </div>
+          
+          <div class="px-6 py-4 border-t border-neutral-700 flex justify-end space-x-2">
+            <button onclick="closeModal('editModal')" class="px-4 py-2 bg-neutral-700 rounded-lg text-white hover:bg-neutral-600">Cancel</button>
+            <button onclick="saveEditOrder()" class="px-4 py-2 bg-orange-500 rounded-lg text-white hover:bg-orange-600">Save Changes</button>
+          </div>
+        </div>
+      </div>
+
+      <!-- Delete Confirmation Modal -->
+      <div id="deleteModal" class="hidden fixed inset-0 bg-black/70 flex justify-center items-center z-50">
+        <div class="bg-neutral-800 p-6 rounded-xl text-center max-w-md">
+          <div class="w-12 h-12 rounded-full bg-red-500/20 flex items-center justify-center mx-auto mb-4">
+            <svg class="w-6 h-6 text-red-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"/>
+            </svg>
+          </div>
+          <h3 class="text-lg font-semibold text-white mb-2">Delete Order?</h3>
+          <p class="text-neutral-300 mb-6">Are you sure you want to delete this order? This action cannot be undone.</p>
+          <div class="flex justify-center space-x-3">
+            <button onclick="closeModal('deleteModal')" class="px-4 py-2 bg-neutral-700 rounded-lg text-white hover:bg-neutral-600">Cancel</button>
+            <button onclick="confirmDeleteOrder()" class="px-4 py-2 bg-red-600 rounded-lg text-white hover:bg-red-700">Delete Order</button>
+          </div>
+        </div>
+      </div>
 
       <!-- Delivery Rate Management Section -->
       <section class="px-6 pb-10">
         <div class="bg-neutral-800/80 border border-neutral-700 rounded-xl p-6 shadow">
           <div class="flex justify-between items-center mb-4">
             <h2 class="text-lg font-semibold text-white">Delivery Rate Management</h2>
-            <button class="px-3 py-1 bg-gradient-to-r from-orange-600 to-orange-500 text-white text-xs rounded-lg hover:from-orange-500 hover:to-orange-400">+ Add Rate</button>
+            <button id="addRateBtn"
+              class="px-3 py-1 bg-gradient-to-r from-orange-600 to-orange-500 text-white text-xs rounded-lg hover:from-orange-500 hover:to-orange-400">
+              + Add Rate
+            </button>
           </div>
+
           <table class="min-w-full text-sm">
             <thead class="bg-neutral-800 border-b border-neutral-700">
               <tr>
                 <th class="px-6 py-3 text-left text-neutral-400 uppercase tracking-wider">ID</th>
-                <th class="px-6 py-3 text-left text-neutral-400 uppercase tracking-wider">City From</th>
-                <th class="px-6 py-3 text-left text-neutral-400 uppercase tracking-wider">City To</th>
+                <th class="px-6 py-3 text-left text-neutral-400 uppercase tracking-wider">Min Distance (KM)</th>
+                <th class="px-6 py-3 text-left text-neutral-400 uppercase tracking-wider">Max Distance (KM)</th>
                 <th class="px-6 py-3 text-left text-neutral-400 uppercase tracking-wider">Base Rate ($)</th>
-                <th class="px-6 py-3 text-left text-neutral-400 uppercase tracking-wider">Per KM ($)</th>
                 <th class="px-6 py-3 text-left text-neutral-400 uppercase tracking-wider">Actions</th>
               </tr>
             </thead>
-            <tbody class="divide-y divide-neutral-700">
-              <tr class="hover:bg-neutral-700/50 transition">
-                <td class="px-6 py-4 text-neutral-100">1</td>
-                <td class="px-6 py-4 text-neutral-300">Kitchener</td>
-                <td class="px-6 py-4 text-neutral-300">Waterloo</td>
-                <td class="px-6 py-4 text-neutral-100">$5.00</td>
-                <td class="px-6 py-4 text-neutral-100">$0.50</td>
-                <td class="px-6 py-4 space-x-2">
-                  <button class="text-xs text-neutral-300 border border-neutral-600 px-3 py-1 rounded hover:bg-neutral-700">Edit</button>
-                  <button class="text-xs text-red-400 border border-red-600/40 px-3 py-1 rounded hover:bg-red-600/20">Delete</button>
-                </td>
+            <tbody id="deliveryRatesTableBody" class="divide-y divide-neutral-700">
+              <!-- JS will populate rates dynamically -->
+              <tr>
+                <td colspan="5" class="text-center text-neutral-500 py-4">Loading rates...</td>
               </tr>
             </tbody>
           </table>
         </div>
       </section>
 
+      <!-- Add Rate Modal -->
+      <div id="addRateModal" class="hidden fixed inset-0 bg-black/70 flex justify-center items-center z-50">
+        <div class="bg-neutral-800 p-6 rounded-xl w-11/12 md:w-1/3 shadow-lg border border-neutral-700">
+          <h3 class="text-lg font-semibold text-white mb-4">Add Delivery Rate</h3>
+
+          <form id="addRateForm" class="space-y-3">
+            <div>
+              <label class="block text-sm text-neutral-300 mb-1">Minimum Distance (KM)</label>
+              <input type="number" step="0.01" id="minDistanceInput"
+                class="w-full px-3 py-2 bg-neutral-900 border border-neutral-700 rounded-lg text-neutral-200 focus:ring-2 focus:ring-orange-500 focus:outline-none" />
+            </div>
+
+            <div>
+              <label class="block text-sm text-neutral-300 mb-1">Maximum Distance (KM)</label>
+              <input type="number" step="0.01" id="maxDistanceInput"
+                class="w-full px-3 py-2 bg-neutral-900 border border-neutral-700 rounded-lg text-neutral-200 focus:ring-2 focus:ring-orange-500 focus:outline-none" />
+            </div>
+
+            <div>
+              <label class="block text-sm text-neutral-300 mb-1">Base Rate ($)</label>
+              <input type="number" step="0.01" id="rateInput"
+                class="w-full px-3 py-2 bg-neutral-900 border border-neutral-700 rounded-lg text-neutral-200 focus:ring-2 focus:ring-orange-500 focus:outline-none" />
+            </div>
+          </form>
+
+          <div class="flex justify-end mt-4 space-x-2">
+            <button id="cancelAddRate"
+              class="px-4 py-2 bg-neutral-700 text-white rounded-lg hover:bg-neutral-600 transition">Cancel</button>
+            <button id="saveRateBtn"
+              class="px-4 py-2 bg-gradient-to-r from-orange-600 to-orange-500 text-white rounded-lg hover:from-orange-500 hover:to-orange-400 transition">
+              Save
+            </button>
+          </div>
+        </div>
+      </div>
+
+
       <script>
         document.getElementById("logoutBtn").addEventListener("click", function (event) {
-  event.preventDefault();
+          event.preventDefault();
+          document.cookie = "adminId=; path=/; expires=Thu, 01 Jan 1970 00:00:00 UTC; SameSite=Lax;";
+          document.cookie = "jwtToken=; path=/; expires=Thu, 01 Jan 1970 00:00:00 UTC; SameSite=Lax;";
+          window.location.href = "/adminLogin/";
+        });
 
-  // 🧹 Remove adminId cookie
-  document.cookie = "adminId=; path=/; expires=Thu, 01 Jan 1970 00:00:00 UTC; SameSite=Lax;";
+        let allOrders = [];
+        let filteredOrders = [];
+        let currentPage = 1;
+        const ordersPerPage = 10;
+        let orderToEdit = null;
+        let orderToDelete = null;
 
-  // Optional: clear JWT or any other related cookies if used
-  document.cookie = "jwtToken=; path=/; expires=Thu, 01 Jan 1970 00:00:00 UTC; SameSite=Lax;";
+        // Fetch orders
+        async function loadOrders() {
+          try {
+            const res = await fetch("/api/adminOrderList/");
+            const data = await res.json();
+            if (!data.success) throw new Error("API failed");
 
-  // 🚀 Redirect to admin login page
-  window.location.href = "/adminLogin/";
-});
+            allOrders = data.orders;
+            filteredOrders = [...allOrders];
+            renderOrders();
+          } catch (err) {
+            console.error("Error loading orders:", err);
+            document.getElementById("ordersTableBody").innerHTML =
+              `<tr><td colspan="8" class="text-center text-red-400 py-4">Failed to load orders</td></tr>`;
+          }
+        }
+
+        // Render table
+        function renderOrders() {
+          const tbody = document.getElementById("ordersTableBody");
+          const totalPages = Math.ceil(filteredOrders.length / ordersPerPage);
+          const start = (currentPage - 1) * ordersPerPage;
+          const end = start + ordersPerPage;
+          const pageOrders = filteredOrders.slice(start, end);
+
+          tbody.innerHTML = pageOrders
+            .map((o) => `
+              <tr class="hover:bg-neutral-700/40 transition">
+                <td class="px-6 py-4 text-neutral-100 font-medium">#${o.order_id}</td>
+                <td class="px-6 py-4 text-neutral-300">${o.pharmacy?.name || "-"}</td>
+                <td class="px-6 py-4 text-neutral-300">${o.driver?.name || "Unassigned"}</td>
+                <td class="px-6 py-4 text-neutral-400 text-xs">
+                  <p>${o.pickup_city}</p><p class="text-neutral-500">→ ${o.drop_city}</p>
+                </td>
+                <td class="px-6 py-4 text-neutral-300">${o.pickup_day || "-"}</td>
+                <td class="px-6 py-4">
+                  <span class="inline-flex px-3 py-1 text-xs font-medium rounded-full ${getStatusColor(o.status)}">${formatStatus(o.status)}</span>
+                </td>
+                <td class="px-6 py-4 text-neutral-100 font-semibold">$${o.amount.toFixed(2)}</td>
+                <td class="px-6 py-4 space-x-2">
+                  <button onclick="viewOrder(${o.order_id})" class="text-xs text-orange-400 border border-orange-600/40 px-3 py-1 rounded hover:bg-orange-600/20">View</button>
+                  <button onclick="editOrder(${o.order_id})" class="text-xs text-neutral-300 border border-neutral-600 px-3 py-1 rounded hover:bg-neutral-700">Edit</button>
+                  <button onclick="deleteOrder(${o.order_id})" class="text-xs text-red-400 border border-red-600/40 px-3 py-1 rounded hover:bg-red-600/20">Delete</button>
+                </td>
+              </tr>
+            `).join("");
+
+          document.getElementById("pageInfo").innerText =
+            `Page ${currentPage} of ${totalPages || 1}`;
+          document.getElementById("prevPage").disabled = currentPage === 1;
+          document.getElementById("nextPage").disabled = currentPage === totalPages;
+        }
+
+        function getStatusColor(status) {
+          const colors = {
+            'pending': 'bg-yellow-500/20 text-yellow-400 border border-yellow-600/40',
+            'accepted': 'bg-blue-500/20 text-blue-400 border border-blue-600/40',
+            'inTransit': 'bg-purple-500/20 text-purple-400 border border-purple-600/40',
+            'picked_up': 'bg-indigo-500/20 text-indigo-400 border border-indigo-600/40',
+            'delivered': 'bg-green-500/20 text-green-400 border border-green-600/40',
+            'cancelled': 'bg-red-500/20 text-red-400 border border-red-600/40'
+          };
+          return colors[status] || 'bg-orange-500/20 text-orange-400 border border-orange-600/40';
+        }
+
+        function formatStatus(status) {
+          const formats = {
+            'pending': 'Pending',
+            'accepted': 'Accepted',
+            'inTransit': 'In Transit',
+            'picked_up': 'Picked Up',
+            'delivered': 'Delivered',
+            'cancelled': 'Cancelled'
+          };
+          return formats[status] || status;
+        }
+
+        // Pagination
+        document.getElementById("prevPage").onclick = () => {
+          if (currentPage > 1) { currentPage--; renderOrders(); }
+        };
+        document.getElementById("nextPage").onclick = () => {
+          const totalPages = Math.ceil(filteredOrders.length / ordersPerPage);
+          if (currentPage < totalPages) { currentPage++; renderOrders(); }
+        };
+
+        // Filters
+        function applyFilters() {
+          const id = document.getElementById("searchOrderId").value.trim().toLowerCase();
+          const status = document.getElementById("filterStatus").value;
+          const pharm = document.getElementById("filterPharmacy").value.toLowerCase();
+          const driver = document.getElementById("filterDriver").value.toLowerCase();
+          const start = document.getElementById("filterDateStart").value;
+          const end = document.getElementById("filterDateEnd").value;
+
+          filteredOrders = allOrders.filter(o => {
+            return (
+              (!id || o.order_id.toString().includes(id)) &&
+              (!status || o.status === status) &&
+              (!pharm || o.pharmacy?.name.toLowerCase().includes(pharm)) &&
+              (!driver || o.driver?.name?.toLowerCase().includes(driver)) &&
+              (!start || new Date(o.pickup_day) >= new Date(start)) &&
+              (!end || new Date(o.pickup_day) <= new Date(end))
+            );
+          });
+
+          currentPage = 1;
+          renderOrders();
+        }
+
+        ["searchOrderId", "filterStatus", "filterPharmacy", "filterDriver", "filterDateStart", "filterDateEnd"]
+          .forEach(id => document.getElementById(id).addEventListener("input", applyFilters));
+
+        // View modal
+        function viewOrder(id) {
+          const order = allOrders.find(o => o.order_id === id);
+          document.getElementById("viewTitle").innerText = `Order #${id} Details`;
+          
+          const content = `
+            <div class="space-y-6">
+              <!-- Order Info -->
+              <div class="bg-neutral-900/50 rounded-lg p-4 border border-neutral-700">
+                <h4 class="text-sm font-semibold text-orange-400 mb-3 flex items-center">
+                  <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/>
+                  </svg>
+                  Order Information
+                </h4>
+                <div class="grid grid-cols-2 gap-3 text-sm">
+                  <div><span class="text-neutral-400">Order ID:</span> <span class="text-white font-medium">#${order.order_id}</span></div>
+                  <div><span class="text-neutral-400">Status:</span> <span class="inline-flex px-2 py-1 text-xs rounded-full ${getStatusColor(order.status)}">${formatStatus(order.status)}</span></div>
+                  <div><span class="text-neutral-400">Customer:</span> <span class="text-neutral-200">${order.customer_name || "N/A"}</span></div>
+                  <div><span class="text-neutral-400">Pickup Date:</span> <span class="text-neutral-200">${order.pickup_day || "N/A"}</span></div>
+                  <div><span class="text-neutral-400">Created:</span> <span class="text-neutral-200">${order.created_at ? new Date(order.created_at).toLocaleString() : "N/A"}</span></div>
+                  <div><span class="text-neutral-400">Updated:</span> <span class="text-neutral-200">${order.updated_at ? new Date(order.updated_at).toLocaleString() : "N/A"}</span></div>
+                </div>
+              </div>
+
+              <!-- Pharmacy Info -->
+              ${order.pharmacy ? `
+              <div class="bg-neutral-900/50 rounded-lg p-4 border border-neutral-700">
+                <h4 class="text-sm font-semibold text-orange-400 mb-3 flex items-center">
+                  <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4"/>
+                  </svg>
+                  Pharmacy Details
+                </h4>
+                <div class="grid grid-cols-2 gap-3 text-sm">
+                  <div><span class="text-neutral-400">Name:</span> <span class="text-neutral-200">${order.pharmacy.name}</span></div>
+                  <div><span class="text-neutral-400">Email:</span> <span class="text-neutral-200">${order.pharmacy.email}</span></div>
+                  <div><span class="text-neutral-400">Phone:</span> <span class="text-neutral-200">${order.pharmacy.phone_number}</span></div>
+                  <div><span class="text-neutral-400">Status:</span> <span class="text-neutral-200">${order.pharmacy.active ? '✓ Active' : '✗ Inactive'}</span></div>
+                  <div class="col-span-2"><span class="text-neutral-400">Address:</span> <span class="text-neutral-200">${order.pharmacy.city}, ${order.pharmacy.province} ${order.pharmacy.postal_code}</span></div>
+                </div>
+              </div>
+              ` : '<div class="bg-neutral-900/50 rounded-lg p-4 border border-neutral-700 text-neutral-400 text-sm">No pharmacy information available</div>'}
+
+              <!-- Driver Info -->
+              ${order.driver ? `
+              <div class="bg-neutral-900/50 rounded-lg p-4 border border-neutral-700">
+                <h4 class="text-sm font-semibold text-orange-400 mb-3 flex items-center">
+                  <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"/>
+                  </svg>
+                  Driver Details
+                </h4>
+                <div class="grid grid-cols-2 gap-3 text-sm">
+                  <div><span class="text-neutral-400">Name:</span> <span class="text-neutral-200">${order.driver.name}</span></div>
+                  <div><span class="text-neutral-400">Email:</span> <span class="text-neutral-200">${order.driver.email}</span></div>
+                  <div><span class="text-neutral-400">Phone:</span> <span class="text-neutral-200">${order.driver.phone_number}</span></div>
+                  <div><span class="text-neutral-400">Vehicle:</span> <span class="text-neutral-200">${order.driver.vehicle_number || "N/A"}</span></div>
+                  <div><span class="text-neutral-400">Status:</span> <span class="text-neutral-200">${order.driver.active ? '✓ Active' : '✗ Inactive'}</span></div>
+                </div>
+              </div>
+              ` : '<div class="bg-neutral-900/50 rounded-lg p-4 border border-neutral-700 text-neutral-400 text-sm">No driver assigned yet</div>'}
+
+              <!-- Delivery Addresses -->
+              <div class="bg-neutral-900/50 rounded-lg p-4 border border-neutral-700">
+                <h4 class="text-sm font-semibold text-orange-400 mb-3 flex items-center">
+                  <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z"/>
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 11a3 3 0 11-6 0 3 3 0 016 0z"/>
+                  </svg>
+                  Delivery Route
+                </h4>
+                <div class="space-y-3 text-sm">
+                  <div class="flex items-start">
+                    <div class="w-8 h-8 rounded-full bg-green-500/20 flex items-center justify-center mr-3 flex-shrink-0">
+                      <svg class="w-4 h-4 text-green-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 10l7-7m0 0l7 7m-7-7v18"/>
+                      </svg>
+                    </div>
+                    <div>
+                      <p class="text-neutral-400 text-xs">Pickup Address</p>
+                      <p class="text-neutral-200">${order.pickup_address}</p>
+                      <p class="text-neutral-400 text-xs mt-1">${order.pickup_city}</p>
+                    </div>
+                  </div>
+                  <div class="flex items-start">
+                    <div class="w-8 h-8 rounded-full bg-red-500/20 flex items-center justify-center mr-3 flex-shrink-0">
+                      <svg class="w-4 h-4 text-red-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 14l-7 7m0 0l-7-7m7 7V3"/>
+                      </svg>
+                    </div>
+                    <div>
+                      <p class="text-neutral-400 text-xs">Drop Address</p>
+                      <p class="text-neutral-200">${order.drop_address}</p>
+                      <p class="text-neutral-400 text-xs mt-1">${order.drop_city}</p>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              <!-- Commission Info -->
+              <div class="bg-neutral-900/50 rounded-lg p-4 border border-neutral-700">
+                <h4 class="text-sm font-semibold text-orange-400 mb-3 flex items-center">
+                  <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/>
+                  </svg>
+                  Financial Breakdown
+                </h4>
+                <div class="grid grid-cols-2 gap-3 text-sm">
+                  <div><span class="text-neutral-400">Total Amount:</span> <span class="text-white font-semibold">${order.amount.toFixed(2)}</span></div>
+                  <div><span class="text-neutral-400">Commission Rate:</span> <span class="text-neutral-200">${order.commission_info.commission_rate}</span></div>
+                  <div><span class="text-neutral-400">Commission Amount:</span> <span class="text-orange-400 font-medium">${order.commission_info.commission_amount.toFixed(2)}</span></div>
+                  <div><span class="text-neutral-400">Driver Payout:</span> <span class="text-green-400 font-medium">${order.commission_info.net_payout_driver.toFixed(2)}</span></div>
+                </div>
+              </div>
+
+              <!-- Tracking History -->
+              ${order.tracking_history && order.tracking_history.length > 0 ? `
+              <div class="bg-neutral-900/50 rounded-lg p-4 border border-neutral-700">
+                <h4 class="text-sm font-semibold text-orange-400 mb-3 flex items-center">
+                  <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"/>
+                  </svg>
+                  Tracking History
+                </h4>
+                <div class="space-y-2">
+                  ${order.tracking_history.map(t => `
+                    <div class="flex items-start text-sm border-l-2 border-orange-500/30 pl-3 py-1">
+                      <div class="flex-1">
+                        <p class="text-neutral-200 font-medium">${formatStatus(t.step)}</p>
+                        ${t.performed_by ? `<p class="text-neutral-400 text-xs">By: ${t.performed_by}</p>` : ''}
+                        ${t.note ? `<p class="text-neutral-400 text-xs">${t.note}</p>` : ''}
+                      </div>
+                      <span class="text-neutral-500 text-xs whitespace-nowrap ml-2">${t.timestamp ? new Date(t.timestamp).toLocaleString() : ''}</span>
+                    </div>
+                  `).join('')}
+                </div>
+              </div>
+              ` : ''}
+
+              <!-- Proof Images -->
+              ${order.proof_images && order.proof_images.length > 0 ? `
+              <div class="bg-neutral-900/50 rounded-lg p-4 border border-neutral-700">
+                <h4 class="text-sm font-semibold text-orange-400 mb-3 flex items-center">
+                  <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"/>
+                  </svg>
+                  Proof Images
+                </h4>
+                <div class="grid grid-cols-3 gap-3">
+                  ${order.proof_images.map(img => `
+                    <div class="space-y-1">
+                      <a href="${img.image_url}" target="_blank" class="block">
+                        <img src="${img.image_url}" alt="${img.stage}" class="w-full h-32 object-cover rounded-lg border border-neutral-700 hover:border-orange-500 transition"/>
+                      </a>
+                      <p class="text-xs text-neutral-400 text-center">${img.stage.replace('_', ' ')}</p>
+                    </div>
+                  `).join('')}
+                </div>
+              </div>
+              ` : ''}
+            </div>
+          `;
+          
+          document.getElementById("viewContent").innerHTML = content;
+          openModal("viewModal");
+        }
+
+
+        // 🟠 Open edit modal & populate fields dynamically
+        function editOrder(id) {
+          orderToEdit = allOrders.find(o => o.order_id === id);
+          document.getElementById("editTitle").innerText = `Edit Order #${id}`;
+          
+          const form = document.getElementById("editForm");
+          form.innerHTML = `
+            <!-- Order Status -->
+            <div class="bg-neutral-900/50 rounded-lg p-4 border border-neutral-700">
+              <h4 class="text-sm font-semibold text-orange-400 mb-3">Order Status</h4>
+              <div class="grid grid-cols-2 gap-4">
+                <div>
+                  <label class="block text-xs text-neutral-400 mb-1">Status</label>
+                  <select id="editStatus" class="w-full px-3 py-2 rounded-lg bg-neutral-900 border border-neutral-700 text-neutral-300 focus:ring-2 focus:ring-orange-500 focus:outline-none">
+                    <option value="pending" ${orderToEdit.status === 'pending' ? 'selected' : ''}>Pending</option>
+                    <option value="accepted" ${orderToEdit.status === 'accepted' ? 'selected' : ''}>Accepted</option>
+                    <option value="inTransit" ${orderToEdit.status === 'inTransit' ? 'selected' : ''}>In Transit</option>
+                    <option value="picked_up" ${orderToEdit.status === 'picked_up' ? 'selected' : ''}>Picked Up</option>
+                    <option value="delivered" ${orderToEdit.status === 'delivered' ? 'selected' : ''}>Delivered</option>
+                    <option value="cancelled" ${orderToEdit.status === 'cancelled' ? 'selected' : ''}>Cancelled</option>
+                  </select>
+                </div>
+                <div>
+                  <label class="block text-xs text-neutral-400 mb-1">Rate ($)</label>
+                  <input type="number" id="editRate" step="0.01"
+                    class="w-full px-3 py-2 rounded-lg bg-neutral-900 border border-neutral-700 text-neutral-300 focus:ring-2 focus:ring-orange-500 focus:outline-none"
+                    value="${orderToEdit.amount}">
+                </div>
+              </div>
+            </div>
+
+            <!-- Customer Info -->
+            <div class="bg-neutral-900/50 rounded-lg p-4 border border-neutral-700">
+              <h4 class="text-sm font-semibold text-orange-400 mb-3">Customer Information</h4>
+              <div class="grid grid-cols-2 gap-4">
+                <div>
+                  <label class="block text-xs text-neutral-400 mb-1">Customer Name</label>
+                  <input type="text" id="editCustomerName" 
+                    class="w-full px-3 py-2 rounded-lg bg-neutral-900 border border-neutral-700 text-neutral-300 focus:ring-2 focus:ring-orange-500 focus:outline-none"
+                    value="${orderToEdit.customer_name}">
+                </div>
+                <div>
+                  <label class="block text-xs text-neutral-400 mb-1">Pickup Date</label>
+                  <input type="date" id="editPickupDay" 
+                    class="w-full px-3 py-2 rounded-lg bg-neutral-900 border border-neutral-700 text-neutral-300 focus:ring-2 focus:ring-orange-500 focus:outline-none"
+                    value="${orderToEdit.pickup_day}">
+                </div>
+              </div>
+            </div>
+
+            <!-- Pickup Address -->
+            <div class="bg-neutral-900/50 rounded-lg p-4 border border-neutral-700">
+              <h4 class="text-sm font-semibold text-orange-400 mb-3">Pickup Address</h4>
+              <div class="grid grid-cols-2 gap-4">
+                <div class="col-span-2">
+                  <label class="block text-xs text-neutral-400 mb-1">Pickup Address</label>
+                  <textarea id="editPickupAddress" rows="2"
+                    class="w-full px-3 py-2 rounded-lg bg-neutral-900 border border-neutral-700 text-neutral-300 focus:ring-2 focus:ring-orange-500 focus:outline-none">${orderToEdit.pickup_address}</textarea>
+                </div>
+                <div>
+                  <label class="block text-xs text-neutral-400 mb-1">Pickup City</label>
+                  <input type="text" id="editPickupCity" 
+                    class="w-full px-3 py-2 rounded-lg bg-neutral-900 border border-neutral-700 text-neutral-300 focus:ring-2 focus:ring-orange-500 focus:outline-none"
+                    value="${orderToEdit.pickup_city}">
+                </div>
+              </div>
+            </div>
+
+            <!-- Drop Address -->
+            <div class="bg-neutral-900/50 rounded-lg p-4 border border-neutral-700">
+              <h4 class="text-sm font-semibold text-orange-400 mb-3">Drop Address</h4>
+              <div class="grid grid-cols-2 gap-4">
+                <div class="col-span-2">
+                  <label class="block text-xs text-neutral-400 mb-1">Drop Address</label>
+                  <textarea id="editDropAddress" rows="2"
+                    class="w-full px-3 py-2 rounded-lg bg-neutral-900 border border-neutral-700 text-neutral-300 focus:ring-2 focus:ring-orange-500 focus:outline-none">${orderToEdit.drop_address}</textarea>
+                </div>
+                <div>
+                  <label class="block text-xs text-neutral-400 mb-1">Drop City</label>
+                  <input type="text" id="editDropCity" 
+                    class="w-full px-3 py-2 rounded-lg bg-neutral-900 border border-neutral-700 text-neutral-300 focus:ring-2 focus:ring-orange-500 focus:outline-none"
+                    value="${orderToEdit.drop_city}">
+                </div>
+              </div>
+            </div>
+          `;
+          
+          openModal("editModal");
+        }
+
+        // 🟢 Save changes via API
+        async function saveEditOrder() {
+          if (!orderToEdit) return;
+
+          const payload = {
+            pickup_address: document.getElementById("editPickupAddress").value.trim(),
+            pickup_city: document.getElementById("editPickupCity").value.trim(),
+            drop_address: document.getElementById("editDropAddress").value.trim(),
+            drop_city: document.getElementById("editDropCity").value.trim(),
+            rate: parseFloat(document.getElementById("editRate").value || 0),
+            status: document.getElementById("editStatus").value,
+            customer_name: document.getElementById("editCustomerName").value.trim(),
+            pickup_day: document.getElementById("editPickupDay").value,
+          };
+
+          try {
+            const response = await fetch(`/api/editOrder/${orderToEdit.order_id}/`, {
+              method: "PUT",
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify(payload),
+            });
+
+            const data = await response.json();
+
+            if (data.success) {
+              showNotification("✅ Order updated successfully!", "success");
+              closeModal("editModal");
+              // optionally refresh table immediately so UI feels snappy
+              loadOrders();
+
+              // 🔄 Hard refresh after 3 seconds
+              setTimeout(() => {
+                window.location.reload();
+              }, 3000);
+            } else {
+              showNotification(`⚠️ ${data.error || "Failed to update order"}`, "error");
+            }
+          } catch (error) {
+            console.error("Error updating order:", error);
+            showNotification("❌ Error connecting to server", "error");
+          }
+        }
+
+        // 🗑️ Delete modal
+        function deleteOrder(id) {
+          orderToDelete = id;
+          openModal("deleteModal");
+        }
+
+        // ✅ Confirm deletion and call API
+        async function confirmDeleteOrder() {
+          if (!orderToDelete) return;
+
+          closeModal("deleteModal"); // close confirmation modal
+
+          try {
+            const response = await fetch(`/api/orders/${orderToDelete}/cancel/`, {
+              method: "DELETE",
+              headers: {
+                "Content-Type": "application/json",
+              },
+            });
+
+            const data = await response.json();
+
+            if (response.ok && data.success) {
+              showNotification(`✅ ${data.message || "Order cancelled successfully!"}`, "success");
+
+              // Refresh after 3 seconds
+              setTimeout(() => {
+                window.location.reload();
+              }, 3000);
+            } else {
+              showNotification(`⚠️ ${data.error || "Failed to cancel order"}`, "error");
+            }
+          } catch (error) {
+            console.error("Error cancelling order:", error);
+            showNotification("❌ Error connecting to server", "error");
+          }
+        }
+
+
+
+        //
+        // ✨ Custom Notification Toasts (Success/Error)
+        //
+        function showNotification(message, type = "success") {
+          const toast = document.createElement("div");
+          toast.className = `
+            fixed top-6 right-6 px-4 py-3 rounded-lg text-sm shadow-lg z-50 transition transform duration-300
+            ${type === "success" ? "bg-green-600 text-white" : "bg-red-600 text-white"}
+          `;
+          toast.textContent = message;
+          document.body.appendChild(toast);
+
+          setTimeout(() => {
+            toast.style.opacity = "0";
+            toast.style.transform = "translateY(-10px)";
+          }, 2500);
+
+          setTimeout(() => toast.remove(), 3000);
+        }
+
+
+
+        // Modal helpers
+        function openModal(id) { document.getElementById(id).classList.remove("hidden"); }
+        function closeModal(id) { document.getElementById(id).classList.add("hidden"); }
+
+        // Init
+        document.addEventListener("DOMContentLoaded", loadOrders);
+
+        document.addEventListener("DOMContentLoaded", () => {
+        const tableBody = document.getElementById("deliveryRatesTableBody");
+        const addRateBtn = document.getElementById("addRateBtn");
+        const addRateModal = document.getElementById("addRateModal");
+        const cancelAddRate = document.getElementById("cancelAddRate");
+        const saveRateBtn = document.getElementById("saveRateBtn");
+
+        // ✅ Fetch and populate delivery rates
+        async function fetchDeliveryRates() {
+          tableBody.innerHTML = `
+            <tr><td colspan="5" class="text-center text-neutral-500 py-4">Loading...</td></tr>
+          `;
+
+          try {
+            const response = await fetch("/api/deliveryRates/");
+            const data = await response.json();
+
+            if (!data.success) {
+              throw new Error(data.error || "Failed to load rates");
+            }
+
+            if (data.rates.length === 0) {
+              tableBody.innerHTML = `
+                <tr><td colspan="5" class="text-center text-neutral-500 py-4">No rates available.</td></tr>
+              `;
+              return;
+            }
+
+            tableBody.innerHTML = "";
+
+            data.rates.forEach((rate) => {
+              const row = document.createElement("tr");
+              row.className = "hover:bg-neutral-700/50 transition";
+
+              row.innerHTML = `
+                <td class="px-6 py-4 text-neutral-100">${rate.id}</td>
+                <td class="px-6 py-4 text-neutral-300">${rate.min_distance_km.toFixed(2)}</td>
+                <td class="px-6 py-4 text-neutral-300">${rate.max_distance_km !== null ? rate.max_distance_km.toFixed(2) : "∞"}</td>
+                <td class="px-6 py-4 text-neutral-100">$${rate.rate.toFixed(2)}</td>
+                <td class="px-6 py-4 space-x-2">
+                  <button class="text-xs text-neutral-300 border border-neutral-600 px-3 py-1 rounded hover:bg-neutral-700" onclick="editRate(${rate.id})">Edit</button>
+                  <button class="text-xs text-red-400 border border-red-600/40 px-3 py-1 rounded hover:bg-red-600/20" onclick="deleteRate(${rate.id})">Delete</button>
+                </td>
+              `;
+
+              tableBody.appendChild(row);
+            });
+          } catch (error) {
+            console.error("Error fetching rates:", error);
+            tableBody.innerHTML = `
+              <tr><td colspan="5" class="text-center text-red-500 py-4">Error loading rates.</td></tr>
+            `;
+          }
+        }
+
+        // 🚀 Initialize
+        fetchDeliveryRates();
+
+        // 🟠 Add Rate Modal Handlers
+        addRateBtn.addEventListener("click", () => {
+          addRateModal.classList.remove("hidden");
+        });
+
+        cancelAddRate.addEventListener("click", () => {
+          addRateModal.classList.add("hidden");
+        });
+
+        // ✅ Save button logic → API call to add new rate
+        saveRateBtn.addEventListener("click", async (e) => {
+          e.preventDefault();
+
+          const minKm = document.getElementById("minDistanceInput").value.trim();
+          const maxKm = document.getElementById("maxDistanceInput").value.trim();
+          const rate = document.getElementById("rateInput").value.trim();
+
+          if (!minKm || !rate) {
+            showNotification("⚠️ Please enter at least Minimum Distance and Rate.", "error");
+            return;
+          }
+
+          const payload = {
+            min_distance_km: parseFloat(minKm),
+            max_distance_km: maxKm ? parseFloat(maxKm) : null,
+            rate: parseFloat(rate),
+          };
+
+          try {
+            const response = await fetch("/api/deliveryRates/add/", {
+              method: "POST",
+              headers: {
+                "Content-Type": "application/json",
+              },
+              body: JSON.stringify(payload),
+            });
+
+            const data = await response.json();
+
+            if (response.ok && data.success) {
+              showNotification("✅ Delivery rate added successfully!", "success");
+              addRateModal.classList.add("hidden");
+
+              // Clear inputs
+              document.getElementById("minDistanceInput").value = "";
+              document.getElementById("maxDistanceInput").value = "";
+              document.getElementById("rateInput").value = "";
+
+              // Reload the table after 3 seconds
+              setTimeout(() => {
+                fetchDeliveryRates();
+              }, 3000);
+            } else {
+              showNotification(
+                `⚠️ ${data.error || "Failed to add rate. Please try again."}`,
+                "error"
+              );
+            }
+          } catch (error) {
+            console.error("Error adding rate:", error);
+            showNotification("❌ Error connecting to server", "error");
+          }
+        });
+
+      });
+
+// Global variable to track rate being edited/deleted
+let rateToEdit = null;
+let rateToDelete = null;
+
+// ✏️ EDIT RATE FUNCTION
+async function editRate(id) {
+  try {
+    // Fetch current rate data
+    const response = await fetch("/api/deliveryRates/");
+    const data = await response.json();
+    
+    if (!data.success) {
+      showNotification("❌ Failed to load rate data", "error");
+      return;
+    }
+    
+    // Find the rate to edit
+    rateToEdit = data.rates.find(r => r.id === id);
+    
+    if (!rateToEdit) {
+      showNotification("❌ Rate not found", "error");
+      return;
+    }
+    
+    // Create edit modal if it doesn't exist
+    let editRateModal = document.getElementById("editRateModal");
+    if (!editRateModal) {
+      editRateModal = document.createElement("div");
+      editRateModal.id = "editRateModal";
+      editRateModal.className = "hidden fixed inset-0 bg-black/70 flex justify-center items-center z-50";
+      editRateModal.innerHTML = `
+        <div class="bg-neutral-800 p-6 rounded-xl w-11/12 md:w-1/3 shadow-lg border border-neutral-700">
+          <h3 class="text-lg font-semibold text-white mb-4">Edit Delivery Rate</h3>
+
+          <form id="editRateForm" class="space-y-3">
+            <div>
+              <label class="block text-sm text-neutral-300 mb-1">Minimum Distance (KM)</label>
+              <input type="number" step="0.01" id="editMinDistanceInput"
+                class="w-full px-3 py-2 bg-neutral-900 border border-neutral-700 rounded-lg text-neutral-200 focus:ring-2 focus:ring-orange-500 focus:outline-none" />
+            </div>
+
+            <div>
+              <label class="block text-sm text-neutral-300 mb-1">Maximum Distance (KM) <span class="text-neutral-500">(leave empty for unlimited)</span></label>
+              <input type="number" step="0.01" id="editMaxDistanceInput"
+                class="w-full px-3 py-2 bg-neutral-900 border border-neutral-700 rounded-lg text-neutral-200 focus:ring-2 focus:ring-orange-500 focus:outline-none" />
+            </div>
+
+            <div>
+              <label class="block text-sm text-neutral-300 mb-1">Base Rate ($)</label>
+              <input type="number" step="0.01" id="editRateInput"
+                class="w-full px-3 py-2 bg-neutral-900 border border-neutral-700 rounded-lg text-neutral-200 focus:ring-2 focus:ring-orange-500 focus:outline-none" />
+            </div>
+          </form>
+
+          <div class="flex justify-end mt-4 space-x-2">
+            <button id="cancelEditRate"
+              class="px-4 py-2 bg-neutral-700 text-white rounded-lg hover:bg-neutral-600 transition">Cancel</button>
+            <button id="saveEditRateBtn"
+              class="px-4 py-2 bg-gradient-to-r from-orange-600 to-orange-500 text-white rounded-lg hover:from-orange-500 hover:to-orange-400 transition">
+              Update Rate
+            </button>
+          </div>
+        </div>
+      `;
+      document.body.appendChild(editRateModal);
+      
+      // Add event listeners
+      document.getElementById("cancelEditRate").addEventListener("click", () => {
+        editRateModal.classList.add("hidden");
+        rateToEdit = null;
+      });
+      
+      document.getElementById("saveEditRateBtn").addEventListener("click", saveEditRate);
+    }
+    
+    // Populate form with current values
+    document.getElementById("editMinDistanceInput").value = rateToEdit.min_distance_km;
+    document.getElementById("editMaxDistanceInput").value = rateToEdit.max_distance_km || "";
+    document.getElementById("editRateInput").value = rateToEdit.rate;
+    
+    // Show modal
+    editRateModal.classList.remove("hidden");
+    
+  } catch (error) {
+    console.error("Error opening edit modal:", error);
+    showNotification("❌ Error loading rate data", "error");
+  }
+}
+
+// 💾 SAVE EDITED RATE
+async function saveEditRate() {
+  if (!rateToEdit) return;
+  
+  const minKm = document.getElementById("editMinDistanceInput").value.trim();
+  const maxKm = document.getElementById("editMaxDistanceInput").value.trim();
+  const rate = document.getElementById("editRateInput").value.trim();
+  
+  if (!minKm || !rate) {
+    showNotification("⚠️ Please enter at least Minimum Distance and Rate.", "error");
+    return;
+  }
+  
+  const payload = {
+    min_distance_km: parseFloat(minKm),
+    max_distance_km: maxKm ? parseFloat(maxKm) : null,
+    rate: parseFloat(rate),
+  };
+  
+  try {
+    const response = await fetch(`/api/deliveryRates/${rateToEdit.id}/edit/`, {
+      method: "PUT",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify(payload),
+    });
+    
+    const data = await response.json();
+    
+    if (response.ok && data.success) {
+      showNotification("✅ Delivery rate updated successfully!", "success");
+      
+      // Close modal
+      document.getElementById("editRateModal").classList.add("hidden");
+      rateToEdit = null;
+      
+      // 🔄 Hard refresh after 3 seconds
+      setTimeout(() => {
+        window.location.reload();
+      }, 3000);
+    } else {
+      showNotification(`⚠️ ${data.error || "Failed to update rate."}`, "error");
+    }
+  } catch (error) {
+    console.error("Error updating rate:", error);
+    showNotification("❌ Error connecting to server", "error");
+  }
+}
+
+// 🗑️ DELETE RATE FUNCTION
+async function deleteRate(id) {
+  try {
+    // Fetch current rate data to show in confirmation
+    const response = await fetch("/api/deliveryRates/");
+    const data = await response.json();
+    
+    if (!data.success) {
+      showNotification("❌ Failed to load rate data", "error");
+      return;
+    }
+    
+    // Find the rate to delete
+    rateToDelete = data.rates.find(r => r.id === id);
+    
+    if (!rateToDelete) {
+      showNotification("❌ Rate not found", "error");
+      return;
+    }
+    
+    // Create delete confirmation modal if it doesn't exist
+    let deleteRateModal = document.getElementById("deleteRateModal");
+    if (!deleteRateModal) {
+      deleteRateModal = document.createElement("div");
+      deleteRateModal.id = "deleteRateModal";
+      deleteRateModal.className = "hidden fixed inset-0 bg-black/70 flex justify-center items-center z-50";
+      deleteRateModal.innerHTML = `
+        <div class="bg-neutral-800 p-6 rounded-xl text-center max-w-md">
+          <div class="w-12 h-12 rounded-full bg-red-500/20 flex items-center justify-center mx-auto mb-4">
+            <svg class="w-6 h-6 text-red-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"/>
+            </svg>
+          </div>
+          <h3 class="text-lg font-semibold text-white mb-2">Delete Delivery Rate?</h3>
+          <p id="deleteRateMessage" class="text-neutral-300 mb-6"></p>
+          <div class="flex justify-center space-x-3">
+            <button id="cancelDeleteRate" class="px-4 py-2 bg-neutral-700 rounded-lg text-white hover:bg-neutral-600">Cancel</button>
+            <button id="confirmDeleteRate" class="px-4 py-2 bg-red-600 rounded-lg text-white hover:bg-red-700">Delete Rate</button>
+          </div>
+        </div>
+      `;
+      document.body.appendChild(deleteRateModal);
+      
+      // Add event listeners
+      document.getElementById("cancelDeleteRate").addEventListener("click", () => {
+        deleteRateModal.classList.add("hidden");
+        rateToDelete = null;
+      });
+      
+      document.getElementById("confirmDeleteRate").addEventListener("click", confirmDeleteRate);
+    }
+    
+    // Update confirmation message with rate details
+    const maxKmText = rateToDelete.max_distance_km !== null 
+      ? `${rateToDelete.max_distance_km.toFixed(2)} km` 
+      : "∞";
+    
+    document.getElementById("deleteRateMessage").innerHTML = `
+      Are you sure you want to delete this rate?<br/>
+      <strong class="text-orange-400">${rateToDelete.min_distance_km.toFixed(2)} - ${maxKmText} = $${rateToDelete.rate.toFixed(2)}</strong><br/>
+      <span class="text-sm text-neutral-400">This action cannot be undone.</span>
+    `;
+    
+    // Show modal
+    deleteRateModal.classList.remove("hidden");
+    
+  } catch (error) {
+    console.error("Error opening delete modal:", error);
+    showNotification("❌ Error loading rate data", "error");
+  }
+}
+
+// ✅ CONFIRM DELETE RATE
+async function confirmDeleteRate() {
+  if (!rateToDelete) return;
+  
+  // Close modal immediately
+  document.getElementById("deleteRateModal").classList.add("hidden");
+  
+  try {
+    const response = await fetch(`/api/deliveryRates/${rateToDelete.id}/delete/`, {
+      method: "DELETE",
+      headers: {
+        "Content-Type": "application/json",
+      },
+    });
+    
+    const data = await response.json();
+    
+    if (response.ok && data.success) {
+      showNotification(`✅ ${data.message || "Rate deleted successfully!"}`, "success");
+      
+      rateToDelete = null;
+      
+      // 🔄 Hard refresh after 3 seconds
+      setTimeout(() => {
+        window.location.reload();
+      }, 3000);
+    } else {
+      showNotification(`⚠️ ${data.error || "Failed to delete rate"}`, "error");
+    }
+  } catch (error) {
+    console.error("Error deleting rate:", error);
+    showNotification("❌ Error connecting to server", "error");
+  }
+}
       </script>
     </main>
   </div>
