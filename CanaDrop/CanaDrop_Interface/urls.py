@@ -70,6 +70,12 @@ urlpatterns = [
     path("pharmacy/edit/<int:pharmacy_id>/", views.edit_pharmacy, name="AdminEditPharmacy"),
     path("pharmacy/toggle-status/<int:pharmacy_id>/", views.toggle_pharmacy_status, name="AdminTogglePharmacyStatus"),
     path("pharmacy/reset-password/<int:pharmacy_id>/", views.reset_pharmacy_password, name = "AdminResetCredentials"),
+    path("api/admin/driver/details/", views.get_driver_details_admin, name="AdminDriverDetailsAll"),
+    path("api/admin/driver/details/<int:driver_id>/", views.get_driver_details_admin, name="AdminDriverDetails"),
+    path("api/driver/add/", views.add_driver, name="AdminAddDriver"),
+    path("api/driver/edit/<int:driver_id>/", views.edit_driver, name="AdminEditDriver"),
+    path("api/driver/toggle-status/<int:driver_id>/", views.toggle_driver_status, name="AdminToggleDriverStatus"),
+    path("api/driver/reset-password/<int:driver_id>/", views.reset_driver_password, name="AdminResetDriverPassword"),
 
 
     path('', views.landingView, name='landingPage'),

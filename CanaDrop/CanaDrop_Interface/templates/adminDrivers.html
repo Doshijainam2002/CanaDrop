@@ -14,6 +14,77 @@
         linear-gradient(135deg, rgba(0,0,0,0) 75%, rgba(255,255,255,0.04) 75%) 0 0/28px 28px;
       box-shadow: inset 0 0 120px rgba(0,0,0,0.35);
     }
+    .notification {
+      position: fixed;
+      top: 20px;
+      right: 20px;
+      padding: 16px 20px;
+      border-radius: 8px;
+      box-shadow: 0 4px 12px rgba(0,0,0,0.3);
+      z-index: 9999;
+      animation: slideIn 0.3s ease-out;
+      max-width: 400px;
+    }
+    @keyframes slideIn {
+      from { transform: translateX(400px); opacity: 0; }
+      to { transform: translateX(0); opacity: 1; }
+    }
+    .notification.success {
+      background: linear-gradient(135deg, #10b981, #059669);
+      color: white;
+    }
+    .notification.error {
+      background: linear-gradient(135deg, #ef4444, #dc2626);
+      color: white;
+    }
+    .modal-overlay {
+      position: fixed;
+      inset: 0;
+      background: rgba(0,0,0,0.7);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      z-index: 1000;
+      animation: fadeIn 0.2s ease-out;
+    }
+    @keyframes fadeIn {
+      from { opacity: 0; }
+      to { opacity: 1; }
+    }
+    .modal-content {
+      background: #262626;
+      border-radius: 12px;
+      max-width: 600px;
+      width: 90%;
+      max-height: 90vh;
+      overflow-y: auto;
+      animation: scaleIn 0.3s ease-out;
+    }
+    @keyframes scaleIn {
+      from { transform: scale(0.9); opacity: 0; }
+      to { transform: scale(1); opacity: 1; }
+    }
+    .image-preview {
+      cursor: pointer;
+      transition: transform 0.2s;
+    }
+    .image-preview:hover {
+      transform: scale(1.05);
+    }
+    .image-modal {
+      position: fixed;
+      inset: 0;
+      background: rgba(0,0,0,0.9);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      z-index: 2000;
+    }
+    .image-modal img {
+      max-width: 90%;
+      max-height: 90%;
+      border-radius: 8px;
+    }
   </style>
 </head>
 <body class="min-h-screen bg-neutral-900 text-neutral-100 logistics-bg">
@@ -52,16 +123,12 @@
           <svg class="w-5 h-5 mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 10h.01M12 10h.01M16 10h.01M21 12c0 4.418-4.03 8-9 8s-9-3.582-9-8 4.03-8 9-8 9 3.582 9 8zM12 14v-4m0 4h.01"/></svg>
           Support
         </a>
-        <a href="#" 
-        id="logoutBtn"
-        class="flex items-center px-3 py-2 rounded-lg text-neutral-300 hover:bg-neutral-700 transition">
-            <svg class="w-5 h-5 mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                    d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a2 2 0 01-2 2H5a2 2 0 01-2-2V7a2 2 0 012-2h6a2 2 0 012 2v1" />
-            </svg>
-            Logout
+        <a href="#" id="logoutBtn" class="flex items-center px-3 py-2 rounded-lg text-neutral-300 hover:bg-neutral-700 transition">
+          <svg class="w-5 h-5 mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a2 2 0 01-2 2H5a2 2 0 01-2-2V7a2 2 0 012-2h6a2 2 0 012 2v1" />
+          </svg>
+          Logout
         </a>
-
       </nav>
 
       <!-- Profile -->
@@ -83,30 +150,30 @@
           <h1 class="text-2xl font-bold text-white">Drivers Management</h1>
           <p class="text-sm text-neutral-400">Monitor driver performance, payouts, and activity</p>
         </div>
-        <button class="px-4 py-2 bg-gradient-to-r from-orange-600 to-orange-500 text-white rounded-lg text-sm font-medium hover:from-orange-500 hover:to-orange-400 transition">
-          Refresh Data
-        </button>
       </header>
 
       <!-- Filters Section -->
       <section class="px-6 py-6 bg-neutral-900">
         <div class="bg-neutral-800/80 border border-neutral-700 rounded-xl p-6">
           <h2 class="text-lg font-semibold text-white mb-4">Search & Filters</h2>
-          <div class="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-5 gap-4">
-            <input type="text" placeholder="Search Driver by Name / Vehicle / Email" class="bg-neutral-900 border border-neutral-700 rounded-lg px-3 py-2 text-sm w-full focus:ring-2 focus:ring-orange-500 focus:outline-none"/>
-            <select class="bg-neutral-900 border border-neutral-700 rounded-lg px-3 py-2 text-sm text-neutral-300 focus:ring-2 focus:ring-orange-500 focus:outline-none">
-              <option>City (All)</option>
-              <option>Kitchener</option>
-              <option>Waterloo</option>
-              <option>Cambridge</option>
+          <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+            <input type="text" id="searchInput" placeholder="Search Driver by Name / Vehicle / Email" class="bg-neutral-900 border border-neutral-700 rounded-lg px-3 py-2 text-sm w-full focus:ring-2 focus:ring-orange-500 focus:outline-none"/>
+            <!-- <select id="cityFilter" class="bg-neutral-900 border border-neutral-700 rounded-lg px-3 py-2 text-sm text-neutral-300 focus:ring-2 focus:ring-orange-500 focus:outline-none">
+              <option value="">City (All)</option>
+              <option value="Kitchener">Kitchener</option>
+              <option value="Waterloo">Waterloo</option>
+              <option value="Cambridge">Cambridge</option>
+            </select> -->
+            <select id="statusFilter" class="bg-neutral-900 border border-neutral-700 rounded-lg px-3 py-2 text-sm text-neutral-300 focus:ring-2 focus:ring-orange-500 focus:outline-none">
+              <option value="">Status (All)</option>
+              <option value="true">Active</option>
+              <option value="false">Inactive</option>
             </select>
-            <select class="bg-neutral-900 border border-neutral-700 rounded-lg px-3 py-2 text-sm text-neutral-300 focus:ring-2 focus:ring-orange-500 focus:outline-none">
-              <option>Status (All)</option>
-              <option>Active</option>
-              <option>Inactive</option>
-            </select>
-            <button class="px-4 py-2 bg-gradient-to-r from-orange-600 to-orange-500 text-white rounded-lg text-sm font-medium hover:from-orange-500 hover:to-orange-400 transition">
+            <button id="applyFiltersBtn" class="px-4 py-2 bg-gradient-to-r from-orange-600 to-orange-500 text-white rounded-lg text-sm font-medium hover:from-orange-500 hover:to-orange-400 transition">
               Apply Filters
+            </button>
+            <button id="clearFiltersBtn" class="px-4 py-2 bg-neutral-700 text-white rounded-lg text-sm font-medium hover:bg-neutral-600 transition">
+              Clear Filters
             </button>
           </div>
         </div>
@@ -117,7 +184,7 @@
         <div class="bg-neutral-800/80 border border-neutral-700 rounded-xl shadow">
           <div class="px-6 py-4 border-b border-neutral-700 flex justify-between items-center">
             <h2 class="text-lg font-semibold text-white">Driver List</h2>
-            <button class="text-sm text-orange-400 hover:text-orange-300">+ Add Driver</button>
+            <button id="addDriverBtn" class="text-sm text-orange-400 hover:text-orange-300">+ Add Driver</button>
           </div>
           <div class="overflow-x-auto">
             <table class="min-w-full text-sm">
@@ -127,28 +194,15 @@
                   <th class="px-6 py-3 text-left text-neutral-400 uppercase tracking-wider">Vehicle No.</th>
                   <th class="px-6 py-3 text-left text-neutral-400 uppercase tracking-wider">Phone</th>
                   <th class="px-6 py-3 text-left text-neutral-400 uppercase tracking-wider">Email</th>
-                  <th class="px-6 py-3 text-left text-neutral-400 uppercase tracking-wider">City</th>
                   <th class="px-6 py-3 text-left text-neutral-400 uppercase tracking-wider">Deliveries</th>
+                  <th class="px-6 py-3 text-left text-neutral-400 uppercase tracking-wider">Outstanding ($)</th>
                   <th class="px-6 py-3 text-left text-neutral-400 uppercase tracking-wider">Status</th>
                   <th class="px-6 py-3 text-left text-neutral-400 uppercase tracking-wider">Actions</th>
                 </tr>
               </thead>
-              <tbody class="divide-y divide-neutral-700">
-                <tr class="hover:bg-neutral-700/50 transition">
-                  <td class="px-6 py-4 text-neutral-100 font-medium">John Doe</td>
-                  <td class="px-6 py-4 text-neutral-300">KWC-1021</td>
-                  <td class="px-6 py-4 text-neutral-300">+1 (226) 777-1234</td>
-                  <td class="px-6 py-4 text-neutral-300">john.doe@canadrop.ca</td>
-                  <td class="px-6 py-4 text-neutral-300">Waterloo</td>
-                  <td class="px-6 py-4 text-neutral-100 font-semibold">128</td>
-                  <td class="px-6 py-4">
-                    <span class="inline-flex px-3 py-1 text-xs font-medium rounded-full bg-green-500/20 text-green-400 border border-green-600/40">Active</span>
-                  </td>
-                  <td class="px-6 py-4 space-x-2">
-                    <button class="text-xs text-orange-400 border border-orange-600/40 px-3 py-1 rounded hover:bg-orange-600/20">View</button>
-                    <button class="text-xs text-neutral-300 border border-neutral-600 px-3 py-1 rounded hover:bg-neutral-700">Edit</button>
-                    <button class="text-xs text-red-400 border border-red-600/40 px-3 py-1 rounded hover:bg-red-600/20">Suspend</button>
-                  </td>
+              <tbody id="driversTableBody" class="divide-y divide-neutral-700">
+                <tr>
+                  <td colspan="8" class="px-6 py-8 text-center text-neutral-400">Loading drivers...</td>
                 </tr>
               </tbody>
             </table>
@@ -156,115 +210,618 @@
         </div>
       </section>
 
-      <!-- Driver Details (Orders + Invoices Tabs) -->
-      <section class="px-6 pb-10 grid grid-cols-1 lg:grid-cols-2 gap-6">
-        <!-- Order History -->
-        <div class="bg-neutral-800/80 border border-neutral-700 rounded-xl p-6">
-          <div class="flex justify-between items-center mb-4">
-            <h2 class="text-lg font-semibold text-white">Driver Order History</h2>
-            <select class="bg-neutral-900 border border-neutral-700 rounded-lg px-3 py-1 text-xs text-neutral-300 focus:ring-2 focus:ring-orange-500 focus:outline-none">
-              <option>All Status</option>
-              <option>Pending</option>
-              <option>Delivered</option>
-              <option>Cancelled</option>
-            </select>
+      <!-- Driver Details (Orders + Invoices) - Hidden by default -->
+      <section id="driverDetailsSection" class="px-6 pb-10 hidden">
+        <div class="mb-6 flex justify-between items-center">
+          <h2 class="text-2xl font-bold text-white">Driver Details: <span id="driverDetailsName"></span></h2>
+          <button id="closeDetailsBtn" class="text-sm text-neutral-400 hover:text-white">
+            <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
+            </svg>
+          </button>
+        </div>
+
+        <!-- Stats Cards -->
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-6">
+          <div class="bg-neutral-800/80 border border-neutral-700 rounded-xl p-6">
+            <p class="text-sm text-neutral-400 mb-2">Total Deliveries</p>
+            <p id="detailsDeliveries" class="text-3xl font-bold text-white">0</p>
           </div>
-          <div class="overflow-x-auto">
-            <table class="min-w-full text-sm">
-              <thead class="bg-neutral-800 border-b border-neutral-700">
-                <tr>
-                  <th class="px-6 py-3 text-left text-neutral-400 uppercase tracking-wider">Order ID</th>
-                  <th class="px-6 py-3 text-left text-neutral-400 uppercase tracking-wider">Pharmacy</th>
-                  <th class="px-6 py-3 text-left text-neutral-400 uppercase tracking-wider">Pickup → Drop</th>
-                  <th class="px-6 py-3 text-left text-neutral-400 uppercase tracking-wider">Status</th>
-                  <th class="px-6 py-3 text-left text-neutral-400 uppercase tracking-wider">Proof Images</th>
-                </tr>
-              </thead>
-              <tbody class="divide-y divide-neutral-700">
-                <tr class="hover:bg-neutral-700/50 transition">
-                  <td class="px-6 py-4 text-neutral-100 font-medium">#2023</td>
-                  <td class="px-6 py-4 text-neutral-300">WellCare Meds</td>
-                  <td class="px-6 py-4 text-neutral-400 text-xs">
-                    <p>Kitchener → Cambridge</p>
-                  </td>
-                  <td class="px-6 py-4">
-                    <span class="inline-flex px-3 py-1 text-xs font-medium rounded-full bg-orange-500/20 text-orange-400 border border-orange-600/40">Delivered</span>
-                  </td>
-                  <td class="px-6 py-4 space-x-2">
-                    <button class="text-xs text-neutral-300 border border-neutral-600 px-3 py-1 rounded hover:bg-neutral-700">Pickup</button>
-                    <button class="text-xs text-neutral-300 border border-neutral-600 px-3 py-1 rounded hover:bg-neutral-700">Handover</button>
-                    <button class="text-xs text-orange-400 border border-orange-600/40 px-3 py-1 rounded hover:bg-orange-600/20">Delivery</button>
-                  </td>
-                </tr>
-              </tbody>
-            </table>
+          <div class="bg-neutral-800/80 border border-neutral-700 rounded-xl p-6">
+            <p class="text-sm text-neutral-400 mb-2">Outstanding Amount</p>
+            <p id="detailsOutstanding" class="text-3xl font-bold text-orange-400">$0.00</p>
+          </div>
+          <div class="bg-neutral-800/80 border border-neutral-700 rounded-xl p-6">
+            <p class="text-sm text-neutral-400 mb-2">Account Status</p>
+            <p id="detailsStatus" class="text-3xl font-bold text-green-400">Active</p>
           </div>
         </div>
 
-        <!-- Driver Invoices -->
-        <div class="bg-neutral-800/80 border border-neutral-700 rounded-xl p-6">
-          <div class="flex justify-between items-center mb-4">
-            <h2 class="text-lg font-semibold text-white">Driver Invoices</h2>
-            <div class="space-x-2">
-              <button class="px-3 py-1 bg-gradient-to-r from-orange-600 to-orange-500 text-white text-xs rounded-lg hover:from-orange-500 hover:to-orange-400">Generate Invoice</button>
-              <button class="px-3 py-1 border border-neutral-600 text-neutral-300 text-xs rounded-lg hover:bg-neutral-700">Mark as Paid</button>
+        <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+          <!-- Order History -->
+          <div class="bg-neutral-800/80 border border-neutral-700 rounded-xl p-6">
+            <div class="flex justify-between items-center mb-4">
+              <h2 class="text-lg font-semibold text-white">Order History</h2>
+              <select id="orderStatusFilter" class="bg-neutral-900 border border-neutral-700 rounded-lg px-3 py-1 text-xs text-neutral-300 focus:ring-2 focus:ring-orange-500 focus:outline-none">
+                <option value="">All Status</option>
+                <option value="pending">Pending</option>
+                <option value="accepted">Accepted</option>
+                <option value="picked_up">Picked Up</option>
+                <option value="inTransit">In Transit</option>
+                <option value="delivered">Delivered</option>
+                <option value="cancelled">Cancelled</option>
+              </select>
+            </div>
+            <div class="overflow-x-auto max-h-96 overflow-y-auto">
+              <table class="min-w-full text-sm">
+                <thead class="bg-neutral-800 border-b border-neutral-700 sticky top-0">
+                  <tr>
+                    <th class="px-4 py-3 text-left text-neutral-400 uppercase tracking-wider">Order ID</th>
+                    <th class="px-4 py-3 text-left text-neutral-400 uppercase tracking-wider">Pharmacy</th>
+                    <th class="px-4 py-3 text-left text-neutral-400 uppercase tracking-wider">Route</th>
+                    <th class="px-4 py-3 text-left text-neutral-400 uppercase tracking-wider">Status</th>
+                    <th class="px-4 py-3 text-left text-neutral-400 uppercase tracking-wider">Images</th>
+                  </tr>
+                </thead>
+                <tbody id="orderHistoryBody" class="divide-y divide-neutral-700">
+                  <tr>
+                    <td colspan="5" class="px-4 py-4 text-center text-neutral-400">No orders found</td>
+                  </tr>
+                </tbody>
+              </table>
             </div>
           </div>
-          <table class="min-w-full text-sm">
-            <thead class="bg-neutral-800 border-b border-neutral-700">
-              <tr>
-                <th class="px-6 py-3 text-left text-neutral-400 uppercase tracking-wider">Invoice ID</th>
-                <th class="px-6 py-3 text-left text-neutral-400 uppercase tracking-wider">Date</th>
-                <th class="px-6 py-3 text-left text-neutral-400 uppercase tracking-wider">Amount ($)</th>
-                <th class="px-6 py-3 text-left text-neutral-400 uppercase tracking-wider">Status</th>
-                <th class="px-6 py-3 text-left text-neutral-400 uppercase tracking-wider">Actions</th>
-              </tr>
-            </thead>
-            <tbody class="divide-y divide-neutral-700">
-              <tr class="hover:bg-neutral-700/50 transition">
-                <td class="px-6 py-4 text-neutral-100 font-medium">DRV-INV-56</td>
-                <td class="px-6 py-4 text-neutral-300">Nov 1, 2025</td>
-                <td class="px-6 py-4 text-neutral-100 font-semibold">$145.00</td>
-                <td class="px-6 py-4">
-                  <span class="inline-flex px-3 py-1 text-xs font-medium rounded-full bg-yellow-500/20 text-yellow-400 border border-yellow-600/40">Pending</span>
-                </td>
-                <td class="px-6 py-4 space-x-2">
-                  <button class="text-xs text-orange-400 border border-orange-600/40 px-3 py-1 rounded hover:bg-orange-600/20">View PDF</button>
-                  <button class="text-xs text-green-400 border border-green-600/40 px-3 py-1 rounded hover:bg-green-600/20">Mark Paid</button>
-                </td>
-              </tr>
-            </tbody>
-          </table>
-        </div>
-      </section>
 
-      <!-- Account Actions -->
-      <section class="px-6 pb-10">
-        <div class="bg-neutral-800/80 border border-neutral-700 rounded-xl p-6">
+          <!-- Driver Invoices -->
+          <div class="bg-neutral-800/80 border border-neutral-700 rounded-xl p-6">
+            <div class="flex justify-between items-center mb-4">
+              <h2 class="text-lg font-semibold text-white">Invoices</h2>
+            </div>
+            <div class="overflow-x-auto max-h-96 overflow-y-auto">
+              <table class="min-w-full text-sm">
+                <thead class="bg-neutral-800 border-b border-neutral-700 sticky top-0">
+                  <tr>
+                    <th class="px-4 py-3 text-left text-neutral-400 uppercase tracking-wider">Invoice ID</th>
+                    <th class="px-4 py-3 text-left text-neutral-400 uppercase tracking-wider">Period</th>
+                    <th class="px-4 py-3 text-left text-neutral-400 uppercase tracking-wider">Amount</th>
+                    <th class="px-4 py-3 text-left text-neutral-400 uppercase tracking-wider">Status</th>
+                    <th class="px-4 py-3 text-left text-neutral-400 uppercase tracking-wider">Actions</th>
+                  </tr>
+                </thead>
+                <tbody id="invoiceHistoryBody" class="divide-y divide-neutral-700">
+                  <tr>
+                    <td colspan="5" class="px-4 py-4 text-center text-neutral-400">No invoices found</td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+
+        <!-- Account Actions -->
+        <div class="bg-neutral-800/80 border border-neutral-700 rounded-xl p-6 mt-6">
           <h2 class="text-lg font-semibold text-white mb-4">Account Actions</h2>
           <div class="flex flex-wrap gap-3">
-            <button class="flex-1 sm:flex-none px-4 py-2 text-xs text-yellow-400 border border-yellow-600/40 rounded hover:bg-yellow-600/20">Suspend Driver</button>
-            <button class="flex-1 sm:flex-none px-4 py-2 text-xs text-green-400 border border-green-600/40 rounded hover:bg-green-600/20">Reactivate Driver</button>
-            <button class="flex-1 sm:flex-none px-4 py-2 text-xs text-orange-400 border border-orange-600/40 rounded hover:bg-orange-600/20">Reset Password</button>
+            <button id="toggleStatusBtn" class="flex-1 sm:flex-none px-4 py-2 text-xs text-yellow-400 border border-yellow-600/40 rounded hover:bg-yellow-600/20">
+              Toggle Status
+            </button>
+            <button id="resetPasswordBtn" class="flex-1 sm:flex-none px-4 py-2 text-xs text-orange-400 border border-orange-600/40 rounded hover:bg-orange-600/20">
+              Reset Password
+            </button>
+            <button id="editDriverBtn" class="flex-1 sm:flex-none px-4 py-2 text-xs text-blue-400 border border-blue-600/40 rounded hover:bg-blue-600/20">
+              Edit Driver Info
+            </button>
           </div>
         </div>
       </section>
-
-      <script>
-        document.getElementById("logoutBtn").addEventListener("click", function (event) {
-  event.preventDefault();
-
-  // 🧹 Remove adminId cookie
-  document.cookie = "adminId=; path=/; expires=Thu, 01 Jan 1970 00:00:00 UTC; SameSite=Lax;";
-
-  // Optional: clear JWT or any other related cookies if used
-  document.cookie = "jwtToken=; path=/; expires=Thu, 01 Jan 1970 00:00:00 UTC; SameSite=Lax;";
-
-  // 🚀 Redirect to admin login page
-  window.location.href = "/adminLogin/";
-});
-      </script>
     </main>
   </div>
+
+  <!-- Add/Edit Driver Modal -->
+  <div id="driverModal" class="modal-overlay hidden">
+    <div class="modal-content">
+      <div class="p-6 border-b border-neutral-700">
+        <h2 id="modalTitle" class="text-xl font-bold text-white">Add New Driver</h2>
+      </div>
+      <form id="driverForm" class="p-6 space-y-4">
+        <input type="hidden" id="driverId">
+        <div>
+          <label class="block text-sm text-neutral-300 mb-2">Name *</label>
+          <input type="text" id="driverName" required class="w-full bg-neutral-900 border border-neutral-700 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-orange-500 focus:outline-none">
+        </div>
+        <div>
+          <label class="block text-sm text-neutral-300 mb-2">Email *</label>
+          <input type="email" id="driverEmail" required class="w-full bg-neutral-900 border border-neutral-700 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-orange-500 focus:outline-none">
+        </div>
+        <div>
+          <label class="block text-sm text-neutral-300 mb-2">Phone Number *</label>
+          <input type="tel" id="driverPhone" required class="w-full bg-neutral-900 border border-neutral-700 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-orange-500 focus:outline-none">
+        </div>
+        <div>
+          <label class="block text-sm text-neutral-300 mb-2">Vehicle Number</label>
+          <input type="text" id="driverVehicle" class="w-full bg-neutral-900 border border-neutral-700 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-orange-500 focus:outline-none">
+        </div>
+        <div>
+          <label class="flex items-center">
+            <input type="checkbox" id="driverActive" checked class="w-4 h-4 text-orange-500 bg-neutral-900 border-neutral-700 rounded focus:ring-orange-500">
+            <span class="ml-2 text-sm text-neutral-300">Active</span>
+          </label>
+        </div>
+        <div class="flex gap-3 pt-4">
+          <button type="submit" class="flex-1 px-4 py-2 bg-gradient-to-r from-orange-600 to-orange-500 text-white rounded-lg text-sm font-medium hover:from-orange-500 hover:to-orange-400">
+            Save Driver
+          </button>
+          <button type="button" id="cancelModalBtn" class="flex-1 px-4 py-2 bg-neutral-700 text-white rounded-lg text-sm font-medium hover:bg-neutral-600">
+            Cancel
+          </button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- Image Modal -->
+  <div id="imageModal" class="image-modal hidden">
+    <img id="modalImage" src="" alt="Order Image">
+    <button id="closeImageBtn" class="absolute top-4 right-4 text-white text-4xl font-bold hover:text-neutral-300">&times;</button>
+  </div>
+
+
+    <!-- Confirmation Modal -->
+  <div id="confirmModal" class="modal-overlay hidden">
+    <div class="modal-content max-w-md">
+      <div class="p-6 border-b border-neutral-700">
+        <h2 id="confirmTitle" class="text-xl font-bold text-white">Confirm Action</h2>
+      </div>
+      <div class="p-6">
+        <p id="confirmMessage" class="text-neutral-300 text-sm mb-6"></p>
+        <div class="flex gap-3">
+          <button id="confirmYesBtn" class="flex-1 px-4 py-2 bg-gradient-to-r from-orange-600 to-orange-500 text-white rounded-lg text-sm font-medium hover:from-orange-500 hover:to-orange-400">
+            Confirm
+          </button>
+          <button id="confirmNoBtn" class="flex-1 px-4 py-2 bg-neutral-700 text-white rounded-lg text-sm font-medium hover:bg-neutral-600">
+            Cancel
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+<script>
+    // State
+    let allDrivers = [];
+    let currentDriverId = null;
+    let currentDriverData = null;
+
+    // Confirmation Modal
+    function showConfirmation(title, message) {
+      return new Promise((resolve) => {
+        document.getElementById('confirmTitle').textContent = title;
+        document.getElementById('confirmMessage').textContent = message;
+        document.getElementById('confirmModal').classList.remove('hidden');
+        
+        const handleYes = () => {
+          document.getElementById('confirmModal').classList.add('hidden');
+          document.getElementById('confirmYesBtn').removeEventListener('click', handleYes);
+          document.getElementById('confirmNoBtn').removeEventListener('click', handleNo);
+          resolve(true);
+        };
+        
+        const handleNo = () => {
+          document.getElementById('confirmModal').classList.add('hidden');
+          document.getElementById('confirmYesBtn').removeEventListener('click', handleYes);
+          document.getElementById('confirmNoBtn').removeEventListener('click', handleNo);
+          resolve(false);
+        };
+        
+        document.getElementById('confirmYesBtn').addEventListener('click', handleYes);
+        document.getElementById('confirmNoBtn').addEventListener('click', handleNo);
+      });
+    }
+
+    // Notification System
+    function showNotification(message, type = 'success') {
+      const notification = document.createElement('div');
+      notification.className = `notification ${type}`;
+      notification.innerHTML = `
+        <div class="flex items-center">
+          <svg class="w-5 h-5 mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            ${type === 'success' 
+              ? '<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/>' 
+              : '<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>'}
+          </svg>
+          <span>${message}</span>
+        </div>
+      `;
+      document.body.appendChild(notification);
+      setTimeout(() => {
+        notification.style.animation = 'slideIn 0.3s ease-out reverse';
+        setTimeout(() => notification.remove(), 300);
+      }, 3000);
+    }
+
+    // Status Badge Helper
+    function getStatusBadge(status) {
+      const statusConfig = {
+        'pending': { color: 'yellow', label: 'Pending' },
+        'accepted': { color: 'blue', label: 'Accepted' },
+        'picked_up': { color: 'indigo', label: 'Picked Up' },
+        'inTransit': { color: 'purple', label: 'In Transit' },
+        'delivered': { color: 'green', label: 'Delivered' },
+        'cancelled': { color: 'red', label: 'Cancelled' }
+      };
+      const config = statusConfig[status] || { color: 'gray', label: status };
+      return `<span class="inline-flex px-3 py-1 text-xs font-medium rounded-full bg-${config.color}-500/20 text-${config.color}-400 border border-${config.color}-600/40">${config.label}</span>`;
+    }
+
+    // Load All Drivers
+    async function loadDrivers() {
+      try {
+        const response = await fetch('/api/admin/driver/details/');
+        const data = await response.json();
+        
+        if (data.success) {
+          allDrivers = data.drivers;
+          applyFilters();
+        } else {
+          showNotification('Failed to load drivers', 'error');
+        }
+      } catch (error) {
+        showNotification('Error loading drivers: ' + error.message, 'error');
+      }
+    }
+
+    // Apply Filters
+    function applyFilters() {
+      const search = document.getElementById('searchInput').value.toLowerCase();
+      const statusFilter = document.getElementById('statusFilter').value;
+
+      let filtered = allDrivers.filter(driver => {
+        const matchesSearch = !search || 
+          driver.name.toLowerCase().includes(search) ||
+          driver.email.toLowerCase().includes(search) ||
+          (driver.vehicle_number && driver.vehicle_number.toLowerCase().includes(search));
+        
+        const matchesStatus = !statusFilter || driver.active.toString() === statusFilter;
+        
+        return matchesSearch && matchesStatus;
+      });
+
+      renderDrivers(filtered);
+    }
+
+    // Render Drivers Table
+    function renderDrivers(drivers) {
+      const tbody = document.getElementById('driversTableBody');
+      
+      if (drivers.length === 0) {
+        tbody.innerHTML = '<tr><td colspan="8" class="px-6 py-8 text-center text-neutral-400">No drivers found</td></tr>';
+        return;
+      }
+
+      tbody.innerHTML = drivers.map(driver => `
+        <tr class="hover:bg-neutral-700/50 transition">
+          <td class="px-6 py-4 text-neutral-100 font-medium">${driver.name}</td>
+          <td class="px-6 py-4 text-neutral-300">${driver.vehicle_number || 'N/A'}</td>
+          <td class="px-6 py-4 text-neutral-300">${driver.phone_number}</td>
+          <td class="px-6 py-4 text-neutral-300">${driver.email}</td>
+          <td class="px-6 py-4 text-neutral-100 font-semibold">${driver.total_completed_deliveries}</td>
+          <td class="px-6 py-4 text-orange-400 font-semibold">$${driver.total_outstanding_amount.toFixed(2)}</td>
+          <td class="px-6 py-4">
+            <span class="inline-flex px-3 py-1 text-xs font-medium rounded-full ${driver.active ? 'bg-green-500/20 text-green-400 border border-green-600/40' : 'bg-red-500/20 text-red-400 border border-red-600/40'}">
+              ${driver.active ? 'Active' : 'Inactive'}
+            </span>
+          </td>
+          <td class="px-6 py-4 space-x-2">
+            <button onclick="viewDriverDetails(${driver.id})" class="text-xs text-orange-400 border border-orange-600/40 px-3 py-1 rounded hover:bg-orange-600/20">View</button>
+            <button onclick="openEditModal(${driver.id})" class="text-xs text-neutral-300 border border-neutral-600 px-3 py-1 rounded hover:bg-neutral-700">Edit</button>
+          </td>
+        </tr>
+      `).join('');
+    }
+
+    // View Driver Details
+    async function viewDriverDetails(driverId) {
+      try {
+        const response = await fetch(`/api/admin/driver/details/${driverId}/`);
+        const data = await response.json();
+        
+        if (data.success) {
+          currentDriverId = driverId;
+          currentDriverData = data;
+          
+          // Update stats
+          document.getElementById('driverDetailsName').textContent = data.driver.name;
+          document.getElementById('detailsDeliveries').textContent = data.total_completed_deliveries;
+          document.getElementById('detailsOutstanding').textContent = `$${data.total_outstanding_amount.toFixed(2)}`;
+          document.getElementById('detailsStatus').textContent = data.driver.active ? 'Active' : 'Inactive';
+          document.getElementById('detailsStatus').className = `text-3xl font-bold ${data.driver.active ? 'text-green-400' : 'text-red-400'}`;
+          
+          // Render orders
+          renderOrders(data.orders);
+          
+          // Render invoices
+          renderInvoices(data.invoices);
+          
+          // Show details section
+          document.getElementById('driverDetailsSection').classList.remove('hidden');
+          
+          // Scroll to details
+          document.getElementById('driverDetailsSection').scrollIntoView({ behavior: 'smooth' });
+        } else {
+          showNotification('Failed to load driver details', 'error');
+        }
+      } catch (error) {
+        showNotification('Error loading driver details: ' + error.message, 'error');
+      }
+    }
+
+    // Render Orders
+    function renderOrders(orders) {
+      const tbody = document.getElementById('orderHistoryBody');
+      const statusFilter = document.getElementById('orderStatusFilter').value;
+      
+      let filtered = orders;
+      if (statusFilter) {
+        filtered = orders.filter(o => o.status === statusFilter);
+      }
+      
+      if (filtered.length === 0) {
+        tbody.innerHTML = '<tr><td colspan="5" class="px-4 py-4 text-center text-neutral-400">No orders found</td></tr>';
+        return;
+      }
+
+      tbody.innerHTML = filtered.map(order => `
+        <tr class="hover:bg-neutral-700/50 transition">
+          <td class="px-4 py-4 text-neutral-100 font-medium">#${order.id}</td>
+          <td class="px-4 py-4 text-neutral-300">${order.pharmacy}</td>
+          <td class="px-4 py-4 text-neutral-400 text-xs">
+            <p>${order.pickup_city} → ${order.drop_city}</p>
+          </td>
+          <td class="px-4 py-4">${getStatusBadge(order.status)}</td>
+          <td class="px-4 py-4 space-x-2">
+            ${order.images.filter(img => img.stage === 'pickup').length > 0 
+              ? `<button onclick="viewImage('${order.images.find(img => img.stage === 'pickup').image_url}')" class="text-xs text-neutral-300 border border-neutral-600 px-2 py-1 rounded hover:bg-neutral-700">Pickup</button>` 
+              : ''}
+            ${order.images.filter(img => img.stage === 'handover').length > 0 
+              ? `<button onclick="viewImage('${order.images.find(img => img.stage === 'handover').image_url}')" class="text-xs text-neutral-300 border border-neutral-600 px-2 py-1 rounded hover:bg-neutral-700">Handover</button>` 
+              : ''}
+            ${order.images.filter(img => img.stage === 'delivered').length > 0 
+              ? `<button onclick="viewImage('${order.images.find(img => img.stage === 'delivered').image_url}')" class="text-xs text-orange-400 border border-orange-600/40 px-2 py-1 rounded hover:bg-orange-600/20">Delivered</button>` 
+              : ''}
+            ${order.images.length === 0 ? '<span class="text-xs text-neutral-500">No images</span>' : ''}
+          </td>
+        </tr>
+      `).join('');
+    }
+
+    // Render Invoices
+    function renderInvoices(invoices) {
+      const tbody = document.getElementById('invoiceHistoryBody');
+      
+      if (invoices.length === 0) {
+        tbody.innerHTML = '<tr><td colspan="5" class="px-4 py-4 text-center text-neutral-400">No invoices found</td></tr>';
+        return;
+      }
+
+      tbody.innerHTML = invoices.map(invoice => `
+        <tr class="hover:bg-neutral-700/50 transition">
+          <td class="px-4 py-4 text-neutral-100 font-medium">DRV-INV-${invoice.invoice_id}</td>
+          <td class="px-4 py-4 text-neutral-300 text-xs">${invoice.start_date} to ${invoice.end_date}</td>
+          <td class="px-4 py-4 text-neutral-100 font-semibold">$${invoice.total_amount.toFixed(2)}</td>
+          <td class="px-4 py-4">
+            <span class="inline-flex px-3 py-1 text-xs font-medium rounded-full ${invoice.status === 'paid' ? 'bg-green-500/20 text-green-400 border border-green-600/40' : 'bg-yellow-500/20 text-yellow-400 border border-yellow-600/40'}">
+              ${invoice.status === 'paid' ? 'Paid' : 'Pending'}
+            </span>
+          </td>
+          <td class="px-4 py-4 space-x-2">
+            ${invoice.pdf_url ? `<a href="${invoice.pdf_url}" target="_blank" class="text-xs text-orange-400 border border-orange-600/40 px-2 py-1 rounded hover:bg-orange-600/20">View PDF</a>` : '<span class="text-xs text-neutral-500">No PDF</span>'}
+          </td>
+        </tr>
+      `).join('');
+    }
+
+    // View Image
+    function viewImage(imageUrl) {
+      document.getElementById('modalImage').src = imageUrl;
+      document.getElementById('imageModal').classList.remove('hidden');
+    }
+
+    // Close Image Modal
+    document.getElementById('closeImageBtn').addEventListener('click', () => {
+      document.getElementById('imageModal').classList.add('hidden');
+    });
+
+    document.getElementById('imageModal').addEventListener('click', (e) => {
+      if (e.target.id === 'imageModal') {
+        document.getElementById('imageModal').classList.add('hidden');
+      }
+    });
+
+    // Close Details Section
+    document.getElementById('closeDetailsBtn').addEventListener('click', () => {
+      document.getElementById('driverDetailsSection').classList.add('hidden');
+      currentDriverId = null;
+      currentDriverData = null;
+    });
+
+    // Filter orders by status
+    document.getElementById('orderStatusFilter').addEventListener('change', () => {
+      if (currentDriverData) {
+        renderOrders(currentDriverData.orders);
+      }
+    });
+
+    // Open Add Driver Modal
+    document.getElementById('addDriverBtn').addEventListener('click', () => {
+      document.getElementById('modalTitle').textContent = 'Add New Driver';
+      document.getElementById('driverForm').reset();
+      document.getElementById('driverId').value = '';
+      document.getElementById('driverActive').checked = true;
+      document.getElementById('driverModal').classList.remove('hidden');
+    });
+
+    // Open Edit Driver Modal
+    async function openEditModal(driverId) {
+      try {
+        const response = await fetch(`/api/admin/driver/details/${driverId}/`);
+        const data = await response.json();
+        
+        if (data.success) {
+          document.getElementById('modalTitle').textContent = 'Edit Driver';
+          document.getElementById('driverId').value = data.driver.id;
+          document.getElementById('driverName').value = data.driver.name;
+          document.getElementById('driverEmail').value = data.driver.email;
+          document.getElementById('driverPhone').value = data.driver.phone_number;
+          document.getElementById('driverVehicle').value = data.driver.vehicle_number || '';
+          document.getElementById('driverActive').checked = data.driver.active;
+          document.getElementById('driverModal').classList.remove('hidden');
+        }
+      } catch (error) {
+        showNotification('Error loading driver data: ' + error.message, 'error');
+      }
+    }
+
+    // Cancel Modal
+    document.getElementById('cancelModalBtn').addEventListener('click', () => {
+      document.getElementById('driverModal').classList.add('hidden');
+    });
+
+    // Submit Driver Form
+    document.getElementById('driverForm').addEventListener('submit', async (e) => {
+      e.preventDefault();
+      
+      const driverId = document.getElementById('driverId').value;
+      const driverData = {
+        name: document.getElementById('driverName').value.trim(),
+        email: document.getElementById('driverEmail').value.trim(),
+        phone_number: document.getElementById('driverPhone').value.trim(),
+        vehicle_number: document.getElementById('driverVehicle').value.trim(),
+        active: document.getElementById('driverActive').checked
+      };
+
+      try {
+        let response;
+        if (driverId) {
+          // Edit existing driver
+          response = await fetch(`/api/driver/edit/${driverId}/`, {
+            method: 'PUT',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(driverData)
+          });
+        } else {
+          // Add new driver
+          response = await fetch('/api/driver/add/', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(driverData)
+          });
+        }
+
+        const data = await response.json();
+        
+        if (data.success) {
+          showNotification(data.message, 'success');
+          document.getElementById('driverModal').classList.add('hidden');
+          await loadDrivers();
+          
+          // If editing current driver, refresh details
+          if (driverId && currentDriverId == driverId) {
+            await viewDriverDetails(driverId);
+          }
+        } else {
+          showNotification(data.message || 'Operation failed', 'error');
+        }
+      } catch (error) {
+        showNotification('Error: ' + error.message, 'error');
+      }
+    });
+
+    // Toggle Driver Status
+    document.getElementById('toggleStatusBtn').addEventListener('click', async () => {
+      if (!currentDriverId) return;
+      
+      const confirmed = await showConfirmation(
+        'Toggle Driver Status',
+        'Are you sure you want to toggle this driver\'s active status? This will affect their ability to receive new orders.'
+      );
+      
+      if (!confirmed) return;
+      
+      try {
+        const response = await fetch(`/api/driver/toggle-status/${currentDriverId}/`, {
+          method: 'POST'
+        });
+        const data = await response.json();
+        
+        if (data.success) {
+          showNotification(data.message, 'success');
+          await loadDrivers();
+          await viewDriverDetails(currentDriverId);
+        } else {
+          showNotification(data.message || 'Failed to toggle status', 'error');
+        }
+      } catch (error) {
+        showNotification('Error: ' + error.message, 'error');
+      }
+    });
+
+    // Reset Password
+    document.getElementById('resetPasswordBtn').addEventListener('click', async () => {
+      if (!currentDriverId) return;
+      
+      const confirmed = await showConfirmation(
+        'Reset Driver Password',
+        'Are you sure you want to reset this driver\'s password? They will need to use the new default password to log in.'
+      );
+      
+      if (!confirmed) return;
+      
+      try {
+        const response = await fetch(`/api/driver/reset-password/${currentDriverId}/`, {
+          method: 'POST'
+        });
+        const data = await response.json();
+        
+        if (data.success) {
+          showNotification('Password has been reset successfully', 'success');
+        } else {
+          showNotification(data.message || 'Failed to reset password', 'error');
+        }
+      } catch (error) {
+        showNotification('Error: ' + error.message, 'error');
+      }
+    });
+
+    // Edit Driver from Details Section
+    document.getElementById('editDriverBtn').addEventListener('click', () => {
+      if (currentDriverId) {
+        openEditModal(currentDriverId);
+      }
+    });
+
+    // Apply Filters Button
+    document.getElementById('applyFiltersBtn').addEventListener('click', applyFilters);
+
+    // Clear Filters Button
+    document.getElementById('clearFiltersBtn').addEventListener('click', () => {
+      document.getElementById('searchInput').value = '';
+      document.getElementById('statusFilter').value = '';
+      applyFilters();
+    });
+
+    // Real-time search
+    document.getElementById('searchInput').addEventListener('click', applyFilters);
+
+    // Logout
+    document.getElementById('logoutBtn').addEventListener('click', (e) => {
+      e.preventDefault();
+      document.cookie = 'adminId=; path=/; expires=Thu, 01 Jan 1970 00:00:00 UTC; SameSite=Lax;';
+      document.cookie = 'jwtToken=; path=/; expires=Thu, 01 Jan 1970 00:00:00 UTC; SameSite=Lax;';
+      window.location.href = '/adminLogin/';
+    });
+
+    // Initialize
+    loadDrivers();
+  </script>
 </body>
 </html>

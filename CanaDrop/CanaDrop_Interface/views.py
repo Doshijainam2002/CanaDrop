@@ -6820,6 +6820,148 @@ def get_pharmacy_details_admin(request, pharmacy_id=None):
 
 
 @csrf_exempt
+def get_driver_details_admin(request, driver_id=None):
+    try:
+        # 🟠 CASE 1: No ID → return ALL drivers (summary)
+        if driver_id is None:
+            drivers = Driver.objects.all().order_by("name")
+
+            driver_list = []
+            for d in drivers:
+                total_deliveries = DeliveryOrder.objects.filter(
+                    driver=d
+                ).exclude(status="cancelled").count()
+
+                total_earnings = DriverInvoice.objects.filter(
+                    driver=d
+                ).exclude(status="paid").aggregate(
+                    total=Sum("total_amount")
+                )["total"] or 0
+
+                driver_list.append({
+                    "id": d.id,
+                    "name": d.name,
+                    "phone_number": d.phone_number,
+                    "email": d.email,
+                    "vehicle_number": d.vehicle_number,
+                    "active": d.active,
+                    "total_completed_deliveries": total_deliveries,
+                    "total_outstanding_amount": float(total_earnings),
+                })
+
+            return JsonResponse({
+                "success": True,
+                "drivers": driver_list,
+            }, status=200)
+
+        # 🟢 CASE 2: ID provided → return SINGLE driver full info
+        driver = Driver.objects.get(id=driver_id)
+
+        total_deliveries = DeliveryOrder.objects.filter(
+            driver=driver
+        ).exclude(status="cancelled").count()
+
+        total_earnings = DriverInvoice.objects.filter(
+            driver=driver
+        ).exclude(status="paid").aggregate(
+            total=Sum("total_amount")
+        )["total"] or 0
+
+        # Fetch driver orders
+        orders_qs = DeliveryOrder.objects.filter(
+            driver=driver
+        ).order_by("-created_at")
+
+        orders = []
+        for o in orders_qs:
+            # Fetch order images
+            images = [
+                {
+                    "id": img.id,
+                    "stage": img.stage,
+                    "image_url": img.image_url,
+                    "uploaded_at": img.uploaded_at.strftime("%Y-%m-%d %H:%M:%S")
+                }
+                for img in o.images.all()
+            ]
+
+            # Fetch tracking entries
+            tracking_entries = [
+                {
+                    "id": t.id,
+                    "step": t.step,
+                    "timestamp": t.timestamp.strftime("%Y-%m-%d %H:%M:%S"),
+                    "performed_by": t.performed_by,
+                    "note": t.note,
+                    "image_url": t.image_url,
+                    "pharmacy": t.pharmacy.name if t.pharmacy else None,
+                }
+                for t in o.tracking_entries.all()
+            ]
+
+            orders.append({
+                "id": o.id,
+                "pharmacy": o.pharmacy.name,
+                "pickup_address": o.pickup_address,
+                "pickup_city": o.pickup_city,
+                "pickup_day": str(o.pickup_day),
+                "drop_address": o.drop_address,
+                "drop_city": o.drop_city,
+                "status": o.status,
+                "rate": float(o.rate),
+                "customer_name": o.customer_name,
+                "created_at": o.created_at.strftime("%Y-%m-%d %H:%M:%S"),
+                "updated_at": o.updated_at.strftime("%Y-%m-%d %H:%M:%S"),
+                "images": images,
+                "tracking_entries": tracking_entries,
+            })
+
+        # Fetch driver invoices
+        invoice_qs = DriverInvoice.objects.filter(
+            driver=driver
+        ).order_by("-created_at")
+
+        invoices = []
+        for inv in invoice_qs:
+            invoices.append({
+                "invoice_id": inv.id,
+                "start_date": str(inv.start_date),
+                "end_date": str(inv.end_date),
+                "total_deliveries": inv.total_deliveries,
+                "total_amount": float(inv.total_amount),
+                "due_date": str(inv.due_date),
+                "status": inv.status,
+                "pdf_url": inv.pdf_url,
+            })
+
+        driver_data = {
+            "id": driver.id,
+            "name": driver.name,
+            "phone_number": driver.phone_number,
+            "email": driver.email,
+            "vehicle_number": driver.vehicle_number,
+            "active": driver.active,
+            "created_at": driver.created_at.strftime("%Y-%m-%d %H:%M:%S"),
+        }
+
+        return JsonResponse({
+            "success": True,
+            "driver": driver_data,
+            "total_completed_deliveries": total_deliveries,
+            "total_outstanding_amount": float(total_earnings),
+            "orders": orders,
+            "invoices": invoices,
+        }, status=200)
+
+    except Driver.DoesNotExist:
+        return JsonResponse({"success": False, "message": "Driver not found"}, status=404)
+
+    except Exception as e:
+        return JsonResponse({"success": False, "error": str(e)}, status=500)
+
+
+
+@csrf_exempt
 def add_pharmacy(request):
     if request.method != "POST":
         return JsonResponse(
@@ -6903,6 +7045,89 @@ def add_pharmacy(request):
             {
                 "success": False,
                 "message": "A pharmacy with this email already exists.",
+                "field": "email",
+            },
+            status=400,
+        )
+    except Exception as e:
+        return JsonResponse(
+            {"success": False, "message": "Something went wrong.", "error": str(e)},
+            status=500,
+        )
+
+
+
+@csrf_exempt
+def add_driver(request):
+    if request.method != "POST":
+        return JsonResponse(
+            {"success": False, "message": "Only POST method is allowed."},
+            status=405,
+        )
+
+    # Parse JSON
+    try:
+        data = json.loads(request.body.decode("utf-8"))
+    except json.JSONDecodeError:
+        return JsonResponse(
+            {"success": False, "message": "Invalid JSON payload."},
+            status=400,
+        )
+
+    # Required fields
+    required_fields = [
+        "name",
+        "phone_number",
+        "email",
+    ]
+
+    missing = [f for f in required_fields if not data.get(f)]
+    if missing:
+        return JsonResponse(
+            {
+                "success": False,
+                "message": "Missing required fields.",
+                "missing_fields": missing,
+            },
+            status=400,
+        )
+
+    try:
+        driver = Driver.objects.create(
+            name=data.get("name").strip(),
+            phone_number=data.get("phone_number").strip(),
+            email=data.get("email").strip(),
+            vehicle_number=data.get("vehicle_number", "").strip(),
+            # Password auto defaults to "123456"
+            # Active defaults to True unless provided
+            active=data.get("active", True),
+        )
+
+        driver_data = {
+            "id": driver.id,
+            "name": driver.name,
+            "phone_number": driver.phone_number,
+            "email": driver.email,
+            "vehicle_number": driver.vehicle_number,
+            "active": driver.active,
+            "created_at": driver.created_at.strftime("%Y-%m-%d %H:%M:%S"),
+        }
+
+        return JsonResponse(
+            {
+                "success": True,
+                "message": "Driver created successfully.",
+                "driver": driver_data,
+            },
+            status=201,
+        )
+
+    except IntegrityError:
+        # Unique email violation
+        return JsonResponse(
+            {
+                "success": False,
+                "message": "A driver with this email already exists.",
                 "field": "email",
             },
             status=400,
@@ -7002,6 +7227,87 @@ def edit_pharmacy(request, pharmacy_id):
 
 
 @csrf_exempt
+def edit_driver(request, driver_id):
+    if request.method != "PUT":
+        return JsonResponse(
+            {"success": False, "message": "Only PUT method is allowed."},
+            status=405,
+        )
+
+    try:
+        driver = Driver.objects.get(id=driver_id)
+    except Driver.DoesNotExist:
+        return JsonResponse(
+            {"success": False, "message": "Driver not found."},
+            status=404,
+        )
+
+    try:
+        data = json.loads(request.body.decode("utf-8"))
+    except json.JSONDecodeError:
+        return JsonResponse(
+            {"success": False, "message": "Invalid JSON payload."},
+            status=400,
+        )
+
+    # Editable fields for Driver
+    editable_fields = [
+        "name",
+        "phone_number",
+        "email",
+        "vehicle_number",
+        "active",
+    ]
+
+    # Update only provided fields
+    for field in editable_fields:
+        if field in data:
+            setattr(
+                driver,
+                field,
+                data[field].strip() if isinstance(data[field], str) else data[field],
+            )
+
+    try:
+        driver.save()
+
+        updated_data = {
+            "id": driver.id,
+            "name": driver.name,
+            "phone_number": driver.phone_number,
+            "email": driver.email,
+            "vehicle_number": driver.vehicle_number,
+            "active": driver.active,
+            "created_at": driver.created_at.strftime("%Y-%m-%d %H:%M:%S"),
+        }
+
+        return JsonResponse(
+            {
+                "success": True,
+                "message": "Driver updated successfully.",
+                "driver": updated_data,
+            },
+            status=200,
+        )
+
+    except IntegrityError:
+        return JsonResponse(
+            {
+                "success": False,
+                "message": "A driver with this email already exists.",
+                "field": "email",
+            },
+            status=400,
+        )
+
+    except Exception as e:
+        return JsonResponse(
+            {"success": False, "message": "Something went wrong.", "error": str(e)},
+            status=500,
+        )
+
+
+@csrf_exempt
 def toggle_pharmacy_status(request, pharmacy_id):
     if request.method not in ["POST", "PATCH"]:
         return JsonResponse(
@@ -7051,6 +7357,56 @@ def toggle_pharmacy_status(request, pharmacy_id):
 
 
 
+@csrf_exempt
+def toggle_driver_status(request, driver_id):
+    if request.method not in ["POST", "PATCH"]:
+        return JsonResponse(
+            {"success": False, "message": "Only POST or PATCH method is allowed."},
+            status=405,
+        )
+
+    try:
+        driver = Driver.objects.get(id=driver_id)
+    except Driver.DoesNotExist:
+        return JsonResponse(
+            {"success": False, "message": "Driver not found."},
+            status=404,
+        )
+
+    # Try to read JSON body (optional)
+    new_status = None
+    try:
+        if request.body:
+            data = json.loads(request.body.decode("utf-8"))
+            if "active" in data:
+                new_status = bool(data["active"])
+    except json.JSONDecodeError:
+        # Ignore bad JSON, we'll just toggle instead
+        pass
+
+    # If active explicitly provided → set it, else toggle
+    if new_status is not None:
+        driver.active = new_status
+    else:
+        driver.active = not driver.active
+
+    driver.save()
+
+    return JsonResponse(
+        {
+            "success": True,
+            "message": "Driver activated." if driver.active else "Driver deactivated.",
+            "driver": {
+                "id": driver.id,
+                "name": driver.name,
+                "active": driver.active,
+            },
+        },
+        status=200,
+    )
+
+
+
 
 @csrf_exempt
 def reset_pharmacy_password(request, pharmacy_id):
@@ -7081,6 +7437,42 @@ def reset_pharmacy_password(request, pharmacy_id):
                 "name": pharmacy.name,
                 "email": pharmacy.email,
                 "active": pharmacy.active,
+            },
+        },
+        status=200,
+    )
+
+
+
+@csrf_exempt
+def reset_driver_password(request, driver_id):
+    if request.method not in ["POST", "PATCH"]:
+        return JsonResponse(
+            {"success": False, "message": "Only POST or PATCH method is allowed."},
+            status=405,
+        )
+
+    try:
+        driver = Driver.objects.get(id=driver_id)
+    except Driver.DoesNotExist:
+        return JsonResponse(
+            {"success": False, "message": "Driver not found."},
+            status=404,
+        )
+
+    # Reset password to default — model will hash it automatically
+    driver.password = "123456"
+    driver.save()
+
+    return JsonResponse(
+        {
+            "success": True,
+            "message": "Password reset successfully.",
+            "driver": {
+                "id": driver.id,
+                "name": driver.name,
+                "email": driver.email,
+                "active": driver.active,
             },
         },
         status=200,
