@@ -83,9 +83,6 @@
           <h1 class="text-2xl font-bold text-white">Invoices & Payments</h1>
           <p class="text-sm text-neutral-400">Manage pharmacy and driver billing cycles, payments, and reports</p>
         </div>
-        <button class="px-4 py-2 bg-gradient-to-r from-orange-600 to-orange-500 text-white rounded-lg text-sm font-medium hover:from-orange-500 hover:to-orange-400 transition">
-          Refresh Data
-        </button>
       </header>
 
       <!-- Pharmacy Invoices -->
@@ -93,7 +90,23 @@
         <div class="bg-neutral-800/80 border border-neutral-700 rounded-xl p-6">
           <div class="flex justify-between items-center mb-4">
             <h2 class="text-lg font-semibold text-white">Pharmacy Invoices</h2>
-            <button class="px-3 py-1 bg-gradient-to-r from-orange-600 to-orange-500 text-white text-xs rounded-lg hover:from-orange-500 hover:to-orange-400">Generate All</button>
+          </div>
+          <div class="mb-4 flex flex-col sm:flex-row gap-3">
+            <input 
+              type="text" 
+              id="pharmacySearchInput" 
+              placeholder="Search by pharmacy name or invoice ID..." 
+              class="flex-1 px-4 py-2 bg-neutral-900 border border-neutral-600 rounded-lg text-sm text-neutral-100 focus:outline-none focus:border-orange-500"
+            />
+            <select 
+              id="pharmacyStatusFilter" 
+              class="px-4 py-2 bg-neutral-900 border border-neutral-600 rounded-lg text-sm text-neutral-100 focus:outline-none focus:border-orange-500"
+            >
+              <option value="">All Statuses</option>
+              <option value="generated">Generated</option>
+              <option value="paid">Paid</option>
+              <option value="past_due">Past Due</option>
+            </select>
           </div>
           <div class="overflow-x-auto">
             <table class="min-w-full text-sm">
@@ -107,7 +120,7 @@
                   <th class="px-6 py-3 text-left text-neutral-400 uppercase tracking-wider">Actions</th>
                 </tr>
               </thead>
-              <tbody class="divide-y divide-neutral-700">
+              <tbody id="pharmacyInvoicesBody" class="divide-y divide-neutral-700">
                 <tr class="hover:bg-neutral-700/50 transition">
                   <td class="px-6 py-4 text-neutral-100 font-medium">INV-P-203</td>
                   <td class="px-6 py-4 text-neutral-300">HealthPlus Pharmacy</td>
@@ -119,11 +132,25 @@
                   <td class="px-6 py-4 space-x-2">
                     <button class="text-xs text-orange-400 border border-orange-600/40 px-3 py-1 rounded hover:bg-orange-600/20">View PDF</button>
                     <button class="text-xs text-green-400 border border-green-600/40 px-3 py-1 rounded hover:bg-green-600/20">Mark Paid</button>
-                    <button class="text-xs text-neutral-300 border border-neutral-600 px-3 py-1 rounded hover:bg-neutral-700">Regenerate</button>
                   </td>
                 </tr>
               </tbody>
             </table>
+
+            <!-- Pagination -->
+          <div class="flex items-center justify-between mt-4 pt-4 border-t border-neutral-700">
+            <p class="text-sm text-neutral-400">
+              Showing <span id="pharmacyStart">1</span>-<span id="pharmacyEnd">10</span> of <span id="pharmacyTotal">0</span>
+            </p>
+            <div class="flex gap-2">
+              <button id="pharmacyPrevBtn" class="px-3 py-1 text-sm border border-neutral-600 rounded hover:bg-neutral-700 disabled:opacity-50 disabled:cursor-not-allowed">
+                Previous
+              </button>
+              <button id="pharmacyNextBtn" class="px-3 py-1 text-sm border border-neutral-600 rounded hover:bg-neutral-700 disabled:opacity-50 disabled:cursor-not-allowed">
+                Next
+              </button>
+            </div>
+          </div>
           </div>
         </div>
       </section>
@@ -133,7 +160,22 @@
         <div class="bg-neutral-800/80 border border-neutral-700 rounded-xl p-6">
           <div class="flex justify-between items-center mb-4">
             <h2 class="text-lg font-semibold text-white">Driver Invoices</h2>
-            <button class="px-3 py-1 bg-gradient-to-r from-orange-600 to-orange-500 text-white text-xs rounded-lg hover:from-orange-500 hover:to-orange-400">Generate All</button>
+          </div>
+          <div class="mb-4 flex flex-col sm:flex-row gap-3">
+            <input 
+              type="text" 
+              id="driverSearchInput" 
+              placeholder="Search by driver name or invoice ID..." 
+              class="flex-1 px-4 py-2 bg-neutral-900 border border-neutral-600 rounded-lg text-sm text-neutral-100 focus:outline-none focus:border-orange-500"
+            />
+            <select 
+              id="driverStatusFilter" 
+              class="px-4 py-2 bg-neutral-900 border border-neutral-600 rounded-lg text-sm text-neutral-100 focus:outline-none focus:border-orange-500"
+            >
+              <option value="">All Statuses</option>
+              <option value="generated">Pending</option>
+              <option value="paid">Paid</option>
+            </select>
           </div>
           <div class="overflow-x-auto">
             <table class="min-w-full text-sm">
@@ -147,7 +189,7 @@
                   <th class="px-6 py-3 text-left text-neutral-400 uppercase tracking-wider">Actions</th>
                 </tr>
               </thead>
-              <tbody class="divide-y divide-neutral-700">
+              <tbody id="driverInvoicesBody" class="divide-y divide-neutral-700">
                 <tr class="hover:bg-neutral-700/50 transition">
                   <td class="px-6 py-4 text-neutral-100 font-medium">INV-D-155</td>
                   <td class="px-6 py-4 text-neutral-300">John Doe</td>
@@ -159,11 +201,25 @@
                   <td class="px-6 py-4 space-x-2">
                     <button class="text-xs text-orange-400 border border-orange-600/40 px-3 py-1 rounded hover:bg-orange-600/20">View PDF</button>
                     <button class="text-xs text-green-400 border border-green-600/40 px-3 py-1 rounded hover:bg-green-600/20">Mark Paid</button>
-                    <button class="text-xs text-neutral-300 border border-neutral-600 px-3 py-1 rounded hover:bg-neutral-700">Regenerate</button>
                   </td>
                 </tr>
               </tbody>
             </table>
+
+            <!-- Pagination -->
+            <div class="flex items-center justify-between mt-4 pt-4 border-t border-neutral-700">
+              <p class="text-sm text-neutral-400">
+                Showing <span id="driverStart">1</span>-<span id="driverEnd">10</span> of <span id="driverTotal">0</span>
+              </p>
+              <div class="flex gap-2">
+                <button id="driverPrevBtn" class="px-3 py-1 text-sm border border-neutral-600 rounded hover:bg-neutral-700 disabled:opacity-50 disabled:cursor-not-allowed">
+                  Previous
+                </button>
+                <button id="driverNextBtn" class="px-3 py-1 text-sm border border-neutral-600 rounded hover:bg-neutral-700 disabled:opacity-50 disabled:cursor-not-allowed">
+                  Next
+                </button>
+              </div>
+            </div>
           </div>
         </div>
       </section>
@@ -172,33 +228,76 @@
       <section class="px-6 pb-8">
         <div class="bg-neutral-800/80 border border-neutral-700 rounded-xl p-6">
           <h2 class="text-lg font-semibold text-white mb-4">Payment Alerts</h2>
-          <ul class="space-y-3 text-sm">
-            <li class="flex items-center text-yellow-400"><span class="w-2.5 h-2.5 bg-yellow-500 rounded-full mr-2"></span>Past Due: HealthPlus Pharmacy Invoice INV-P-203</li>
-            <li class="flex items-center text-orange-400"><span class="w-2.5 h-2.5 bg-orange-500 rounded-full mr-2"></span>Pending Driver Payout: John Doe (INV-D-155)</li>
+
+          <!-- Legend / Color Coding Note -->
+          <div class="mb-4 text-xs text-neutral-400 space-y-1">
+            <p class="font-medium text-neutral-300">Legend:</p>
+            <p class="flex items-center">
+              <span class="w-2.5 h-2.5 bg-red-500 rounded-full mr-2"></span>
+              <span>Overdue invoices &mdash; immediate action required</span>
+            </p>
+            <p class="flex items-center">
+              <span class="w-2.5 h-2.5 bg-yellow-500 rounded-full mr-2"></span>
+              <span>Invoices due within 3 days</span>
+            </p>
+            <p class="flex items-center">
+              <span class="w-2.5 h-2.5 bg-neutral-500 rounded-full mr-2"></span>
+              <span>Upcoming / informational alerts</span>
+            </p>
+          </div>
+
+          <ul id="paymentAlertsList" class="space-y-3 text-sm">
+            <li class="text-neutral-400">Loading alerts...</li>
           </ul>
+
+          <!-- Pagination -->
+          <div class="flex items-center justify-between mt-4 pt-4 border-t border-neutral-700">
+            <p class="text-sm text-neutral-400">
+              Showing <span id="alertsStart">1</span>-<span id="alertsEnd">10</span> of <span id="alertsTotal">0</span>
+            </p>
+            <div class="flex gap-2">
+              <button id="alertsPrevBtn" class="px-3 py-1 text-sm border border-neutral-600 rounded hover:bg-neutral-700 disabled:opacity-50 disabled:cursor-not-allowed">
+                Previous
+              </button>
+              <button id="alertsNextBtn" class="px-3 py-1 text-sm border border-neutral-600 rounded hover:bg-neutral-700 disabled:opacity-50 disabled:cursor-not-allowed">
+                Next
+              </button>
+            </div>
+          </div>
         </div>
       </section>
+
+
 
       <!-- Revenue Reports -->
       <section class="px-6 pb-10">
         <div class="bg-neutral-800/80 border border-neutral-700 rounded-xl p-6">
           <h2 class="text-lg font-semibold text-white mb-4">Revenue Reports</h2>
+
           <div class="grid grid-cols-1 md:grid-cols-3 gap-6 text-center">
+
+            <!-- Revenue -->
             <div class="bg-neutral-900 border border-neutral-700 rounded-xl p-5">
               <p class="text-sm text-neutral-400 mb-1">Total Revenue (This Month)</p>
-              <p class="text-2xl font-bold text-green-400">$5,280.00</p>
+              <p id="revThisMonth" class="text-2xl font-bold text-green-400">$0.00</p>
             </div>
+
+            <!-- Driver Payout -->
             <div class="bg-neutral-900 border border-neutral-700 rounded-xl p-5">
               <p class="text-sm text-neutral-400 mb-1">Driver Payouts (This Month)</p>
-              <p class="text-2xl font-bold text-orange-400">$2,760.00</p>
+              <p id="payoutThisMonth" class="text-2xl font-bold text-orange-400">$0.00</p>
             </div>
+
+            <!-- Net Commission -->
             <div class="bg-neutral-900 border border-neutral-700 rounded-xl p-5">
               <p class="text-sm text-neutral-400 mb-1">Net Commission Margin</p>
-              <p class="text-2xl font-bold text-blue-400">47.7%</p>
+              <p id="netCommission" class="text-2xl font-bold text-blue-400">0% ($0.00)</p>
             </div>
+
           </div>
         </div>
       </section>
+
 
       <script>
         document.getElementById("logoutBtn").addEventListener("click", function (event) {
@@ -213,6 +312,533 @@
   // 🚀 Redirect to admin login page
   window.location.href = "/adminLogin/";
 });
+
+
+// Pagination state
+let pharmacyPage = 1;
+let driverPage = 1;
+let alertsPage = 1;
+const itemsPerPage = 10;
+
+// Filter state
+let pharmacyAllData = [];
+let driverAllData = [];
+let alertsAllData = [];
+
+// ADD THESE NEW VARIABLES - Store filtered data
+let pharmacyFilteredData = [];
+let driverFilteredData = [];
+
+
+// Pharmacy filters
+document.getElementById('pharmacySearchInput').addEventListener('input', filterAndRenderPharmacy);
+document.getElementById('pharmacyStatusFilter').addEventListener('change', filterAndRenderPharmacy);
+document.getElementById('pharmacyPrevBtn').addEventListener('click', () => changePage('pharmacy', -1));
+document.getElementById('pharmacyNextBtn').addEventListener('click', () => changePage('pharmacy', 1));
+
+// Driver filters
+document.getElementById('driverSearchInput').addEventListener('input', filterAndRenderDriver);
+document.getElementById('driverStatusFilter').addEventListener('change', filterAndRenderDriver);
+document.getElementById('driverPrevBtn').addEventListener('click', () => changePage('driver', -1));
+document.getElementById('driverNextBtn').addEventListener('click', () => changePage('driver', 1));
+
+// Alerts pagination
+document.getElementById('alertsPrevBtn').addEventListener('click', () => changePage('alerts', -1));
+document.getElementById('alertsNextBtn').addEventListener('click', () => changePage('alerts', 1));
+
+
+
+// Filter and render pharmacy invoices
+function filterAndRenderPharmacy() {
+  pharmacyPage = 1; // Reset to page 1 when filtering
+  const searchTerm = document.getElementById('pharmacySearchInput').value.toLowerCase();
+  const statusFilter = document.getElementById('pharmacyStatusFilter').value;
+  
+  pharmacyFilteredData = pharmacyAllData.filter(inv => {
+    const matchesSearch = 
+      inv.pharmacy_name.toLowerCase().includes(searchTerm) ||
+      `INV-P-${inv.invoice_id}`.toLowerCase().includes(searchTerm);
+    const matchesStatus = !statusFilter || inv.status === statusFilter;
+    
+    return matchesSearch && matchesStatus;
+  });
+  
+  renderPharmacyInvoices(pharmacyFilteredData, pharmacyPage);
+  updatePaginationControls('pharmacy', pharmacyAllData.length, pharmacyFilteredData.length);
+}
+
+// Filter and render driver invoices
+function filterAndRenderDriver() {
+  driverPage = 1;
+  const searchTerm = document.getElementById('driverSearchInput').value.toLowerCase();
+  const statusFilter = document.getElementById('driverStatusFilter').value;
+  
+  driverFilteredData = driverAllData.filter(inv => {
+    const matchesSearch = 
+      inv.driver_name.toLowerCase().includes(searchTerm) ||
+      `INV-D-${inv.invoice_id}`.toLowerCase().includes(searchTerm);
+    const matchesStatus = !statusFilter || inv.status === statusFilter;
+    
+    return matchesSearch && matchesStatus;
+  });
+  
+  renderDriverInvoices(driverFilteredData, driverPage);
+  updatePaginationControls('driver', driverAllData.length, driverFilteredData.length);
+}
+
+// Handle page changes
+function changePage(type, direction) {
+  if (type === 'pharmacy') {
+    pharmacyPage += direction;
+    renderPharmacyInvoices(pharmacyFilteredData, pharmacyPage);
+    updatePaginationControls('pharmacy', pharmacyAllData.length, pharmacyFilteredData.length);
+  } else if (type === 'driver') {
+    driverPage += direction;
+    renderDriverInvoices(driverFilteredData, driverPage);
+    updatePaginationControls('driver', driverAllData.length, driverFilteredData.length);
+  } else if (type === 'alerts') {
+    alertsPage += direction;
+    renderAlertsPaginated();
+  }
+}
+
+// Update pagination controls
+function updatePaginationControls(type, total, filtered) {
+  const startId = `${type}Start`;
+  const endId = `${type}End`;
+  const totalId = `${type}Total`;
+  const prevBtnId = `${type}PrevBtn`;
+  const nextBtnId = `${type}NextBtn`;
+  
+  const currentPage = type === 'pharmacy' ? pharmacyPage : (type === 'driver' ? driverPage : alertsPage);
+  const start = (currentPage - 1) * itemsPerPage + 1;
+  const end = Math.min(currentPage * itemsPerPage, filtered);
+  const totalPages = Math.ceil(filtered / itemsPerPage);
+  
+  document.getElementById(startId).textContent = filtered > 0 ? start : 0;
+  document.getElementById(endId).textContent = end;
+  document.getElementById(totalId).textContent = filtered;
+  
+  document.getElementById(prevBtnId).disabled = currentPage === 1;
+  document.getElementById(nextBtnId).disabled = currentPage >= totalPages;
+}
+
+// Render alerts with pagination
+function renderAlertsPaginated() {
+  const list = document.getElementById("paymentAlertsList");
+  const start = (alertsPage - 1) * itemsPerPage;
+  const end = start + itemsPerPage;
+  const paginatedAlerts = alertsAllData.slice(start, end);
+  
+  if (paginatedAlerts.length === 0) {
+    list.innerHTML = `<li class="text-neutral-400">No payment alerts 🎉</li>`;
+    updatePaginationControls('alerts', 0, 0);
+    return;
+  }
+  
+  list.innerHTML = paginatedAlerts.map(alert => {
+    // Determine color coding
+    let dotColor = "bg-neutral-500";
+    let textColor = "text-neutral-300";
+
+    if (alert.days_left < 0) {
+      dotColor = "bg-red-500";      // overdue
+      textColor = "text-red-400";
+    } else if (alert.days_left <= 3) {
+      dotColor = "bg-yellow-500";   // due soon
+      textColor = "text-yellow-400";
+    }
+
+    // Friendly label
+    const entityType = alert.type === "pharmacy" ? "Pharmacy" : "Driver";
+    const invoiceCode = alert.type === "pharmacy" 
+                        ? `INV-P-${alert.invoice_id}` 
+                        : `INV-D-${alert.invoice_id}`;
+
+    const periodText = `Due: ${alert.due_date} (${alert.days_left} days left)`;
+
+    return `
+      <li class="flex flex-col sm:flex-row sm:items-center sm:justify-between ${textColor}">
+        <div class="flex items-center mb-1 sm:mb-0">
+          <span class="w-2.5 h-2.5 ${dotColor} rounded-full mr-2"></span>
+          <span>
+            <strong>${entityType}:</strong> ${alert.entity_name} — ${invoiceCode}
+          </span>
+        </div>
+        <span class="text-xs text-neutral-400 ml-5 sm:ml-0">
+          ${periodText}
+        </span>
+      </li>
+    `;
+  }).join("");
+  
+  updatePaginationControls('alerts', alertsAllData.length, alertsAllData.length);
+}
+
+
+// Optional helper: status badge for invoices
+function getInvoiceStatusBadge(status) {
+  // API returns: generated, paid, past_due
+  let config = {
+    bg: 'bg-neutral-500/20',
+    text: 'text-neutral-300',
+    border: 'border border-neutral-500/40',
+    label: status
+  };
+
+  if (status === 'generated') {
+    config = {
+      bg: 'bg-blue-500/20',
+      text: 'text-blue-400',
+      border: 'border border-blue-600/40',
+      label: 'Generated'
+    };
+  } else if (status === 'paid') {
+    config = {
+      bg: 'bg-green-500/20',
+      text: 'text-green-400',
+      border: 'border border-green-600/40',
+      label: 'Paid'
+    };
+  } else if (status === 'past_due') {
+    config = {
+      bg: 'bg-yellow-500/20',
+      text: 'text-yellow-400',
+      border: 'border border-yellow-600/40',
+      label: 'Past Due'
+    };
+  }
+
+  return `
+    <span class="inline-flex px-3 py-1 text-xs font-medium rounded-full ${config.bg} ${config.text} ${config.border}">
+      ${config.label}
+    </span>
+  `;
+}
+
+// Render invoices into the table with pagination
+function renderPharmacyInvoices(invoices, page = 1) {
+  const tbody = document.getElementById('pharmacyInvoicesBody');
+  if (!tbody) return;
+
+  if (!invoices || invoices.length === 0) {
+    tbody.innerHTML = `
+      <tr>
+        <td colspan="6" class="px-6 py-6 text-center text-neutral-400">
+          No invoices found
+        </td>
+      </tr>
+    `;
+    updatePaginationControls('pharmacy', 0, 0);
+    return;
+  }
+
+  // Apply pagination
+  const start = (page - 1) * itemsPerPage;
+  const end = start + itemsPerPage;
+  const paginatedInvoices = invoices.slice(start, end);
+
+  tbody.innerHTML = paginatedInvoices.map(inv => {
+    const invoiceCode = `INV-P-${inv.invoice_id}`;
+    const periodText = `${inv.period.start_date} – ${inv.period.end_date}`;
+    const totalFormatted = inv.total_amount.toFixed(2);
+
+    const viewPdfButton = inv.pdf_url
+      ? `<button onclick="window.open('${inv.pdf_url}', '_blank')" class="text-xs text-orange-400 border border-orange-600/40 px-3 py-1 rounded hover:bg-orange-600/20">View PDF</button>`
+      : `<span class="text-xs text-neutral-500">No PDF</span>`;
+
+    return `
+      <tr class="hover:bg-neutral-700/50 transition">
+        <td class="px-6 py-4 text-neutral-100 font-medium">${invoiceCode}</td>
+        <td class="px-6 py-4 text-neutral-300">${inv.pharmacy_name}</td>
+        <td class="px-6 py-4 text-neutral-300">${periodText}</td>
+        <td class="px-6 py-4 text-neutral-100 font-semibold">$${totalFormatted}</td>
+        <td class="px-6 py-4">
+          ${getInvoiceStatusBadge(inv.status)}
+        </td>
+        <td class="px-6 py-4 space-x-2">
+          ${viewPdfButton}
+          <button onclick="markInvoicePaid(${inv.invoice_id})" class="text-xs text-green-400 border border-green-600/40 px-3 py-1 rounded hover:bg-green-600/20">
+            Mark Paid
+          </button>
+        </td>
+      </tr>
+    `;
+  }).join('');
+
+  // Update pagination controls
+  updatePaginationControls('pharmacy', pharmacyAllData.length, invoices.length);
+}
+
+// Placeholder for Mark Paid (hook real API later)
+function markInvoicePaid(invoiceId) {
+  // TODO: Call a "mark paid" API when you create it
+  showNotification(`Mark Paid for Invoice ID ${invoiceId} - feature coming soon!`, 'success');
+}
+
+// Load invoices from the API
+async function loadPharmacyInvoices() {
+  const tbody = document.getElementById('pharmacyInvoicesBody');
+  if (tbody) {
+    tbody.innerHTML = `
+      <tr>
+        <td colspan="6" class="px-6 py-6 text-center text-neutral-400">
+          Loading invoices...
+        </td>
+      </tr>
+    `;
+  }
+
+  try {
+    const res = await fetch('/api/admin/invoices/all/');
+
+    if (!res.ok) {
+      const text = await res.text();
+      console.error('Invoice API error:', text);
+      showNotification(`Failed to load invoices: ${res.status}`, 'error');
+      return;
+    }
+
+    const contentType = res.headers.get('content-type') || '';
+    if (!contentType.includes('application/json')) {
+      const text = await res.text();
+      console.error('Non-JSON response from /invoices/all/:', text);
+      showNotification('Server returned non-JSON response for invoices.', 'error');
+      return;
+    }
+
+    const data = await res.json();
+
+    if (!data.success) {
+      showNotification(data.message || 'Failed to load invoices', 'error');
+      return;
+    }
+
+    // STORE DATA AND RESET PAGE
+    pharmacyAllData = data.invoices || [];
+    pharmacyPage = 1;
+    
+    // USE FILTER FUNCTION TO RENDER
+    filterAndRenderPharmacy();
+    
+  } catch (err) {
+    console.error('Invoices load error:', err);
+    showNotification('Error loading invoices: ' + err.message, 'error');
+  }
+}
+
+// Helper: status badge for driver invoices
+function getDriverInvoiceStatusBadge(status) {
+  // API statuses: "generated", "paid"
+  if (status === "paid") {
+    return `
+      <span class="inline-flex px-3 py-1 text-xs font-medium rounded-full bg-green-500/20 text-green-400 border border-green-600/40">
+        Paid
+      </span>
+    `;
+  }
+
+  // Treat "generated" as Pending
+  return `
+    <span class="inline-flex px-3 py-1 text-xs font-medium rounded-full bg-orange-500/20 text-orange-400 border border-orange-600/40">
+      Pending
+    </span>
+  `;
+}
+
+// Render driver invoices into the table with pagination
+function renderDriverInvoices(invoices, page = 1) {
+  const tbody = document.getElementById("driverInvoicesBody");
+  if (!tbody) return;
+
+  if (!invoices || invoices.length === 0) {
+    tbody.innerHTML = `
+      <tr>
+        <td colspan="6" class="px-6 py-6 text-center text-neutral-400">
+          No driver invoices found
+        </td>
+      </tr>
+    `;
+    updatePaginationControls('driver', 0, 0);
+    return;
+  }
+
+  // Apply pagination
+  const start = (page - 1) * itemsPerPage;
+  const end = start + itemsPerPage;
+  const paginatedInvoices = invoices.slice(start, end);
+
+  tbody.innerHTML = paginatedInvoices
+    .map((inv) => {
+      const invoiceCode = `INV-D-${inv.invoice_id}`;
+      const periodText = `${inv.start_date} – ${inv.end_date}`;
+      const totalFormatted = inv.total_amount.toFixed(2);
+
+      const viewPdfButton = inv.pdf_url
+        ? `<button onclick="window.open('${inv.pdf_url}', '_blank')" class="text-xs text-orange-400 border border-orange-600/40 px-3 py-1 rounded hover:bg-orange-600/20">View PDF</button>`
+        : `<span class="text-xs text-neutral-500">No PDF</span>`;
+
+      return `
+        <tr class="hover:bg-neutral-700/50 transition">
+          <td class="px-6 py-4 text-neutral-100 font-medium">${invoiceCode}</td>
+          <td class="px-6 py-4 text-neutral-300">${inv.driver_name}</td>
+          <td class="px-6 py-4 text-neutral-300">${periodText}</td>
+          <td class="px-6 py-4 text-neutral-100 font-semibold">$${totalFormatted}</td>
+          <td class="px-6 py-4">
+            ${getDriverInvoiceStatusBadge(inv.status)}
+          </td>
+          <td class="px-6 py-4 space-x-2">
+            ${viewPdfButton}
+            <button onclick="markDriverInvoicePaid(${inv.invoice_id})" class="text-xs text-green-400 border border-green-600/40 px-3 py-1 rounded hover:bg-green-600/20">
+              Mark Paid
+            </button>
+          </td>
+        </tr>
+      `;
+    })
+    .join("");
+
+  // Update pagination controls
+  updatePaginationControls('driver', driverAllData.length, invoices.length);
+}
+
+// Placeholder for Mark Paid – to be wired when you have the API
+function markDriverInvoicePaid(invoiceId) {
+  // TODO: Call "mark paid" driver invoice API when you build it
+  showNotification(`Mark Paid for Driver Invoice ID ${invoiceId} - feature coming soon!`, "success");
+}
+
+// Load driver invoices from API
+async function loadDriverInvoices() {
+  const tbody = document.getElementById("driverInvoicesBody");
+  if (tbody) {
+    tbody.innerHTML = `
+      <tr>
+        <td colspan="6" class="px-6 py-6 text-center text-neutral-400">
+          Loading driver invoices...
+        </td>
+      </tr>
+    `;
+  }
+
+  try {
+    const res = await fetch("/api/admin/driver-invoices/all/");
+
+    if (!res.ok) {
+      const text = await res.text();
+      console.error("Driver invoices API error:", text);
+      showNotification(`Failed to load driver invoices: ${res.status}`, "error");
+      return;
+    }
+
+    const contentType = res.headers.get("content-type") || "";
+    if (!contentType.includes("application/json")) {
+      const text = await res.text();
+      console.error("Non-JSON response from /api/admin/driver-invoices/all/:", text);
+      showNotification("Server returned non-JSON response for driver invoices.", "error");
+      return;
+    }
+
+    const data = await res.json();
+
+    if (!data.success) {
+      showNotification(data.message || "Failed to load driver invoices", "error");
+      return;
+    }
+
+    // STORE DATA AND RESET PAGE
+    driverAllData = data.invoices || [];
+    driverPage = 1;
+    
+    // USE FILTER FUNCTION TO RENDER
+    filterAndRenderDriver();
+    
+  } catch (err) {
+    console.error("Driver invoices load error:", err);
+    showNotification("Error loading driver invoices: " + err.message, "error");
+  }
+}
+
+
+// Load Payment Alerts
+async function loadPaymentAlerts() {
+  const list = document.getElementById("paymentAlertsList");
+  list.innerHTML = `<li class="text-neutral-400">Loading alerts...</li>`;
+
+  try {
+    const response = await fetch("/api/admin/payment-alerts/");
+
+    if (!response.ok) {
+      list.innerHTML = `<li class="text-red-400">❌ Failed to load alerts</li>`;
+      return;
+    }
+
+    const data = await response.json();
+    if (!data.success) {
+      list.innerHTML = `<li class="text-red-400">❌ ${data.error || "Unknown error"}</li>`;
+      return;
+    }
+
+    // STORE THE DATA
+    alertsAllData = data.alerts || [];
+    alertsPage = 1; // Reset to first page
+    
+    // RENDER WITH PAGINATION
+    renderAlertsPaginated();
+
+  } catch (err) {
+    console.error("Payment alerts error:", err);
+    list.innerHTML = `<li class="text-red-400">❌ Error loading alerts</li>`;
+  }
+}
+
+async function loadFinancialMetrics() {
+  try {
+    const response = await fetch("/api/admin/financials/month/");
+
+    if (!response.ok) {
+      showNotification(`Error fetching financial metrics: ${response.status}`, "error");
+      return;
+    }
+
+    const data = await response.json();
+
+    if (!data.success) {
+      showNotification(data.error || "Failed to load financial metrics", "error");
+      return;
+    }
+
+    const metrics = data.financials;
+
+    const revenue = metrics.revenue_this_month || 0;
+    const payout = metrics.driver_payout_this_month || 0;
+    const netValue = metrics.net_commission.value || 0;
+    const netPercent = metrics.net_commission.percentage_of_revenue || 0;
+
+    // Update HTML values
+    document.getElementById("revThisMonth").textContent =
+      `$${revenue.toFixed(2)}`;
+
+    document.getElementById("payoutThisMonth").textContent =
+      `$${payout.toFixed(2)}`;
+
+    document.getElementById("netCommission").textContent =
+      `${netPercent.toFixed(1)}% ($${netValue.toFixed(2)})`;
+
+  } catch (err) {
+    console.error("Financial metrics error:", err);
+    showNotification("Failed to load revenue metrics", "error");
+  }
+}
+
+
+loadPharmacyInvoices();
+loadDriverInvoices();
+loadPaymentAlerts();
+loadFinancialMetrics();
+
+
+
       </script>
     </main>
   </div>

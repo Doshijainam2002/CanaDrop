@@ -76,6 +76,11 @@ urlpatterns = [
     path("api/driver/edit/<int:driver_id>/", views.edit_driver, name="AdminEditDriver"),
     path("api/driver/toggle-status/<int:driver_id>/", views.toggle_driver_status, name="AdminToggleDriverStatus"),
     path("api/driver/reset-password/<int:driver_id>/", views.reset_driver_password, name="AdminResetDriverPassword"),
+    path("api/admin/invoices/all/", views.get_all_pharmacy_invoices, name="AdminFetchAllPharmacyInvoices"),
+    path("api/admin/driver-invoices/all/", views.get_all_driver_invoices, name="AdminFetchAllDriverInvoices"),
+    path("api/admin/payment-alerts/", views.get_payment_alerts, name="AdminFetchAllPaymentAlerts"),
+    path("api/admin/financials/month/", views.get_monthly_financials, name="AdminMonthlyFinancials"),
+
 
 
     path('', views.landingView, name='landingPage'),

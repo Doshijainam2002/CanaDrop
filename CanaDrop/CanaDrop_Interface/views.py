@@ -7480,6 +7480,263 @@ def reset_driver_password(request, driver_id):
 
 
 
+@csrf_exempt
+def get_all_pharmacy_invoices(request):
+    """
+    Returns ALL pharmacy invoices with full details.
+    """
+    if request.method != "GET":
+        return JsonResponse(
+            {"success": False, "message": "Only GET method is allowed."},
+            status=405,
+        )
+
+    try:
+        # Fetch all invoices with related pharmacy details
+        invoices_qs = Invoice.objects.select_related("pharmacy").order_by("-created_at")
+
+        invoices_list = []
+        for inv in invoices_qs:
+            invoices_list.append({
+                "invoice_id": inv.id,
+                "pharmacy_id": inv.pharmacy.id,
+                "pharmacy_name": inv.pharmacy.name,
+
+                "period": {
+                    "start_date": str(inv.start_date),
+                    "end_date": str(inv.end_date),
+                },
+
+                "total_orders": inv.total_orders,
+                "total_amount": float(inv.total_amount),
+                "due_date": str(inv.due_date),
+                "status": inv.status,
+                "created_at": inv.created_at.strftime("%Y-%m-%d %H:%M:%S"),
+
+                "pdf_url": inv.pdf_url,
+                "stripe_payment_id": inv.stripe_payment_id,
+            })
+
+        return JsonResponse(
+            {
+                "success": True,
+                "invoices": invoices_list,
+                "count": len(invoices_list),
+            },
+            status=200,
+        )
+
+    except Exception as e:
+        return JsonResponse(
+            {"success": False, "message": "Something went wrong.", "error": str(e)},
+            status=500,
+        )
 
 
+
+@csrf_exempt
+def get_all_driver_invoices(request):
+    if request.method != "GET":
+        return JsonResponse(
+            {"success": False, "message": "Only GET method is allowed."},
+            status=405,
+        )
+
+    try:
+        invoices = DriverInvoice.objects.select_related("driver").order_by("-created_at")
+
+        invoice_list = []
+        for inv in invoices:
+            invoice_list.append({
+                "invoice_id": inv.id,
+                "driver_id": inv.driver.id,
+                "driver_name": inv.driver.name,
+                "driver_email": inv.driver.email,
+                "driver_phone_number": inv.driver.phone_number,
+
+                # Period
+                "start_date": str(inv.start_date),
+                "end_date": str(inv.end_date),
+
+                # Invoice stats
+                "total_deliveries": inv.total_deliveries,
+                "total_amount": float(inv.total_amount),
+                "due_date": str(inv.due_date),
+
+                # Status + PDF
+                "status": inv.status,
+                "pdf_url": inv.pdf_url,
+
+                # Meta
+                "created_at": inv.created_at.strftime("%Y-%m-%d %H:%M:%S"),
+            })
+
+        return JsonResponse(
+            {"success": True, "invoices": invoice_list},
+            status=200
+        )
+
+    except Exception as e:
+        return JsonResponse(
+            {"success": False, "message": "Something went wrong.", "error": str(e)},
+            status=500
+        )
+
+
+
+@csrf_exempt
+def get_payment_alerts(request):
+    """
+    Returns all payment alerts from:
+    - Pharmacy Invoices (past_due or due soon)
+    - Driver Invoices (generated & due soon or overdue)
+    """
+
+    try:
+        today = timezone.now().date()
+        upcoming_limit = today + timedelta(days=3)
+
+        alerts = []
+
+        # 🔶 1. Pharmacy Invoices — Past Due
+        pharmacy_past_due = Invoice.objects.filter(status="past_due")
+        for inv in pharmacy_past_due:
+            alerts.append({
+                "type": "pharmacy",
+                "invoice_id": inv.id,
+                "entity_name": inv.pharmacy.name,
+                "total_amount": float(inv.total_amount),
+                "status": inv.status,
+                "due_date": str(inv.due_date),
+                "days_left": (inv.due_date - today).days,  # negative
+                "pdf_url": inv.pdf_url,
+            })
+
+        # 🔶 2. Pharmacy Invoices — Due Soon (within 3 days)
+        pharmacy_due_soon = Invoice.objects.filter(
+            status="generated",
+            due_date__lte=upcoming_limit,
+            due_date__gte=today
+        )
+        for inv in pharmacy_due_soon:
+            alerts.append({
+                "type": "pharmacy",
+                "invoice_id": inv.id,
+                "entity_name": inv.pharmacy.name,
+                "total_amount": float(inv.total_amount),
+                "status": inv.status,
+                "due_date": str(inv.due_date),
+                "days_left": (inv.due_date - today).days,
+                "pdf_url": inv.pdf_url,
+            })
+
+        # 🔶 3. Driver Invoices — Overdue (generated & due_date < today)
+        driver_overdue = DriverInvoice.objects.filter(
+            status="generated",
+            due_date__lt=today
+        )
+        for inv in driver_overdue:
+            alerts.append({
+                "type": "driver",
+                "invoice_id": inv.id,
+                "entity_name": inv.driver.name,
+                "total_amount": float(inv.total_amount),
+                "status": "past_due",  # marking via business logic
+                "due_date": str(inv.due_date),
+                "days_left": (inv.due_date - today).days,
+                "pdf_url": inv.pdf_url,
+            })
+
+        # 🔶 4. Driver Invoices — Due Soon (within 3 days)
+        driver_due_soon = DriverInvoice.objects.filter(
+            status="generated",
+            due_date__lte=upcoming_limit,
+            due_date__gte=today
+        )
+        for inv in driver_due_soon:
+            alerts.append({
+                "type": "driver",
+                "invoice_id": inv.id,
+                "entity_name": inv.driver.name,
+                "total_amount": float(inv.total_amount),
+                "status": inv.status,
+                "due_date": str(inv.due_date),
+                "days_left": (inv.due_date - today).days,
+                "pdf_url": inv.pdf_url,
+            })
+
+        # 🔽 Sort by urgency — overdue first, then soonest
+        alerts.sort(key=lambda x: x["days_left"])
+
+        return JsonResponse({
+            "success": True,
+            "count": len(alerts),
+            "alerts": alerts
+        }, status=200)
+
+    except Exception as e:
+        return JsonResponse({
+            "success": False,
+            "error": str(e)
+        }, status=500)
+
+
+@csrf_exempt
+def get_monthly_financials(request):
+    """
+    Returns 3 financial metrics:
+    - revenue_this_month
+    - driver_payout_this_month
+    - net_commission (value + % of revenue)
+    """
+    try:
+        today = date.today()
+
+        # 1️⃣ Revenue this month → sum of order rate for delivered orders this month
+        revenue_this_month = (
+            DeliveryOrder.objects.filter(
+                status='delivered',
+                created_at__year=today.year,
+                created_at__month=today.month
+            ).aggregate(total=Sum('rate'))['total'] or 0
+        )
+
+        # 2️⃣ Driver payout this month → sum of driver invoices with start OR end in this month
+        driver_payout_this_month = (
+            DriverInvoice.objects.filter(
+                Q(start_date__year=today.year, start_date__month=today.month) |
+                Q(end_date__year=today.year, end_date__month=today.month)
+            ).aggregate(total=Sum('total_amount'))['total'] or 0
+        )
+
+        # Convert to float
+        revenue_float = float(revenue_this_month)
+        payout_float = float(driver_payout_this_month)
+
+        # 3️⃣ Net commission → Revenue - Payout
+        net_commission_value = revenue_float - payout_float
+
+        # % of revenue (avoid divide-by-zero)
+        if revenue_float > 0:
+            net_commission_percentage = (net_commission_value / revenue_float) * 100
+        else:
+            net_commission_percentage = 0.0
+
+        return JsonResponse(
+            {
+                "success": True,
+                "financials": {
+                    "revenue_this_month": revenue_float,
+                    "driver_payout_this_month": payout_float,
+                    "net_commission": {
+                        "value": net_commission_value,
+                        "percentage_of_revenue": net_commission_percentage,
+                    },
+                }
+            },
+            status=200,
+        )
+
+    except Exception as e:
+        return JsonResponse({"success": False, "error": str(e)}, status=500)
 
