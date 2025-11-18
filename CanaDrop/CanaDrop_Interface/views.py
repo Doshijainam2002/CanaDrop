@@ -7740,3 +7740,299 @@ def get_monthly_financials(request):
     except Exception as e:
         return JsonResponse({"success": False, "error": str(e)}, status=500)
 
+
+@csrf_exempt
+def get_contact_ticket_details(request, ticket_id=None):
+    try:
+        # --------------------------------------------------
+        # 1️⃣ CASE: RETURN ALL TICKETS
+        # --------------------------------------------------
+        if ticket_id is None:
+
+            tickets = ContactAdmin.objects.all().order_by("-created_at")
+
+            ticket_list = []
+
+            for t in tickets:
+                sender_type = "pharmacy" if t.pharmacy else "driver" if t.driver else "unknown"
+
+                sender_info = None
+                if t.pharmacy:
+                    sender_info = {
+                        "id": t.pharmacy.id,
+                        "name": t.pharmacy.name,
+                        "email": t.pharmacy.email,
+                        "phone_number": t.pharmacy.phone_number,
+                        "city": t.pharmacy.city,
+                        "active": t.pharmacy.active,
+                    }
+                elif t.driver:
+                    sender_info = {
+                        "id": t.driver.id,
+                        "name": t.driver.name,
+                        "email": t.driver.email,
+                        "phone_number": t.driver.phone_number,
+                        "vehicle_number": t.driver.vehicle_number,
+                        "active": t.driver.active,
+                    }
+
+                ticket_list.append({
+                    "ticket_id": t.id,
+                    "subject_key": t.subject,
+                    "subject": t.get_subject_display() if t.subject != "other" else t.other_subject,
+                    "status": t.status,
+                    "message": t.message,
+                    "admin_response": t.admin_response,
+                    "sender_type": sender_type,
+                    "sender": sender_info,
+                    "created_at": t.created_at.strftime("%Y-%m-%d %H:%M:%S"),
+                    "updated_at": t.updated_at.strftime("%Y-%m-%d %H:%M:%S")
+                })
+
+            return JsonResponse({"success": True, "tickets": ticket_list}, status=200)
+
+        # --------------------------------------------------
+        # 2️⃣ CASE: RETURN SINGLE TICKET
+        # --------------------------------------------------
+        ticket = ContactAdmin.objects.get(id=ticket_id)
+
+        sender_type = "pharmacy" if ticket.pharmacy else "driver" if ticket.driver else "unknown"
+
+        # sender info details
+        if ticket.pharmacy:
+            sender_info = {
+                "id": ticket.pharmacy.id,
+                "name": ticket.pharmacy.name,
+                "email": ticket.pharmacy.email,
+                "phone_number": ticket.pharmacy.phone_number,
+                "city": ticket.pharmacy.city,
+                "active": ticket.pharmacy.active,
+            }
+        elif ticket.driver:
+            sender_info = {
+                "id": ticket.driver.id,
+                "name": ticket.driver.name,
+                "email": ticket.driver.email,
+                "phone_number": ticket.driver.phone_number,
+                "vehicle_number": ticket.driver.vehicle_number,
+                "active": ticket.driver.active,
+            }
+        else:
+            sender_info = None
+
+        ticket_data = {
+            "ticket_id": ticket.id,
+            "subject_key": ticket.subject,
+            "subject": ticket.get_subject_display() if ticket.subject != "other" else ticket.other_subject,
+            "status": ticket.status,
+            "message": ticket.message,
+            "admin_response": ticket.admin_response,
+            "sender_type": sender_type,
+            "sender": sender_info,
+            "created_at": ticket.created_at.strftime("%Y-%m-%d %H:%M:%S"),
+            "updated_at": ticket.updated_at.strftime("%Y-%m-%d %H:%M:%S"),
+        }
+
+        return JsonResponse({"success": True, "ticket": ticket_data}, status=200)
+
+    except ContactAdmin.DoesNotExist:
+        return JsonResponse({"success": False, "message": "Ticket not found"}, status=404)
+
+    except Exception as e:
+        return JsonResponse({"success": False, "error": str(e)}, status=500)
+
+
+
+@csrf_exempt
+def update_ticket_status(request, ticket_id):
+    """
+    Update the status of a ContactAdmin ticket.
+
+    Expects JSON body:
+    {
+        "status": "pending" | "in_progress" | "resolved"
+    }
+    """
+    if request.method not in ["POST", "PATCH"]:
+        return JsonResponse(
+            {"success": False, "message": "Only POST or PATCH method is allowed."},
+            status=405,
+        )
+
+    # 1️⃣ Fetch ticket
+    try:
+        ticket = ContactAdmin.objects.get(id=ticket_id)
+    except ContactAdmin.DoesNotExist:
+        return JsonResponse(
+            {"success": False, "message": "Ticket not found."},
+            status=404,
+        )
+
+    # 2️⃣ Parse JSON body
+    try:
+        data = json.loads(request.body.decode("utf-8"))
+    except json.JSONDecodeError:
+        return JsonResponse(
+            {"success": False, "message": "Invalid JSON payload."},
+            status=400,
+        )
+
+    new_status = data.get("status")
+    if not new_status:
+        return JsonResponse(
+            {"success": False, "message": "Missing 'status' in request body."},
+            status=400,
+        )
+
+    # 3️⃣ Validate status
+    valid_statuses = [choice[0] for choice in ContactAdmin.STATUS_CHOICES]
+    if new_status not in valid_statuses:
+        return JsonResponse(
+            {
+                "success": False,
+                "message": "Invalid status value.",
+                "allowed_values": valid_statuses,
+            },
+            status=400,
+        )
+
+    # 4️⃣ Update & save
+    ticket.status = new_status
+    ticket.save()
+
+    # 5️⃣ Build response
+    return JsonResponse(
+        {
+            "success": True,
+            "message": "Ticket status updated successfully.",
+            "ticket": {
+                "ticket_id": ticket.id,
+                "status": ticket.status,
+                "subject_key": ticket.subject,
+                "subject": ticket.get_subject_display() if ticket.subject != "other" else ticket.other_subject,
+                "updated_at": ticket.updated_at.strftime("%Y-%m-%d %H:%M:%S"),
+            },
+        },
+        status=200,
+    )
+
+
+@csrf_exempt
+def add_admin_response(request, ticket_id):
+    """
+    Adds an admin response to a ticket.
+    Automatically sets the status to 'resolved' if not already resolved.
+
+    Expected JSON body:
+    {
+        "admin_response": "Your issue has been resolved..."
+    }
+    """
+    if request.method not in ["POST", "PATCH"]:
+        return JsonResponse(
+            {"success": False, "message": "Only POST or PATCH allowed."},
+            status=405
+        )
+
+    # 1️⃣ Fetch ticket
+    try:
+        ticket = ContactAdmin.objects.get(id=ticket_id)
+    except ContactAdmin.DoesNotExist:
+        return JsonResponse(
+            {"success": False, "message": "Ticket not found."},
+            status=404
+        )
+
+    # 2️⃣ Parse JSON
+    try:
+        data = json.loads(request.body.decode("utf-8"))
+    except json.JSONDecodeError:
+        return JsonResponse(
+            {"success": False, "message": "Invalid JSON payload."},
+            status=400
+        )
+
+    admin_response = data.get("admin_response")
+    if not admin_response:
+        return JsonResponse(
+            {"success": False, "message": "Missing 'admin_response'."},
+            status=400
+        )
+
+    # 3️⃣ Update fields
+    ticket.admin_response = admin_response
+
+    # Auto-resolve if not resolved
+    if ticket.status != "resolved":
+        ticket.status = "resolved"
+
+    ticket.save()
+
+    # Build sender info
+    sender_type = "Pharmacy" if ticket.pharmacy else "Driver"
+    sender_info = {
+        "type": sender_type,
+        "id": ticket.pharmacy.id if ticket.pharmacy else ticket.driver.id,
+        "name": ticket.pharmacy.name if ticket.pharmacy else ticket.driver.name,
+        "email": ticket.pharmacy.email if ticket.pharmacy else ticket.driver.email,
+    }
+
+    return JsonResponse(
+        {
+            "success": True,
+            "message": "Response added and ticket resolved.",
+            "ticket": {
+                "ticket_id": ticket.id,
+                "subject_key": ticket.subject,
+                "subject": ticket.other_subject if ticket.subject == "other" else ticket.get_subject_display(),
+                "message": ticket.message,
+                "admin_response": ticket.admin_response,
+                "status": ticket.status,
+                "sender": sender_info,
+                "created_at": ticket.created_at.strftime("%Y-%m-%d %H:%M:%S"),
+                "updated_at": ticket.updated_at.strftime("%Y-%m-%d %H:%M:%S"),
+            },
+        },
+        status=200
+    )
+
+
+@csrf_exempt
+def get_ticket_status_metrics(request):
+    """
+    Returns counts of tickets by status:
+    - pending
+    - in_progress
+    - resolved
+    """
+    if request.method != "GET":
+        return JsonResponse(
+            {"success": False, "message": "Only GET method is allowed."},
+            status=405,
+        )
+
+    try:
+        pending_count = ContactAdmin.objects.filter(status="pending").count()
+        in_progress_count = ContactAdmin.objects.filter(status="in_progress").count()
+        resolved_count = ContactAdmin.objects.filter(status="resolved").count()
+        total_count = pending_count + in_progress_count + resolved_count
+
+        return JsonResponse(
+            {
+                "success": True,
+                "metrics": {
+                    "pending_tickets": pending_count,
+                    "in_progress_tickets": in_progress_count,
+                    "resolved_tickets": resolved_count,
+                    "total_tickets": total_count,
+                },
+            },
+            status=200,
+        )
+
+    except Exception as e:
+        return JsonResponse(
+            {"success": False, "message": "Something went wrong.", "error": str(e)},
+            status=500,
+        )
+

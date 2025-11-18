@@ -80,6 +80,11 @@ urlpatterns = [
     path("api/admin/driver-invoices/all/", views.get_all_driver_invoices, name="AdminFetchAllDriverInvoices"),
     path("api/admin/payment-alerts/", views.get_payment_alerts, name="AdminFetchAllPaymentAlerts"),
     path("api/admin/financials/month/", views.get_monthly_financials, name="AdminMonthlyFinancials"),
+    path("api/admin/support/tickets/", views.get_contact_ticket_details, name="AdminSupportTicketDetails"),
+    path("api/admin/support/tickets/<int:ticket_id>/", views.get_contact_ticket_details, name="AdminSupportTicketDetail"),
+    path("api/admin/support/tickets/<int:ticket_id>/status/",views.update_ticket_status,name="AdminUpdateTicketStatus"),
+    path("api/admin/support/tickets/<int:ticket_id>/respond/", views.add_admin_response, name="AdminAddTicketResponse"),
+    path("api/admin/support/tickets/metrics/", views.get_ticket_status_metrics, name="AdminSupportTicketMetrics"),
 
 
 

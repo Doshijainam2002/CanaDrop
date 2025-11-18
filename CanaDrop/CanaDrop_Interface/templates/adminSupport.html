@@ -84,9 +84,7 @@
           <h1 class="text-2xl font-bold text-white">Support & Contact Tickets</h1>
           <p class="text-sm text-neutral-400">Manage support messages from pharmacies and drivers</p>
         </div>
-        <button class="px-4 py-2 bg-gradient-to-r from-orange-600 to-orange-500 text-white rounded-lg text-sm font-medium hover:from-orange-500 hover:to-orange-400 transition">
-          Refresh Tickets
-        </button>
+
       </header>
 
       <!-- Ticket Filters -->
@@ -96,10 +94,10 @@
           <div class="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-5 gap-4">
             <input type="text" placeholder="Search by Ticket ID or Sender" class="bg-neutral-900 border border-neutral-700 rounded-lg px-3 py-2 text-sm w-full focus:ring-2 focus:ring-orange-500 focus:outline-none"/>
             <select class="bg-neutral-900 border border-neutral-700 rounded-lg px-3 py-2 text-sm text-neutral-300 focus:ring-2 focus:ring-orange-500 focus:outline-none">
-              <option>Status (All)</option>
-              <option>Pending</option>
-              <option>In Progress</option>
-              <option>Resolved</option>
+              <option value="">Status (All)</option>
+              <option value="pending">Pending</option>
+              <option value="in_progress">In Progress</option>
+              <option value="resolved">Resolved</option>
             </select>
             <select class="bg-neutral-900 border border-neutral-700 rounded-lg px-3 py-2 text-sm text-neutral-300 focus:ring-2 focus:ring-orange-500 focus:outline-none">
               <option>Subject (All)</option>
@@ -108,9 +106,7 @@
               <option>Technical</option>
               <option>Other</option>
             </select>
-            <button class="px-4 py-2 bg-gradient-to-r from-orange-600 to-orange-500 text-white rounded-lg text-sm font-medium hover:from-orange-500 hover:to-orange-400 transition">
-              Apply Filters
-            </button>
+
           </div>
         </div>
       </section>
@@ -144,7 +140,6 @@
                   </td>
                   <td class="px-6 py-4 space-x-2">
                     <button class="text-xs text-orange-400 border border-orange-600/40 px-3 py-1 rounded hover:bg-orange-600/20">View</button>
-                    <button class="text-xs text-green-400 border border-green-600/40 px-3 py-1 rounded hover:bg-green-600/20">Resolve</button>
                   </td>
                 </tr>
               </tbody>
@@ -158,14 +153,14 @@
         <div class="bg-neutral-800/80 border border-neutral-700 rounded-xl p-6">
           <h2 class="text-lg font-semibold text-white mb-4">Ticket Details</h2>
           <div class="space-y-2 text-sm">
-            <p><span class="text-neutral-400">Ticket ID:</span> TCK-1045</p>
-            <p><span class="text-neutral-400">Sender:</span> HealthPlus Pharmacy (Pharmacy)</p>
-            <p><span class="text-neutral-400">Email:</span> support@healthplus.ca</p>
-            <p><span class="text-neutral-400">Subject:</span> Invoice Dispute</p>
+            <p><span class="text-neutral-400">Ticket ID:</span> Loading...</p>
+            <p><span class="text-neutral-400">Sender:</span> Loading...</p>
+            <p><span class="text-neutral-400">Email:</span> Loading...</p>
+            <p><span class="text-neutral-400">Subject:</span> Loading...</p>
           </div>
           <div class="mt-4 bg-neutral-900 border border-neutral-700 rounded-lg p-3 text-sm h-40 overflow-y-auto">
-            <p class="text-neutral-300 mb-2"><span class="text-orange-400 font-medium">User:</span> We believe an extra $20 was charged on Invoice INV-P-203.</p>
-            <p class="text-neutral-300"><span class="text-green-400 font-medium">Admin:</span> Reviewing your ticket now.</p>
+            <p class="text-neutral-300 mb-2"><span class="text-orange-400 font-medium">User:</span> Loading...</p>
+            <p class="text-neutral-300"><span class="text-green-400 font-medium">Admin:</span> Loading...</p>
           </div>
           <textarea placeholder="Type admin response..." class="mt-4 bg-neutral-900 border border-neutral-700 rounded-lg w-full text-sm p-2 text-neutral-200 focus:ring-2 focus:ring-orange-500 focus:outline-none" rows="3"></textarea>
           <div class="flex justify-between mt-3">
@@ -198,20 +193,536 @@
         </div>
       </section>
 
-      <script>
-        document.getElementById("logoutBtn").addEventListener("click", function (event) {
+<script>
+document.getElementById("logoutBtn").addEventListener("click", function (event) {
   event.preventDefault();
-
-  // 🧹 Remove adminId cookie
   document.cookie = "adminId=; path=/; expires=Thu, 01 Jan 1970 00:00:00 UTC; SameSite=Lax;";
-
-  // Optional: clear JWT or any other related cookies if used
   document.cookie = "jwtToken=; path=/; expires=Thu, 01 Jan 1970 00:00:00 UTC; SameSite=Lax;";
-
-  // 🚀 Redirect to admin login page
   window.location.href = "/adminLogin/";
 });
-      </script>
+
+// ==================== STATE MANAGEMENT ====================
+let allTickets = [];
+let filteredTickets = [];
+let currentPage = 1;
+const itemsPerPage = 10;
+let selectedTicketId = null;
+let currentTicketStatus = null;
+
+// ==================== NOTIFICATION SYSTEM ====================
+function showNotification(message, type = 'info') {
+  // Remove existing notification if any
+  const existing = document.querySelector('.custom-notification');
+  if (existing) existing.remove();
+
+  const notification = document.createElement('div');
+  notification.className = 'custom-notification fixed top-4 right-4 px-6 py-4 rounded-lg shadow-lg z-50 flex items-center gap-3 animate-slide-in';
+  
+  const colors = {
+    success: 'bg-green-600 text-white',
+    error: 'bg-red-600 text-white',
+    info: 'bg-blue-600 text-white',
+    warning: 'bg-yellow-600 text-white'
+  };
+  
+  notification.className += ` ${colors[type] || colors.info}`;
+  
+  const icons = {
+    success: '✓',
+    error: '✕',
+    info: 'ℹ',
+    warning: '⚠'
+  };
+  
+  notification.innerHTML = `
+    <span class="text-xl font-bold">${icons[type] || icons.info}</span>
+    <span class="text-sm font-medium">${message}</span>
+  `;
+  
+  document.body.appendChild(notification);
+  
+  setTimeout(() => {
+    notification.style.opacity = '0';
+    notification.style.transform = 'translateX(100%)';
+    setTimeout(() => notification.remove(), 300);
+  }, 4000);
+}
+
+// Add animation styles
+const style = document.createElement('style');
+style.textContent = `
+  .animate-slide-in {
+    animation: slideIn 0.3s ease-out;
+  }
+  @keyframes slideIn {
+    from {
+      transform: translateX(100%);
+      opacity: 0;
+    }
+    to {
+      transform: translateX(0);
+      opacity: 1;
+    }
+  }
+  .custom-notification {
+    transition: all 0.3s ease;
+  }
+`;
+document.head.appendChild(style);
+
+// ==================== POPULATE SUBJECT FILTER ====================
+const subjectOptions = {
+  'account_creation': 'Account Creation Issue',
+  'login_problem': 'Login / Authentication Problem',
+  'password_reset': 'Password Reset Issue',
+  'profile_update': 'Profile / Information Update Issue',
+  'order_placement': 'Order Placement Issue',
+  'order_cancellation': 'Order Cancellation Issue',
+  'order_tracking': 'Order Tracking / Status Issue',
+  'order_payment': 'Order Payment / Rate Issue',
+  'pickup_issue': 'Pickup Issue by Driver',
+  'delivery_delay': 'Delivery Delay',
+  'delivery_incorrect': 'Incorrect Delivery / Item Issue',
+  'driver_unavailable': 'Driver Unavailable / Assignment Issue',
+  'invoice_generated': 'Invoice Generated Issue',
+  'invoice_payment': 'Invoice Payment / Stripe Issue',
+  'driver_invoice': 'Driver Invoice / Payment Issue',
+  'technical_bug': 'Technical / App Bug',
+  'cloud_storage': 'Cloud / Image Upload Issue',
+  'notification': 'Notification / Alert Issue',
+  'feedback': 'Feedback / Suggestion',
+  'other': 'Other'
+};
+
+// ==================== DOM ELEMENTS ====================
+const searchInput = document.querySelector('input[placeholder="Search by Ticket ID or Sender"]');
+const statusFilter = document.querySelectorAll('select')[0];
+const subjectFilter = document.querySelectorAll('select')[1];
+const applyFiltersBtn = document.querySelector('button');
+const ticketsTableBody = document.querySelector('tbody');
+
+// ==================== POPULATE SUBJECT DROPDOWN ====================
+function populateSubjectFilter() {
+  subjectFilter.innerHTML = '<option value="">Subject (All)</option>';
+  for (const [key, label] of Object.entries(subjectOptions)) {
+    const option = document.createElement('option');
+    option.value = key;
+    option.textContent = label;
+    subjectFilter.appendChild(option);
+  }
+}
+
+// ==================== LOAD ALL TICKETS ====================
+async function loadAllTickets() {
+  try {
+    const response = await fetch('/api/admin/support/tickets/');
+    
+    if (!response.ok) {
+      throw new Error(`HTTP error! status: ${response.status}`);
+    }
+    
+    const data = await response.json();
+    
+    if (data.success) {
+      allTickets = data.tickets;
+      filteredTickets = [...allTickets];
+      currentPage = 1;
+      renderTickets();
+      updatePagination();
+    } else {
+      console.error('Failed to load tickets:', data.message);
+      showEmptyState('Failed to load tickets');
+      showNotification('Failed to load tickets', 'error');
+    }
+  } catch (error) {
+    console.error('Error loading tickets:', error);
+    showEmptyState('Error loading tickets');
+    showNotification('Error loading tickets', 'error');
+  }
+}
+
+// ==================== FILTER TICKETS ====================
+function filterTickets() {
+  const searchTerm = searchInput.value.toLowerCase().trim();
+  const statusValue = statusFilter.value.toLowerCase();
+  const subjectValue = subjectFilter.value;
+  
+  filteredTickets = allTickets.filter(ticket => {
+    const matchesSearch = searchTerm === '' || 
+      `TCK-${ticket.ticket_id}`.toLowerCase().includes(searchTerm) ||
+      (ticket.sender?.name || '').toLowerCase().includes(searchTerm);
+    
+    const matchesStatus = statusValue === 'status (all)' || statusValue === '' ||
+      ticket.status === statusValue;
+    
+    const matchesSubject = subjectValue === '' ||
+      ticket.subject_key === subjectValue;
+    
+    return matchesSearch && matchesStatus && matchesSubject;
+  });
+  
+  currentPage = 1;
+  renderTickets();
+  updatePagination();
+}
+
+// ==================== RENDER TICKETS ====================
+function renderTickets() {
+  const start = (currentPage - 1) * itemsPerPage;
+  const end = start + itemsPerPage;
+  const paginatedTickets = filteredTickets.slice(start, end);
+  
+  if (paginatedTickets.length === 0) {
+    showEmptyState('No tickets found');
+    return;
+  }
+  
+  ticketsTableBody.innerHTML = paginatedTickets.map(ticket => {
+    const statusBadge = getStatusBadge(ticket.status);
+    const senderName = ticket.sender?.name || 'Unknown';
+    const ticketId = `TCK-${ticket.ticket_id}`;
+    const truncatedMessage = ticket.message.length > 50 
+      ? ticket.message.substring(0, 50) + '...' 
+      : ticket.message;
+    
+    return `
+      <tr class="hover:bg-neutral-700/50 transition">
+        <td class="px-6 py-4 text-neutral-100 font-medium">${ticketId}</td>
+        <td class="px-6 py-4 text-neutral-300">${senderName}</td>
+        <td class="px-6 py-4 text-neutral-300">${ticket.subject}</td>
+        <td class="px-6 py-4 text-neutral-400 truncate max-w-xs" title="${ticket.message}">${truncatedMessage}</td>
+        <td class="px-6 py-4">${statusBadge}</td>
+        <td class="px-6 py-4 space-x-2">
+          <button onclick="viewTicketDetails(${ticket.ticket_id})" class="text-xs text-orange-400 border border-orange-600/40 px-3 py-1 rounded hover:bg-orange-600/20">
+            View
+          </button>
+        </td>
+      </tr>
+    `;
+  }).join('');
+}
+
+// ==================== SHOW EMPTY STATE ====================
+function showEmptyState(message) {
+  ticketsTableBody.innerHTML = `
+    <tr>
+      <td colspan="6" class="px-6 py-8 text-center text-neutral-400">
+        ${message}
+      </td>
+    </tr>
+  `;
+}
+
+// ==================== GET STATUS BADGE ====================
+function getStatusBadge(status) {
+  const badges = {
+    'pending': 'bg-yellow-500/20 text-yellow-400 border-yellow-600/40',
+    'in_progress': 'bg-blue-500/20 text-blue-400 border-blue-600/40',
+    'resolved': 'bg-green-500/20 text-green-400 border-green-600/40'
+  };
+  
+  const label = status.replace('_', ' ').replace(/\b\w/g, l => l.toUpperCase());
+  const classes = badges[status] || 'bg-neutral-500/20 text-neutral-400 border-neutral-600/40';
+  
+  return `<span class="inline-flex px-3 py-1 text-xs font-medium rounded-full ${classes} border">${label}</span>`;
+}
+
+// ==================== PAGINATION ====================
+function updatePagination() {
+  const totalPages = Math.ceil(filteredTickets.length / itemsPerPage);
+  const start = (currentPage - 1) * itemsPerPage + 1;
+  const end = Math.min(currentPage * itemsPerPage, filteredTickets.length);
+  
+  // Add pagination UI if it doesn't exist
+  let paginationDiv = document.querySelector('.pagination-controls');
+  if (!paginationDiv) {
+    paginationDiv = document.createElement('div');
+    paginationDiv.className = 'pagination-controls flex items-center justify-between px-6 py-4 border-t border-neutral-700';
+    paginationDiv.innerHTML = `
+      <p class="text-sm text-neutral-400">
+        Showing <span id="ticketStart">0</span>-<span id="ticketEnd">0</span> of <span id="ticketTotal">0</span>
+      </p>
+      <div class="flex gap-2">
+        <button id="prevBtn" class="px-3 py-1 text-sm border border-neutral-600 rounded hover:bg-neutral-700 disabled:opacity-50 disabled:cursor-not-allowed">
+          Previous
+        </button>
+        <button id="nextBtn" class="px-3 py-1 text-sm border border-neutral-600 rounded hover:bg-neutral-700 disabled:opacity-50 disabled:cursor-not-allowed">
+          Next
+        </button>
+      </div>
+    `;
+    document.querySelector('.overflow-x-auto').parentElement.appendChild(paginationDiv);
+    
+    // Add event listeners
+    document.getElementById('prevBtn').addEventListener('click', () => {
+      if (currentPage > 1) {
+        currentPage--;
+        renderTickets();
+        updatePagination();
+      }
+    });
+    
+    document.getElementById('nextBtn').addEventListener('click', () => {
+      if (currentPage < totalPages) {
+        currentPage++;
+        renderTickets();
+        updatePagination();
+      }
+    });
+  }
+  
+  document.getElementById('ticketStart').textContent = filteredTickets.length > 0 ? start : 0;
+  document.getElementById('ticketEnd').textContent = end;
+  document.getElementById('ticketTotal').textContent = filteredTickets.length;
+  
+  document.getElementById('prevBtn').disabled = currentPage === 1;
+  document.getElementById('nextBtn').disabled = currentPage >= totalPages;
+}
+
+// ==================== VIEW TICKET DETAILS ====================
+async function viewTicketDetails(ticketId) {
+  try {
+    const response = await fetch(`/api/admin/support/tickets/${ticketId}/`);
+    
+    if (!response.ok) {
+      throw new Error(`HTTP error! status: ${response.status}`);
+    }
+    
+    const data = await response.json();
+    
+    if (data.success) {
+      selectedTicketId = ticketId;
+      currentTicketStatus = data.ticket.status;
+      displayTicketDetails(data.ticket);
+    } else {
+      showNotification('Failed to load ticket details', 'error');
+    }
+  } catch (error) {
+    console.error('Error loading ticket details:', error);
+    showNotification('Error loading ticket details', 'error');
+  }
+}
+
+// ==================== DISPLAY TICKET DETAILS ====================
+function displayTicketDetails(ticket) {
+  const detailsSection = document.querySelector('.lg\\:grid-cols-2').children[0];
+  
+  const senderName = ticket.sender?.name || 'Unknown';
+  const senderEmail = ticket.sender?.email || 'N/A';
+  const senderType = ticket.sender_type.charAt(0).toUpperCase() + ticket.sender_type.slice(1);
+  
+  const adminResponseHtml = ticket.admin_response 
+    ? `<p class="text-neutral-300"><span class="text-green-400 font-medium">Admin:</span> ${ticket.admin_response}</p>`
+    : '';
+  
+  // Determine if textarea should be disabled
+  const isResolved = ticket.status === 'resolved';
+  const canTypeResponse = ticket.status === 'in_progress' && !ticket.admin_response;
+  const textareaDisabled = !canTypeResponse;
+  
+  // Show helper text based on status
+  let helperText = '';
+  if (ticket.status === 'pending') {
+    helperText = '<p class="text-xs text-yellow-400 mt-1">⚠️ Change status to "In Progress" to respond</p>';
+  } else if (ticket.status === 'resolved') {
+    helperText = '<p class="text-xs text-green-400 mt-1">✓ This ticket is resolved</p>';
+  } else if (ticket.admin_response) {
+    helperText = '<p class="text-xs text-blue-400 mt-1">ℹ️ Response already sent</p>';
+  }
+  
+  detailsSection.innerHTML = `
+    <h2 class="text-lg font-semibold text-white mb-4">Ticket Details</h2>
+    <div class="space-y-2 text-sm">
+      <p><span class="text-neutral-400">Ticket ID:</span> TCK-${ticket.ticket_id}</p>
+      <p><span class="text-neutral-400">Sender:</span> ${senderName} (${senderType})</p>
+      <p><span class="text-neutral-400">Email:</span> ${senderEmail}</p>
+      <p><span class="text-neutral-400">Subject:</span> ${ticket.subject}</p>
+      <p><span class="text-neutral-400">Status:</span> ${ticket.status.replace('_', ' ').toUpperCase()}</p>
+      <p><span class="text-neutral-400">Created:</span> ${ticket.created_at}</p>
+    </div>
+    <div class="mt-4 bg-neutral-900 border border-neutral-700 rounded-lg p-3 text-sm h-40 overflow-y-auto">
+      <p class="text-neutral-300 mb-2"><span class="text-orange-400 font-medium">User:</span> ${ticket.message}</p>
+      ${adminResponseHtml}
+    </div>
+    <div>
+      <textarea id="adminResponseTextarea" placeholder="${textareaDisabled ? (isResolved ? 'Ticket is resolved' : 'Change status to In Progress to respond') : 'Type admin response...'}" class="mt-4 bg-neutral-900 border border-neutral-700 rounded-lg w-full text-sm p-2 text-neutral-200 focus:ring-2 focus:ring-orange-500 focus:outline-none disabled:opacity-50 disabled:cursor-not-allowed" rows="3" ${textareaDisabled ? 'disabled' : ''}></textarea>
+      ${helperText}
+    </div>
+    <div class="flex justify-between mt-3">
+      ${!isResolved ? `
+        <button id="sendResponseBtn" onclick="sendAdminResponse()" class="px-3 py-2 bg-gradient-to-r from-orange-600 to-orange-500 text-white text-xs rounded-lg hover:from-orange-500 hover:to-orange-400 disabled:opacity-50 disabled:cursor-not-allowed" ${ticket.admin_response ? 'disabled' : ''}>
+          ${ticket.admin_response ? 'Response Sent' : 'Send Response'}
+        </button>
+      ` : '<div></div>'}
+      <select id="ticketStatusSelect" onchange="updateTicketStatus()" class="bg-neutral-900 border border-neutral-700 rounded-lg px-3 py-2 text-xs text-neutral-300 focus:ring-2 focus:ring-orange-500 focus:outline-none">
+        <option value="pending" ${ticket.status === 'pending' ? 'selected' : ''}>Pending</option>
+        <option value="in_progress" ${ticket.status === 'in_progress' ? 'selected' : ''}>In Progress</option>
+        <option value="resolved" ${ticket.status === 'resolved' ? 'selected' : ''}>Resolved</option>
+      </select>
+    </div>
+  `;
+}
+
+// ==================== UPDATE TICKET STATUS ====================
+async function updateTicketStatus() {
+  if (!selectedTicketId) {
+    showNotification('No ticket selected', 'error');
+    return;
+  }
+  
+  const statusSelect = document.getElementById('ticketStatusSelect');
+  const newStatus = statusSelect.value;
+  
+  if (newStatus === currentTicketStatus) {
+    return; // No change
+  }
+  
+  try {
+    const response = await fetch(`/api/admin/support/tickets/${selectedTicketId}/status/`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        status: newStatus
+      })
+    });
+    
+    const data = await response.json();
+    
+    if (data.success) {
+      showNotification('Ticket status updated successfully', 'success');
+      currentTicketStatus = newStatus;
+      
+      // Refresh ticket details
+      await viewTicketDetails(selectedTicketId);
+      
+      // Refresh ticket list to show updated status
+      await loadAllTickets();
+      
+      // Refresh analytics
+      await loadTicketAnalytics();
+    } else {
+      showNotification(data.message || 'Failed to update status', 'error');
+      // Revert dropdown
+      statusSelect.value = currentTicketStatus;
+    }
+  } catch (error) {
+    console.error('Error updating ticket status:', error);
+    showNotification('Error updating ticket status', 'error');
+    // Revert dropdown
+    statusSelect.value = currentTicketStatus;
+  }
+}
+
+// ==================== SEND ADMIN RESPONSE ====================
+async function sendAdminResponse() {
+  if (!selectedTicketId) {
+    showNotification('No ticket selected', 'error');
+    return;
+  }
+  
+  const textarea = document.getElementById('adminResponseTextarea');
+  const responseText = textarea.value.trim();
+  
+  if (!responseText) {
+    showNotification('Please enter a response', 'warning');
+    return;
+  }
+  
+  const sendBtn = document.getElementById('sendResponseBtn');
+  sendBtn.disabled = true;
+  sendBtn.textContent = 'Sending...';
+  
+  try {
+    const response = await fetch(`/api/admin/support/tickets/${selectedTicketId}/respond/`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        admin_response: responseText
+      })
+    });
+    
+    const data = await response.json();
+    
+    if (data.success) {
+      showNotification('Response sent successfully', 'success');
+      
+      // Refresh ticket details
+      await viewTicketDetails(selectedTicketId);
+      
+      // Refresh ticket list
+      await loadAllTickets();
+      
+      // Refresh analytics
+      await loadTicketAnalytics();
+    } else {
+      showNotification(data.message || 'Failed to send response', 'error');
+      sendBtn.disabled = false;
+      sendBtn.textContent = 'Send Response';
+    }
+  } catch (error) {
+    console.error('Error sending response:', error);
+    showNotification('Error sending response', 'error');
+    sendBtn.disabled = false;
+    sendBtn.textContent = 'Send Response';
+  }
+}
+
+// ==================== LOAD TICKET ANALYTICS ====================
+async function loadTicketAnalytics() {
+  try {
+    const response = await fetch('/api/admin/support/tickets/metrics/');
+    
+    if (!response.ok) {
+      throw new Error(`HTTP error! status: ${response.status}`);
+    }
+    
+    const data = await response.json();
+    
+    if (data.success) {
+      const metrics = data.metrics;
+      
+      // Update analytics section
+      const analyticsCards = document.querySelectorAll('.lg\\:grid-cols-2 > div:last-child .grid > div');
+      
+      if (analyticsCards.length >= 3) {
+        // Total Tickets
+        analyticsCards[0].querySelector('.text-2xl').textContent = metrics.total_tickets;
+        
+        // Resolved
+        analyticsCards[1].querySelector('.text-2xl').textContent = metrics.resolved_tickets;
+        
+        // Pending + In Progress
+        const pendingInProgress = metrics.pending_tickets + metrics.in_progress_tickets;
+        analyticsCards[2].querySelector('.text-2xl').textContent = pendingInProgress;
+      }
+    } else {
+      console.error('Failed to load analytics:', data.message);
+    }
+  } catch (error) {
+    console.error('Error loading ticket analytics:', error);
+  }
+}
+
+// ==================== EVENT LISTENERS ====================
+applyFiltersBtn.addEventListener('click', filterTickets);
+searchInput.addEventListener('input', filterTickets);
+statusFilter.addEventListener('change', filterTickets);
+subjectFilter.addEventListener('change', filterTickets);
+
+// ==================== INITIALIZATION ====================
+populateSubjectFilter();
+loadAllTickets();
+loadTicketAnalytics();
+
+// Make functions available globally
+window.viewTicketDetails = viewTicketDetails;
+window.updateTicketStatus = updateTicketStatus;
+window.sendAdminResponse = sendAdminResponse;
+</script>
     </main>
   </div>
 </body>
