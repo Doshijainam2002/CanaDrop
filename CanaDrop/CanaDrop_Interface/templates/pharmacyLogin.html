@@ -3,8 +3,8 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Pharmacy Login - CanaDrop</title>
-    <link rel="icon" href="https://i.postimg.cc/YqYBPWJv/Website-Logo-Background.png">
+    <title>Pharmacy Login - CanaLogistiX</title>
+    <link rel="icon" href="https://canalogistix.s3.us-east-2.amazonaws.com/Logo/CanaLogistiX_Logo_BG.png">
     <script src="https://cdn.tailwindcss.com"></script>
 </head>
 <body class="min-h-screen bg-gradient-to-br from-teal-50 to-cyan-100 flex items-center justify-center p-4">
@@ -12,7 +12,7 @@
         <div class="bg-white rounded-2xl shadow-2xl p-8 backdrop-blur-sm">
             <!-- Logo -->
             <div class="text-center mb-8">
-                <img src="https://i.postimg.cc/d00XJkSj/Website-Logo-No-Background.png" alt="CanaDrop Logo" class="h-16 mx-auto mb-4">
+                <img src="https://canalogistix.s3.us-east-2.amazonaws.com/Logo/CanaLogistiX_Logo_NOBG.png" alt="CanaLogistiX Logo" class="h-20 sm:h-24 md:h-28 mx-auto mb-6">
                 <h1 class="text-2xl font-bold text-gray-800 mb-2">Welcome Back</h1>
                 <p class="text-gray-600">Sign in to your pharmacy account</p>
             </div>
@@ -60,7 +60,7 @@
                 </button>
 
                 <p class="mt-4 text-center text-sm">
-                <span class="text-gray-600">New to CanaDrop?</span>
+                <span class="text-gray-600">New to CanaLogistiX?</span>
                 <a href="/pharmacyRegister/" class="ml-2 text-teal-600 hover:text-teal-700 font-medium">
                     Register now
                 </a>
@@ -72,7 +72,7 @@
 
         <!-- Copyright -->
         <div class="text-center mt-8">
-            <p class="text-sm text-gray-500">© 2025 Pharmacy Logic. All rights reserved.</p>
+            <p class="text-sm text-gray-500">© 2024 CanaLogistiX - Cana Group of Companies. All rights reserved.</p>
         </div>
     </div>
 
@@ -172,7 +172,7 @@
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/>
                     </svg>
                     <h3 class="text-xl font-bold text-gray-800 mb-2">Login Successful!</h3>
-                    <p class="text-gray-600 mb-4">Welcome back to CanaDrop</p>
+                    <p class="text-gray-600 mb-4">Welcome back to CanaLogistiX</p>
                     <button onclick="closeModal()" class="bg-green-500 text-white px-6 py-2 rounded-lg hover:bg-green-600 transition-colors">
                         Continue
                     </button>
@@ -196,6 +196,21 @@
         function closeModal() {
             document.getElementById('modal').classList.add('hidden');
         }
+
+        // Trigger login on Enter key in email or password field
+        const emailInput = document.getElementById('email');
+        const passwordInput = document.getElementById('password');
+
+        [emailInput, passwordInput].forEach(input => {
+            input.addEventListener('keydown', function (e) {
+                if (e.key === 'Enter') {
+                    e.preventDefault(); // prevent form submit / page reload
+                    handleLogin();      // call your existing login function
+                }
+            });
+        });
+
+
     </script>
 </body>
 </html>
