@@ -1,68 +1,116 @@
-from django.shortcuts import render
-from django.views.decorators.csrf import csrf_exempt
-from django.http import JsonResponse
+# Standard Library
+import hashlib
+import io
 import json
-from CanaDrop_Interface.models import *
-from django.utils.dateparse import parse_date
-from django.conf import settings
 import logging
+import os
+import random
+from collections import defaultdict
+from concurrent.futures import ThreadPoolExecutor, as_completed
+from datetime import date, datetime, timedelta
+from decimal import Decimal, InvalidOperation
+from io import BytesIO
+from itertools import chain
+from random import sample
+
+# Third-Party Libraries
+import googlemaps
+import pytz
 import requests
-from django.db import transaction, connection
-from decimal import Decimal
-from django.views.decorators.http import require_http_methods
-from django.shortcuts import get_object_or_404
-from django.http import JsonResponse
-from django.views.decorators.csrf import csrf_exempt
-from django.views.decorators.http import require_http_methods
-from django.shortcuts import get_object_or_404
-from django.conf import settings
-from .models import Pharmacy, DeliveryOrder, OrderImage, OrderTracking, Driver
-import json
-import logging
-import os
+import stripe
 from google.cloud import storage
-from datetime import timedelta
-from django.http import JsonResponse, HttpResponseBadRequest
-import os
-from datetime import timedelta
-from decimal import Decimal
-from django.http import HttpResponseBadRequest, JsonResponse
-from django.shortcuts import get_object_or_404
-from django.views.decorators.csrf import csrf_exempt
-from django.conf import settings
-from django.core.files.storage import default_storage
-from django.core.files.base import ContentFile
-from reportlab.lib.pagesizes import letter
+from google.oauth2 import service_account
+from ortools.constraint_solver import pywrapcp, routing_enums_pb2
+from reportlab.lib import colors
+from reportlab.lib.enums import TA_CENTER, TA_LEFT, TA_RIGHT
+from reportlab.lib.pagesizes import A4, letter
 from reportlab.lib.styles import getSampleStyleSheet, ParagraphStyle
 from reportlab.lib.units import inch
-from reportlab.lib import colors
-from reportlab.platypus import SimpleDocTemplate, Table, TableStyle, Paragraph, Spacer, Image
-from reportlab.lib.enums import TA_CENTER, TA_RIGHT, TA_LEFT
-from google.cloud import storage
-import io
-import pytz
-from datetime import timedelta, date, datetime
-from django.http import JsonResponse
-from django.views.decorators.csrf import csrf_exempt
-from django.views.decorators.http import require_http_methods
-from django.core.exceptions import ValidationError
-import json
-from django.conf import settings
-from google.cloud import storage
-from django.contrib.auth.hashers import check_password, make_password
-from django.db import transaction, IntegrityError
-from django.utils import timezone
-from .models import (
-    Pharmacy, Driver, DeliveryOrder, OrderImage, OrderTracking,
-    Invoice, DriverInvoice, ContactAdmin, AdminUser, DeliveryDistanceRate
+from reportlab.platypus import (
+    SimpleDocTemplate, Paragraph, Spacer, Table, TableStyle, Image
 )
+
+# Django Core
+from django.conf import settings
+from django.contrib.auth.hashers import check_password, make_password
+from django.core.cache import cache
+from django.core.exceptions import ValidationError
+from django.core.files.base import ContentFile
+from django.core.files.storage import default_storage
+from django.core.mail import EmailMessage, EmailMultiAlternatives, get_connection
+from django.core.signing import BadSignature, SignatureExpired, dumps, loads
+from django.core.validators import validate_email
+from django.db import IntegrityError, transaction, connection
+from django.db.models import Count, Sum, Q
+from django.http import (
+    HttpRequest, HttpResponse, HttpResponseBadRequest,
+    HttpResponseNotAllowed, JsonResponse
+)
+from django.shortcuts import get_object_or_404, render
+from django.utils import timezone
+from django.utils.dateparse import parse_date
+from django.views.decorators.csrf import csrf_exempt
+from django.views.decorators.http import require_GET, require_POST, require_http_methods
+from django.utils.timezone import now
+
+# Local App Models
+from .models import *
 
 
 
 # Add this for better error logging
 logger = logging.getLogger(__name__)
 
+#Helper Functions for Email
+def _send_html_email_help_desk(subject: str, to_email: str, html: str, text_fallback: str = " "):
+    from_email = settings.EMAIL_HELP_DESK
+    connection = get_connection(
+        username=from_email,
+        password=settings.EMAIL_CREDENTIALS[from_email],
+        fail_silently=False,
+    )
+    msg = EmailMessage(subject=subject, body=html, from_email=from_email, to=[to_email], connection=connection)
+    msg.content_subtype = "html"
+    msg.send(fail_silently=False)
 
+
+def _send_html_email_admin_office(subject: str, to_email: str, html: str, text_fallback: str = " "):
+    from_email = settings.EMAIL_ADMIN_OFFICE
+    connection = get_connection(
+        username=from_email,
+        password=settings.EMAIL_CREDENTIALS[from_email],
+        fail_silently=False,
+    )
+    msg = EmailMessage(subject=subject, body=html, from_email=from_email, to=[to_email], connection=connection)
+    msg.content_subtype = "html"
+    msg.send(fail_silently=False)
+
+
+def _send_html_email_operations(subject: str, to_email: str, html: str, text_fallback: str = " "):
+    from_email = settings.EMAIL_OPERATIONS
+    connection = get_connection(
+        username=from_email,
+        password=settings.EMAIL_CREDENTIALS[from_email],
+        fail_silently=False,
+    )
+    msg = EmailMessage(subject=subject, body=html, from_email=from_email, to=[to_email], connection=connection)
+    msg.content_subtype = "html"
+    msg.send(fail_silently=False)
+
+
+def _send_html_email_billing(subject: str, to_email: str, html: str, text_fallback: str = " "):
+    from_email = settings.EMAIL_BILLING
+    connection = get_connection(
+        username=from_email,
+        password=settings.EMAIL_CREDENTIALS[from_email],
+        fail_silently=False,
+    )
+    msg = EmailMessage(subject=subject, body=html, from_email=from_email, to=[to_email], connection=connection)
+    msg.content_subtype = "html"
+    msg.send(fail_silently=False)
+
+
+#Page Logins
 def pharmacyLoginView(request):
     return render(request, 'pharmacyLogin.html')
 
@@ -509,26 +557,6 @@ def get_delivery_rate(request):
     return JsonResponse({"success": False, "error": "Invalid HTTP method"}, status=405)
 
 
-# def get_pharmacy_details(request, pharmacy_id):
-#     try:
-#         pharmacy = Pharmacy.objects.get(id=pharmacy_id)
-#         data = {
-#             "id": pharmacy.id,
-#             "name": pharmacy.name,
-#             "store_address": pharmacy.store_address,
-#             "city": pharmacy.city,
-#             "province": pharmacy.province,
-#             "postal_code": pharmacy.postal_code,
-#             "country": pharmacy.country,
-#             "phone_number": pharmacy.phone_number,
-#             "email": pharmacy.email,
-#             "created_at": pharmacy.created_at,
-#         }
-#         return JsonResponse({"success": True, "pharmacy": data}, status=200)
-
-#     except Pharmacy.DoesNotExist:
-#         return JsonResponse({"success": False, "message": "Pharmacy not found"}, status=404)
-
 
 @csrf_exempt
 def get_pharmacy_orders(request, pharmacy_id):
@@ -783,7 +811,8 @@ def upload_handover_image_api(request):
             # Create credentials from the key file
             credentials = service_account.Credentials.from_service_account_file(settings.GCP_KEY_PATH)
             client = storage.Client(credentials=credentials)
-            bucket = client.bucket('canadrop-bucket')
+            # bucket = client.bucket('canadrop-bucket')
+            bucket = client.bucket(settings.GCP_BUCKET_NAME)
             blob = bucket.blob(blob_name)
             
             logger.info("Google Cloud client initialized successfully")
@@ -1111,146 +1140,6 @@ def driver_accepted_orders(request):
 
     return JsonResponse({"orders": orders})
 
-# @csrf_exempt
-# def driver_pickup_proof(request):
-#     if request.method != "POST":
-#         return HttpResponseBadRequest("Only POST method allowed")
-
-#     driver_id = request.POST.get("driverId")
-#     order_id = request.POST.get("orderId")
-#     pharmacy_id = request.POST.get("pharmacyId")
-#     image_file = request.FILES.get("image")
-
-#     if not (driver_id and order_id and pharmacy_id and image_file):
-#         return HttpResponseBadRequest("driverId, orderId, pharmacyId and image are required")
-
-#     try:
-#         # fetch objects
-#         driver = get_object_or_404(Driver, id=driver_id)
-#         order = get_object_or_404(DeliveryOrder, id=order_id)
-#         pharmacy = get_object_or_404(Pharmacy, id=pharmacy_id)
-
-#         # step 1: update order status to inTransit
-#         order.status = "inTransit"
-#         order.save()
-
-#         # step 2: upload image to GCP
-#         key_path = settings.GCP_KEY_PATH
-#         bucket_name = "canadrop-bucket"  # Fixed bucket name
-
-#         client = storage.Client.from_service_account_json(key_path)
-#         bucket = client.bucket(bucket_name)
-
-#         safe_pharmacy_name = pharmacy.name.replace(" ", "_")
-#         filename = f"{driver_id}_{order_id}_{safe_pharmacy_name}_driverpickup.jpg"
-#         blob = bucket.blob(f"Proof/{filename}")
-#         blob.upload_from_file(image_file, content_type=image_file.content_type)
-
-#         # generate signed URL valid for 7 days
-#         signed_url = blob.generate_signed_url(expiration=timedelta(days=7), method="GET")
-
-#         # step 3a: create order tracking entry
-#         note_text = f"Driver Pickup Image Uploaded : {driver_id}_{order_id}_{pharmacy_id}_DriverPickup"
-#         performed_by = f"Driver: {driver.name}"
-#         OrderTracking.objects.create(
-#             order=order,
-#             driver=driver,
-#             pharmacy=pharmacy,
-#             step="inTransit",
-#             performed_by=performed_by,
-#             note=note_text,
-#             image_url=signed_url,
-#         )
-
-#         # step 3b: create order image entry
-#         OrderImage.objects.create(
-#             order=order,
-#             image_url=signed_url,
-#             stage="pickup"
-#         )
-
-#         return JsonResponse({
-#             "success": True,
-#             "message": "Pickup proof uploaded successfully",
-#             "image_url": signed_url
-#         })
-
-#     except Exception as e:
-#         return JsonResponse({
-#             "success": False,
-#             "message": f"Error uploading pickup proof: {str(e)}"
-#         }, status=500)
-
-
-# @csrf_exempt
-# def driver_delivery_proof(request):
-#     if request.method != "POST":
-#         return HttpResponseBadRequest("Only POST method allowed")
-
-#     driver_id = request.POST.get("driverId")
-#     order_id = request.POST.get("orderId")
-#     pharmacy_id = request.POST.get("pharmacyId")
-#     image_file = request.FILES.get("image")
-
-#     if not (driver_id and order_id and pharmacy_id and image_file):
-#         return HttpResponseBadRequest("driverId, orderId, pharmacyId and image are required")
-
-#     try:
-#         # fetch objects
-#         driver = get_object_or_404(Driver, id=driver_id)
-#         order = get_object_or_404(DeliveryOrder, id=order_id)
-#         pharmacy = get_object_or_404(Pharmacy, id=pharmacy_id)
-
-#         # step 1: update order status to delivered
-#         order.status = "delivered"
-#         order.save()
-
-#         # step 2: upload image to GCP
-#         key_path = settings.GCP_KEY_PATH
-#         bucket_name = "canadrop-bucket"  # Fixed bucket name
-
-#         client = storage.Client.from_service_account_json(key_path)
-#         bucket = client.bucket(bucket_name)
-
-#         safe_pharmacy_name = pharmacy.name.replace(" ", "_")
-#         filename = f"{driver_id}_{order_id}_{safe_pharmacy_name}_delivered.jpg"
-#         blob = bucket.blob(f"Proof/{filename}")
-#         blob.upload_from_file(image_file, content_type=image_file.content_type)
-
-#         # signed URL (valid for 7 days)
-#         signed_url = blob.generate_signed_url(expiration=timedelta(days=7), method="GET")
-
-#         # step 3a: order tracking entry
-#         note_text = f"Driver Delivery Image Uploaded : {driver_id}_{order_id}_{pharmacy_id}_Delivered"
-#         performed_by = f"Driver: {driver.name}"
-#         OrderTracking.objects.create(
-#             order=order,
-#             driver=driver,
-#             pharmacy=pharmacy,
-#             step="delivered",
-#             performed_by=performed_by,
-#             note=note_text,
-#             image_url=signed_url,
-#         )
-
-#         # step 3b: order image entry
-#         OrderImage.objects.create(
-#             order=order,
-#             image_url=signed_url,
-#             stage="delivered"
-#         )
-
-#         return JsonResponse({
-#             "success": True,
-#             "message": "Delivery proof uploaded successfully",
-#             "image_url": signed_url
-#         })
-
-#     except Exception as e:
-#         return JsonResponse({
-#             "success": False,
-#             "message": f"Error uploading delivery proof: {str(e)}"
-#         }, status=500)
 
 
 @csrf_exempt
@@ -1278,7 +1167,8 @@ def driver_pickup_proof(request):
 
         # step 2: upload image to GCP
         key_path = settings.GCP_KEY_PATH
-        bucket_name = "canadrop-bucket"  # Fixed bucket name
+        # bucket_name = "canadrop-bucket"  # Fixed bucket name
+        bucket_name = settings.GCP_BUCKET_NAME  # Fixed bucket name
 
         client = storage.Client.from_service_account_json(key_path)
         bucket = client.bucket(bucket_name)
@@ -1350,7 +1240,8 @@ def driver_delivery_proof(request):
 
         # step 2: upload image to GCP
         key_path = settings.GCP_KEY_PATH
-        bucket_name = "canadrop-bucket"  # Fixed bucket name
+        # bucket_name = "canadrop-bucket"  # Fixed bucket name
+        bucket_name = settings.GCP_BUCKET_NAME  # Fixed bucket name
 
         client = storage.Client.from_service_account_json(key_path)
         bucket = client.bucket(bucket_name)
@@ -1398,36 +1289,10 @@ def driver_delivery_proof(request):
 
 
 
-import os
-import json
-import logging
-from datetime import timedelta
-from decimal import Decimal
-from io import BytesIO
-
-from django.conf import settings
-from django.http import HttpResponseBadRequest, JsonResponse
-from django.shortcuts import get_object_or_404
-from django.views.decorators.csrf import csrf_exempt
-from django.core.files.storage import default_storage
-from django.core.files.base import ContentFile
-from google.cloud import storage
-from google.oauth2 import service_account
-from reportlab.lib import colors
-from reportlab.lib.pagesizes import letter
-from reportlab.lib.styles import getSampleStyleSheet, ParagraphStyle
-from reportlab.lib.units import inch
-from reportlab.platypus import SimpleDocTemplate, Paragraph, Spacer, Table, TableStyle, Image
-from reportlab.lib.enums import TA_CENTER, TA_LEFT
-
-from .models import DeliveryOrder, Pharmacy, Invoice
-
-# Configure logger
-logger = logging.getLogger(__name__)
 
 # GCP Storage configuration
-GCP_BUCKET_NAME = "canadrop-bucket"
-GCP_FOLDER_NAME = "PharmacyInvoices"
+GCP_BUCKET_NAME = settings.GCP_BUCKET_NAME
+GCP_FOLDER_NAME = settings.GCP_INVOICE_FOLDER
 
 
 def get_gcp_storage_client():
@@ -1444,7 +1309,8 @@ def get_gcp_storage_client():
 
 def upload_pdf_to_gcp(pdf_buffer, filename):
     client = storage.Client.from_service_account_json(settings.GCP_KEY_PATH)  # same as drivers
-    bucket = client.bucket("canadrop-bucket")
+    # bucket = client.bucket("canadrop-bucket")
+    bucket = client.bucket(settings.GCP_BUCKET_NAME)
     blob = bucket.blob(f"PharmacyInvoices/{filename}")
     pdf_buffer.seek(0)
     blob.upload_from_file(pdf_buffer, content_type="application/pdf")
@@ -1504,7 +1370,7 @@ def generate_invoice_pdf(invoice, pharmacy, orders_data, subtotal, hst_amount, t
     content = []
     
     # Logo - Reduced width
-    logo_path = os.path.join(settings.BASE_DIR, "Logo", "Website_Logo_No_Background.png")
+    logo_path = settings.LOGO_PATH
 
     try:
         logo = Image(logo_path, width=2*inch, height=1*inch)  # Reduced from 3x1.5 to 2x1
@@ -1870,21 +1736,6 @@ def generate_weekly_invoices(request):
 
 
 
-
-import stripe
-import json
-import logging
-from django.conf import settings
-from django.http import JsonResponse, HttpResponse
-from django.views.decorators.csrf import csrf_exempt
-from django.views.decorators.http import require_http_methods
-from django.utils.decorators import method_decorator
-from django.shortcuts import get_object_or_404
-from .models import Invoice, Pharmacy
-
-# Set up logging
-logger = logging.getLogger(__name__)
-
 # Set Stripe API key
 stripe.api_key = settings.STRIPE_SECRET_KEY
 
@@ -2115,6 +1966,8 @@ def stripe_webhook(request):
     logger.info("=== STRIPE WEBHOOK PROCESSED SUCCESSFULLY ===")
     return HttpResponse(status=200)
 
+
+
 @csrf_exempt  # Making this consistent with other views
 def get_payment_status(request):
     """Get payment status for success page"""
@@ -2154,32 +2007,13 @@ def get_payment_status(request):
 
 
 
-import os
-import pytz
-from datetime import date, timedelta, datetime
-from decimal import Decimal
-from io import BytesIO
-
-from django.http import HttpResponseBadRequest, JsonResponse
-from django.views.decorators.csrf import csrf_exempt
-from django.utils import timezone
-from django.conf import settings
-from google.cloud import storage
-from reportlab.lib import colors
-from reportlab.lib.pagesizes import letter, A4
-from reportlab.lib.styles import getSampleStyleSheet, ParagraphStyle
-from reportlab.lib.units import inch
-from reportlab.platypus import SimpleDocTemplate, Paragraph, Spacer, Table, TableStyle, Image
-from reportlab.lib.enums import TA_CENTER, TA_LEFT, TA_RIGHT
-
-from .models import DeliveryOrder, Driver, DriverInvoice
 
 # Default user timezone (from your conversation context)
-USER_TZ = pytz.timezone("America/Toronto")
+USER_TZ = settings.USER_TIMEZONE
 
 # GCP Storage configuration
-GCP_BUCKET_NAME = "canadrop-bucket"
-GCP_FOLDER_NAME = "DriverSummary"
+GCP_BUCKET_NAME = settings.GCP_BUCKET_NAME
+GCP_FOLDER_NAME = settings.GCP_DRIVER_INVOICE_FOLDER
 GCP_KEY_PATH = settings.GCP_KEY_PATH
 
 
@@ -2348,7 +2182,7 @@ def _generate_invoice_pdf(driver, week_data, orders):
     
     # Add company header with logo
     try:
-        logo_path = os.path.join(settings.BASE_DIR, "Logo", "Website_Logo_No_Background.png")
+        logo_path = settings.LOGO_PATH
 
         if os.path.exists(logo_path):
             # Create header table with logo and company info
@@ -2433,7 +2267,7 @@ def _generate_invoice_pdf(driver, week_data, orders):
     
     # Calculate detailed financial information
     gross_amount = sum(Decimal(str(order.rate or 0)) for order in orders)
-    commission_rate = Decimal('0.15')
+    commission_rate = Decimal(str(settings.DRIVER_COMMISSION_RATE))
     commission_amount = gross_amount * commission_rate
     net_amount = gross_amount - commission_amount
     
@@ -2442,7 +2276,7 @@ def _generate_invoice_pdf(driver, week_data, orders):
         ['Description', 'Amount (CAD)'],
         ['Total Deliveries Completed', f"{week_data['total_orders']} orders"],
         ['Gross Revenue', f"${gross_amount:.2f}"],
-        ['Platform Commission (15%)', f"-${commission_amount:.2f}"],
+        ['Platform Commission ({int(settings.DRIVER_COMMISSION_RATE * 100)}%)', f"-${commission_amount:.2f}"],
         ['', ''],  # Separator row
         ['NET PAYMENT DUE', f"${net_amount:.2f}"],
     ]
@@ -2543,7 +2377,7 @@ def _generate_invoice_pdf(driver, week_data, orders):
     
     terms_text = """
     <b>Payment Schedule:</b> Weekly payments are processed every Monday for the previous week's completed deliveries.<br/><br/>
-    <b>Commission Structure:</b> CanaLogistiX retains 15% of gross delivery fees to cover platform costs, insurance, and support services.<br/><br/>
+    <b>Commission Structure:</b> CanaLogistiX retains {int(settings.DRIVER_COMMISSION_RATE * 100)}% of gross delivery fees to cover platform costs, insurance, and support services.<br/><br/>
     <b>Payment Method:</b> Payments are made via direct deposit to the driver's registered bank account.<br/><br/>
     <b>Dispute Resolution:</b> Any payment disputes must be reported within 7 days of invoice issuance.<br/><br/>
     <b>Tax Responsibility:</b> As an independent contractor, you are responsible for reporting this income on your tax returns.
@@ -2834,27 +2668,10 @@ def contact_admin_api(request):
 
 
 
-
-import json
-import random
-
-from django.conf import settings
-from django.core.cache import cache
-from django.core.mail import EmailMessage
-from django.core.signing import dumps, loads, BadSignature, SignatureExpired
-from django.core.validators import validate_email
-from django.core.exceptions import ValidationError
-from django.http import JsonResponse, HttpRequest
-from django.views.decorators.csrf import csrf_exempt
-from django.contrib.auth.hashers import make_password
-
-from .models import Pharmacy  # your model
-
-# ---- Simple config ----
-OTP_TTL_SECONDS = 10 * 60          # 10 minutes
-VERIFY_TOKEN_TTL_SECONDS = 15 * 60 # token usable for 15 minutes
-SIGNING_SALT = "canadrop-otp-verify"
-EMAIL_FROM = getattr(settings, "GMAIL_ADDRESS", None)  # e.g. "help.canalogistix@gmail.com"
+OTP_TTL_SECONDS = settings.OTP_TTL_SECONDS
+VERIFY_TOKEN_TTL_SECONDS = settings.VERIFY_TOKEN_TTL_SECONDS
+SIGNING_SALT = settings.OTP_SIGNING_SALT
+# EMAIL_FROM = settings.GMAIL_ADDRESS
 
 # ---- tiny helpers ----
 def _json(request: HttpRequest):
@@ -2874,16 +2691,13 @@ def _valid_email(addr: str) -> bool:
     except ValidationError:
         return False
 
-def _send_html_email(subject: str, to_email: str, html: str, text_fallback: str = " "):
-    msg = EmailMessage(subject=subject, body=html, from_email=EMAIL_FROM, to=[to_email])
-    msg.content_subtype = "html"
-    msg.send(fail_silently=False)
+# def _send_html_email(subject: str, to_email: str, html: str, text_fallback: str = " "):
+#     msg = EmailMessage(subject=subject, body=html, from_email=EMAIL_FROM, to=[to_email])
+#     msg.content_subtype = "html"
+#     msg.send(fail_silently=False)
 
-# ---------- Views ----------
-from datetime import datetime
-import random
-from django.views.decorators.csrf import csrf_exempt
-from django.http import HttpRequest
+
+
 
 @csrf_exempt
 def send_otp(request: HttpRequest):
@@ -2901,9 +2715,9 @@ def send_otp(request: HttpRequest):
     cache.set(_otp_key(email), otp, timeout=OTP_TTL_SECONDS)
 
     # --- Brand colors (bluish-green family used across the app) ---
-    brand_primary = "#0d9488"       # teal-600
-    brand_primary_dark = "#0f766e"  # teal-700
-    brand_accent = "#06b6d4"        # cyan-500
+    brand_primary = settings.BRAND_COLORS['primary']      
+    brand_primary_dark = settings.BRAND_COLORS['primary_dark']
+    brand_accent = settings.BRAND_COLORS['accent']
 
     # Modern, responsive-friendly HTML (works in Gmail/Outlook/Apple Mail)
     html = f"""
@@ -3020,7 +2834,7 @@ def send_otp(request: HttpRequest):
     text = f"Your CanaLogistiX verification code is: {otp}\nThis code expires in {OTP_TTL_SECONDS//60} minute(s).\nIf you didn’t request it, you can ignore this message."
 
     try:
-        _send_html_email(subject, email, html, text)
+        _send_html_email_help_desk(subject, email, html, text)
     except Exception:
         # Swallow send errors but keep response generic (avoid account existence leak)
         pass
@@ -3099,15 +2913,14 @@ def change_password(request: HttpRequest):
     pharmacy.password = make_password(new_password)
     pharmacy.save(update_fields=["password"])
 
-    # --- Light-theme confirmation email (matches send_otp style) ---
     try:
         # Brand colors (bluish green family)
-        brand_primary = "#0d9488"       # teal-600
-        brand_primary_dark = "#0f766e"  # teal-700
+        brand_primary = settings.BRAND_COLORS['primary']
+        brand_primary_dark = settings.BRAND_COLORS['primary_dark']
 
-        logo_url = "https://canalogistix.s3.us-east-2.amazonaws.com/Logo/CanaLogistiX_Logo_NOBG.png"
+        logo_url = settings.LOGO_URL
         changed_at = timezone.now().strftime("%b %d, %Y %H:%M %Z")
-        site_url = getattr(settings, "SITE_URL", "").rstrip("/")
+        site_url = settings.SITE_URL.rstrip("/")
         reset_link = f"{site_url}/forgotPassword/" if site_url else "/forgotPassword/"
 
         html = f"""
@@ -3222,7 +3035,7 @@ def change_password(request: HttpRequest):
             f"{reset_link}\n"
         )
 
-        _send_html_email(
+        _send_html_email_help_desk(
             subject="Your CanaLogistiX password was changed",
             to_email=email,
             html=html,
@@ -3280,15 +3093,15 @@ def change_password_driver(request: HttpRequest):
 
     # ---- Dark theme email (bluish grey + teal accent) ----
     try:
-        brand_primary = "#0d9488"        # teal-600
-        brand_primary_dark = "#0f766e"   # teal-700
-        bg_dark = "#0b1220"              # page background
-        card_dark = "#0f172a"            # card background
-        border_dark = "#1f2937"          # borders
-        text_light = "#e5e7eb"           # primary text
-        text_muted = "#94a3b8"           # muted text
+        brand_primary = settings.BRAND_COLORS['primary']
+        brand_primary_dark = settings.BRAND_COLORS['primary_dark']
+        bg_dark = settings.BRAND_COLORS['bg_dark']
+        card_dark = settings.BRAND_COLORS['card_dark']
+        border_dark = settings.BRAND_COLORS['border_dark']
+        text_light = settings.BRAND_COLORS['text_light']
+        text_muted = settings.BRAND_COLORS['text_muted']
 
-        logo_url = "https://canalogistix.s3.us-east-2.amazonaws.com/Logo/CanaLogistiX_Logo_NOBG.png"
+        logo_url = settings.LOGO_URL
         changed_at = timezone.now().strftime("%b %d, %Y %H:%M %Z")
 
         html = f"""
@@ -3394,7 +3207,7 @@ def change_password_driver(request: HttpRequest):
             "If you did not make this change, please reset your password immediately."
         )
 
-        _send_html_email(
+        _send_html_email_help_desk(
             subject="Your CanaLogistiX driver password was changed",
             to_email=email,
             html=html,
@@ -3408,11 +3221,6 @@ def change_password_driver(request: HttpRequest):
 
 
 
-
-from django.utils import timezone
-import logging
-
-logger = logging.getLogger(__name__)
 
 @csrf_exempt
 def register_pharmacy(request: HttpRequest):
@@ -3504,11 +3312,11 @@ def register_pharmacy(request: HttpRequest):
 
     # ---- Light-theme welcome email (Pharmacy) ----
     try:
-        brand_primary = "#0d9488"       # teal-600
-        brand_primary_dark = "#0f766e"  # teal-700
-        brand_accent = "#06b6d4"        # cyan-500
+        brand_primary = settings.BRAND_COLORS['primary']
+        brand_primary_dark = settings.BRAND_COLORS['primary_dark']
+        brand_accent = settings.BRAND_COLORS['accent']
         now_str = timezone.now().strftime("%b %d, %Y %H:%M %Z")
-        logo_url = "https://canalogistix.s3.us-east-2.amazonaws.com/Logo/CanaLogistiX_Logo_NOBG.png"
+        logo_url = settings.LOGO_URL
 
         html = f"""\
 <!doctype html>
@@ -3618,7 +3426,7 @@ def register_pharmacy(request: HttpRequest):
             "Questions? Just reply to this email.\n"
         )
 
-        _send_html_email(
+        _send_html_email_help_desk(
             subject="Welcome to CanaLogistiX • Pharmacy Registration Confirmed",
             to_email=email,
             html=html,
@@ -3701,13 +3509,13 @@ def register_driver(request: HttpRequest):
 
     # ---- Dark-theme welcome email (Driver) ----
     try:
-        brand_primary = "#0d9488"       # teal-600
-        bg_dark = "#0b1220"
-        card_dark = "#0f172a"
-        border_dark = "#1f2937"
-        text_light = "#e5e7eb"
-        text_muted = "#94a3b8"
-        logo_url = "https://canalogistix.s3.us-east-2.amazonaws.com/Logo/CanaLogistiX_Logo_NOBG.png"
+        brand_primary = settings.BRAND_COLORS['primary']
+        bg_dark = settings.BRAND_COLORS['bg_dark']
+        card_dark = settings.BRAND_COLORS['card_dark']
+        border_dark = settings.BRAND_COLORS['border_dark']
+        text_light = settings.BRAND_COLORS['text_light']
+        text_muted = settings.BRAND_COLORS['text_muted']
+        logo_url = settings.LOGO_URL
         now_str = timezone.now().strftime("%b %d, %Y %H:%M %Z")
 
         html = f"""\
@@ -3797,7 +3605,7 @@ def register_driver(request: HttpRequest):
             "Questions? Just reply to this email.\n"
         )
 
-        _send_html_email(
+        _send_html_email_help_desk(
             subject="Welcome to CanaLogistiX • Driver Registration Confirmed",
             to_email=email,
             html=html,
@@ -3809,10 +3617,6 @@ def register_driver(request: HttpRequest):
     return _ok("Driver registration successful.", id=driver.id, email=driver.email)
 
 
-
-from django.http import JsonResponse
-from django.views.decorators.csrf import csrf_exempt
-from django.views.decorators.http import require_GET
 
 
 @csrf_exempt
@@ -3847,15 +3651,6 @@ def get_pharmacy_details(request, pharmacy_id):
 
 
 
-from django.http import JsonResponse
-from django.views.decorators.csrf import csrf_exempt
-from django.views.decorators.http import require_POST
-from django.utils import timezone
-from django.core.mail import EmailMultiAlternatives
-from django.conf import settings
-from django.contrib.auth.hashers import check_password, make_password
-import json
-from .models import Pharmacy
 
 
 @csrf_exempt
@@ -3909,9 +3704,9 @@ def _send_password_change_email(email):
     """
     Sends a styled HTML + text password change confirmation email to the pharmacy.
     """
-    brand_primary = "#0d9488"       # teal-600
-    brand_primary_dark = "#0f766e"  # teal-700
-    logo_url = "https://canalogistix.s3.us-east-2.amazonaws.com/Logo/CanaLogistiX_Logo_NOBG.png"
+    brand_primary = settings.BRAND_COLORS['primary']
+    brand_primary_dark = settings.BRAND_COLORS['primary_dark']
+    logo_url = settings.LOGO_URL
     changed_at = timezone.now().strftime("%b %d, %Y %H:%M %Z")
 
     html_content = f"""
@@ -4032,12 +3827,6 @@ def _send_password_change_email(email):
 
 
 
-from django.http import JsonResponse
-from django.views.decorators.csrf import csrf_exempt
-from django.views.decorators.http import require_POST
-from .models import Pharmacy
-import json
-
 
 @csrf_exempt
 @require_POST
@@ -4110,368 +3899,7 @@ def edit_pharmacy_profile(request):
 
 
 
-# import json
-# import googlemaps
-# from django.http import JsonResponse
-# from django.conf import settings
-# from django.views.decorators.csrf import csrf_exempt
-# from django.views.decorators.http import require_http_methods
-# from ortools.constraint_solver import pywrapcp, routing_enums_pb2
-# import logging
-# from collections import defaultdict
-# from concurrent.futures import ThreadPoolExecutor, as_completed
-# from django.core.cache import cache
-# import hashlib
 
-# logger = logging.getLogger(__name__)
-
-
-# def get_cache_key(addresses):
-#     """Generate cache key for distance matrix"""
-#     addr_str = "|".join(sorted(addresses))
-#     return f"dist_matrix_{hashlib.md5(addr_str.encode()).hexdigest()}"
-
-
-# def get_distance_matrix_parallel(gmaps, addresses):
-#     """
-#     Fetch distance matrix with parallel batch requests and caching.
-#     This significantly reduces API call time.
-#     """
-#     # Check cache first
-#     cache_key = get_cache_key(addresses)
-#     cached_matrix = cache.get(cache_key)
-#     if cached_matrix:
-#         logger.info(f"Using cached distance matrix for {len(addresses)} addresses")
-#         return cached_matrix
-    
-#     n = len(addresses)
-#     distance_matrix = [[999999 for _ in range(n)] for _ in range(n)]
-#     batch_size = 10
-    
-#     def fetch_batch(i, j):
-#         """Fetch a single batch"""
-#         origins = addresses[i:min(i + batch_size, n)]
-#         destinations = addresses[j:min(j + batch_size, n)]
-        
-#         try:
-#             matrix = gmaps.distance_matrix(
-#                 origins,
-#                 destinations,
-#                 mode="driving",
-#                 units="metric",
-#                 departure_time="now"  # Use real-time traffic
-#             )
-            
-#             if matrix.get("status") != "OK":
-#                 logger.error(f"Batch request failed: {matrix.get('status')}")
-#                 return None
-            
-#             return (i, j, matrix)
-            
-#         except Exception as e:
-#             logger.error(f"Error fetching batch ({i}, {j}): {str(e)}")
-#             return None
-    
-#     # Create batch requests
-#     batch_requests = []
-#     for i in range(0, n, batch_size):
-#         for j in range(0, n, batch_size):
-#             batch_requests.append((i, j))
-    
-#     logger.info(f"Fetching {len(batch_requests)} batches in parallel for {n} addresses")
-    
-#     # Execute batches in parallel (max 5 concurrent to respect API limits)
-#     with ThreadPoolExecutor(max_workers=5) as executor:
-#         futures = {executor.submit(fetch_batch, i, j): (i, j) for i, j in batch_requests}
-        
-#         for future in as_completed(futures):
-#             result = future.result()
-#             if result:
-#                 i, j, matrix = result
-                
-#                 # Fill in the distance matrix
-#                 for row_idx, row in enumerate(matrix.get("rows", [])):
-#                     for col_idx, elem in enumerate(row.get("elements", [])):
-#                         actual_i = i + row_idx
-#                         actual_j = j + col_idx
-                        
-#                         if elem.get("status") == "OK":
-#                             distance_value = elem.get("distance", {}).get("value", 999999)
-#                             distance_matrix[actual_i][actual_j] = distance_value
-#                         else:
-#                             distance_matrix[actual_i][actual_j] = 999999
-    
-#     # Cache for 1 hour
-#     cache.set(cache_key, distance_matrix, 3600)
-#     logger.info(f"Distance matrix cached successfully")
-    
-#     return distance_matrix
-
-
-# def solve_single_date_group(date_key, date_deliveries, start_location, gmaps):
-#     """
-#     Solve optimization for a single date group.
-#     Extracted to allow parallel processing if needed.
-#     """
-#     logger.info(f"Optimizing {len(date_deliveries)} deliveries for date: {date_key}")
-    
-#     # Build addresses list
-#     addresses = [start_location]
-#     pickup_indices = []
-#     drop_indices = []
-#     order_ids = []
-    
-#     for d in date_deliveries:
-#         pickup_indices.append(len(addresses))
-#         addresses.append(d["pickup_address"])
-#         drop_indices.append(len(addresses))
-#         addresses.append(d["dropoff_address"])
-#         order_ids.append(d.get("order_id"))
-    
-#     n = len(addresses)
-#     logger.info(f"Date {date_key}: {n} addresses (1 start + {len(pickup_indices)} pickups + {len(drop_indices)} dropoffs)")
-
-#     # Get distance matrix with caching and parallelization
-#     try:
-#         distance_matrix = get_distance_matrix_parallel(gmaps, addresses)
-#     except Exception as e:
-#         logger.error(f"Distance matrix error for date {date_key}: {str(e)}")
-#         raise
-
-#     # Validate matrix
-#     if len(distance_matrix) != n or any(len(row) != n for row in distance_matrix):
-#         raise ValueError("Invalid distance matrix dimensions")
-
-#     # Initialize OR-Tools Routing Model
-#     manager = pywrapcp.RoutingIndexManager(n, 1, 0)
-#     routing = pywrapcp.RoutingModel(manager)
-
-#     def distance_callback(from_index, to_index):
-#         f = manager.IndexToNode(from_index)
-#         t = manager.IndexToNode(to_index)
-#         return distance_matrix[f][t]
-
-#     transit_cb = routing.RegisterTransitCallback(distance_callback)
-#     routing.SetArcCostEvaluatorOfAllVehicles(transit_cb)
-
-#     # Add Distance dimension
-#     routing.AddDimension(
-#         transit_cb,
-#         0,
-#         10000000,
-#         True,
-#         "Distance"
-#     )
-#     distance_dim = routing.GetDimensionOrDie("Distance")
-
-#     # Add pickup-delivery constraints
-#     for idx, (p, d) in enumerate(zip(pickup_indices, drop_indices)):
-#         pickup_idx = manager.NodeToIndex(p)
-#         delivery_idx = manager.NodeToIndex(d)
-        
-#         routing.AddPickupAndDelivery(pickup_idx, delivery_idx)
-#         routing.solver().Add(
-#             routing.VehicleVar(pickup_idx) == routing.VehicleVar(delivery_idx)
-#         )
-#         routing.solver().Add(
-#             distance_dim.CumulVar(pickup_idx) <= distance_dim.CumulVar(delivery_idx)
-#         )
-
-#     logger.info(f"Added {len(pickup_indices)} pickup-delivery constraints for date {date_key}")
-
-#     # Optimized solver parameters - faster but still good quality
-#     search_params = pywrapcp.DefaultRoutingSearchParameters()
-#     search_params.first_solution_strategy = routing_enums_pb2.FirstSolutionStrategy.PATH_CHEAPEST_ARC
-#     search_params.local_search_metaheuristic = routing_enums_pb2.LocalSearchMetaheuristic.GUIDED_LOCAL_SEARCH
-    
-#     # Adaptive timeout based on problem size
-#     timeout = min(15 + (n // 10), 30)  # 15-30 seconds based on size
-#     search_params.time_limit.seconds = timeout
-    
-#     # Limit solution attempts for faster response
-#     search_params.solution_limit = 50
-
-#     logger.info(f"Solving route for date {date_key} with {timeout}s timeout...")
-#     solution = routing.SolveWithParameters(search_params)
-    
-#     if not solution:
-#         raise ValueError(f"No feasible route found for date {date_key}")
-
-#     logger.info(f"Solution found for date {date_key}! Building route...")
-
-#     # Build metadata map
-#     node_meta = {0: {"kind": "start", "order_id": None, "date": date_key}}
-#     addr_i = 1
-#     for idx, order_id in enumerate(order_ids):
-#         node_meta[addr_i] = {"kind": "pickup", "order_id": order_id, "date": date_key}
-#         addr_i += 1
-#         node_meta[addr_i] = {"kind": "dropoff", "order_id": order_id, "date": date_key}
-#         addr_i += 1
-
-#     # Extract optimized route
-#     index = routing.Start(0)
-#     date_stops = []
-#     date_distance = 0
-#     last_address = None
-    
-#     while not routing.IsEnd(index):
-#         node = manager.IndexToNode(index)
-#         meta = node_meta.get(node, {"kind": "unknown", "order_id": None, "date": date_key})
-#         next_index = solution.Value(routing.NextVar(index))
-#         next_node = manager.IndexToNode(next_index)
-        
-#         if node < len(distance_matrix) and next_node < len(distance_matrix[node]):
-#             leg_distance = distance_matrix[node][next_node]
-#         else:
-#             leg_distance = 0
-        
-#         date_distance += leg_distance
-#         last_address = addresses[node]
-        
-#         date_stops.append({
-#             "kind": meta["kind"],
-#             "address": addresses[node],
-#             "order_id": meta["order_id"],
-#             "date": meta["date"],
-#             "leg_distance_km": round(leg_distance / 1000, 2)
-#         })
-        
-#         index = next_index
-    
-#     logger.info(f"✓ Date {date_key}: {len(date_stops)} stops, {round(date_distance/1000, 2)}km")
-    
-#     return {
-#         "stops": date_stops,
-#         "distance": date_distance,
-#         "last_address": last_address
-#     }
-
-
-# @csrf_exempt
-# @require_http_methods(["POST"])
-# def optimize_route_api(request):
-#     """
-#     Optimized delivery route API with:
-#     - Parallel distance matrix fetching
-#     - Distance matrix caching
-#     - Adaptive solver timeouts
-#     - Better error handling
-#     """
-#     try:
-#         data = json.loads(request.body)
-#         driver_start = data.get("driver_start")
-#         deliveries = data.get("deliveries", [])
-
-#         logger.info(f"Received optimization request: driver_start={driver_start}, deliveries={len(deliveries)}")
-
-#         if not driver_start or not deliveries:
-#             return JsonResponse({"error": "Missing required data", "success": False}, status=400)
-
-#         if not isinstance(deliveries, list) or len(deliveries) == 0:
-#             return JsonResponse({"error": "No deliveries provided", "success": False}, status=400)
-
-#         # Use secure Google Maps API key
-#         api_key = settings.GOOGLE_MAPS_API_KEY
-#         if not api_key:
-#             logger.error("Google Maps API key not configured")
-#             return JsonResponse({"error": "API key not configured", "success": False}, status=500)
-
-#         gmaps = googlemaps.Client(key=api_key)
-
-#         # Group deliveries by pickup date
-#         deliveries_by_date = defaultdict(list)
-#         from datetime import datetime, date
-#         today = date.today()
-        
-#         for d in deliveries:
-#             if not d.get("pickup_address") or not d.get("dropoff_address"):
-#                 logger.warning(f"Skipping delivery with missing address: {d}")
-#                 continue
-            
-#             # Extract date from pickup_date
-#             pickup_date = d.get("pickup_date", "unknown")
-#             if isinstance(pickup_date, str) and 'T' in pickup_date:
-#                 pickup_date = pickup_date.split('T')[0]
-            
-#             # Skip past dates
-#             try:
-#                 delivery_date = datetime.strptime(pickup_date, '%Y-%m-%d').date()
-#                 if delivery_date < today:
-#                     logger.info(f"Skipping past date delivery: {pickup_date} for order {d.get('order_id')}")
-#                     continue
-#             except:
-#                 logger.warning(f"Invalid date format: {pickup_date}, including in optimization")
-            
-#             deliveries_by_date[pickup_date].append(d)
-        
-#         if len(deliveries_by_date) == 0:
-#             return JsonResponse({
-#                 "error": "No current or future deliveries to optimize", 
-#                 "success": False
-#             }, status=400)
-        
-#         logger.info(f"Grouped {sum(len(v) for v in deliveries_by_date.values())} deliveries into {len(deliveries_by_date)} date groups")
-
-#         # Process each date group
-#         all_stops = []
-#         total_distance = 0
-#         current_location = driver_start
-
-#         # Sort dates chronologically
-#         sorted_dates = sorted(deliveries_by_date.keys())
-        
-#         for idx, date_key in enumerate(sorted_dates):
-#             date_deliveries = deliveries_by_date[date_key]
-            
-#             try:
-#                 result = solve_single_date_group(date_key, date_deliveries, current_location, gmaps)
-                
-#                 # Skip start point after first date group
-#                 if idx > 0 and result["stops"][0]["kind"] == "start":
-#                     result["stops"] = result["stops"][1:]
-                
-#                 all_stops.extend(result["stops"])
-#                 total_distance += result["distance"]
-#                 current_location = result["last_address"]
-                
-#             except Exception as e:
-#                 logger.error(f"Error optimizing date {date_key}: {str(e)}")
-#                 return JsonResponse({
-#                     "error": f"Failed to optimize route for {date_key}: {str(e)}", 
-#                     "success": False
-#                 }, status=500)
-
-#         logger.info(f"✓✓ FULL ROUTE OPTIMIZED: {len(all_stops)} total stops, {round(total_distance/1000, 2)}km across {len(deliveries_by_date)} dates")
-
-#         return JsonResponse({
-#             "success": True,
-#             "stops": all_stops,
-#             "total_distance_km": round(total_distance / 1000, 2),
-#             "dates_optimized": len(deliveries_by_date)
-#         })
-
-#     except json.JSONDecodeError as e:
-#         logger.error(f"JSON decode error: {str(e)}")
-#         return JsonResponse({"error": "Invalid JSON payload", "success": False}, status=400)
-#     except Exception as e:
-#         logger.exception(f"Unexpected error in route optimization: {str(e)}")
-#         return JsonResponse({"error": f"Internal server error: {str(e)}", "success": False}, status=500)
-
-
-import json
-import googlemaps
-from django.http import JsonResponse
-from django.conf import settings
-from django.views.decorators.csrf import csrf_exempt
-from django.views.decorators.http import require_http_methods
-from ortools.constraint_solver import pywrapcp, routing_enums_pb2
-import logging
-from collections import defaultdict
-from concurrent.futures import ThreadPoolExecutor, as_completed
-from django.core.cache import cache
-import hashlib
-
-logger = logging.getLogger(__name__)
 
 
 def get_cache_key(addresses):
@@ -4944,13 +4372,6 @@ def admin_login(request):
 
 
 
-# views.py
-from django.http import JsonResponse
-from django.views.decorators.csrf import csrf_exempt
-from django.db.models import Count, Sum, Q
-from datetime import date
-from .models import Pharmacy, Driver, DeliveryOrder, DriverInvoice
-
 @csrf_exempt
 def admin_dashboard_stats(request):
     try:
@@ -5001,12 +4422,6 @@ def admin_dashboard_stats(request):
 
 
 
-# views.py
-from django.http import JsonResponse
-from django.views.decorators.csrf import csrf_exempt
-from django.utils.timezone import now
-from itertools import chain
-from random import sample
 
 @csrf_exempt
 def recent_activity_feed(request):
@@ -5120,9 +4535,6 @@ def recent_activity_feed(request):
 
 
 
-from django.http import JsonResponse
-from django.views.decorators.csrf import csrf_exempt
-from django.utils.timezone import now
 
 @csrf_exempt
 def order_tracking_overview(request):
@@ -5191,10 +4603,6 @@ def order_tracking_overview(request):
         return JsonResponse({"success": False, "error": str(e)}, status=500)
 
 
-from django.http import JsonResponse
-from django.views.decorators.csrf import csrf_exempt
-from django.utils import timezone
-from datetime import timedelta
 
 @csrf_exempt
 def admin_alerts(request):
@@ -5504,10 +4912,6 @@ def admin_alerts(request):
 
 
 
-from django.http import JsonResponse
-from django.views.decorators.csrf import csrf_exempt
-from .models import DeliveryOrder, OrderTracking, OrderImage, Pharmacy, Driver
-from decimal import Decimal
 
 @csrf_exempt
 def admin_order_list(request):
@@ -5614,7 +5018,7 @@ def admin_order_list(request):
             
             # Calculate commission
             rate = float(order['rate']) if order['rate'] else 0.0
-            commission = round(rate * 0.15, 2)
+            commission = round(rate * settings.DRIVER_COMMISSION_RATE, 2)  # ✅ FIXED
             net = round(rate - commission, 2)
             
             result.append({
@@ -5634,8 +5038,8 @@ def admin_order_list(request):
                 "tracking_history": tracking_info,
                 "proof_images": proof_images,
                 "commission_info": {
-                    "commission_rate": "15%",
-                    "commission_decimal": 0.15,
+                    "commission_rate": f"{int(settings.DRIVER_COMMISSION_RATE * 100)}%",  
+                    "commission_decimal": settings.DRIVER_COMMISSION_RATE,  
                     "commission_amount": commission,
                     "net_payout_driver": net
                 }
@@ -5656,8 +5060,6 @@ def admin_order_list(request):
         }, status=500)
 
 
-from django.http import JsonResponse
-from django.views.decorators.csrf import csrf_exempt
 
 @csrf_exempt
 def delivery_rates_list(request):
@@ -5720,11 +5122,6 @@ def delivery_rates_list(request):
 
 
 
-from django.http import JsonResponse
-from django.views.decorators.csrf import csrf_exempt
-from django.utils.dateparse import parse_date
-from .models import DeliveryOrder
-import json
 
 @csrf_exempt
 def edit_order(request, order_id):
@@ -5791,10 +5188,7 @@ def edit_order(request, order_id):
     return JsonResponse({"success": True, "message": "Order updated successfully", "order": updated_data}, status=200)
 
 
-from django.http import JsonResponse, HttpResponseNotAllowed
-from django.views.decorators.csrf import csrf_exempt
-from django.utils import timezone
-from .models import DeliveryOrder, OrderTracking
+
 
 @csrf_exempt
 def cancel_order(request, order_id: int):
@@ -5847,14 +5241,6 @@ def cancel_order(request, order_id: int):
 
 
 
-# views.py
-import json
-from decimal import Decimal, InvalidOperation
-from django.http import JsonResponse
-from django.views.decorators.csrf import csrf_exempt
-from django.views.decorators.http import require_http_methods
-
-from .models import DeliveryDistanceRate
 
 
 @csrf_exempt
@@ -5951,12 +5337,6 @@ def add_delivery_rate(request):
 
 
 
-import json
-from django.http import JsonResponse
-from django.views.decorators.csrf import csrf_exempt
-from django.views.decorators.http import require_http_methods
-from decimal import Decimal, InvalidOperation
-from .models import DeliveryDistanceRate
 
 
 # ✏️ EDIT DELIVERY RATE
@@ -6137,10 +5517,6 @@ def delete_delivery_rate(request, rate_id):
 
 
 
-from django.http import JsonResponse
-from django.views.decorators.csrf import csrf_exempt
-from django.db.models import Sum
-from .models import Pharmacy, DeliveryOrder, Invoice
 
 
 @csrf_exempt

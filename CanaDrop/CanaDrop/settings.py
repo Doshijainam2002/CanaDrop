@@ -2,6 +2,7 @@ from pathlib import Path
 import os
 import tempfile
 from .aws_secrets import get_secret
+import pytz
 
 # ----------------------------
 # BASE DIRECTORY
@@ -110,9 +111,7 @@ DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 GOOGLE_MAPS_API_KEY = secrets.get("GOOGLE_MAPS_API_KEY")
 STRIPE_PUBLISHABLE_KEY = secrets.get("STRIPE_PUBLISHABLE_KEY")
 STRIPE_SECRET_KEY = secrets.get("STRIPE_SECRET_KEY")
-STRIPE_WEBHOOK_SECRET = secrets.get("STRIPE_WEBHOOK_SECRET")    
-GMAIL_APP_PASSWORD = secrets.get("GMAIL_APP_PASSWORD")
-GMAIL_ADDRESS = "help.canadrop@gmail.com"
+STRIPE_WEBHOOK_SECRET = secrets.get("STRIPE_WEBHOOK_SECRET")   
 
 # ----------------------------
 # GCP SERVICE ACCOUNT TEMP FILE
@@ -122,23 +121,28 @@ with tempfile.NamedTemporaryFile(delete=False, suffix=".json") as f:
     f.write(gcp_key_json.encode())
     GCP_KEY_PATH = f.name
 
-# You can now use GCP_KEY_PATH in your code:
-# Example:
-# from google.cloud import storage
-# client = storage.Client.from_service_account_json(settings.GCP_KEY_PATH)
-
 # ----------------------------
 # DJANGO EMAIL SERVICE SETUP
 # ----------------------------
-
-# settings.py
 EMAIL_BACKEND = "django.core.mail.backends.smtp.EmailBackend"
 EMAIL_HOST = "smtp.gmail.com"
 EMAIL_PORT = 587
 EMAIL_USE_TLS = True
-EMAIL_HOST_USER = GMAIL_ADDRESS            # "help.canadrop@gmail.com"
-EMAIL_HOST_PASSWORD = GMAIL_APP_PASSWORD   # 16-char app password
-DEFAULT_FROM_EMAIL = EMAIL_HOST_USER
+EMAIL_TIMEOUT = 30 
+
+EMAIL_HELP_DESK = "help.canalogistix@gmail.com"
+EMAIL_ADMIN_OFFICE = "office.canalogistix@gmail.com"
+EMAIL_OPERATIONS = "operations.canalogistix@gmail.com"
+EMAIL_BILLING = "billing.canalogistix@gmail.com"  
+
+EMAIL_CREDENTIALS = {
+    EMAIL_HELP_DESK: secrets.get("GMAIL_APP_PASSWORD_HELP_DESK"),
+    EMAIL_ADMIN_OFFICE: secrets.get("GMAIL_APP_PASSWORD_ADMIN_MANAGEMENT"),
+    EMAIL_OPERATIONS: secrets.get("GMAIL_APP_PASSWORD_OPERATIONS"),
+    EMAIL_BILLING: secrets.get("GMAIL_APP_PASSWORD_BILLING_AND_INVOICING"),
+}
+
+DEFAULT_FROM_EMAIL = EMAIL_HELP_DESK
 
 CACHES = {
     "default": {
@@ -149,7 +153,34 @@ CACHES = {
 }
 
 
+OTP_TTL_SECONDS = 10 * 60
+VERIFY_TOKEN_TTL_SECONDS = 15 * 60
+OTP_SIGNING_SALT = "canadrop-otp-verify"
 
+GCP_BUCKET_NAME = "canadrop-bucket"
+GCP_INVOICE_FOLDER = "PharmacyInvoices"
+GCP_DRIVER_INVOICE_FOLDER = "DriverSummary"
+GCP_PROOF_FOLDER = "Proof"
+
+LOGO_PATH = os.path.join(BASE_DIR, "Logo", "Website_Logo_No_Background.png")
+LOGO_URL = "https://canalogistix.s3.us-east-2.amazonaws.com/Logo/CanaLogistiX_Logo_NOBG.png"
+
+BRAND_COLORS = {
+    'primary': '#0d9488',
+    'primary_dark': '#0f766e',
+    'accent': '#06b6d4',
+    'bg_dark': '#0b1220',
+    'card_dark': '#0f172a',
+    'border_dark': '#1f2937',
+    'text_light': '#e5e7eb',
+    'text_muted': '#94a3b8',
+}
+
+USER_TIMEZONE = pytz.timezone("America/Toronto")
+
+DRIVER_COMMISSION_RATE = 0.15
+
+SITE_URL = "https://www.canalogistix.com"
 
 
 LOGGING = {
