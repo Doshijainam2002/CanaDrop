@@ -692,8 +692,6 @@ def pharmacy_orders_api(request, pharmacy_id):
 
 
 
-
-
 @csrf_exempt
 @require_http_methods(["POST"])
 def upload_handover_image_api(request):
@@ -898,6 +896,261 @@ def upload_handover_image_api(request):
                 'error': f'Failed to update order status: {str(e)}'
             }, status=500)
         
+        # Send handover confirmation email to driver
+        if driver and driver.email:
+            try:
+                brand_primary = settings.BRAND_COLORS['primary']
+                brand_primary_dark = settings.BRAND_COLORS['primary_dark']
+                brand_accent = settings.BRAND_COLORS['accent']
+                now_str = timezone.now().strftime("%b %d, %Y %H:%M %Z")
+                logo_url = settings.LOGO_URL
+                
+                pickup_date_str = order.pickup_day.strftime("%A, %B %d, %Y")
+
+                html = f"""\
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <title>Package Handover Confirmation • CanaLogistiX</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <style>
+      @media (prefers-color-scheme: dark) {{
+        body {{ background: #0b1220 !important; color: #e5e7eb !important; }}
+        .card {{ background: #0f172a !important; border-color: #1f2937 !important; }}
+        .muted {{ color: #94a3b8 !important; }}
+      }}
+    </style>
+  </head>
+  <body style="margin:0;padding:0;background:#f4f7f9;">
+    <div style="display:none;visibility:hidden;opacity:0;height:0;width:0;overflow:hidden;">
+      Order #{order.id} handed over by pharmacy — ready for pickup.
+    </div>
+
+    <table role="presentation" width="100%" cellspacing="0" cellpadding="0" border="0" style="background:#f4f7f9;padding:24px 12px;">
+      <tr>
+        <td align="center">
+          <table role="presentation" width="100%" cellspacing="0" cellpadding="0" border="0" class="card" style="max-width:640px;background:#ffffff;border:1px solid #e5e7eb;border-radius:16px;overflow:hidden;">
+            <tr>
+              <td style="background:{brand_primary};padding:18px 20px;">
+                <table width="100%" cellspacing="0" cellpadding="0" border="0">
+                  <tr>
+                    <td align="left">
+                      <img src="{logo_url}"
+                           alt="CanaLogistiX"
+                           width="40"
+                           height="40"
+                           style="display:block;border:0;outline:none;text-decoration:none;border-radius:50%;object-fit:cover;">
+                    </td>
+                    <td align="right" style="font:600 16px/1.2 system-ui,-apple-system,'Segoe UI',Roboto,Helvetica,Arial;color:#e6fffb;">
+                      Package Ready for Pickup
+                    </td>
+                  </tr>
+                </table>
+              </td>
+            </tr>
+
+            <tr>
+              <td style="padding:28px 24px 6px;">
+                <h1 style="margin:0 0 10px;font:800 24px/1.25 system-ui,-apple-system,'Segoe UI',Roboto,Helvetica,Arial;color:#0f172a;">
+                  Package handed over by pharmacy! 📦
+                </h1>
+                <p style="margin:0 0 16px;font:400 14px/1.7 system-ui,-apple-system,'Segoe UI',Roboto,Helvetica,Arial;color:#475569;">
+                  Hello <strong>{driver.name}</strong>, the pharmacy <strong>{pharmacy.name}</strong> has confirmed handover 
+                  of order <strong>#{order.id}</strong> to you. The package is now ready for delivery to the customer.
+                </p>
+
+                <div style="margin:18px 0;background:#eff6ff;border:1px solid #3b82f6;border-radius:12px;padding:14px 18px;">
+                  <p style="margin:0;font:600 13px/1.6 system-ui,-apple-system,'Segoe UI',Roboto,Helvetica,Arial;color:#1e40af;">
+                    ✅ Status: <strong>Picked Up</strong> — Ready for delivery
+                  </p>
+                </div>
+
+                <div style="margin:18px 0;background:#f0fdfa;border:1px solid {brand_primary};border-radius:12px;padding:16px 18px;">
+                  <p style="margin:0 0 12px;font:700 15px/1.3 system-ui,-apple-system,'Segoe UI',Roboto,Helvetica,Arial;color:#0f172a;">
+                    📦 Order Information
+                  </p>
+                  <table width="100%" cellspacing="0" cellpadding="0" border="0">
+                    <tr>
+                      <td style="padding:4px 0;font:600 13px/1.5 system-ui,-apple-system,'Segoe UI',Roboto,Helvetica,Arial;color:#334155;">
+                        Order ID:
+                      </td>
+                      <td style="padding:4px 0;font:400 13px/1.5 system-ui,-apple-system,'Segoe UI',Roboto,Helvetica,Arial;color:#334155;">
+                        #{order.id}
+                      </td>
+                    </tr>
+                    <tr>
+                      <td style="padding:4px 0;font:600 13px/1.5 system-ui,-apple-system,'Segoe UI',Roboto,Helvetica,Arial;color:#334155;">
+                        Customer:
+                      </td>
+                      <td style="padding:4px 0;font:400 13px/1.5 system-ui,-apple-system,'Segoe UI',Roboto,Helvetica,Arial;color:#334155;">
+                        {order.customer_name}
+                      </td>
+                    </tr>
+                    <tr>
+                      <td style="padding:4px 0;font:600 13px/1.5 system-ui,-apple-system,'Segoe UI',Roboto,Helvetica,Arial;color:#334155;">
+                        Delivery Rate:
+                      </td>
+                      <td style="padding:4px 0;font:400 13px/1.5 system-ui,-apple-system,'Segoe UI',Roboto,Helvetica,Arial;color:#334155;">
+                        ${order.rate}
+                      </td>
+                    </tr>
+                    <tr>
+                      <td style="padding:4px 0;font:600 13px/1.5 system-ui,-apple-system,'Segoe UI',Roboto,Helvetica,Arial;color:#334155;">
+                        Pickup Date:
+                      </td>
+                      <td style="padding:4px 0;font:400 13px/1.5 system-ui,-apple-system,'Segoe UI',Roboto,Helvetica,Arial;color:#334155;">
+                        {pickup_date_str}
+                      </td>
+                    </tr>
+                    <tr>
+                      <td style="padding:4px 0;font:600 13px/1.5 system-ui,-apple-system,'Segoe UI',Roboto,Helvetica,Arial;color:#334155;">
+                        Handed Over At:
+                      </td>
+                      <td style="padding:4px 0;font:400 13px/1.5 system-ui,-apple-system,'Segoe UI',Roboto,Helvetica,Arial;color:#334155;">
+                        {now_str}
+                      </td>
+                    </tr>
+                  </table>
+                </div>
+
+                <div style="margin:18px 0;background:#f8fafc;border:1px solid #e2e8f0;border-radius:12px;padding:16px 18px;">
+                  <p style="margin:0 0 12px;font:700 15px/1.3 system-ui,-apple-system,'Segoe UI',Roboto,Helvetica,Arial;color:#0f172a;">
+                    🏢 Pickup Location (Pharmacy)
+                  </p>
+                  <table width="100%" cellspacing="0" cellpadding="0" border="0">
+                    <tr>
+                      <td style="padding:4px 0;font:600 13px/1.5 system-ui,-apple-system,'Segoe UI',Roboto,Helvetica,Arial;color:#334155;">
+                        Pharmacy Name:
+                      </td>
+                      <td style="padding:4px 0;font:400 13px/1.5 system-ui,-apple-system,'Segoe UI',Roboto,Helvetica,Arial;color:#334155;">
+                        {pharmacy.name}
+                      </td>
+                    </tr>
+                    <tr>
+                      <td style="padding:4px 0;font:600 13px/1.5 system-ui,-apple-system,'Segoe UI',Roboto,Helvetica,Arial;color:#334155;">
+                        Phone:
+                      </td>
+                      <td style="padding:4px 0;font:400 13px/1.5 system-ui,-apple-system,'Segoe UI',Roboto,Helvetica,Arial;color:#334155;">
+                        {pharmacy.phone_number}
+                      </td>
+                    </tr>
+                    <tr>
+                      <td style="padding:4px 0;font:600 13px/1.5 system-ui,-apple-system,'Segoe UI',Roboto,Helvetica,Arial;color:#334155;">
+                        Address:
+                      </td>
+                      <td style="padding:4px 0;font:400 13px/1.5 system-ui,-apple-system,'Segoe UI',Roboto,Helvetica,Arial;color:#334155;">
+                        {pharmacy.store_address}, {pharmacy.city}
+                      </td>
+                    </tr>
+                  </table>
+                </div>
+
+                <div style="margin:18px 0;background:#f0fdf4;border:1px solid #10b981;border-radius:12px;padding:16px 18px;">
+                  <p style="margin:0 0 12px;font:700 15px/1.3 system-ui,-apple-system,'Segoe UI',Roboto,Helvetica,Arial;color:#0f172a;">
+                    📸 Handover Proof Photo
+                  </p>
+                  <div style="margin:12px 0;text-align:center;">
+                    <img src="{public_url}" 
+                         alt="Handover Proof" 
+                         style="max-width:100%;height:auto;border-radius:8px;border:2px solid #e5e7eb;">
+                  </div>
+                  <p style="margin:8px 0 0;font:400 12px/1.5 system-ui,-apple-system,'Segoe UI',Roboto,Helvetica,Arial;color:#64748b;text-align:center;">
+                    Handover verification photo taken by pharmacy
+                  </p>
+                </div>
+
+                <div style="margin:18px 0;background:#fef3c7;border:1px solid {brand_accent};border-radius:12px;padding:16px 18px;">
+                  <p style="margin:0 0 12px;font:700 15px/1.3 system-ui,-apple-system,'Segoe UI',Roboto,Helvetica,Arial;color:#0f172a;">
+                    🏠 Delivery Destination
+                  </p>
+                  <p style="margin:0 0 4px;font:600 13px/1.5 system-ui,-apple-system,'Segoe UI',Roboto,Helvetica,Arial;color:#334155;">
+                    Customer: {order.customer_name}
+                  </p>
+                  <p style="margin:0 0 2px;font:400 13px/1.6 system-ui,-apple-system,'Segoe UI',Roboto,Helvetica,Arial;color:#475569;">
+                    {order.drop_address}
+                  </p>
+                  <p style="margin:0;font:400 13px/1.6 system-ui,-apple-system,'Segoe UI',Roboto,Helvetica,Arial;color:#475569;">
+                    {order.drop_city}
+                  </p>
+                </div>
+
+                <div style="margin:18px 0;background:#fef2f2;border:1px solid #ef4444;border-radius:12px;padding:16px 18px;">
+                  <p style="margin:0 0 8px;font:700 15px/1.3 system-ui,-apple-system,'Segoe UI',Roboto,Helvetica,Arial;color:#0f172a;">
+                    ⚠️ Next Steps
+                  </p>
+                  <p style="margin:0;font:400 13px/1.6 system-ui,-apple-system,'Segoe UI',Roboto,Helvetica,Arial;color:#475569;">
+                    Please proceed with the delivery to the customer at your earliest convenience. Remember to take a delivery proof photo upon completion.
+                  </p>
+                </div>
+
+                <hr style="border:0;border-top:1px solid #e5e7eb;margin:24px 0;">
+                <p class="muted" style="margin:0;font:400 12px/1.7 system-ui,-apple-system,'Segoe UI',Roboto,Helvetica,Arial;color:#6b7280;">
+                  For any questions or issues, Log in to the portal and raise a Support Ticket by contacting the Admin. Our team will be happy to assist you.
+                </p>
+              </td>
+            </tr>
+
+            <tr>
+              <td style="padding:0 24px 24px;">
+                <table width="100%" cellspacing="0" cellpadding="0" border="0" style="background:#f8fafc;border:1px dashed #e2e8f0;border-radius:12px;">
+                  <tr>
+                    <td style="padding:12px 16px;">
+                      <p style="margin:0;font:400 12px/1.6 system-ui,-apple-system,'Segoe UI',Roboto,Helvetica,Arial;color:#64748b;">
+                        Thank you for being a valued Delivery Partner with CanaLogistiX!
+                      </p>
+                    </td>
+                  </tr>
+                </table>
+              </td>
+            </tr>
+
+          </table>
+
+          <p style="margin:14px 0 0;font:400 12px/1.6 system-ui,-apple-system,'Segoe UI',Roboto,Helvetica,Arial;color:#94a3b8;">
+            © {timezone.now().year} CanaLogistiX - Cana Group of Companies. All rights reserved.
+          </p>
+        </td>
+      </tr>
+    </table>
+  </body>
+</html>
+"""
+                text = (
+                    f"Package Handover Confirmation - CanaLogistiX\n\n"
+                    f"Hello {driver.name},\n\n"
+                    f"The pharmacy {pharmacy.name} has confirmed handover of order #{order.id} to you. "
+                    f"The package is now ready for delivery to the customer.\n\n"
+                    f"ORDER INFORMATION:\n"
+                    f"- Order ID: #{order.id}\n"
+                    f"- Customer: {order.customer_name}\n"
+                    f"- Delivery Rate: ${order.rate}\n"
+                    f"- Pickup Date: {pickup_date_str}\n"
+                    f"- Handed Over At: {now_str}\n\n"
+                    f"PICKUP LOCATION (PHARMACY):\n"
+                    f"- Name: {pharmacy.name}\n"
+                    f"- Phone: {pharmacy.phone_number}\n"
+                    f"- Address: {pharmacy.store_address}, {pharmacy.city}\n\n"
+                    f"DELIVERY DESTINATION:\n"
+                    f"- Customer: {order.customer_name}\n"
+                    f"- Address: {order.drop_address}\n"
+                    f"- City: {order.drop_city}\n\n"
+                    f"Handover Proof Photo: {public_url}\n\n"
+                    f"Please proceed with the delivery to the customer. Remember to take a delivery proof photo upon completion.\n"
+                )
+
+                _send_html_email_operations(
+                    subject=f"Package Handed Over • Order #{order.id} Ready for Delivery",
+                    to_email=driver.email,
+                    html=html,
+                    text_fallback=text,
+                )
+                logger.info(f"Handover confirmation email sent to driver: {driver.email}")
+            except Exception as email_error:
+                logger.error(f"Failed to send handover email to driver: {email_error}")
+                # Don't fail the entire request if email fails
+                pass
+        
         logger.info("Upload process completed successfully")
         
         return JsonResponse({
@@ -926,9 +1179,6 @@ def upload_handover_image_api(request):
             'success': False,
             'error': f'An unexpected error occurred: {str(e)}'
         }, status=500)
-
-
-
 
 
 
@@ -1021,688 +1271,6 @@ def get_pending_orders(request):
     return JsonResponse({"error": "Invalid request method"}, status=405)
 
 
-# @csrf_exempt
-# def assign_driver(request):
-#     if request.method == "POST":
-#         try:
-#             body = json.loads(request.body.decode("utf-8"))
-#             order_id = body.get("orderId")
-#             driver_id = body.get("driverId")
-
-#             if not order_id or not driver_id:
-#                 return JsonResponse({"error": "orderId and driverId are required"}, status=400)
-
-#             # Fetch order & driver
-#             order = DeliveryOrder.objects.get(id=order_id)
-#             driver = Driver.objects.get(id=driver_id)
-
-#             # Update order
-#             order.driver = driver
-#             order.status = "accepted"
-#             order.save()
-
-#             # Log in OrderTracking
-#             tracking = OrderTracking.objects.create(
-#                 order=order,
-#                 driver=driver,
-#                 pharmacy=order.pharmacy,
-#                 step="accepted",
-#                 performed_by=f"Driver: {driver.name}",
-#                 note=f"{order.pharmacy.id}_{order.id}_{driver.id}_Accepted",
-#                 image_url=None
-#             )
-
-#             # ---- Send order acceptance confirmation email to driver ----
-#             try:
-#                 brand_primary = settings.BRAND_COLORS['primary']
-#                 brand_primary_dark = settings.BRAND_COLORS['primary_dark']
-#                 brand_accent = settings.BRAND_COLORS['accent']
-#                 now_str = timezone.now().strftime("%b %d, %Y %H:%M %Z")
-#                 logo_url = settings.LOGO_URL
-                
-#                 # Format pickup date
-#                 pickup_date_str = order.pickup_day.strftime("%A, %B %d, %Y")
-                
-#                 # Calculate estimated delivery time (pickup day + 1 hour as example)
-#                 # You can adjust this logic based on your business rules
-#                 estimated_delivery = "Same day delivery"
-
-#                 html = f"""\
-# <!doctype html>
-# <html lang="en">
-#   <head>
-#     <meta charset="utf-8">
-#     <title>Order Accepted • CanaLogistiX</title>
-#     <meta name="viewport" content="width=device-width, initial-scale=1">
-#     <style>
-#       @media (prefers-color-scheme: dark) {{
-#         body {{ background: #0b1220 !important; color: #e5e7eb !important; }}
-#         .card {{ background: #0f172a !important; border-color: #1f2937 !important; }}
-#         .muted {{ color: #94a3b8 !important; }}
-#       }}
-#     </style>
-#   </head>
-#   <body style="margin:0;padding:0;background:#f4f7f9;">
-#     <div style="display:none;visibility:hidden;opacity:0;height:0;width:0;overflow:hidden;">
-#       Order #{order.id} confirmed — ready for pickup and delivery.
-#     </div>
-
-#     <table role="presentation" width="100%" cellspacing="0" cellpadding="0" border="0" style="background:#f4f7f9;padding:24px 12px;">
-#       <tr>
-#         <td align="center">
-#           <table role="presentation" width="100%" cellspacing="0" cellpadding="0" border="0" class="card" style="max-width:640px;background:#ffffff;border:1px solid #e5e7eb;border-radius:16px;overflow:hidden;">
-#             <tr>
-#             <td style="background:{brand_primary};padding:18px 20px;">
-#                 <table width="100%" cellspacing="0" cellpadding="0" border="0">
-#                 <tr>
-#                     <td align="left">
-#                     <img src="{logo_url}"
-#                         alt="CanaLogistiX"
-#                         width="40"
-#                         height="40"
-#                         style="display:block;border:0;outline:none;text-decoration:none;border-radius:50%;object-fit:cover;">
-#                     </td>
-#                     <td align="right" style="font:600 16px/1.2 system-ui,-apple-system,'Segoe UI',Roboto,Helvetica,Arial;color:#e6fffb;">
-#                     Order Accepted
-#                     </td>
-#                 </tr>
-#                 </table>
-#             </td>
-#             </tr>
-
-
-#             <tr>
-#               <td style="padding:28px 24px 6px;">
-#                 <h1 style="margin:0 0 10px;font:800 24px/1.25 system-ui,-apple-system,'Segoe UI',Roboto,Helvetica,Arial;color:#0f172a;">
-#                   Hi {driver.name}, order confirmed!
-#                 </h1>
-#                 <p style="margin:0 0 16px;font:400 14px/1.7 system-ui,-apple-system,'Segoe UI',Roboto,Helvetica,Arial;color:#475569;">
-#                   You've successfully accepted delivery order <strong>#{order.id}</strong>. Please review the details below 
-#                   and ensure timely pickup and delivery. Safe travels!
-#                 </p>
-
-#                 <div style="margin:18px 0;background:#f0fdfa;border:1px solid {brand_primary};border-radius:12px;padding:16px 18px;">
-#                   <p style="margin:0 0 12px;font:700 15px/1.3 system-ui,-apple-system,'Segoe UI',Roboto,Helvetica,Arial;color:#0f172a;">
-#                     📦 Order Information
-#                   </p>
-#                   <table width="100%" cellspacing="0" cellpadding="0" border="0">
-#                     <tr>
-#                       <td style="padding:4px 0;font:600 13px/1.5 system-ui,-apple-system,'Segoe UI',Roboto,Helvetica,Arial;color:#334155;">
-#                         Order ID:
-#                       </td>
-#                       <td style="padding:4px 0;font:400 13px/1.5 system-ui,-apple-system,'Segoe UI',Roboto,Helvetica,Arial;color:#334155;">
-#                         #{order.id}
-#                       </td>
-#                     </tr>
-#                     <tr>
-#                       <td style="padding:4px 0;font:600 13px/1.5 system-ui,-apple-system,'Segoe UI',Roboto,Helvetica,Arial;color:#334155;">
-#                         Pharmacy:
-#                       </td>
-#                       <td style="padding:4px 0;font:400 13px/1.5 system-ui,-apple-system,'Segoe UI',Roboto,Helvetica,Arial;color:#334155;">
-#                         {order.pharmacy.name}
-#                       </td>
-#                     </tr>
-#                     <tr>
-#                       <td style="padding:4px 0;font:600 13px/1.5 system-ui,-apple-system,'Segoe UI',Roboto,Helvetica,Arial;color:#334155;">
-#                         Customer:
-#                       </td>
-#                       <td style="padding:4px 0;font:400 13px/1.5 system-ui,-apple-system,'Segoe UI',Roboto,Helvetica,Arial;color:#334155;">
-#                         {order.customer_name}
-#                       </td>
-#                     </tr>
-#                     <tr>
-#                       <td style="padding:4px 0;font:600 13px/1.5 system-ui,-apple-system,'Segoe UI',Roboto,Helvetica,Arial;color:#334155;">
-#                         Delivery Rate:
-#                       </td>
-#                       <td style="padding:4px 0;font:400 13px/1.5 system-ui,-apple-system,'Segoe UI',Roboto,Helvetica,Arial;color:#334155;">
-#                         ${order.rate}
-#                       </td>
-#                     </tr>
-#                     <tr>
-#                       <td style="padding:4px 0;font:600 13px/1.5 system-ui,-apple-system,'Segoe UI',Roboto,Helvetica,Arial;color:#334155;">
-#                         Pickup Date:
-#                       </td>
-#                       <td style="padding:4px 0;font:400 13px/1.5 system-ui,-apple-system,'Segoe UI',Roboto,Helvetica,Arial;color:#334155;">
-#                         {pickup_date_str}
-#                       </td>
-#                     </tr>
-#                   </table>
-#                 </div>
-
-#                 <div style="margin:18px 0;background:#fff7ed;border:1px solid {brand_accent};border-radius:12px;padding:16px 18px;">
-#                   <p style="margin:0 0 10px;font:700 15px/1.3 system-ui,-apple-system,'Segoe UI',Roboto,Helvetica,Arial;color:#0f172a;">
-#                     📍 Pickup Location
-#                   </p>
-#                   <p style="margin:0 0 4px;font:600 13px/1.5 system-ui,-apple-system,'Segoe UI',Roboto,Helvetica,Arial;color:#334155;">
-#                     {order.pharmacy.name}
-#                   </p>
-#                   <p style="margin:0 0 2px;font:400 13px/1.6 system-ui,-apple-system,'Segoe UI',Roboto,Helvetica,Arial;color:#475569;">
-#                     {order.pickup_address}
-#                   </p>
-#                   <p style="margin:0;font:400 13px/1.6 system-ui,-apple-system,'Segoe UI',Roboto,Helvetica,Arial;color:#475569;">
-#                     {order.pickup_city}
-#                   </p>
-#                   <p style="margin:8px 0 0;font:400 12px/1.5 system-ui,-apple-system,'Segoe UI',Roboto,Helvetica,Arial;color:#64748b;">
-#                     📞 {order.pharmacy.phone_number}
-#                   </p>
-#                 </div>
-
-#                 <div style="margin:18px 0;background:#f0fdf4;border:1px solid #10b981;border-radius:12px;padding:16px 18px;">
-#                   <p style="margin:0 0 10px;font:700 15px/1.3 system-ui,-apple-system,'Segoe UI',Roboto,Helvetica,Arial;color:#0f172a;">
-#                     🏠 Delivery Location
-#                   </p>
-#                   <p style="margin:0 0 4px;font:600 13px/1.5 system-ui,-apple-system,'Segoe UI',Roboto,Helvetica,Arial;color:#334155;">
-#                     Customer: {order.customer_name}
-#                   </p>
-#                   <p style="margin:0 0 2px;font:400 13px/1.6 system-ui,-apple-system,'Segoe UI',Roboto,Helvetica,Arial;color:#475569;">
-#                     {order.drop_address}
-#                   </p>
-#                   <p style="margin:0;font:400 13px/1.6 system-ui,-apple-system,'Segoe UI',Roboto,Helvetica,Arial;color:#475569;">
-#                     {order.drop_city}
-#                   </p>
-#                   <p style="margin:8px 0 0;font:400 12px/1.5 system-ui,-apple-system,'Segoe UI',Roboto,Helvetica,Arial;color:#64748b;">
-#                     ⏱️ {estimated_delivery}
-#                   </p>
-#                 </div>
-
-#                 <div style="margin:18px 0;background:#fef3c7;border-left:3px solid #f59e0b;border-radius:8px;padding:14px 16px;">
-#                   <p style="margin:0;font:600 13px/1.6 system-ui,-apple-system,'Segoe UI',Roboto,Helvetica,Arial;color:#92400e;">
-#                     ⚠️ Important: Please capture photos at pickup and delivery for order verification and tracking.
-#                   </p>
-#                 </div>
-
-#                 <p style="margin:8px 0 0;font:400 12px/1.7 system-ui,-apple-system,'Segoe UI',Roboto,Helvetica,Arial;color:#64748b;">
-#                   Order accepted on <strong style="color:{brand_primary_dark};">{now_str}</strong>.
-#                 </p>
-
-#                 <hr style="border:0;border-top:1px solid #e5e7eb;margin:24px 0;">
-#                 <p class="muted" style="margin:0;font:400 12px/1.7 system-ui,-apple-system,'Segoe UI',Roboto,Helvetica,Arial;color:#6b7280;">
-#                   Questions or issues with this delivery? Contact operations at {settings.EMAIL_OPERATIONS} or reply to this email.
-#                 </p>
-#               </td>
-#             </tr>
-
-#             <tr>
-#               <td style="padding:0 24px 24px;">
-#                 <table width="100%" cellspacing="0" cellpadding="0" border="0" style="background:#f8fafc;border:1px dashed #e2e8f0;border-radius:12px;">
-#                   <tr>
-#                     <td style="padding:12px 16px;">
-#                       <p style="margin:0;font:400 12px/1.6 system-ui,-apple-system,'Segoe UI',Roboto,Helvetica,Arial;color:#64748b;">
-#                         Drive safe and thank you for being part of the CanaLogistiX team!
-#                       </p>
-#                     </td>
-#                   </tr>
-#                 </table>
-#               </td>
-#             </tr>
-
-#           </table>
-
-#           <p style="margin:14px 0 0;font:400 12px/1.6 system-ui,-apple-system,'Segoe UI',Roboto,Helvetica,Arial;color:#94a3b8;">
-#             © {timezone.now().year} CanaLogistiX - Cana Group of Companies. All rights reserved.
-#           </p>
-#         </td>
-#       </tr>
-#     </table>
-#   </body>
-# </html>
-# """
-#                 text = (
-#                     f"Order Accepted - CanaLogistiX\n\n"
-#                     f"Hi {driver.name},\n\n"
-#                     f"You've successfully accepted delivery order #{order.id}.\n\n"
-#                     f"ORDER DETAILS:\n"
-#                     f"- Pharmacy: {order.pharmacy.name}\n"
-#                     f"- Customer: {order.customer_name}\n"
-#                     f"- Delivery Rate: ${order.rate}\n"
-#                     f"- Pickup Date: {pickup_date_str}\n\n"
-#                     f"PICKUP LOCATION:\n"
-#                     f"{order.pharmacy.name}\n"
-#                     f"{order.pickup_address}\n"
-#                     f"{order.pickup_city}\n"
-#                     f"Phone: {order.pharmacy.phone_number}\n\n"
-#                     f"DELIVERY LOCATION:\n"
-#                     f"Customer: {order.customer_name}\n"
-#                     f"{order.drop_address}\n"
-#                     f"{order.drop_city}\n\n"
-#                     f"Remember to capture photos at pickup and delivery.\n\n"
-#                     f"Questions? Contact operations at {settings.EMAIL_OPERATIONS}\n"
-#                 )
-
-#                 _send_html_email_operations(
-#                     subject=f"Order #{order.id} Accepted • CanaLogistiX Delivery",
-#                     to_email=driver.email,
-#                     html=html,
-#                     text_fallback=text,
-#                 )
-#             except Exception as e:
-#                 logger.exception("Failed to send order acceptance confirmation email to driver")
-
-#             return JsonResponse({
-#                 "message": "Driver assigned and order accepted",
-#                 "orderId": order.id,
-#                 "driverId": driver.id,
-#                 "trackingId": tracking.id
-#             }, status=200)
-
-#         except DeliveryOrder.DoesNotExist:
-#             return JsonResponse({"error": "Order not found"}, status=404)
-#         except Driver.DoesNotExist:
-#             return JsonResponse({"error": "Driver not found"}, status=404)
-#         except Exception as e:
-#             return JsonResponse({"error": str(e)}, status=500)
-
-#     return JsonResponse({"error": "Invalid request method"}, status=405)
-
-
-
-# @csrf_exempt
-# def assign_driver(request):
-#     if request.method == "POST":
-#         try:
-#             body = json.loads(request.body.decode("utf-8"))
-#             order_id = body.get("orderId")
-#             driver_id = body.get("driverId")
-
-#             if not order_id or not driver_id:
-#                 return JsonResponse({"error": "orderId and driverId are required"}, status=400)
-
-#             # Fetch order & driver
-#             order = DeliveryOrder.objects.get(id=order_id)
-#             driver = Driver.objects.get(id=driver_id)
-
-#             # Update order
-#             order.driver = driver
-#             order.status = "accepted"
-#             order.save()
-
-#             # Log in OrderTracking
-#             tracking = OrderTracking.objects.create(
-#                 order=order,
-#                 driver=driver,
-#                 pharmacy=order.pharmacy,
-#                 step="accepted",
-#                 performed_by=f"Driver: {driver.name}",
-#                 note=f"{order.pharmacy.id}_{order.id}_{driver.id}_Accepted",
-#                 image_url=None
-#             )
-
-#             # ---- Send order acceptance confirmation email to driver ----
-#             try:
-#                 brand_primary = settings.BRAND_COLORS['primary']
-#                 brand_primary_dark = settings.BRAND_COLORS['primary_dark']
-#                 brand_accent = settings.BRAND_COLORS['accent']
-#                 now_str = timezone.now().strftime("%b %d, %Y %H:%M %Z")
-#                 logo_url = settings.LOGO_URL
-                
-#                 # Format pickup date
-#                 pickup_date_str = order.pickup_day.strftime("%A, %B %d, %Y")
-                
-#                 # Calculate estimated delivery time (pickup day + 1 hour as example)
-#                 # You can adjust this logic based on your business rules
-#                 estimated_delivery = "Same day delivery"
-
-#                 html = f"""\
-# <!doctype html>
-# <html lang="en">
-#   <head>
-#     <meta charset="utf-8">
-#     <title>Order Accepted • CanaLogistiX</title>
-#     <meta name="viewport" content="width=device-width, initial-scale=1">
-#     <style>
-#       @media (prefers-color-scheme: dark) {{
-#         body {{ background: #0b1220 !important; color: #e5e7eb !important; }}
-#         .card {{ background: #0f172a !important; border-color: #1f2937 !important; }}
-#         .muted {{ color: #94a3b8 !important; }}
-#       }}
-#     </style>
-#   </head>
-#   <body style="margin:0;padding:0;background:#f4f7f9;">
-#     <div style="display:none;visibility:hidden;opacity:0;height:0;width:0;overflow:hidden;">
-#       Order #{order.id} confirmed — ready for pickup and delivery.
-#     </div>
-
-#     <table role="presentation" width="100%" cellspacing="0" cellpadding="0" border="0" style="background:#f4f7f9;padding:24px 12px;">
-#       <tr>
-#         <td align="center">
-#           <table role="presentation" width="100%" cellspacing="0" cellpadding="0" border="0" class="card" style="max-width:640px;background:#ffffff;border:1px solid #e5e7eb;border-radius:16px;overflow:hidden;">
-#             <tr>
-#             <td style="background:{brand_primary};padding:18px 20px;">
-#                 <table width="100%" cellspacing="0" cellpadding="0" border="0">
-#                 <tr>
-#                     <td align="left">
-#                     <img src="{logo_url}"
-#                         alt="CanaLogistiX"
-#                         width="40"
-#                         height="40"
-#                         style="display:block;border:0;outline:none;text-decoration:none;border-radius:50%;object-fit:cover;">
-#                     </td>
-#                     <td align="right" style="font:600 16px/1.2 system-ui,-apple-system,'Segoe UI',Roboto,Helvetica,Arial;color:#e6fffb;">
-#                     Order Accepted
-#                     </td>
-#                 </tr>
-#                 </table>
-#             </td>
-#             </tr>
-
-
-#             <tr>
-#               <td style="padding:28px 24px 6px;">
-#                 <h1 style="margin:0 0 10px;font:800 24px/1.25 system-ui,-apple-system,'Segoe UI',Roboto,Helvetica,Arial;color:#0f172a;">
-#                   Hi {driver.name}, order confirmed!
-#                 </h1>
-#                 <p style="margin:0 0 16px;font:400 14px/1.7 system-ui,-apple-system,'Segoe UI',Roboto,Helvetica,Arial;color:#475569;">
-#                   You've successfully accepted delivery order <strong>#{order.id}</strong>. Please review the details below 
-#                   and ensure timely pickup and delivery. Safe travels!
-#                 </p>
-
-#                 <div style="margin:18px 0;background:#f0fdfa;border:1px solid {brand_primary};border-radius:12px;padding:16px 18px;">
-#                   <p style="margin:0 0 12px;font:700 15px/1.3 system-ui,-apple-system,'Segoe UI',Roboto,Helvetica,Arial;color:#0f172a;">
-#                     📦 Order Information
-#                   </p>
-#                   <table width="100%" cellspacing="0" cellpadding="0" border="0">
-#                     <tr>
-#                       <td style="padding:4px 0;font:600 13px/1.5 system-ui,-apple-system,'Segoe UI',Roboto,Helvetica,Arial;color:#334155;">
-#                         Order ID:
-#                       </td>
-#                       <td style="padding:4px 0;font:400 13px/1.5 system-ui,-apple-system,'Segoe UI',Roboto,Helvetica,Arial;color:#334155;">
-#                         #{order.id}
-#                       </td>
-#                     </tr>
-#                     <tr>
-#                       <td style="padding:4px 0;font:600 13px/1.5 system-ui,-apple-system,'Segoe UI',Roboto,Helvetica,Arial;color:#334155;">
-#                         Pharmacy:
-#                       </td>
-#                       <td style="padding:4px 0;font:400 13px/1.5 system-ui,-apple-system,'Segoe UI',Roboto,Helvetica,Arial;color:#334155;">
-#                         {order.pharmacy.name}
-#                       </td>
-#                     </tr>
-#                     <tr>
-#                       <td style="padding:4px 0;font:600 13px/1.5 system-ui,-apple-system,'Segoe UI',Roboto,Helvetica,Arial;color:#334155;">
-#                         Customer:
-#                       </td>
-#                       <td style="padding:4px 0;font:400 13px/1.5 system-ui,-apple-system,'Segoe UI',Roboto,Helvetica,Arial;color:#334155;">
-#                         {order.customer_name}
-#                       </td>
-#                     </tr>
-#                     <tr>
-#                       <td style="padding:4px 0;font:600 13px/1.5 system-ui,-apple-system,'Segoe UI',Roboto,Helvetica,Arial;color:#334155;">
-#                         Delivery Rate:
-#                       </td>
-#                       <td style="padding:4px 0;font:400 13px/1.5 system-ui,-apple-system,'Segoe UI',Roboto,Helvetica,Arial;color:#334155;">
-#                         ${order.rate}
-#                       </td>
-#                     </tr>
-#                     <tr>
-#                       <td style="padding:4px 0;font:600 13px/1.5 system-ui,-apple-system,'Segoe UI',Roboto,Helvetica,Arial;color:#334155;">
-#                         Pickup Date:
-#                       </td>
-#                       <td style="padding:4px 0;font:400 13px/1.5 system-ui,-apple-system,'Segoe UI',Roboto,Helvetica,Arial;color:#334155;">
-#                         {pickup_date_str}
-#                       </td>
-#                     </tr>
-#                   </table>
-#                 </div>
-
-#                 <div style="margin:18px 0;background:#fff7ed;border:1px solid {brand_accent};border-radius:12px;padding:16px 18px;">
-#                   <p style="margin:0 0 10px;font:700 15px/1.3 system-ui,-apple-system,'Segoe UI',Roboto,Helvetica,Arial;color:#0f172a;">
-#                     📍 Pickup Location
-#                   </p>
-#                   <p style="margin:0 0 4px;font:600 13px/1.5 system-ui,-apple-system,'Segoe UI',Roboto,Helvetica,Arial;color:#334155;">
-#                     {order.pharmacy.name}
-#                   </p>
-#                   <p style="margin:0 0 2px;font:400 13px/1.6 system-ui,-apple-system,'Segoe UI',Roboto,Helvetica,Arial;color:#475569;">
-#                     {order.pickup_address}
-#                   </p>
-#                   <p style="margin:0;font:400 13px/1.6 system-ui,-apple-system,'Segoe UI',Roboto,Helvetica,Arial;color:#475569;">
-#                     {order.pickup_city}
-#                   </p>
-#                   <p style="margin:8px 0 0;font:400 12px/1.5 system-ui,-apple-system,'Segoe UI',Roboto,Helvetica,Arial;color:#64748b;">
-#                     📞 {order.pharmacy.phone_number}
-#                   </p>
-#                 </div>
-
-#                 <div style="margin:18px 0;background:#f0fdf4;border:1px solid #10b981;border-radius:12px;padding:16px 18px;">
-#                   <p style="margin:0 0 10px;font:700 15px/1.3 system-ui,-apple-system,'Segoe UI',Roboto,Helvetica,Arial;color:#0f172a;">
-#                     🏠 Delivery Location
-#                   </p>
-#                   <p style="margin:0 0 4px;font:600 13px/1.5 system-ui,-apple-system,'Segoe UI',Roboto,Helvetica,Arial;color:#334155;">
-#                     Customer: {order.customer_name}
-#                   </p>
-#                   <p style="margin:0 0 2px;font:400 13px/1.6 system-ui,-apple-system,'Segoe UI',Roboto,Helvetica,Arial;color:#475569;">
-#                     {order.drop_address}
-#                   </p>
-#                   <p style="margin:0;font:400 13px/1.6 system-ui,-apple-system,'Segoe UI',Roboto,Helvetica,Arial;color:#475569;">
-#                     {order.drop_city}
-#                   </p>
-#                   <p style="margin:8px 0 0;font:400 12px/1.5 system-ui,-apple-system,'Segoe UI',Roboto,Helvetica,Arial;color:#64748b;">
-#                     ⏱️ {estimated_delivery}
-#                   </p>
-#                 </div>
-
-#                 <div style="margin:18px 0;background:#fef3c7;border-left:3px solid #f59e0b;border-radius:8px;padding:14px 16px;">
-#                   <p style="margin:0;font:600 13px/1.6 system-ui,-apple-system,'Segoe UI',Roboto,Helvetica,Arial;color:#92400e;">
-#                     ⚠️ Important: Please capture photos at pickup and delivery for order verification and tracking.
-#                   </p>
-#                 </div>
-
-#                 <p style="margin:8px 0 0;font:400 12px/1.7 system-ui,-apple-system,'Segoe UI',Roboto,Helvetica,Arial;color:#64748b;">
-#                   Order accepted on <strong style="color:{brand_primary_dark};">{now_str}</strong>.
-#                 </p>
-
-#                 <hr style="border:0;border-top:1px solid #e5e7eb;margin:24px 0;">
-#                 <p class="muted" style="margin:0;font:400 12px/1.7 system-ui,-apple-system,'Segoe UI',Roboto,Helvetica,Arial;color:#6b7280;">
-#                   Questions or issues with this delivery? Contact operations at {settings.EMAIL_OPERATIONS} or reply to this email.
-#                 </p>
-#               </td>
-#             </tr>
-
-#             <tr>
-#               <td style="padding:0 24px 24px;">
-#                 <table width="100%" cellspacing="0" cellpadding="0" border="0" style="background:#f8fafc;border:1px dashed #e2e8f0;border-radius:12px;">
-#                   <tr>
-#                     <td style="padding:12px 16px;">
-#                       <p style="margin:0;font:400 12px/1.6 system-ui,-apple-system,'Segoe UI',Roboto,Helvetica,Arial;color:#64748b;">
-#                         Drive safe and thank you for being part of the CanaLogistiX team!
-#                       </p>
-#                     </td>
-#                   </tr>
-#                 </table>
-#               </td>
-#             </tr>
-
-#           </table>
-
-#           <p style="margin:14px 0 0;font:400 12px/1.6 system-ui,-apple-system,'Segoe UI',Roboto,Helvetica,Arial;color:#94a3b8;">
-#             © {timezone.now().year} CanaLogistiX - Cana Group of Companies. All rights reserved.
-#           </p>
-#         </td>
-#       </tr>
-#     </table>
-#   </body>
-# </html>
-# """
-#                 text = (
-#                     f"Order Accepted - CanaLogistiX\n\n"
-#                     f"Hi {driver.name},\n\n"
-#                     f"You've successfully accepted delivery order #{order.id}.\n\n"
-#                     f"ORDER DETAILS:\n"
-#                     f"- Pharmacy: {order.pharmacy.name}\n"
-#                     f"- Customer: {order.customer_name}\n"
-#                     f"- Delivery Rate: ${order.rate}\n"
-#                     f"- Pickup Date: {pickup_date_str}\n\n"
-#                     f"PICKUP LOCATION:\n"
-#                     f"{order.pharmacy.name}\n"
-#                     f"{order.pickup_address}\n"
-#                     f"{order.pickup_city}\n"
-#                     f"Phone: {order.pharmacy.phone_number}\n\n"
-#                     f"DELIVERY LOCATION:\n"
-#                     f"Customer: {order.customer_name}\n"
-#                     f"{order.drop_address}\n"
-#                     f"{order.drop_city}\n\n"
-#                     f"Remember to capture photos at pickup and delivery.\n\n"
-#                     f"Questions? Contact operations at {settings.EMAIL_OPERATIONS}\n"
-#                 )
-
-#                 _send_html_email_operations(
-#                     subject=f"Order #{order.id} Accepted • CanaLogistiX Delivery",
-#                     to_email=driver.email,
-#                     html=html,
-#                     text_fallback=text,
-#                 )
-#             except Exception as e:
-#                 print(f"ERROR sending driver email: {str(e)}")
-#                 import traceback
-#                 traceback.print_exc()
-
-#             # ---- Send order assignment notification email to pharmacy ----
-#             try:
-#                 brand_primary = settings.BRAND_COLORS['primary']
-#                 brand_primary_dark = settings.BRAND_COLORS['primary_dark']
-#                 brand_accent = settings.BRAND_COLORS['accent']
-#                 now_str = timezone.now().strftime("%b %d, %Y %H:%M %Z")
-#                 logo_url = settings.LOGO_URL
-                
-#                 pickup_date_str = order.pickup_day.strftime("%A, %B %d, %Y")
-#                 estimated_delivery = "Same day delivery"
-
-#                 pharmacy_html = f"""\
-# <!doctype html>
-# <html lang="en">
-#   <head>
-#     <meta charset="utf-8">
-#     <title>Driver Assigned • CanaLogistiX</title>
-#     <meta name="viewport" content="width=device-width, initial-scale=1">
-#     <style>
-#       @media (prefers-color-scheme: dark) {{
-#         body {{ background: #0b1220 !important; color: #e5e7eb !important; }}
-#         .card {{ background: #0f172a !important; border-color: #1f2937 !important; }}
-#         .muted {{ color: #94a3b8 !important; }}
-#       }}
-#     </style>
-#   </head>
-#   <body style="margin:0;padding:0;background:#f4f7f9;">
-#     <table role="presentation" width="100%" cellspacing="0" cellpadding="0" border="0" style="background:#f4f7f9;padding:24px 12px;">
-#       <tr>
-#         <td align="center">
-#           <table role="presentation" width="100%" cellspacing="0" cellpadding="0" border="0" class="card" style="max-width:640px;background:#ffffff;border:1px solid #e5e7eb;border-radius:16px;overflow:hidden;">
-#             <tr>
-#             <td style="background:{brand_primary};padding:18px 20px;">
-#                 <table width="100%" cellspacing="0" cellpadding="0" border="0">
-#                 <tr>
-#                     <td align="left">
-#                     <img src="{logo_url}" alt="CanaLogistiX" width="40" height="40" style="display:block;border:0;outline:none;text-decoration:none;border-radius:50%;object-fit:cover;">
-#                     </td>
-#                     <td align="right" style="font:600 16px/1.2 system-ui,-apple-system,'Segoe UI',Roboto,Helvetica,Arial;color:#e6fffb;">
-#                     Driver Assigned
-#                     </td>
-#                 </tr>
-#                 </table>
-#             </td>
-#             </tr>
-#             <tr>
-#               <td style="padding:28px 24px 6px;">
-#                 <h1 style="margin:0 0 10px;font:800 24px/1.25 system-ui,-apple-system,'Segoe UI',Roboto,Helvetica,Arial;color:#0f172a;">
-#                   Great news! Driver assigned to your order
-#                 </h1>
-#                 <p style="margin:0 0 16px;font:400 14px/1.7 system-ui,-apple-system,'Segoe UI',Roboto,Helvetica,Arial;color:#475569;">
-#                   Hello <strong>{order.pharmacy.name}</strong>, your delivery order <strong>#{order.id}</strong> has been accepted by a driver and is now in progress.
-#                 </p>
-#                 <div style="margin:18px 0;background:#f0fdf4;border:1px solid #10b981;border-radius:12px;padding:14px 18px;">
-#                   <p style="margin:0;font:600 13px/1.6 system-ui,-apple-system,'Segoe UI',Roboto,Helvetica,Arial;color:#166534;">
-#                     ✓ Order Status: <strong>Accepted</strong> — Driver will arrive for pickup soon.
-#                   </p>
-#                 </div>
-#                 <div style="margin:18px 0;background:#f0fdfa;border:1px solid {brand_primary};border-radius:12px;padding:16px 18px;">
-#                   <p style="margin:0 0 12px;font:700 15px/1.3 system-ui,-apple-system,'Segoe UI',Roboto,Helvetica,Arial;color:#0f172a;">📦 Order Information</p>
-#                   <table width="100%" cellspacing="0" cellpadding="0" border="0">
-#                     <tr><td style="padding:4px 0;font:600 13px/1.5 system-ui,-apple-system,'Segoe UI',Roboto,Helvetica,Arial;color:#334155;">Order ID:</td><td style="padding:4px 0;font:400 13px/1.5 system-ui,-apple-system,'Segoe UI',Roboto,Helvetica,Arial;color:#334155;">#{order.id}</td></tr>
-#                     <tr><td style="padding:4px 0;font:600 13px/1.5 system-ui,-apple-system,'Segoe UI',Roboto,Helvetica,Arial;color:#334155;">Customer:</td><td style="padding:4px 0;font:400 13px/1.5 system-ui,-apple-system,'Segoe UI',Roboto,Helvetica,Arial;color:#334155;">{order.customer_name}</td></tr>
-#                     <tr><td style="padding:4px 0;font:600 13px/1.5 system-ui,-apple-system,'Segoe UI',Roboto,Helvetica,Arial;color:#334155;">Delivery Rate:</td><td style="padding:4px 0;font:400 13px/1.5 system-ui,-apple-system,'Segoe UI',Roboto,Helvetica,Arial;color:#334155;">${order.rate}</td></tr>
-#                     <tr><td style="padding:4px 0;font:600 13px/1.5 system-ui,-apple-system,'Segoe UI',Roboto,Helvetica,Arial;color:#334155;">Pickup Date:</td><td style="padding:4px 0;font:400 13px/1.5 system-ui,-apple-system,'Segoe UI',Roboto,Helvetica,Arial;color:#334155;">{pickup_date_str}</td></tr>
-#                     <tr><td style="padding:4px 0;font:600 13px/1.5 system-ui,-apple-system,'Segoe UI',Roboto,Helvetica,Arial;color:#334155;">Estimated Delivery:</td><td style="padding:4px 0;font:400 13px/1.5 system-ui,-apple-system,'Segoe UI',Roboto,Helvetica,Arial;color:#334155;">{estimated_delivery}</td></tr>
-#                   </table>
-#                 </div>
-#                 <div style="margin:18px 0;background:#eff6ff;border:1px solid #3b82f6;border-radius:12px;padding:16px 18px;">
-#                   <p style="margin:0 0 10px;font:700 15px/1.3 system-ui,-apple-system,'Segoe UI',Roboto,Helvetica,Arial;color:#0f172a;">🚗 Driver Information</p>
-#                   <table width="100%" cellspacing="0" cellpadding="0" border="0">
-#                     <tr><td style="padding:4px 0;font:600 13px/1.5 system-ui,-apple-system,'Segoe UI',Roboto,Helvetica,Arial;color:#334155;">Driver Name:</td><td style="padding:4px 0;font:400 13px/1.5 system-ui,-apple-system,'Segoe UI',Roboto,Helvetica,Arial;color:#334155;">{driver.name}</td></tr>
-#                     <tr><td style="padding:4px 0;font:600 13px/1.5 system-ui,-apple-system,'Segoe UI',Roboto,Helvetica,Arial;color:#334155;">Driver Phone:</td><td style="padding:4px 0;font:400 13px/1.5 system-ui,-apple-system,'Segoe UI',Roboto,Helvetica,Arial;color:#334155;">{driver.phone_number}</td></tr>
-#                     <tr><td style="padding:4px 0;font:600 13px/1.5 system-ui,-apple-system,'Segoe UI',Roboto,Helvetica,Arial;color:#334155;">Vehicle:</td><td style="padding:4px 0;font:400 13px/1.5 system-ui,-apple-system,'Segoe UI',Roboto,Helvetica,Arial;color:#334155;">{driver.vehicle_model} ({driver.vehicle_plate})</td></tr>
-#                   </table>
-#                 </div>
-#                 <div style="margin:18px 0;background:#fff7ed;border:1px solid {brand_accent};border-radius:12px;padding:16px 18px;">
-#                   <p style="margin:0 0 10px;font:700 15px/1.3 system-ui,-apple-system,'Segoe UI',Roboto,Helvetica,Arial;color:#0f172a;">📍 Pickup Location</p>
-#                   <p style="margin:0 0 4px;font:600 13px/1.5 system-ui,-apple-system,'Segoe UI',Roboto,Helvetica,Arial;color:#334155;">{order.pharmacy.name}</p>
-#                   <p style="margin:0 0 2px;font:400 13px/1.6 system-ui,-apple-system,'Segoe UI',Roboto,Helvetica,Arial;color:#475569;">{order.pickup_address}</p>
-#                   <p style="margin:0;font:400 13px/1.6 system-ui,-apple-system,'Segoe UI',Roboto,Helvetica,Arial;color:#475569;">{order.pickup_city}</p>
-#                 </div>
-#                 <div style="margin:18px 0;background:#f0fdf4;border:1px solid #10b981;border-radius:12px;padding:16px 18px;">
-#                   <p style="margin:0 0 10px;font:700 15px/1.3 system-ui,-apple-system,'Segoe UI',Roboto,Helvetica,Arial;color:#0f172a;">🏠 Delivery Location</p>
-#                   <p style="margin:0 0 4px;font:600 13px/1.5 system-ui,-apple-system,'Segoe UI',Roboto,Helvetica,Arial;color:#334155;">Customer: {order.customer_name}</p>
-#                   <p style="margin:0 0 2px;font:400 13px/1.6 system-ui,-apple-system,'Segoe UI',Roboto,Helvetica,Arial;color:#475569;">{order.drop_address}</p>
-#                   <p style="margin:0;font:400 13px/1.6 system-ui,-apple-system,'Segoe UI',Roboto,Helvetica,Arial;color:#475569;">{order.drop_city}</p>
-#                 </div>
-#                 <p style="margin:8px 0 0;font:400 12px/1.7 system-ui,-apple-system,'Segoe UI',Roboto,Helvetica,Arial;color:#64748b;">Driver assigned on <strong style="color:{brand_primary_dark};">{now_str}</strong>.</p>
-#                 <hr style="border:0;border-top:1px solid #e5e7eb;margin:24px 0;">
-#                 <p class="muted" style="margin:0;font:400 12px/1.7 system-ui,-apple-system,'Segoe UI',Roboto,Helvetica,Arial;color:#6b7280;">
-#                   Track your order in real-time through your dashboard. Questions? Contact support at {settings.EMAIL_ADMIN_OFFICE}.
-#                 </p>
-#               </td>
-#             </tr>
-#             <tr>
-#               <td style="padding:0 24px 24px;">
-#                 <table width="100%" cellspacing="0" cellpadding="0" border="0" style="background:#f8fafc;border:1px dashed #e2e8f0;border-radius:12px;">
-#                   <tr><td style="padding:12px 16px;"><p style="margin:0;font:400 12px/1.6 system-ui,-apple-system,'Segoe UI',Roboto,Helvetica,Arial;color:#64748b;">Thank you for trusting CanaLogistiX with your deliveries!</p></td></tr>
-#                 </table>
-#               </td>
-#             </tr>
-#           </table>
-#           <p style="margin:14px 0 0;font:400 12px/1.6 system-ui,-apple-system,'Segoe UI',Roboto,Helvetica,Arial;color:#94a3b8;">© {timezone.now().year} CanaLogistiX - Cana Group of Companies. All rights reserved.</p>
-#         </td>
-#       </tr>
-#     </table>
-#   </body>
-# </html>
-# """
-#                 pharmacy_text = (
-#                     f"Driver Assigned - CanaLogistiX\n\n"
-#                     f"Hello {order.pharmacy.name},\n\n"
-#                     f"Your delivery order #{order.id} has been accepted by a driver.\n\n"
-#                     f"ORDER DETAILS:\n- Order ID: #{order.id}\n- Customer: {order.customer_name}\n- Delivery Rate: ${order.rate}\n- Pickup Date: {pickup_date_str}\n- Estimated Delivery: {estimated_delivery}\n\n"
-#                     f"DRIVER INFORMATION:\n- Name: {driver.name}\n- Phone: {driver.phone_number}\n- Vehicle Number: {driver.vehicle_number or 'N/A'}\n\n"
-#                     f"PICKUP LOCATION:\n{order.pharmacy.name}\n{order.pickup_address}\n{order.pickup_city}\n\n"
-#                     f"DELIVERY LOCATION:\nCustomer: {order.customer_name}\n{order.drop_address}\n{order.drop_city}\n\n"
-#                     f"Track your order through your dashboard. Questions? Contact {settings.EMAIL_ADMIN_OFFICE}\n"
-#                 )
-
-#                 _send_html_email_operations(
-#                     subject=f"Driver Assigned to Order #{order.id} • CanaLogistiX",
-#                     to_email=order.pharmacy.email,
-#                     html=pharmacy_html,
-#                     text_fallback=pharmacy_text,
-#                 )
-#             except Exception as e:
-#                 print(f"ERROR sending pharmacy email: {str(e)}")
-#                 import traceback
-#                 traceback.print_exc()
-
-#             return JsonResponse({
-#                 "message": "Driver assigned and order accepted",
-#                 "orderId": order.id,
-#                 "driverId": driver.id,
-#                 "trackingId": tracking.id
-#             }, status=200)
-
-#         except DeliveryOrder.DoesNotExist:
-#             return JsonResponse({"error": "Order not found"}, status=404)
-#         except Driver.DoesNotExist:
-#             return JsonResponse({"error": "Driver not found"}, status=404)
-#         except Exception as e:
-#             return JsonResponse({"error": str(e)}, status=500)
-
-#     return JsonResponse({"error": "Invalid request method"}, status=405)
-
 @csrf_exempt
 def assign_driver(request):
     if request.method == "POST":
@@ -1734,6 +1302,479 @@ def assign_driver(request):
                 image_url=None
             )
 
+            # ---- Send order acceptance confirmation email to driver ----
+            try:
+                brand_primary = settings.BRAND_COLORS['primary']
+                brand_primary_dark = settings.BRAND_COLORS['primary_dark']
+                brand_accent = settings.BRAND_COLORS['accent']
+                now_str = timezone.now().strftime("%b %d, %Y %H:%M %Z")
+                logo_url = settings.LOGO_URL
+                
+                # Format pickup date
+                pickup_date_str = order.pickup_day.strftime("%A, %B %d, %Y")
+                
+                # Calculate estimated delivery time (pickup day + 1 hour as example)
+                # You can adjust this logic based on your business rules
+                estimated_delivery = "Same day delivery"
+
+                html = f"""\
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <title>Order Accepted • CanaLogistiX</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <style>
+      @media (prefers-color-scheme: dark) {{
+        body {{ background: #0b1220 !important; color: #e5e7eb !important; }}
+        .card {{ background: #0f172a !important; border-color: #1f2937 !important; }}
+        .muted {{ color: #94a3b8 !important; }}
+      }}
+    </style>
+  </head>
+  <body style="margin:0;padding:0;background:#f4f7f9;">
+    <div style="display:none;visibility:hidden;opacity:0;height:0;width:0;overflow:hidden;">
+      Order #{order.id} confirmed — ready for pickup and delivery.
+    </div>
+
+    <table role="presentation" width="100%" cellspacing="0" cellpadding="0" border="0" style="background:#f4f7f9;padding:24px 12px;">
+      <tr>
+        <td align="center">
+          <table role="presentation" width="100%" cellspacing="0" cellpadding="0" border="0" class="card" style="max-width:640px;background:#ffffff;border:1px solid #e5e7eb;border-radius:16px;overflow:hidden;">
+            <tr>
+            <td style="background:{brand_primary};padding:18px 20px;">
+                <table width="100%" cellspacing="0" cellpadding="0" border="0">
+                <tr>
+                    <td align="left">
+                    <img src="{logo_url}"
+                        alt="CanaLogistiX"
+                        width="40"
+                        height="40"
+                        style="display:block;border:0;outline:none;text-decoration:none;border-radius:50%;object-fit:cover;">
+                    </td>
+                    <td align="right" style="font:600 16px/1.2 system-ui,-apple-system,'Segoe UI',Roboto,Helvetica,Arial;color:#e6fffb;">
+                    Order Accepted
+                    </td>
+                </tr>
+                </table>
+            </td>
+            </tr>
+
+
+            <tr>
+              <td style="padding:28px 24px 6px;">
+                <h1 style="margin:0 0 10px;font:800 24px/1.25 system-ui,-apple-system,'Segoe UI',Roboto,Helvetica,Arial;color:#0f172a;">
+                  Hi {driver.name}, order confirmed!
+                </h1>
+                <p style="margin:0 0 16px;font:400 14px/1.7 system-ui,-apple-system,'Segoe UI',Roboto,Helvetica,Arial;color:#475569;">
+                  You've successfully accepted delivery order <strong>#{order.id}</strong>. Please review the details below 
+                  and ensure timely pickup and delivery. Safe travels!
+                </p>
+
+                <div style="margin:18px 0;background:#f0fdfa;border:1px solid {brand_primary};border-radius:12px;padding:16px 18px;">
+                  <p style="margin:0 0 12px;font:700 15px/1.3 system-ui,-apple-system,'Segoe UI',Roboto,Helvetica,Arial;color:#0f172a;">
+                    📦 Order Information
+                  </p>
+                  <table width="100%" cellspacing="0" cellpadding="0" border="0">
+                    <tr>
+                      <td style="padding:4px 0;font:600 13px/1.5 system-ui,-apple-system,'Segoe UI',Roboto,Helvetica,Arial;color:#334155;">
+                        Order ID:
+                      </td>
+                      <td style="padding:4px 0;font:400 13px/1.5 system-ui,-apple-system,'Segoe UI',Roboto,Helvetica,Arial;color:#334155;">
+                        #{order.id}
+                      </td>
+                    </tr>
+                    <tr>
+                      <td style="padding:4px 0;font:600 13px/1.5 system-ui,-apple-system,'Segoe UI',Roboto,Helvetica,Arial;color:#334155;">
+                        Pharmacy:
+                      </td>
+                      <td style="padding:4px 0;font:400 13px/1.5 system-ui,-apple-system,'Segoe UI',Roboto,Helvetica,Arial;color:#334155;">
+                        {order.pharmacy.name}
+                      </td>
+                    </tr>
+                    <tr>
+                      <td style="padding:4px 0;font:600 13px/1.5 system-ui,-apple-system,'Segoe UI',Roboto,Helvetica,Arial;color:#334155;">
+                        Customer:
+                      </td>
+                      <td style="padding:4px 0;font:400 13px/1.5 system-ui,-apple-system,'Segoe UI',Roboto,Helvetica,Arial;color:#334155;">
+                        {order.customer_name}
+                      </td>
+                    </tr>
+                    <tr>
+                      <td style="padding:4px 0;font:600 13px/1.5 system-ui,-apple-system,'Segoe UI',Roboto,Helvetica,Arial;color:#334155;">
+                        Delivery Rate:
+                      </td>
+                      <td style="padding:4px 0;font:400 13px/1.5 system-ui,-apple-system,'Segoe UI',Roboto,Helvetica,Arial;color:#334155;">
+                        ${order.rate}
+                      </td>
+                    </tr>
+                    <tr>
+                      <td style="padding:4px 0;font:600 13px/1.5 system-ui,-apple-system,'Segoe UI',Roboto,Helvetica,Arial;color:#334155;">
+                        Pickup Date:
+                      </td>
+                      <td style="padding:4px 0;font:400 13px/1.5 system-ui,-apple-system,'Segoe UI',Roboto,Helvetica,Arial;color:#334155;">
+                        {pickup_date_str}
+                      </td>
+                    </tr>
+                  </table>
+                </div>
+
+                <div style="margin:18px 0;background:#fff7ed;border:1px solid {brand_accent};border-radius:12px;padding:16px 18px;">
+                  <p style="margin:0 0 10px;font:700 15px/1.3 system-ui,-apple-system,'Segoe UI',Roboto,Helvetica,Arial;color:#0f172a;">
+                    📍 Pickup Location
+                  </p>
+                  <p style="margin:0 0 4px;font:600 13px/1.5 system-ui,-apple-system,'Segoe UI',Roboto,Helvetica,Arial;color:#334155;">
+                    {order.pharmacy.name}
+                  </p>
+                  <p style="margin:0 0 2px;font:400 13px/1.6 system-ui,-apple-system,'Segoe UI',Roboto,Helvetica,Arial;color:#475569;">
+                    {order.pickup_address}
+                  </p>
+                  <p style="margin:0;font:400 13px/1.6 system-ui,-apple-system,'Segoe UI',Roboto,Helvetica,Arial;color:#475569;">
+                    {order.pickup_city}
+                  </p>
+                  <p style="margin:8px 0 0;font:400 12px/1.5 system-ui,-apple-system,'Segoe UI',Roboto,Helvetica,Arial;color:#64748b;">
+                    📞 {order.pharmacy.phone_number}
+                  </p>
+                </div>
+
+                <div style="margin:18px 0;background:#f0fdf4;border:1px solid #10b981;border-radius:12px;padding:16px 18px;">
+                  <p style="margin:0 0 10px;font:700 15px/1.3 system-ui,-apple-system,'Segoe UI',Roboto,Helvetica,Arial;color:#0f172a;">
+                    🏠 Delivery Location
+                  </p>
+                  <p style="margin:0 0 4px;font:600 13px/1.5 system-ui,-apple-system,'Segoe UI',Roboto,Helvetica,Arial;color:#334155;">
+                    Customer: {order.customer_name}
+                  </p>
+                  <p style="margin:0 0 2px;font:400 13px/1.6 system-ui,-apple-system,'Segoe UI',Roboto,Helvetica,Arial;color:#475569;">
+                    {order.drop_address}
+                  </p>
+                  <p style="margin:0;font:400 13px/1.6 system-ui,-apple-system,'Segoe UI',Roboto,Helvetica,Arial;color:#475569;">
+                    {order.drop_city}
+                  </p>
+                  <p style="margin:8px 0 0;font:400 12px/1.5 system-ui,-apple-system,'Segoe UI',Roboto,Helvetica,Arial;color:#64748b;">
+                    ⏱️ {estimated_delivery}
+                  </p>
+                </div>
+
+                <div style="margin:18px 0;background:#fef3c7;border-left:3px solid #f59e0b;border-radius:8px;padding:14px 16px;">
+                  <p style="margin:0;font:600 13px/1.6 system-ui,-apple-system,'Segoe UI',Roboto,Helvetica,Arial;color:#92400e;">
+                    ⚠️ Important: Please capture photos at pickup and delivery for order verification and tracking.
+                  </p>
+                </div>
+
+                <p style="margin:8px 0 0;font:400 12px/1.7 system-ui,-apple-system,'Segoe UI',Roboto,Helvetica,Arial;color:#64748b;">
+                  Order accepted on <strong style="color:{brand_primary_dark};">{now_str}</strong>.
+                </p>
+
+                <hr style="border:0;border-top:1px solid #e5e7eb;margin:24px 0;">
+                <p class="muted" style="margin:0;font:400 12px/1.7 system-ui,-apple-system,'Segoe UI',Roboto,Helvetica,Arial;color:#6b7280;">
+                  Questions or issues with this delivery? Log in to the portal and raise a Support Ticket by contacting the Admin. Our team will be happy to assist you.
+                </p>
+              </td>
+            </tr>
+
+            <tr>
+              <td style="padding:0 24px 24px;">
+                <table width="100%" cellspacing="0" cellpadding="0" border="0" style="background:#f8fafc;border:1px dashed #e2e8f0;border-radius:12px;">
+                  <tr>
+                    <td style="padding:12px 16px;">
+                      <p style="margin:0;font:400 12px/1.6 system-ui,-apple-system,'Segoe UI',Roboto,Helvetica,Arial;color:#64748b;">
+                        Drive safe and thank you for being part of the CanaLogistiX team!
+                      </p>
+                    </td>
+                  </tr>
+                </table>
+              </td>
+            </tr>
+
+          </table>
+
+          <p style="margin:14px 0 0;font:400 12px/1.6 system-ui,-apple-system,'Segoe UI',Roboto,Helvetica,Arial;color:#94a3b8;">
+            © {timezone.now().year} CanaLogistiX - Cana Group of Companies. All rights reserved.
+          </p>
+        </td>
+      </tr>
+    </table>
+  </body>
+</html>
+"""
+                text = (
+                    f"Order Accepted - CanaLogistiX\n\n"
+                    f"Hi {driver.name},\n\n"
+                    f"You've successfully accepted delivery order #{order.id}.\n\n"
+                    f"ORDER DETAILS:\n"
+                    f"- Pharmacy: {order.pharmacy.name}\n"
+                    f"- Customer: {order.customer_name}\n"
+                    f"- Delivery Rate: ${order.rate}\n"
+                    f"- Pickup Date: {pickup_date_str}\n\n"
+                    f"PICKUP LOCATION:\n"
+                    f"{order.pharmacy.name}\n"
+                    f"{order.pickup_address}\n"
+                    f"{order.pickup_city}\n"
+                    f"Phone: {order.pharmacy.phone_number}\n\n"
+                    f"DELIVERY LOCATION:\n"
+                    f"Customer: {order.customer_name}\n"
+                    f"{order.drop_address}\n"
+                    f"{order.drop_city}\n\n"
+                    f"Remember to capture photos at pickup and delivery.\n\n"
+                    f"Questions? Contact operations at {settings.EMAIL_OPERATIONS}\n"
+                )
+
+                _send_html_email_operations(
+                    subject=f"Order #{order.id} Accepted • CanaLogistiX Delivery",
+                    to_email=driver.email,
+                    html=html,
+                    text_fallback=text,
+                )
+            except Exception as e:
+                print(f"ERROR sending driver email: {str(e)}")
+                import traceback
+                traceback.print_exc()
+
+            # ---- Send order assignment notification email to pharmacy ----
+            try:
+                brand_primary = settings.BRAND_COLORS['primary']
+                brand_primary_dark = settings.BRAND_COLORS['primary_dark']
+                brand_accent = settings.BRAND_COLORS['accent']
+                now_str = timezone.now().strftime("%b %d, %Y %H:%M %Z")
+                logo_url = settings.LOGO_URL
+                
+                pickup_date_str = order.pickup_day.strftime("%A, %B %d, %Y")
+                estimated_delivery = "Same day delivery"
+
+                pharmacy_html = f"""\
+            <!doctype html>
+            <html lang="en">
+            <head>
+                <meta charset="utf-8">
+                <title>Delivery Partner Assigned • CanaLogistiX</title>
+                <meta name="viewport" content="width=device-width, initial-scale=1">
+                <style>
+                @media (prefers-color-scheme: dark) {{
+                    body {{ background: #0b1220 !important; color: #e5e7eb !important; }}
+                    .card {{ background: #0f172a !important; border-color: #1f2937 !important; }}
+                    .muted {{ color: #94a3b8 !important; }}
+                }}
+                </style>
+            </head>
+            <body style="margin:0;padding:0;background:#f4f7f9;">
+                <table role="presentation" width="100%" cellspacing="0" cellpadding="0" border="0" style="background:#f4f7f9;padding:24px 12px;">
+                <tr>
+                    <td align="center">
+                    <table role="presentation" width="100%" cellspacing="0" cellpadding="0" border="0" class="card" style="max-width:640px;background:#ffffff;border:1px solid #e5e7eb;border-radius:16px;overflow:hidden;">
+                        <tr>
+                        <td style="background:{brand_primary};padding:18px 20px;">
+                            <table width="100%" cellspacing="0" cellpadding="0" border="0">
+                            <tr>
+                                <td align="left">
+                                <img src="{logo_url}" alt="CanaLogistiX" width="40" height="40" style="display:block;border:0;outline:none;text-decoration:none;border-radius:50%;object-fit:cover;">
+                                </td>
+                                <td align="right" style="font:600 16px/1.2 system-ui,-apple-system,'Segoe UI',Roboto,Helvetica,Arial;color:#e6fffb;">
+                                Delivery Partner Assigned
+                                </td>
+                            </tr>
+                            </table>
+                        </td>
+                        </tr>
+                        
+                        <tr>
+                        <td style="padding:28px 24px 6px;">
+                            <h1 style="margin:0 0 10px;font:800 24px/1.25 system-ui,-apple-system,'Segoe UI',Roboto,Helvetica,Arial;color:#0f172a;">
+                            Great news! Delivery Partner assigned to your order
+                            </h1>
+                            <p style="margin:0 0 16px;font:400 14px/1.7 system-ui,-apple-system,'Segoe UI',Roboto,Helvetica,Arial;color:#475569;">
+                            Hello <strong>{order.pharmacy.name}</strong>, your delivery order <strong>#{order.id}</strong> has been accepted by a delivery partner and is now in progress.
+                            </p>
+                            
+                            <div style="margin:18px 0;background:#f0fdf4;border:1px solid #10b981;border-radius:12px;padding:14px 18px;">
+                            <p style="margin:0;font:600 13px/1.6 system-ui,-apple-system,'Segoe UI',Roboto,Helvetica,Arial;color:#166534;">
+                                ✓ Order Status: <strong>Accepted</strong> — Delivery Partner will arrive for pickup soon.
+                            </p>
+                            </div>
+                            
+                            <div style="margin:18px 0;background:#f0fdfa;border:1px solid {brand_primary};border-radius:12px;padding:16px 18px;">
+                            <p style="margin:0 0 12px;font:700 15px/1.3 system-ui,-apple-system,'Segoe UI',Roboto,Helvetica,Arial;color:#0f172a;">
+                                📦 Order Information
+                            </p>
+                            <table width="100%" cellspacing="0" cellpadding="0" border="0">
+                                <tr>
+                                <td style="padding:4px 0;font:600 13px/1.5 system-ui,-apple-system,'Segoe UI',Roboto,Helvetica,Arial;color:#334155;">
+                                    Order ID:
+                                </td>
+                                <td style="padding:4px 0;font:400 13px/1.5 system-ui,-apple-system,'Segoe UI',Roboto,Helvetica,Arial;color:#334155;">
+                                    #{order.id}
+                                </td>
+                                </tr>
+                                <tr>
+                                <td style="padding:4px 0;font:600 13px/1.5 system-ui,-apple-system,'Segoe UI',Roboto,Helvetica,Arial;color:#334155;">
+                                    Customer:
+                                </td>
+                                <td style="padding:4px 0;font:400 13px/1.5 system-ui,-apple-system,'Segoe UI',Roboto,Helvetica,Arial;color:#334155;">
+                                    {order.customer_name}
+                                </td>
+                                </tr>
+                                <tr>
+                                <td style="padding:4px 0;font:600 13px/1.5 system-ui,-apple-system,'Segoe UI',Roboto,Helvetica,Arial;color:#334155;">
+                                    Delivery Rate:
+                                </td>
+                                <td style="padding:4px 0;font:400 13px/1.5 system-ui,-apple-system,'Segoe UI',Roboto,Helvetica,Arial;color:#334155;">
+                                    ${order.rate}
+                                </td>
+                                </tr>
+                                <tr>
+                                <td style="padding:4px 0;font:600 13px/1.5 system-ui,-apple-system,'Segoe UI',Roboto,Helvetica,Arial;color:#334155;">
+                                    Pickup Date:
+                                </td>
+                                <td style="padding:4px 0;font:400 13px/1.5 system-ui,-apple-system,'Segoe UI',Roboto,Helvetica,Arial;color:#334155;">
+                                    {pickup_date_str}
+                                </td>
+                                </tr>
+                                <tr>
+                                <td style="padding:4px 0;font:600 13px/1.5 system-ui,-apple-system,'Segoe UI',Roboto,Helvetica,Arial;color:#334155;">
+                                    Estimated Delivery:
+                                </td>
+                                <td style="padding:4px 0;font:400 13px/1.5 system-ui,-apple-system,'Segoe UI',Roboto,Helvetica,Arial;color:#334155;">
+                                    {estimated_delivery}
+                                </td>
+                                </tr>
+                            </table>
+                            </div>
+                            
+                            <div style="margin:18px 0;background:#eff6ff;border:1px solid #3b82f6;border-radius:12px;padding:16px 18px;">
+                            <p style="margin:0 0 12px;font:700 15px/1.3 system-ui,-apple-system,'Segoe UI',Roboto,Helvetica,Arial;color:#0f172a;">
+                                🚗 Delivery Partner Information
+                            </p>
+                            <table width="100%" cellspacing="0" cellpadding="0" border="0">
+                                <tr>
+                                <td style="padding:4px 0;font:600 13px/1.5 system-ui,-apple-system,'Segoe UI',Roboto,Helvetica,Arial;color:#334155;">
+                                    Partner Name:
+                                </td>
+                                <td style="padding:4px 0;font:400 13px/1.5 system-ui,-apple-system,'Segoe UI',Roboto,Helvetica,Arial;color:#334155;">
+                                    {driver.name}
+                                </td>
+                                </tr>
+                                <tr>
+                                <td style="padding:4px 0;font:600 13px/1.5 system-ui,-apple-system,'Segoe UI',Roboto,Helvetica,Arial;color:#334155;">
+                                    Partner Phone:
+                                </td>
+                                <td style="padding:4px 0;font:400 13px/1.5 system-ui,-apple-system,'Segoe UI',Roboto,Helvetica,Arial;color:#334155;">
+                                    {driver.phone_number}
+                                </td>
+                                </tr>
+                                <tr>
+                                <td style="padding:4px 0;font:600 13px/1.5 system-ui,-apple-system,'Segoe UI',Roboto,Helvetica,Arial;color:#334155;">
+                                    Vehicle Number:
+                                </td>
+                                <td style="padding:4px 0;font:400 13px/1.5 system-ui,-apple-system,'Segoe UI',Roboto,Helvetica,Arial;color:#334155;">
+                                    {driver.vehicle_number or 'N/A'}
+                                </td>
+                                </tr>
+                            </table>
+                            </div>
+                            
+                            <div style="margin:18px 0;background:#fff7ed;border:1px solid {brand_accent};border-radius:12px;padding:16px 18px;">
+                            <p style="margin:0 0 12px;font:700 15px/1.3 system-ui,-apple-system,'Segoe UI',Roboto,Helvetica,Arial;color:#0f172a;">
+                                📍 Pickup Location
+                            </p>
+                            <p style="margin:0 0 4px;font:600 13px/1.5 system-ui,-apple-system,'Segoe UI',Roboto,Helvetica,Arial;color:#334155;">
+                                {order.pharmacy.name}
+                            </p>
+                            <p style="margin:0 0 2px;font:400 13px/1.6 system-ui,-apple-system,'Segoe UI',Roboto,Helvetica,Arial;color:#475569;">
+                                {order.pickup_address}
+                            </p>
+                            <p style="margin:0;font:400 13px/1.6 system-ui,-apple-system,'Segoe UI',Roboto,Helvetica,Arial;color:#475569;">
+                                {order.pickup_city}
+                            </p>
+                            </div>
+                            
+                            <div style="margin:18px 0;background:#f0fdf4;border:1px solid #10b981;border-radius:12px;padding:16px 18px;">
+                            <p style="margin:0 0 12px;font:700 15px/1.3 system-ui,-apple-system,'Segoe UI',Roboto,Helvetica,Arial;color:#0f172a;">
+                                🏠 Delivery Location
+                            </p>
+                            <p style="margin:0 0 4px;font:600 13px/1.5 system-ui,-apple-system,'Segoe UI',Roboto,Helvetica,Arial;color:#334155;">
+                                Customer: {order.customer_name}
+                            </p>
+                            <p style="margin:0 0 2px;font:400 13px/1.6 system-ui,-apple-system,'Segoe UI',Roboto,Helvetica,Arial;color:#475569;">
+                                {order.drop_address}
+                            </p>
+                            <p style="margin:0;font:400 13px/1.6 system-ui,-apple-system,'Segoe UI',Roboto,Helvetica,Arial;color:#475569;">
+                                {order.drop_city}
+                            </p>
+                            </div>
+                            
+                            <p style="margin:8px 0 0;font:400 12px/1.7 system-ui,-apple-system,'Segoe UI',Roboto,Helvetica,Arial;color:#64748b;">
+                            Delivery Partner assigned on <strong style="color:{brand_primary_dark};">{now_str}</strong>.
+                            </p>
+                            
+                            <hr style="border:0;border-top:1px solid #e5e7eb;margin:24px 0;">
+                            <p class="muted" style="margin:0;font:400 12px/1.7 system-ui,-apple-system,'Segoe UI',Roboto,Helvetica,Arial;color:#6b7280;">
+                            Track your order in real-time through your dashboard. Questions? Log in to the portal and raise a Support Ticket by contacting the Admin. Our team will be happy to assist you.
+                            </p>
+                        </td>
+                        </tr>
+                        
+                        <tr>
+                        <td style="padding:0 24px 24px;">
+                            <table width="100%" cellspacing="0" cellpadding="0" border="0" style="background:#f8fafc;border:1px dashed #e2e8f0;border-radius:12px;">
+                            <tr>
+                                <td style="padding:12px 16px;">
+                                <p style="margin:0;font:400 12px/1.6 system-ui,-apple-system,'Segoe UI',Roboto,Helvetica,Arial;color:#64748b;">
+                                    Thank you for trusting CanaLogistiX with your deliveries!
+                                </p>
+                                </td>
+                            </tr>
+                            </table>
+                        </td>
+                        </tr>
+
+                    </table>
+                    
+                    <p style="margin:14px 0 0;font:400 12px/1.6 system-ui,-apple-system,'Segoe UI',Roboto,Helvetica,Arial;color:#94a3b8;">
+                        © {timezone.now().year} CanaLogistiX - Cana Group of Companies. All rights reserved.
+                    </p>
+                    </td>
+                </tr>
+                </table>
+            </body>
+            </html>
+            """
+                pharmacy_text = (
+                    f"Delivery Partner Assigned - CanaLogistiX\n\n"
+                    f"Hello {order.pharmacy.name},\n\n"
+                    f"Your delivery order #{order.id} has been accepted by a delivery partner.\n\n"
+                    f"ORDER DETAILS:\n"
+                    f"- Order ID: #{order.id}\n"
+                    f"- Customer: {order.customer_name}\n"
+                    f"- Delivery Rate: ${order.rate}\n"
+                    f"- Pickup Date: {pickup_date_str}\n"
+                    f"- Estimated Delivery: {estimated_delivery}\n\n"
+                    f"DELIVERY PARTNER INFORMATION:\n"
+                    f"- Name: {driver.name}\n"
+                    f"- Phone: {driver.phone_number}\n"
+                    f"- Vehicle Number: {driver.vehicle_number or 'N/A'}\n\n"
+                    f"PICKUP LOCATION:\n"
+                    f"{order.pharmacy.name}\n"
+                    f"{order.pickup_address}\n"
+                    f"{order.pickup_city}\n\n"
+                    f"DELIVERY LOCATION:\n"
+                    f"Customer: {order.customer_name}\n"
+                    f"{order.drop_address}\n"
+                    f"{order.drop_city}\n\n"
+                    f"Track your order through your dashboard. Questions? Contact {settings.EMAIL_ADMIN_OFFICE}\n"
+                )
+
+                _send_html_email_operations(
+                    subject=f"Delivery Partner Assigned to Order #{order.id} • CanaLogistiX",
+                    to_email=order.pharmacy.email,
+                    html=pharmacy_html,
+                    text_fallback=pharmacy_text,
+                )
+                print(f"SUCCESS: Pharmacy email sent to {order.pharmacy.email}")
+                
+            except Exception as e:
+                print(f"ERROR sending pharmacy email: {str(e)}")
+                import traceback
+                traceback.print_exc()
+
             return JsonResponse({
                 "message": "Driver assigned and order accepted",
                 "orderId": order.id,
@@ -1749,6 +1790,8 @@ def assign_driver(request):
             return JsonResponse({"error": str(e)}, status=500)
 
     return JsonResponse({"error": "Invalid request method"}, status=405)
+
+
 
 @csrf_exempt
 def get_driver_details(request):
@@ -1824,6 +1867,79 @@ def driver_accepted_orders(request):
 
 
 
+# @csrf_exempt
+# def driver_pickup_proof(request):
+#     if request.method != "POST":
+#         return HttpResponseBadRequest("Only POST method allowed")
+
+#     driver_id = request.POST.get("driverId")
+#     order_id = request.POST.get("orderId")
+#     pharmacy_id = request.POST.get("pharmacyId")
+#     image_file = request.FILES.get("image")
+
+#     if not (driver_id and order_id and pharmacy_id and image_file):
+#         return HttpResponseBadRequest("driverId, orderId, pharmacyId and image are required")
+
+#     try:
+#         # fetch objects
+#         driver = get_object_or_404(Driver, id=driver_id)
+#         order = get_object_or_404(DeliveryOrder, id=order_id)
+#         pharmacy = get_object_or_404(Pharmacy, id=pharmacy_id)
+
+#         # step 1: update order status to inTransit
+#         order.status = "inTransit"
+#         order.save()
+
+#         # step 2: upload image to GCP
+#         key_path = settings.GCP_KEY_PATH
+#         # bucket_name = "canadrop-bucket"  # Fixed bucket name
+#         bucket_name = settings.GCP_BUCKET_NAME  # Fixed bucket name
+
+#         client = storage.Client.from_service_account_json(key_path)
+#         bucket = client.bucket(bucket_name)
+
+#         safe_pharmacy_name = pharmacy.name.replace(" ", "_")
+#         filename = f"{driver_id}_{order_id}_{safe_pharmacy_name}_driverpickup.jpg"
+#         blob_name = f"Proof/{filename}"
+#         blob = bucket.blob(blob_name)
+#         blob.upload_from_file(image_file, content_type=image_file.content_type)
+
+#         # get public URL
+#         public_url = f"https://storage.googleapis.com/{bucket_name}/{blob_name}"
+
+#         # step 3a: create order tracking entry
+#         note_text = f"Driver Pickup Image Uploaded : {driver_id}_{order_id}_{pharmacy_id}_DriverPickup"
+#         performed_by = f"Driver: {driver.name}"
+#         OrderTracking.objects.create(
+#             order=order,
+#             driver=driver,
+#             pharmacy=pharmacy,
+#             step="inTransit",
+#             performed_by=performed_by,
+#             note=note_text,
+#             image_url=public_url,
+#         )
+
+#         # step 3b: create order image entry
+#         OrderImage.objects.create(
+#             order=order,
+#             image_url=public_url,
+#             stage="pickup"
+#         )
+
+#         return JsonResponse({
+#             "success": True,
+#             "message": "Pickup proof uploaded successfully",
+#             "image_url": public_url
+#         })
+
+#     except Exception as e:
+#         return JsonResponse({
+#             "success": False,
+#             "message": f"Error uploading pickup proof: {str(e)}"
+#         }, status=500)
+
+
 @csrf_exempt
 def driver_pickup_proof(request):
     if request.method != "POST":
@@ -1884,6 +2000,283 @@ def driver_pickup_proof(request):
             stage="pickup"
         )
 
+        # ---- Send pickup proof notification email to pharmacy ----
+        try:
+            brand_primary = settings.BRAND_COLORS['primary']
+            brand_primary_dark = settings.BRAND_COLORS['primary_dark']
+            brand_accent = settings.BRAND_COLORS['accent']
+            now_str = timezone.now().strftime("%b %d, %Y %H:%M %Z")
+            logo_url = settings.LOGO_URL
+            
+            pickup_date_str = order.pickup_day.strftime("%A, %B %d, %Y")
+
+            html = f"""\
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <title>Order Picked Up • CanaLogistiX</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <style>
+      @media (prefers-color-scheme: dark) {{
+        body {{ background: #0b1220 !important; color: #e5e7eb !important; }}
+        .card {{ background: #0f172a !important; border-color: #1f2937 !important; }}
+        .muted {{ color: #94a3b8 !important; }}
+      }}
+    </style>
+  </head>
+  <body style="margin:0;padding:0;background:#f4f7f9;">
+    <div style="display:none;visibility:hidden;opacity:0;height:0;width:0;overflow:hidden;">
+      Order #{order.id} picked up — now in transit for delivery.
+    </div>
+
+    <table role="presentation" width="100%" cellspacing="0" cellpadding="0" border="0" style="background:#f4f7f9;padding:24px 12px;">
+      <tr>
+        <td align="center">
+          <table role="presentation" width="100%" cellspacing="0" cellpadding="0" border="0" class="card" style="max-width:640px;background:#ffffff;border:1px solid #e5e7eb;border-radius:16px;overflow:hidden;">
+            <tr>
+            <td style="background:{brand_primary};padding:18px 20px;">
+                <table width="100%" cellspacing="0" cellpadding="0" border="0">
+                <tr>
+                    <td align="left">
+                    <img src="{logo_url}"
+                        alt="CanaLogistiX"
+                        width="40"
+                        height="40"
+                        style="display:block;border:0;outline:none;text-decoration:none;border-radius:50%;object-fit:cover;">
+                    </td>
+                    <td align="right" style="font:600 16px/1.2 system-ui,-apple-system,'Segoe UI',Roboto,Helvetica,Arial;color:#e6fffb;">
+                    Order Picked Up
+                    </td>
+                </tr>
+                </table>
+            </td>
+            </tr>
+
+            <tr>
+              <td style="padding:28px 24px 6px;">
+                <h1 style="margin:0 0 10px;font:800 24px/1.25 system-ui,-apple-system,'Segoe UI',Roboto,Helvetica,Arial;color:#0f172a;">
+                  Order picked up successfully! 📦
+                </h1>
+                <p style="margin:0 0 16px;font:400 14px/1.7 system-ui,-apple-system,'Segoe UI',Roboto,Helvetica,Arial;color:#475569;">
+                  Hello <strong>{pharmacy.name}</strong>, your delivery order <strong>#{order.id}</strong> has been picked up 
+                  by the driver and is now in transit. The driver has provided photo proof of pickup.
+                </p>
+
+                <div style="margin:18px 0;background:#eff6ff;border:1px solid #3b82f6;border-radius:12px;padding:14px 18px;">
+                  <p style="margin:0;font:600 13px/1.6 system-ui,-apple-system,'Segoe UI',Roboto,Helvetica,Arial;color:#1e40af;">
+                    🚚 Order Status: <strong>In Transit</strong> — On the way to customer
+                  </p>
+                </div>
+
+                <div style="margin:18px 0;background:#f0fdfa;border:1px solid {brand_primary};border-radius:12px;padding:16px 18px;">
+                  <p style="margin:0 0 12px;font:700 15px/1.3 system-ui,-apple-system,'Segoe UI',Roboto,Helvetica,Arial;color:#0f172a;">
+                    📦 Order Information
+                  </p>
+                  <table width="100%" cellspacing="0" cellpadding="0" border="0">
+                    <tr>
+                      <td style="padding:4px 0;font:600 13px/1.5 system-ui,-apple-system,'Segoe UI',Roboto,Helvetica,Arial;color:#334155;">
+                        Order ID:
+                      </td>
+                      <td style="padding:4px 0;font:400 13px/1.5 system-ui,-apple-system,'Segoe UI',Roboto,Helvetica,Arial;color:#334155;">
+                        #{order.id}
+                      </td>
+                    </tr>
+                    <tr>
+                      <td style="padding:4px 0;font:600 13px/1.5 system-ui,-apple-system,'Segoe UI',Roboto,Helvetica,Arial;color:#334155;">
+                        Customer:
+                      </td>
+                      <td style="padding:4px 0;font:400 13px/1.5 system-ui,-apple-system,'Segoe UI',Roboto,Helvetica,Arial;color:#334155;">
+                        {order.customer_name}
+                      </td>
+                    </tr>
+                    <tr>
+                      <td style="padding:4px 0;font:600 13px/1.5 system-ui,-apple-system,'Segoe UI',Roboto,Helvetica,Arial;color:#334155;">
+                        Delivery Rate:
+                      </td>
+                      <td style="padding:4px 0;font:400 13px/1.5 system-ui,-apple-system,'Segoe UI',Roboto,Helvetica,Arial;color:#334155;">
+                        ${order.rate}
+                      </td>
+                    </tr>
+                    <tr>
+                      <td style="padding:4px 0;font:600 13px/1.5 system-ui,-apple-system,'Segoe UI',Roboto,Helvetica,Arial;color:#334155;">
+                        Pickup Date:
+                      </td>
+                      <td style="padding:4px 0;font:400 13px/1.5 system-ui,-apple-system,'Segoe UI',Roboto,Helvetica,Arial;color:#334155;">
+                        {pickup_date_str}
+                      </td>
+                    </tr>
+                    <tr>
+                      <td style="padding:4px 0;font:600 13px/1.5 system-ui,-apple-system,'Segoe UI',Roboto,Helvetica,Arial;color:#334155;">
+                        Picked Up At:
+                      </td>
+                      <td style="padding:4px 0;font:400 13px/1.5 system-ui,-apple-system,'Segoe UI',Roboto,Helvetica,Arial;color:#334155;">
+                        {now_str}
+                      </td>
+                    </tr>
+                  </table>
+                </div>
+
+                <div style="margin:18px 0;background:#fef3c7;border:1px solid {brand_accent};border-radius:12px;padding:16px 18px;">
+                  <p style="margin:0 0 12px;font:700 15px/1.3 system-ui,-apple-system,'Segoe UI',Roboto,Helvetica,Arial;color:#0f172a;">
+                    🚗 Driver Information
+                  </p>
+                  <table width="100%" cellspacing="0" cellpadding="0" border="0">
+                    <tr>
+                      <td style="padding:4px 0;font:600 13px/1.5 system-ui,-apple-system,'Segoe UI',Roboto,Helvetica,Arial;color:#334155;">
+                        Driver Name:
+                      </td>
+                      <td style="padding:4px 0;font:400 13px/1.5 system-ui,-apple-system,'Segoe UI',Roboto,Helvetica,Arial;color:#334155;">
+                        {driver.name}
+                      </td>
+                    </tr>
+                    <tr>
+                      <td style="padding:4px 0;font:600 13px/1.5 system-ui,-apple-system,'Segoe UI',Roboto,Helvetica,Arial;color:#334155;">
+                        Driver Phone:
+                      </td>
+                      <td style="padding:4px 0;font:400 13px/1.5 system-ui,-apple-system,'Segoe UI',Roboto,Helvetica,Arial;color:#334155;">
+                        {driver.phone_number}
+                      </td>
+                    </tr>
+                    <tr>
+                      <td style="padding:4px 0;font:600 13px/1.5 system-ui,-apple-system,'Segoe UI',Roboto,Helvetica,Arial;color:#334155;">
+                        Vehicle Number:
+                      </td>
+                      <td style="padding:4px 0;font:400 13px/1.5 system-ui,-apple-system,'Segoe UI',Roboto,Helvetica,Arial;color:#334155;">
+                        {driver.vehicle_number or 'N/A'}
+                      </td>
+                    </tr>
+                  </table>
+                </div>
+
+                <div style="margin:18px 0;background:#f8fafc;border:1px solid #e2e8f0;border-radius:12px;padding:16px 18px;">
+                  <p style="margin:0 0 12px;font:700 15px/1.3 system-ui,-apple-system,'Segoe UI',Roboto,Helvetica,Arial;color:#0f172a;">
+                    🏢 Pharmacy Information
+                  </p>
+                  <table width="100%" cellspacing="0" cellpadding="0" border="0">
+                    <tr>
+                      <td style="padding:4px 0;font:600 13px/1.5 system-ui,-apple-system,'Segoe UI',Roboto,Helvetica,Arial;color:#334155;">
+                        Pharmacy Name:
+                      </td>
+                      <td style="padding:4px 0;font:400 13px/1.5 system-ui,-apple-system,'Segoe UI',Roboto,Helvetica,Arial;color:#334155;">
+                        {pharmacy.name}
+                      </td>
+                    </tr>
+                    <tr>
+                      <td style="padding:4px 0;font:600 13px/1.5 system-ui,-apple-system,'Segoe UI',Roboto,Helvetica,Arial;color:#334155;">
+                        Phone:
+                      </td>
+                      <td style="padding:4px 0;font:400 13px/1.5 system-ui,-apple-system,'Segoe UI',Roboto,Helvetica,Arial;color:#334155;">
+                        {pharmacy.phone_number}
+                      </td>
+                    </tr>
+                    <tr>
+                      <td style="padding:4px 0;font:600 13px/1.5 system-ui,-apple-system,'Segoe UI',Roboto,Helvetica,Arial;color:#334155;">
+                        Address:
+                      </td>
+                      <td style="padding:4px 0;font:400 13px/1.5 system-ui,-apple-system,'Segoe UI',Roboto,Helvetica,Arial;color:#334155;">
+                        {pharmacy.store_address}, {pharmacy.city}
+                      </td>
+                    </tr>
+                  </table>
+                </div>
+
+                <div style="margin:18px 0;background:#f0fdf4;border:1px solid #10b981;border-radius:12px;padding:16px 18px;">
+                  <p style="margin:0 0 12px;font:700 15px/1.3 system-ui,-apple-system,'Segoe UI',Roboto,Helvetica,Arial;color:#0f172a;">
+                    📸 Pickup Proof Photo
+                  </p>
+                  <div style="margin:12px 0;text-align:center;">
+                    <img src="{public_url}" 
+                         alt="Pickup Proof" 
+                         style="max-width:100%;height:auto;border-radius:8px;border:2px solid #e5e7eb;">
+                  </div>
+                  <p style="margin:8px 0 0;font:400 12px/1.5 system-ui,-apple-system,'Segoe UI',Roboto,Helvetica,Arial;color:#64748b;text-align:center;">
+                    Pickup verification photo taken by driver
+                  </p>
+                </div>
+
+                <div style="margin:18px 0;background:#f0fdf4;border:1px solid #10b981;border-radius:12px;padding:16px 18px;">
+                  <p style="margin:0 0 10px;font:700 15px/1.3 system-ui,-apple-system,'Segoe UI',Roboto,Helvetica,Arial;color:#0f172a;">
+                    🏠 Delivery Destination
+                  </p>
+                  <p style="margin:0 0 4px;font:600 13px/1.5 system-ui,-apple-system,'Segoe UI',Roboto,Helvetica,Arial;color:#334155;">
+                    Customer: {order.customer_name}
+                  </p>
+                  <p style="margin:0 0 2px;font:400 13px/1.6 system-ui,-apple-system,'Segoe UI',Roboto,Helvetica,Arial;color:#475569;">
+                    {order.drop_address}
+                  </p>
+                  <p style="margin:0;font:400 13px/1.6 system-ui,-apple-system,'Segoe UI',Roboto,Helvetica,Arial;color:#475569;">
+                    {order.drop_city}
+                  </p>
+                </div>
+
+                <hr style="border:0;border-top:1px solid #e5e7eb;margin:24px 0;">
+                <p class="muted" style="margin:0;font:400 12px/1.7 system-ui,-apple-system,'Segoe UI',Roboto,Helvetica,Arial;color:#6b7280;">
+                  You can track the delivery status in real-time through your dashboard. For questions, Log in to the portal and raise a Support Ticket by contacting the Admin. Our team will be happy to assist you.
+                </p>
+              </td>
+            </tr>
+
+            <tr>
+              <td style="padding:0 24px 24px;">
+                <table width="100%" cellspacing="0" cellpadding="0" border="0" style="background:#f8fafc;border:1px dashed #e2e8f0;border-radius:12px;">
+                  <tr>
+                    <td style="padding:12px 16px;">
+                      <p style="margin:0;font:400 12px/1.6 system-ui,-apple-system,'Segoe UI',Roboto,Helvetica,Arial;color:#64748b;">
+                        Thank you for trusting CanaLogistiX with your deliveries!
+                      </p>
+                    </td>
+                  </tr>
+                </table>
+              </td>
+            </tr>
+
+          </table>
+
+          <p style="margin:14px 0 0;font:400 12px/1.6 system-ui,-apple-system,'Segoe UI',Roboto,Helvetica,Arial;color:#94a3b8;">
+            © {timezone.now().year} CanaLogistiX - Cana Group of Companies. All rights reserved.
+          </p>
+        </td>
+      </tr>
+    </table>
+  </body>
+</html>
+"""
+            text = (
+                f"Order Picked Up - CanaLogistiX\n\n"
+                f"Hello {pharmacy.name},\n\n"
+                f"Your delivery order #{order.id} has been picked up by the driver and is now in transit.\n\n"
+                f"ORDER INFORMATION:\n"
+                f"- Order ID: #{order.id}\n"
+                f"- Customer: {order.customer_name}\n"
+                f"- Delivery Rate: ${order.rate}\n"
+                f"- Pickup Date: {pickup_date_str}\n"
+                f"- Picked Up At: {now_str}\n\n"
+                f"DRIVER INFORMATION:\n"
+                f"- Name: {driver.name}\n"
+                f"- Phone: {driver.phone_number}\n"
+                f"- Vehicle Number: {driver.vehicle_number or 'N/A'}\n\n"
+                f"PHARMACY INFORMATION:\n"
+                f"- Name: {pharmacy.name}\n"
+                f"- Phone: {pharmacy.phone_number}\n"
+                f"- Address: {pharmacy.store_address}, {pharmacy.city}\n\n"
+                f"DELIVERY DESTINATION:\n"
+                f"- Customer: {order.customer_name}\n"
+                f"- Address: {order.drop_address}\n"
+                f"- City: {order.drop_city}\n\n"
+                f"Pickup Proof Photo: {public_url}\n\n"
+                f"Track your order through your dashboard.\n"
+            )
+
+            _send_html_email_operations(
+                subject=f"Order #{order.id} Picked Up • In Transit",
+                to_email=pharmacy.email,
+                html=html,
+                text_fallback=text,
+            )
+        except Exception:
+            pass
+
         return JsonResponse({
             "success": True,
             "message": "Pickup proof uploaded successfully",
@@ -1895,6 +2288,7 @@ def driver_pickup_proof(request):
             "success": False,
             "message": f"Error uploading pickup proof: {str(e)}"
         }, status=500)
+
 
 
 @csrf_exempt
@@ -1957,6 +2351,289 @@ def driver_delivery_proof(request):
             stage="delivered"
         )
 
+        # ---- Send delivery confirmation email to pharmacy ----
+        try:
+            brand_primary = settings.BRAND_COLORS['primary']
+            brand_primary_dark = settings.BRAND_COLORS['primary_dark']
+            brand_accent = settings.BRAND_COLORS['accent']
+            now_str = timezone.now().strftime("%b %d, %Y %H:%M %Z")
+            logo_url = settings.LOGO_URL
+            
+            pickup_date_str = order.pickup_day.strftime("%A, %B %d, %Y")
+
+            html = f"""\
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <title>Order Delivered • CanaLogistiX</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <style>
+      @media (prefers-color-scheme: dark) {{
+        body {{ background: #0b1220 !important; color: #e5e7eb !important; }}
+        .card {{ background: #0f172a !important; border-color: #1f2937 !important; }}
+        .muted {{ color: #94a3b8 !important; }}
+      }}
+    </style>
+  </head>
+  <body style="margin:0;padding:0;background:#f4f7f9;">
+    <div style="display:none;visibility:hidden;opacity:0;height:0;width:0;overflow:hidden;">
+      Order #{order.id} delivered successfully — delivery complete.
+    </div>
+
+    <table role="presentation" width="100%" cellspacing="0" cellpadding="0" border="0" style="background:#f4f7f9;padding:24px 12px;">
+      <tr>
+        <td align="center">
+          <table role="presentation" width="100%" cellspacing="0" cellpadding="0" border="0" class="card" style="max-width:640px;background:#ffffff;border:1px solid #e5e7eb;border-radius:16px;overflow:hidden;">
+            <tr>
+            <td style="background:{brand_primary};padding:18px 20px;">
+                <table width="100%" cellspacing="0" cellpadding="0" border="0">
+                <tr>
+                    <td align="left">
+                    <img src="{logo_url}"
+                        alt="CanaLogistiX"
+                        width="40"
+                        height="40"
+                        style="display:block;border:0;outline:none;text-decoration:none;border-radius:50%;object-fit:cover;">
+                    </td>
+                    <td align="right" style="font:600 16px/1.2 system-ui,-apple-system,'Segoe UI',Roboto,Helvetica,Arial;color:#e6fffb;">
+                    Order Delivered
+                    </td>
+                </tr>
+                </table>
+            </td>
+            </tr>
+
+            <tr>
+              <td style="padding:28px 24px 6px;">
+                <h1 style="margin:0 0 10px;font:800 24px/1.25 system-ui,-apple-system,'Segoe UI',Roboto,Helvetica,Arial;color:#0f172a;">
+                  Delivery completed successfully! ✅
+                </h1>
+                <p style="margin:0 0 16px;font:400 14px/1.7 system-ui,-apple-system,'Segoe UI',Roboto,Helvetica,Arial;color:#475569;">
+                  Hello <strong>{pharmacy.name}</strong>, your delivery order <strong>#{order.id}</strong> has been successfully 
+                  delivered to the customer. The driver has provided photo proof of delivery.
+                </p>
+
+                <div style="margin:18px 0;background:#f0fdf4;border:1px solid #10b981;border-radius:12px;padding:14px 18px;">
+                  <p style="margin:0;font:600 13px/1.6 system-ui,-apple-system,'Segoe UI',Roboto,Helvetica,Arial;color:#166534;">
+                    ✓ Order Status: <strong>Delivered</strong> — Package successfully handed to customer
+                  </p>
+                </div>
+
+                <div style="margin:18px 0;background:#f0fdfa;border:1px solid {brand_primary};border-radius:12px;padding:16px 18px;">
+                  <p style="margin:0 0 12px;font:700 15px/1.3 system-ui,-apple-system,'Segoe UI',Roboto,Helvetica,Arial;color:#0f172a;">
+                    📦 Order Information
+                  </p>
+                  <table width="100%" cellspacing="0" cellpadding="0" border="0">
+                    <tr>
+                      <td style="padding:4px 0;font:600 13px/1.5 system-ui,-apple-system,'Segoe UI',Roboto,Helvetica,Arial;color:#334155;">
+                        Order ID:
+                      </td>
+                      <td style="padding:4px 0;font:400 13px/1.5 system-ui,-apple-system,'Segoe UI',Roboto,Helvetica,Arial;color:#334155;">
+                        #{order.id}
+                      </td>
+                    </tr>
+                    <tr>
+                      <td style="padding:4px 0;font:600 13px/1.5 system-ui,-apple-system,'Segoe UI',Roboto,Helvetica,Arial;color:#334155;">
+                        Customer:
+                      </td>
+                      <td style="padding:4px 0;font:400 13px/1.5 system-ui,-apple-system,'Segoe UI',Roboto,Helvetica,Arial;color:#334155;">
+                        {order.customer_name}
+                      </td>
+                    </tr>
+                    <tr>
+                      <td style="padding:4px 0;font:600 13px/1.5 system-ui,-apple-system,'Segoe UI',Roboto,Helvetica,Arial;color:#334155;">
+                        Delivery Rate:
+                      </td>
+                      <td style="padding:4px 0;font:400 13px/1.5 system-ui,-apple-system,'Segoe UI',Roboto,Helvetica,Arial;color:#334155;">
+                        ${order.rate}
+                      </td>
+                    </tr>
+                    <tr>
+                      <td style="padding:4px 0;font:600 13px/1.5 system-ui,-apple-system,'Segoe UI',Roboto,Helvetica,Arial;color:#334155;">
+                        Pickup Date:
+                      </td>
+                      <td style="padding:4px 0;font:400 13px/1.5 system-ui,-apple-system,'Segoe UI',Roboto,Helvetica,Arial;color:#334155;">
+                        {pickup_date_str}
+                      </td>
+                    </tr>
+                    <tr>
+                      <td style="padding:4px 0;font:600 13px/1.5 system-ui,-apple-system,'Segoe UI',Roboto,Helvetica,Arial;color:#334155;">
+                        Delivered At:
+                      </td>
+                      <td style="padding:4px 0;font:400 13px/1.5 system-ui,-apple-system,'Segoe UI',Roboto,Helvetica,Arial;color:#334155;">
+                        {now_str}
+                      </td>
+                    </tr>
+                  </table>
+                </div>
+
+                <div style="margin:18px 0;background:#fef3c7;border:1px solid {brand_accent};border-radius:12px;padding:16px 18px;">
+                  <p style="margin:0 0 12px;font:700 15px/1.3 system-ui,-apple-system,'Segoe UI',Roboto,Helvetica,Arial;color:#0f172a;">
+                    🚗 Driver Information
+                  </p>
+                  <table width="100%" cellspacing="0" cellpadding="0" border="0">
+                    <tr>
+                      <td style="padding:4px 0;font:600 13px/1.5 system-ui,-apple-system,'Segoe UI',Roboto,Helvetica,Arial;color:#334155;">
+                        Driver Name:
+                      </td>
+                      <td style="padding:4px 0;font:400 13px/1.5 system-ui,-apple-system,'Segoe UI',Roboto,Helvetica,Arial;color:#334155;">
+                        {driver.name}
+                      </td>
+                    </tr>
+                    <tr>
+                      <td style="padding:4px 0;font:600 13px/1.5 system-ui,-apple-system,'Segoe UI',Roboto,Helvetica,Arial;color:#334155;">
+                        Driver Phone:
+                      </td>
+                      <td style="padding:4px 0;font:400 13px/1.5 system-ui,-apple-system,'Segoe UI',Roboto,Helvetica,Arial;color:#334155;">
+                        {driver.phone_number}
+                      </td>
+                    </tr>
+                    <tr>
+                      <td style="padding:4px 0;font:600 13px/1.5 system-ui,-apple-system,'Segoe UI',Roboto,Helvetica,Arial;color:#334155;">
+                        Vehicle Number:
+                      </td>
+                      <td style="padding:4px 0;font:400 13px/1.5 system-ui,-apple-system,'Segoe UI',Roboto,Helvetica,Arial;color:#334155;">
+                        {driver.vehicle_number or 'N/A'}
+                      </td>
+                    </tr>
+                  </table>
+                </div>
+
+                <div style="margin:18px 0;background:#f8fafc;border:1px solid #e2e8f0;border-radius:12px;padding:16px 18px;">
+                  <p style="margin:0 0 12px;font:700 15px/1.3 system-ui,-apple-system,'Segoe UI',Roboto,Helvetica,Arial;color:#0f172a;">
+                    🏢 Pharmacy Information
+                  </p>
+                  <table width="100%" cellspacing="0" cellpadding="0" border="0">
+                    <tr>
+                      <td style="padding:4px 0;font:600 13px/1.5 system-ui,-apple-system,'Segoe UI',Roboto,Helvetica,Arial;color:#334155;">
+                        Pharmacy Name:
+                      </td>
+                      <td style="padding:4px 0;font:400 13px/1.5 system-ui,-apple-system,'Segoe UI',Roboto,Helvetica,Arial;color:#334155;">
+                        {pharmacy.name}
+                      </td>
+                    </tr>
+                    <tr>
+                      <td style="padding:4px 0;font:600 13px/1.5 system-ui,-apple-system,'Segoe UI',Roboto,Helvetica,Arial;color:#334155;">
+                        Phone:
+                      </td>
+                      <td style="padding:4px 0;font:400 13px/1.5 system-ui,-apple-system,'Segoe UI',Roboto,Helvetica,Arial;color:#334155;">
+                        {pharmacy.phone_number}
+                      </td>
+                    </tr>
+                    <tr>
+                      <td style="padding:4px 0;font:600 13px/1.5 system-ui,-apple-system,'Segoe UI',Roboto,Helvetica,Arial;color:#334155;">
+                        Address:
+                      </td>
+                      <td style="padding:4px 0;font:400 13px/1.5 system-ui,-apple-system,'Segoe UI',Roboto,Helvetica,Arial;color:#334155;">
+                        {pharmacy.store_address}, {pharmacy.city}
+                      </td>
+                    </tr>
+                  </table>
+                </div>
+
+                <div style="margin:18px 0;background:#f0fdf4;border:1px solid #10b981;border-radius:12px;padding:16px 18px;">
+                  <p style="margin:0 0 12px;font:700 15px/1.3 system-ui,-apple-system,'Segoe UI',Roboto,Helvetica,Arial;color:#0f172a;">
+                    📸 Delivery Proof Photo
+                  </p>
+                  <div style="margin:12px 0;text-align:center;">
+                    <img src="{public_url}" 
+                         alt="Delivery Proof" 
+                         style="max-width:100%;height:auto;border-radius:8px;border:2px solid #e5e7eb;">
+                  </div>
+                  <p style="margin:8px 0 0;font:400 12px/1.5 system-ui,-apple-system,'Segoe UI',Roboto,Helvetica,Arial;color:#64748b;text-align:center;">
+                    Delivery verification photo taken by driver
+                  </p>
+                </div>
+
+                <div style="margin:18px 0;background:#eff6ff;border:1px solid #3b82f6;border-radius:12px;padding:16px 18px;">
+                  <p style="margin:0 0 10px;font:700 15px/1.3 system-ui,-apple-system,'Segoe UI',Roboto,Helvetica,Arial;color:#0f172a;">
+                    🏠 Delivery Location
+                  </p>
+                  <p style="margin:0 0 4px;font:600 13px/1.5 system-ui,-apple-system,'Segoe UI',Roboto,Helvetica,Arial;color:#334155;">
+                    Customer: {order.customer_name}
+                  </p>
+                  <p style="margin:0 0 2px;font:400 13px/1.6 system-ui,-apple-system,'Segoe UI',Roboto,Helvetica,Arial;color:#475569;">
+                    {order.drop_address}
+                  </p>
+                  <p style="margin:0;font:400 13px/1.6 system-ui,-apple-system,'Segoe UI',Roboto,Helvetica,Arial;color:#475569;">
+                    {order.drop_city}
+                  </p>
+                </div>
+
+                <div style="margin:20px 0;background:#dcfce7;border:1px solid #86efac;border-radius:12px;padding:14px 18px;">
+                  <p style="margin:0;font:600 13px/1.6 system-ui,-apple-system,'Segoe UI',Roboto,Helvetica,Arial;color:#166534;">
+                    🎉 <strong>Delivery Complete!</strong> Thank you for using CanaLogistiX for your delivery needs.
+                  </p>
+                </div>
+
+                <hr style="border:0;border-top:1px solid #e5e7eb;margin:24px 0;">
+                <p class="muted" style="margin:0;font:400 12px/1.7 system-ui,-apple-system,'Segoe UI',Roboto,Helvetica,Arial;color:#6b7280;">
+                  You can view complete delivery details and proof photos in your dashboard. For questions, Log in to the portal and raise a Support Ticket by contacting the Admin. Our team will be happy to assist you.
+                </p>
+              </td>
+            </tr>
+
+            <tr>
+              <td style="padding:0 24px 24px;">
+                <table width="100%" cellspacing="0" cellpadding="0" border="0" style="background:#f8fafc;border:1px dashed #e2e8f0;border-radius:12px;">
+                  <tr>
+                    <td style="padding:12px 16px;">
+                      <p style="margin:0;font:400 12px/1.6 system-ui,-apple-system,'Segoe UI',Roboto,Helvetica,Arial;color:#64748b;">
+                        Thank you for trusting CanaLogistiX with your deliveries!
+                      </p>
+                    </td>
+                  </tr>
+                </table>
+              </td>
+            </tr>
+
+          </table>
+
+          <p style="margin:14px 0 0;font:400 12px/1.6 system-ui,-apple-system,'Segoe UI',Roboto,Helvetica,Arial;color:#94a3b8;">
+            © {timezone.now().year} CanaLogistiX - Cana Group of Companies. All rights reserved.
+          </p>
+        </td>
+      </tr>
+    </table>
+  </body>
+</html>
+"""
+            text = (
+                f"Order Delivered - CanaLogistiX\n\n"
+                f"Hello {pharmacy.name},\n\n"
+                f"Your delivery order #{order.id} has been successfully delivered to the customer.\n\n"
+                f"ORDER INFORMATION:\n"
+                f"- Order ID: #{order.id}\n"
+                f"- Customer: {order.customer_name}\n"
+                f"- Delivery Rate: ${order.rate}\n"
+                f"- Pickup Date: {pickup_date_str}\n"
+                f"- Delivered At: {now_str}\n\n"
+                f"DRIVER INFORMATION:\n"
+                f"- Name: {driver.name}\n"
+                f"- Phone: {driver.phone_number}\n"
+                f"- Vehicle Number: {driver.vehicle_number or 'N/A'}\n\n"
+                f"PHARMACY INFORMATION:\n"
+                f"- Name: {pharmacy.name}\n"
+                f"- Phone: {pharmacy.phone_number}\n"
+                f"- Address: {pharmacy.store_address}, {pharmacy.city}\n\n"
+                f"DELIVERY LOCATION:\n"
+                f"- Customer: {order.customer_name}\n"
+                f"- Address: {order.drop_address}\n"
+                f"- City: {order.drop_city}\n\n"
+                f"Delivery Proof Photo: {public_url}\n\n"
+                f"View complete details in your dashboard.\n"
+            )
+
+            _send_html_email_operations(
+                subject=f"Order #{order.id} Delivered Successfully ✓",
+                to_email=pharmacy.email,
+                html=html,
+                text_fallback=text,
+            )
+        except Exception:
+            pass
+
         return JsonResponse({
             "success": True,
             "message": "Delivery proof uploaded successfully",
@@ -1968,8 +2645,6 @@ def driver_delivery_proof(request):
             "success": False,
             "message": f"Error uploading delivery proof: {str(e)}"
         }, status=500)
-
-
 
 
 # GCP Storage configuration
@@ -6642,7 +7317,6 @@ def edit_order(request, order_id):
 
 
 
-
 @csrf_exempt
 def cancel_order(request, order_id: int):
     """
@@ -6682,6 +7356,428 @@ def cancel_order(request, order_id: int):
         note="Order cancelled via Admin Dashboard.",
         timestamp=timezone.now(),
     )
+
+    # ---- Send cancellation email to pharmacy ----
+    if order.pharmacy and order.pharmacy.email:
+        try:
+            brand_primary = settings.BRAND_COLORS['primary']
+            brand_primary_dark = settings.BRAND_COLORS['primary_dark']
+            brand_accent = settings.BRAND_COLORS['accent']
+            now_str = timezone.now().strftime("%b %d, %Y %H:%M %Z")
+            logo_url = settings.LOGO_URL
+            
+            pickup_date_str = order.pickup_day.strftime("%A, %B %d, %Y") if order.pickup_day else "N/A"
+
+            pharmacy_html = f"""\
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <title>Order Cancelled • CanaLogistiX</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <style>
+      @media (prefers-color-scheme: dark) {{
+        body {{ background: #0b1220 !important; color: #e5e7eb !important; }}
+        .card {{ background: #0f172a !important; border-color: #1f2937 !important; }}
+        .muted {{ color: #94a3b8 !important; }}
+      }}
+    </style>
+  </head>
+  <body style="margin:0;padding:0;background:#f4f7f9;">
+    <table role="presentation" width="100%" cellspacing="0" cellpadding="0" border="0" style="background:#f4f7f9;padding:24px 12px;">
+      <tr>
+        <td align="center">
+          <table role="presentation" width="100%" cellspacing="0" cellpadding="0" border="0" class="card" style="max-width:640px;background:#ffffff;border:1px solid #e5e7eb;border-radius:16px;overflow:hidden;">
+            <tr>
+              <td style="background:#dc2626;padding:18px 20px;">
+                <table width="100%" cellspacing="0" cellpadding="0" border="0">
+                  <tr>
+                    <td align="left">
+                      <img src="{logo_url}" alt="CanaLogistiX" width="40" height="40" style="display:block;border:0;outline:none;text-decoration:none;border-radius:50%;object-fit:cover;">
+                    </td>
+                    <td align="right" style="font:600 16px/1.2 system-ui,-apple-system,'Segoe UI',Roboto,Helvetica,Arial;color:#ffffff;">
+                      Order Cancelled
+                    </td>
+                  </tr>
+                </table>
+              </td>
+            </tr>
+            
+            <tr>
+              <td style="padding:28px 24px 6px;">
+                <h1 style="margin:0 0 10px;font:800 24px/1.25 system-ui,-apple-system,'Segoe UI',Roboto,Helvetica,Arial;color:#0f172a;">
+                  Order #{order.id} has been cancelled
+                </h1>
+                <p style="margin:0 0 16px;font:400 14px/1.7 system-ui,-apple-system,'Segoe UI',Roboto,Helvetica,Arial;color:#475569;">
+                  Hello <strong>{order.pharmacy.name}</strong>, we're writing to inform you that delivery order <strong>#{order.id}</strong> has been cancelled through the admin dashboard.
+                </p>
+                
+                <div style="margin:18px 0;background:#fef2f2;border:1px solid #ef4444;border-radius:12px;padding:14px 18px;">
+                  <p style="margin:0;font:600 13px/1.6 system-ui,-apple-system,'Segoe UI',Roboto,Helvetica,Arial;color:#991b1b;">
+                    ✕ Order Status: <strong>Cancelled</strong> — No further action required
+                  </p>
+                </div>
+                
+                <div style="margin:18px 0;background:#f0fdfa;border:1px solid {brand_primary};border-radius:12px;padding:16px 18px;">
+                  <p style="margin:0 0 12px;font:700 15px/1.3 system-ui,-apple-system,'Segoe UI',Roboto,Helvetica,Arial;color:#0f172a;">
+                    📦 Order Information
+                  </p>
+                  <table width="100%" cellspacing="0" cellpadding="0" border="0">
+                    <tr>
+                      <td style="padding:4px 0;font:600 13px/1.5 system-ui,-apple-system,'Segoe UI',Roboto,Helvetica,Arial;color:#334155;">
+                        Order ID:
+                      </td>
+                      <td style="padding:4px 0;font:400 13px/1.5 system-ui,-apple-system,'Segoe UI',Roboto,Helvetica,Arial;color:#334155;">
+                        #{order.id}
+                      </td>
+                    </tr>
+                    <tr>
+                      <td style="padding:4px 0;font:600 13px/1.5 system-ui,-apple-system,'Segoe UI',Roboto,Helvetica,Arial;color:#334155;">
+                        Customer:
+                      </td>
+                      <td style="padding:4px 0;font:400 13px/1.5 system-ui,-apple-system,'Segoe UI',Roboto,Helvetica,Arial;color:#334155;">
+                        {order.customer_name}
+                      </td>
+                    </tr>
+                    <tr>
+                      <td style="padding:4px 0;font:600 13px/1.5 system-ui,-apple-system,'Segoe UI',Roboto,Helvetica,Arial;color:#334155;">
+                        Delivery Rate:
+                      </td>
+                      <td style="padding:4px 0;font:400 13px/1.5 system-ui,-apple-system,'Segoe UI',Roboto,Helvetica,Arial;color:#334155;">
+                        ${order.rate}
+                      </td>
+                    </tr>
+                    <tr>
+                      <td style="padding:4px 0;font:600 13px/1.5 system-ui,-apple-system,'Segoe UI',Roboto,Helvetica,Arial;color:#334155;">
+                        Scheduled Pickup:
+                      </td>
+                      <td style="padding:4px 0;font:400 13px/1.5 system-ui,-apple-system,'Segoe UI',Roboto,Helvetica,Arial;color:#334155;">
+                        {pickup_date_str}
+                      </td>
+                    </tr>
+                    <tr>
+                      <td style="padding:4px 0;font:600 13px/1.5 system-ui,-apple-system,'Segoe UI',Roboto,Helvetica,Arial;color:#334155;">
+                        Previous Status:
+                      </td>
+                      <td style="padding:4px 0;font:400 13px/1.5 system-ui,-apple-system,'Segoe UI',Roboto,Helvetica,Arial;color:#334155;">
+                        {prev_status.replace('_', ' ').title()}
+                      </td>
+                    </tr>
+                    <tr>
+                      <td style="padding:4px 0;font:600 13px/1.5 system-ui,-apple-system,'Segoe UI',Roboto,Helvetica,Arial;color:#334155;">
+                        Cancelled At:
+                      </td>
+                      <td style="padding:4px 0;font:400 13px/1.5 system-ui,-apple-system,'Segoe UI',Roboto,Helvetica,Arial;color:#334155;">
+                        {now_str}
+                      </td>
+                    </tr>
+                  </table>
+                </div>
+                
+                <div style="margin:18px 0;background:#fff7ed;border:1px solid {brand_accent};border-radius:12px;padding:16px 18px;">
+                  <p style="margin:0 0 12px;font:700 15px/1.3 system-ui,-apple-system,'Segoe UI',Roboto,Helvetica,Arial;color:#0f172a;">
+                    🏠 Delivery Details
+                  </p>
+                  <p style="margin:0 0 4px;font:600 13px/1.5 system-ui,-apple-system,'Segoe UI',Roboto,Helvetica,Arial;color:#334155;">
+                    Customer: {order.customer_name}
+                  </p>
+                  <p style="margin:0 0 2px;font:400 13px/1.6 system-ui,-apple-system,'Segoe UI',Roboto,Helvetica,Arial;color:#475569;">
+                    {order.drop_address}
+                  </p>
+                  <p style="margin:0;font:400 13px/1.6 system-ui,-apple-system,'Segoe UI',Roboto,Helvetica,Arial;color:#475569;">
+                    {order.drop_city}
+                  </p>
+                </div>
+                
+                <div style="margin:18px 0;background:#fef3c7;border-left:3px solid #f59e0b;border-radius:8px;padding:14px 16px;">
+                  <p style="margin:0;font:600 13px/1.6 system-ui,-apple-system,'Segoe UI',Roboto,Helvetica,Arial;color:#92400e;">
+                    ℹ️ If you have questions about this cancellation, please contact our support team.
+                  </p>
+                </div>
+                
+                <hr style="border:0;border-top:1px solid #e5e7eb;margin:24px 0;">
+                <p class="muted" style="margin:0;font:400 12px/1.7 system-ui,-apple-system,'Segoe UI',Roboto,Helvetica,Arial;color:#6b7280;">
+                  For questions or concerns, Log in to the portal and raise a Support Ticket by contacting the Admin. Our team will be happy to assist you.
+                </p>
+              </td>
+            </tr>
+            
+            <tr>
+              <td style="padding:0 24px 24px;">
+                <table width="100%" cellspacing="0" cellpadding="0" border="0" style="background:#f8fafc;border:1px dashed #e2e8f0;border-radius:12px;">
+                  <tr>
+                    <td style="padding:12px 16px;">
+                      <p style="margin:0;font:400 12px/1.6 system-ui,-apple-system,'Segoe UI',Roboto,Helvetica,Arial;color:#64748b;">
+                        Thank you for using CanaLogistiX.
+                      </p>
+                    </td>
+                  </tr>
+                </table>
+              </td>
+            </tr>
+
+          </table>
+          
+          <p style="margin:14px 0 0;font:400 12px/1.6 system-ui,-apple-system,'Segoe UI',Roboto,Helvetica,Arial;color:#94a3b8;">
+            © {timezone.now().year} CanaLogistiX - Cana Group of Companies. All rights reserved.
+          </p>
+        </td>
+      </tr>
+    </table>
+  </body>
+</html>
+"""
+            pharmacy_text = (
+                f"Order Cancelled - CanaLogistiX\n\n"
+                f"Hello {order.pharmacy.name},\n\n"
+                f"Delivery order #{order.id} has been cancelled through the admin dashboard.\n\n"
+                f"ORDER DETAILS:\n"
+                f"- Order ID: #{order.id}\n"
+                f"- Customer: {order.customer_name}\n"
+                f"- Delivery Rate: ${order.rate}\n"
+                f"- Scheduled Pickup: {pickup_date_str}\n"
+                f"- Previous Status: {prev_status.replace('_', ' ').title()}\n"
+                f"- Cancelled At: {now_str}\n\n"
+                f"DELIVERY DETAILS:\n"
+                f"Customer: {order.customer_name}\n"
+                f"{order.drop_address}\n"
+                f"{order.drop_city}\n\n"
+                f"If you have questions about this cancellation, please contact support at {settings.EMAIL_ADMIN_OFFICE}\n"
+            )
+
+            _send_html_email_operations(
+                subject=f"Order #{order.id} Cancelled • CanaLogistiX",
+                to_email=order.pharmacy.email,
+                html=pharmacy_html,
+                text_fallback=pharmacy_text,
+            )
+            
+        except Exception as e:
+            print(f"ERROR sending pharmacy cancellation email: {str(e)}")
+            import traceback
+            traceback.print_exc()
+
+    # ---- Send cancellation email to driver (if assigned) ----
+    if order.driver and order.driver.email:
+        try:
+            brand_primary = settings.BRAND_COLORS['primary']
+            brand_primary_dark = settings.BRAND_COLORS['primary_dark']
+            brand_accent = settings.BRAND_COLORS['accent']
+            now_str = timezone.now().strftime("%b %d, %Y %H:%M %Z")
+            logo_url = settings.LOGO_URL
+            
+            pickup_date_str = order.pickup_day.strftime("%A, %B %d, %Y") if order.pickup_day else "N/A"
+
+            driver_html = f"""\
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <title>Order Cancelled • CanaLogistiX</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <style>
+      @media (prefers-color-scheme: dark) {{
+        body {{ background: #0b1220 !important; color: #e5e7eb !important; }}
+        .card {{ background: #0f172a !important; border-color: #1f2937 !important; }}
+        .muted {{ color: #94a3b8 !important; }}
+      }}
+    </style>
+  </head>
+  <body style="margin:0;padding:0;background:#f4f7f9;">
+    <table role="presentation" width="100%" cellspacing="0" cellpadding="0" border="0" style="background:#f4f7f9;padding:24px 12px;">
+      <tr>
+        <td align="center">
+          <table role="presentation" width="100%" cellspacing="0" cellpadding="0" border="0" class="card" style="max-width:640px;background:#ffffff;border:1px solid #e5e7eb;border-radius:16px;overflow:hidden;">
+            <tr>
+              <td style="background:#dc2626;padding:18px 20px;">
+                <table width="100%" cellspacing="0" cellpadding="0" border="0">
+                  <tr>
+                    <td align="left">
+                      <img src="{logo_url}" alt="CanaLogistiX" width="40" height="40" style="display:block;border:0;outline:none;text-decoration:none;border-radius:50%;object-fit:cover;">
+                    </td>
+                    <td align="right" style="font:600 16px/1.2 system-ui,-apple-system,'Segoe UI',Roboto,Helvetica,Arial;color:#ffffff;">
+                      Order Cancelled
+                    </td>
+                  </tr>
+                </table>
+              </td>
+            </tr>
+            
+            <tr>
+              <td style="padding:28px 24px 6px;">
+                <h1 style="margin:0 0 10px;font:800 24px/1.25 system-ui,-apple-system,'Segoe UI',Roboto,Helvetica,Arial;color:#0f172a;">
+                  Delivery order #{order.id} cancelled
+                </h1>
+                <p style="margin:0 0 16px;font:400 14px/1.7 system-ui,-apple-system,'Segoe UI',Roboto,Helvetica,Arial;color:#475569;">
+                  Hello <strong>{order.driver.name}</strong>, the delivery order <strong>#{order.id}</strong> that was assigned to you has been cancelled through the admin dashboard. No further action is required from you.
+                </p>
+                
+                <div style="margin:18px 0;background:#fef2f2;border:1px solid #ef4444;border-radius:12px;padding:14px 18px;">
+                  <p style="margin:0;font:600 13px/1.6 system-ui,-apple-system,'Segoe UI',Roboto,Helvetica,Arial;color:#991b1b;">
+                    ✕ Order Status: <strong>Cancelled</strong> — No delivery needed
+                  </p>
+                </div>
+                
+                <div style="margin:18px 0;background:#f0fdfa;border:1px solid {brand_primary};border-radius:12px;padding:16px 18px;">
+                  <p style="margin:0 0 12px;font:700 15px/1.3 system-ui,-apple-system,'Segoe UI',Roboto,Helvetica,Arial;color:#0f172a;">
+                    📦 Order Information
+                  </p>
+                  <table width="100%" cellspacing="0" cellpadding="0" border="0">
+                    <tr>
+                      <td style="padding:4px 0;font:600 13px/1.5 system-ui,-apple-system,'Segoe UI',Roboto,Helvetica,Arial;color:#334155;">
+                        Order ID:
+                      </td>
+                      <td style="padding:4px 0;font:400 13px/1.5 system-ui,-apple-system,'Segoe UI',Roboto,Helvetica,Arial;color:#334155;">
+                        #{order.id}
+                      </td>
+                    </tr>
+                    <tr>
+                      <td style="padding:4px 0;font:600 13px/1.5 system-ui,-apple-system,'Segoe UI',Roboto,Helvetica,Arial;color:#334155;">
+                        Pharmacy:
+                      </td>
+                      <td style="padding:4px 0;font:400 13px/1.5 system-ui,-apple-system,'Segoe UI',Roboto,Helvetica,Arial;color:#334155;">
+                        {order.pharmacy.name}
+                      </td>
+                    </tr>
+                    <tr>
+                      <td style="padding:4px 0;font:600 13px/1.5 system-ui,-apple-system,'Segoe UI',Roboto,Helvetica,Arial;color:#334155;">
+                        Customer:
+                      </td>
+                      <td style="padding:4px 0;font:400 13px/1.5 system-ui,-apple-system,'Segoe UI',Roboto,Helvetica,Arial;color:#334155;">
+                        {order.customer_name}
+                      </td>
+                    </tr>
+                    <tr>
+                      <td style="padding:4px 0;font:600 13px/1.5 system-ui,-apple-system,'Segoe UI',Roboto,Helvetica,Arial;color:#334155;">
+                        Delivery Rate:
+                      </td>
+                      <td style="padding:4px 0;font:400 13px/1.5 system-ui,-apple-system,'Segoe UI',Roboto,Helvetica,Arial;color:#334155;">
+                        ${order.rate}
+                      </td>
+                    </tr>
+                    <tr>
+                      <td style="padding:4px 0;font:600 13px/1.5 system-ui,-apple-system,'Segoe UI',Roboto,Helvetica,Arial;color:#334155;">
+                        Scheduled Pickup:
+                      </td>
+                      <td style="padding:4px 0;font:400 13px/1.5 system-ui,-apple-system,'Segoe UI',Roboto,Helvetica,Arial;color:#334155;">
+                        {pickup_date_str}
+                      </td>
+                    </tr>
+                    <tr>
+                      <td style="padding:4px 0;font:600 13px/1.5 system-ui,-apple-system,'Segoe UI',Roboto,Helvetica,Arial;color:#334155;">
+                        Previous Status:
+                      </td>
+                      <td style="padding:4px 0;font:400 13px/1.5 system-ui,-apple-system,'Segoe UI',Roboto,Helvetica,Arial;color:#334155;">
+                        {prev_status.replace('_', ' ').title()}
+                      </td>
+                    </tr>
+                    <tr>
+                      <td style="padding:4px 0;font:600 13px/1.5 system-ui,-apple-system,'Segoe UI',Roboto,Helvetica,Arial;color:#334155;">
+                        Cancelled At:
+                      </td>
+                      <td style="padding:4px 0;font:400 13px/1.5 system-ui,-apple-system,'Segoe UI',Roboto,Helvetica,Arial;color:#334155;">
+                        {now_str}
+                      </td>
+                    </tr>
+                  </table>
+                </div>
+                
+                <div style="margin:18px 0;background:#f8fafc;border:1px solid #e2e8f0;border-radius:12px;padding:16px 18px;">
+                  <p style="margin:0 0 12px;font:700 15px/1.3 system-ui,-apple-system,'Segoe UI',Roboto,Helvetica,Arial;color:#0f172a;">
+                    📍 Pickup Location
+                  </p>
+                  <p style="margin:0 0 4px;font:600 13px/1.5 system-ui,-apple-system,'Segoe UI',Roboto,Helvetica,Arial;color:#334155;">
+                    {order.pharmacy.name}
+                  </p>
+                  <p style="margin:0 0 2px;font:400 13px/1.6 system-ui,-apple-system,'Segoe UI',Roboto,Helvetica,Arial;color:#475569;">
+                    {order.pickup_address}
+                  </p>
+                  <p style="margin:0;font:400 13px/1.6 system-ui,-apple-system,'Segoe UI',Roboto,Helvetica,Arial;color:#475569;">
+                    {order.pickup_city}
+                  </p>
+                </div>
+                
+                <div style="margin:18px 0;background:#fff7ed;border:1px solid {brand_accent};border-radius:12px;padding:16px 18px;">
+                  <p style="margin:0 0 12px;font:700 15px/1.3 system-ui,-apple-system,'Segoe UI',Roboto,Helvetica,Arial;color:#0f172a;">
+                    🏠 Delivery Destination
+                  </p>
+                  <p style="margin:0 0 4px;font:600 13px/1.5 system-ui,-apple-system,'Segoe UI',Roboto,Helvetica,Arial;color:#334155;">
+                    Customer: {order.customer_name}
+                  </p>
+                  <p style="margin:0 0 2px;font:400 13px/1.6 system-ui,-apple-system,'Segoe UI',Roboto,Helvetica,Arial;color:#475569;">
+                    {order.drop_address}
+                  </p>
+                  <p style="margin:0;font:400 13px/1.6 system-ui,-apple-system,'Segoe UI',Roboto,Helvetica,Arial;color:#475569;">
+                    {order.drop_city}
+                  </p>
+                </div>
+                
+                <hr style="border:0;border-top:1px solid #e5e7eb;margin:24px 0;">
+                <p class="muted" style="margin:0;font:400 12px/1.7 system-ui,-apple-system,'Segoe UI',Roboto,Helvetica,Arial;color:#6b7280;">
+                  For questions or concerns, Log in to the portal and raise a Support Ticket by contacting the Admin. Our team will be happy to assist you.
+                </p>
+              </td>
+            </tr>
+            
+            <tr>
+              <td style="padding:0 24px 24px;">
+                <table width="100%" cellspacing="0" cellpadding="0" border="0" style="background:#f8fafc;border:1px dashed #e2e8f0;border-radius:12px;">
+                  <tr>
+                    <td style="padding:12px 16px;">
+                      <p style="margin:0;font:400 12px/1.6 system-ui,-apple-system,'Segoe UI',Roboto,Helvetica,Arial;color:#64748b;">
+                        Thank you for being part of the CanaLogistiX team.
+                      </p>
+                    </td>
+                  </tr>
+                </table>
+              </td>
+            </tr>
+
+          </table>
+          
+          <p style="margin:14px 0 0;font:400 12px/1.6 system-ui,-apple-system,'Segoe UI',Roboto,Helvetica,Arial;color:#94a3b8;">
+            © {timezone.now().year} CanaLogistiX - Cana Group of Companies. All rights reserved.
+          </p>
+        </td>
+      </tr>
+    </table>
+  </body>
+</html>
+"""
+            driver_text = (
+                f"Order Cancelled - CanaLogistiX\n\n"
+                f"Hello {order.driver.name},\n\n"
+                f"The delivery order #{order.id} that was assigned to you has been cancelled. No delivery is needed.\n\n"
+                f"ORDER DETAILS:\n"
+                f"- Order ID: #{order.id}\n"
+                f"- Pharmacy: {order.pharmacy.name}\n"
+                f"- Customer: {order.customer_name}\n"
+                f"- Delivery Rate: ${order.rate}\n"
+                f"- Scheduled Pickup: {pickup_date_str}\n"
+                f"- Previous Status: {prev_status.replace('_', ' ').title()}\n"
+                f"- Cancelled At: {now_str}\n\n"
+                f"PICKUP LOCATION:\n"
+                f"{order.pharmacy.name}\n"
+                f"{order.pickup_address}\n"
+                f"{order.pickup_city}\n\n"
+                f"DELIVERY DESTINATION:\n"
+                f"Customer: {order.customer_name}\n"
+                f"{order.drop_address}\n"
+                f"{order.drop_city}\n\n"
+                f"For questions, contact operations at {settings.EMAIL_OPERATIONS}\n"
+            )
+
+            _send_html_email_operations(
+                subject=f"Order #{order.id} Cancelled • CanaLogistiX",
+                to_email=order.driver.email,
+                html=driver_html,
+                text_fallback=driver_text,
+            )
+            
+        except Exception as e:
+            print(f"ERROR sending driver cancellation email: {str(e)}")
+            import traceback
+            traceback.print_exc()
 
     return JsonResponse({
         "success": True,
