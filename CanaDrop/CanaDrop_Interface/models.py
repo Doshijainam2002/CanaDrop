@@ -1,6 +1,8 @@
 from django.db import models
 from django.contrib.auth.hashers import make_password, check_password
 from django.utils import timezone
+from django.db import models
+from django.contrib.auth.hashers import make_password, check_password
 
 
 
@@ -40,10 +42,6 @@ class AdminUser(models.Model):
     class Meta:
         db_table = 'canadrop_interface_adminuser'  
 
-# models.py
-
-from django.db import models
-from django.contrib.auth.hashers import make_password, check_password
 
 class Pharmacy(models.Model):
     name = models.CharField(max_length=255)

@@ -558,6 +558,7 @@ def get_delivery_rate(request):
 
 
 
+
 @csrf_exempt
 def get_pharmacy_orders(request, pharmacy_id):
     if request.method == "GET":
@@ -1020,6 +1021,688 @@ def get_pending_orders(request):
     return JsonResponse({"error": "Invalid request method"}, status=405)
 
 
+# @csrf_exempt
+# def assign_driver(request):
+#     if request.method == "POST":
+#         try:
+#             body = json.loads(request.body.decode("utf-8"))
+#             order_id = body.get("orderId")
+#             driver_id = body.get("driverId")
+
+#             if not order_id or not driver_id:
+#                 return JsonResponse({"error": "orderId and driverId are required"}, status=400)
+
+#             # Fetch order & driver
+#             order = DeliveryOrder.objects.get(id=order_id)
+#             driver = Driver.objects.get(id=driver_id)
+
+#             # Update order
+#             order.driver = driver
+#             order.status = "accepted"
+#             order.save()
+
+#             # Log in OrderTracking
+#             tracking = OrderTracking.objects.create(
+#                 order=order,
+#                 driver=driver,
+#                 pharmacy=order.pharmacy,
+#                 step="accepted",
+#                 performed_by=f"Driver: {driver.name}",
+#                 note=f"{order.pharmacy.id}_{order.id}_{driver.id}_Accepted",
+#                 image_url=None
+#             )
+
+#             # ---- Send order acceptance confirmation email to driver ----
+#             try:
+#                 brand_primary = settings.BRAND_COLORS['primary']
+#                 brand_primary_dark = settings.BRAND_COLORS['primary_dark']
+#                 brand_accent = settings.BRAND_COLORS['accent']
+#                 now_str = timezone.now().strftime("%b %d, %Y %H:%M %Z")
+#                 logo_url = settings.LOGO_URL
+                
+#                 # Format pickup date
+#                 pickup_date_str = order.pickup_day.strftime("%A, %B %d, %Y")
+                
+#                 # Calculate estimated delivery time (pickup day + 1 hour as example)
+#                 # You can adjust this logic based on your business rules
+#                 estimated_delivery = "Same day delivery"
+
+#                 html = f"""\
+# <!doctype html>
+# <html lang="en">
+#   <head>
+#     <meta charset="utf-8">
+#     <title>Order Accepted • CanaLogistiX</title>
+#     <meta name="viewport" content="width=device-width, initial-scale=1">
+#     <style>
+#       @media (prefers-color-scheme: dark) {{
+#         body {{ background: #0b1220 !important; color: #e5e7eb !important; }}
+#         .card {{ background: #0f172a !important; border-color: #1f2937 !important; }}
+#         .muted {{ color: #94a3b8 !important; }}
+#       }}
+#     </style>
+#   </head>
+#   <body style="margin:0;padding:0;background:#f4f7f9;">
+#     <div style="display:none;visibility:hidden;opacity:0;height:0;width:0;overflow:hidden;">
+#       Order #{order.id} confirmed — ready for pickup and delivery.
+#     </div>
+
+#     <table role="presentation" width="100%" cellspacing="0" cellpadding="0" border="0" style="background:#f4f7f9;padding:24px 12px;">
+#       <tr>
+#         <td align="center">
+#           <table role="presentation" width="100%" cellspacing="0" cellpadding="0" border="0" class="card" style="max-width:640px;background:#ffffff;border:1px solid #e5e7eb;border-radius:16px;overflow:hidden;">
+#             <tr>
+#             <td style="background:{brand_primary};padding:18px 20px;">
+#                 <table width="100%" cellspacing="0" cellpadding="0" border="0">
+#                 <tr>
+#                     <td align="left">
+#                     <img src="{logo_url}"
+#                         alt="CanaLogistiX"
+#                         width="40"
+#                         height="40"
+#                         style="display:block;border:0;outline:none;text-decoration:none;border-radius:50%;object-fit:cover;">
+#                     </td>
+#                     <td align="right" style="font:600 16px/1.2 system-ui,-apple-system,'Segoe UI',Roboto,Helvetica,Arial;color:#e6fffb;">
+#                     Order Accepted
+#                     </td>
+#                 </tr>
+#                 </table>
+#             </td>
+#             </tr>
+
+
+#             <tr>
+#               <td style="padding:28px 24px 6px;">
+#                 <h1 style="margin:0 0 10px;font:800 24px/1.25 system-ui,-apple-system,'Segoe UI',Roboto,Helvetica,Arial;color:#0f172a;">
+#                   Hi {driver.name}, order confirmed!
+#                 </h1>
+#                 <p style="margin:0 0 16px;font:400 14px/1.7 system-ui,-apple-system,'Segoe UI',Roboto,Helvetica,Arial;color:#475569;">
+#                   You've successfully accepted delivery order <strong>#{order.id}</strong>. Please review the details below 
+#                   and ensure timely pickup and delivery. Safe travels!
+#                 </p>
+
+#                 <div style="margin:18px 0;background:#f0fdfa;border:1px solid {brand_primary};border-radius:12px;padding:16px 18px;">
+#                   <p style="margin:0 0 12px;font:700 15px/1.3 system-ui,-apple-system,'Segoe UI',Roboto,Helvetica,Arial;color:#0f172a;">
+#                     📦 Order Information
+#                   </p>
+#                   <table width="100%" cellspacing="0" cellpadding="0" border="0">
+#                     <tr>
+#                       <td style="padding:4px 0;font:600 13px/1.5 system-ui,-apple-system,'Segoe UI',Roboto,Helvetica,Arial;color:#334155;">
+#                         Order ID:
+#                       </td>
+#                       <td style="padding:4px 0;font:400 13px/1.5 system-ui,-apple-system,'Segoe UI',Roboto,Helvetica,Arial;color:#334155;">
+#                         #{order.id}
+#                       </td>
+#                     </tr>
+#                     <tr>
+#                       <td style="padding:4px 0;font:600 13px/1.5 system-ui,-apple-system,'Segoe UI',Roboto,Helvetica,Arial;color:#334155;">
+#                         Pharmacy:
+#                       </td>
+#                       <td style="padding:4px 0;font:400 13px/1.5 system-ui,-apple-system,'Segoe UI',Roboto,Helvetica,Arial;color:#334155;">
+#                         {order.pharmacy.name}
+#                       </td>
+#                     </tr>
+#                     <tr>
+#                       <td style="padding:4px 0;font:600 13px/1.5 system-ui,-apple-system,'Segoe UI',Roboto,Helvetica,Arial;color:#334155;">
+#                         Customer:
+#                       </td>
+#                       <td style="padding:4px 0;font:400 13px/1.5 system-ui,-apple-system,'Segoe UI',Roboto,Helvetica,Arial;color:#334155;">
+#                         {order.customer_name}
+#                       </td>
+#                     </tr>
+#                     <tr>
+#                       <td style="padding:4px 0;font:600 13px/1.5 system-ui,-apple-system,'Segoe UI',Roboto,Helvetica,Arial;color:#334155;">
+#                         Delivery Rate:
+#                       </td>
+#                       <td style="padding:4px 0;font:400 13px/1.5 system-ui,-apple-system,'Segoe UI',Roboto,Helvetica,Arial;color:#334155;">
+#                         ${order.rate}
+#                       </td>
+#                     </tr>
+#                     <tr>
+#                       <td style="padding:4px 0;font:600 13px/1.5 system-ui,-apple-system,'Segoe UI',Roboto,Helvetica,Arial;color:#334155;">
+#                         Pickup Date:
+#                       </td>
+#                       <td style="padding:4px 0;font:400 13px/1.5 system-ui,-apple-system,'Segoe UI',Roboto,Helvetica,Arial;color:#334155;">
+#                         {pickup_date_str}
+#                       </td>
+#                     </tr>
+#                   </table>
+#                 </div>
+
+#                 <div style="margin:18px 0;background:#fff7ed;border:1px solid {brand_accent};border-radius:12px;padding:16px 18px;">
+#                   <p style="margin:0 0 10px;font:700 15px/1.3 system-ui,-apple-system,'Segoe UI',Roboto,Helvetica,Arial;color:#0f172a;">
+#                     📍 Pickup Location
+#                   </p>
+#                   <p style="margin:0 0 4px;font:600 13px/1.5 system-ui,-apple-system,'Segoe UI',Roboto,Helvetica,Arial;color:#334155;">
+#                     {order.pharmacy.name}
+#                   </p>
+#                   <p style="margin:0 0 2px;font:400 13px/1.6 system-ui,-apple-system,'Segoe UI',Roboto,Helvetica,Arial;color:#475569;">
+#                     {order.pickup_address}
+#                   </p>
+#                   <p style="margin:0;font:400 13px/1.6 system-ui,-apple-system,'Segoe UI',Roboto,Helvetica,Arial;color:#475569;">
+#                     {order.pickup_city}
+#                   </p>
+#                   <p style="margin:8px 0 0;font:400 12px/1.5 system-ui,-apple-system,'Segoe UI',Roboto,Helvetica,Arial;color:#64748b;">
+#                     📞 {order.pharmacy.phone_number}
+#                   </p>
+#                 </div>
+
+#                 <div style="margin:18px 0;background:#f0fdf4;border:1px solid #10b981;border-radius:12px;padding:16px 18px;">
+#                   <p style="margin:0 0 10px;font:700 15px/1.3 system-ui,-apple-system,'Segoe UI',Roboto,Helvetica,Arial;color:#0f172a;">
+#                     🏠 Delivery Location
+#                   </p>
+#                   <p style="margin:0 0 4px;font:600 13px/1.5 system-ui,-apple-system,'Segoe UI',Roboto,Helvetica,Arial;color:#334155;">
+#                     Customer: {order.customer_name}
+#                   </p>
+#                   <p style="margin:0 0 2px;font:400 13px/1.6 system-ui,-apple-system,'Segoe UI',Roboto,Helvetica,Arial;color:#475569;">
+#                     {order.drop_address}
+#                   </p>
+#                   <p style="margin:0;font:400 13px/1.6 system-ui,-apple-system,'Segoe UI',Roboto,Helvetica,Arial;color:#475569;">
+#                     {order.drop_city}
+#                   </p>
+#                   <p style="margin:8px 0 0;font:400 12px/1.5 system-ui,-apple-system,'Segoe UI',Roboto,Helvetica,Arial;color:#64748b;">
+#                     ⏱️ {estimated_delivery}
+#                   </p>
+#                 </div>
+
+#                 <div style="margin:18px 0;background:#fef3c7;border-left:3px solid #f59e0b;border-radius:8px;padding:14px 16px;">
+#                   <p style="margin:0;font:600 13px/1.6 system-ui,-apple-system,'Segoe UI',Roboto,Helvetica,Arial;color:#92400e;">
+#                     ⚠️ Important: Please capture photos at pickup and delivery for order verification and tracking.
+#                   </p>
+#                 </div>
+
+#                 <p style="margin:8px 0 0;font:400 12px/1.7 system-ui,-apple-system,'Segoe UI',Roboto,Helvetica,Arial;color:#64748b;">
+#                   Order accepted on <strong style="color:{brand_primary_dark};">{now_str}</strong>.
+#                 </p>
+
+#                 <hr style="border:0;border-top:1px solid #e5e7eb;margin:24px 0;">
+#                 <p class="muted" style="margin:0;font:400 12px/1.7 system-ui,-apple-system,'Segoe UI',Roboto,Helvetica,Arial;color:#6b7280;">
+#                   Questions or issues with this delivery? Contact operations at {settings.EMAIL_OPERATIONS} or reply to this email.
+#                 </p>
+#               </td>
+#             </tr>
+
+#             <tr>
+#               <td style="padding:0 24px 24px;">
+#                 <table width="100%" cellspacing="0" cellpadding="0" border="0" style="background:#f8fafc;border:1px dashed #e2e8f0;border-radius:12px;">
+#                   <tr>
+#                     <td style="padding:12px 16px;">
+#                       <p style="margin:0;font:400 12px/1.6 system-ui,-apple-system,'Segoe UI',Roboto,Helvetica,Arial;color:#64748b;">
+#                         Drive safe and thank you for being part of the CanaLogistiX team!
+#                       </p>
+#                     </td>
+#                   </tr>
+#                 </table>
+#               </td>
+#             </tr>
+
+#           </table>
+
+#           <p style="margin:14px 0 0;font:400 12px/1.6 system-ui,-apple-system,'Segoe UI',Roboto,Helvetica,Arial;color:#94a3b8;">
+#             © {timezone.now().year} CanaLogistiX - Cana Group of Companies. All rights reserved.
+#           </p>
+#         </td>
+#       </tr>
+#     </table>
+#   </body>
+# </html>
+# """
+#                 text = (
+#                     f"Order Accepted - CanaLogistiX\n\n"
+#                     f"Hi {driver.name},\n\n"
+#                     f"You've successfully accepted delivery order #{order.id}.\n\n"
+#                     f"ORDER DETAILS:\n"
+#                     f"- Pharmacy: {order.pharmacy.name}\n"
+#                     f"- Customer: {order.customer_name}\n"
+#                     f"- Delivery Rate: ${order.rate}\n"
+#                     f"- Pickup Date: {pickup_date_str}\n\n"
+#                     f"PICKUP LOCATION:\n"
+#                     f"{order.pharmacy.name}\n"
+#                     f"{order.pickup_address}\n"
+#                     f"{order.pickup_city}\n"
+#                     f"Phone: {order.pharmacy.phone_number}\n\n"
+#                     f"DELIVERY LOCATION:\n"
+#                     f"Customer: {order.customer_name}\n"
+#                     f"{order.drop_address}\n"
+#                     f"{order.drop_city}\n\n"
+#                     f"Remember to capture photos at pickup and delivery.\n\n"
+#                     f"Questions? Contact operations at {settings.EMAIL_OPERATIONS}\n"
+#                 )
+
+#                 _send_html_email_operations(
+#                     subject=f"Order #{order.id} Accepted • CanaLogistiX Delivery",
+#                     to_email=driver.email,
+#                     html=html,
+#                     text_fallback=text,
+#                 )
+#             except Exception as e:
+#                 logger.exception("Failed to send order acceptance confirmation email to driver")
+
+#             return JsonResponse({
+#                 "message": "Driver assigned and order accepted",
+#                 "orderId": order.id,
+#                 "driverId": driver.id,
+#                 "trackingId": tracking.id
+#             }, status=200)
+
+#         except DeliveryOrder.DoesNotExist:
+#             return JsonResponse({"error": "Order not found"}, status=404)
+#         except Driver.DoesNotExist:
+#             return JsonResponse({"error": "Driver not found"}, status=404)
+#         except Exception as e:
+#             return JsonResponse({"error": str(e)}, status=500)
+
+#     return JsonResponse({"error": "Invalid request method"}, status=405)
+
+
+
+# @csrf_exempt
+# def assign_driver(request):
+#     if request.method == "POST":
+#         try:
+#             body = json.loads(request.body.decode("utf-8"))
+#             order_id = body.get("orderId")
+#             driver_id = body.get("driverId")
+
+#             if not order_id or not driver_id:
+#                 return JsonResponse({"error": "orderId and driverId are required"}, status=400)
+
+#             # Fetch order & driver
+#             order = DeliveryOrder.objects.get(id=order_id)
+#             driver = Driver.objects.get(id=driver_id)
+
+#             # Update order
+#             order.driver = driver
+#             order.status = "accepted"
+#             order.save()
+
+#             # Log in OrderTracking
+#             tracking = OrderTracking.objects.create(
+#                 order=order,
+#                 driver=driver,
+#                 pharmacy=order.pharmacy,
+#                 step="accepted",
+#                 performed_by=f"Driver: {driver.name}",
+#                 note=f"{order.pharmacy.id}_{order.id}_{driver.id}_Accepted",
+#                 image_url=None
+#             )
+
+#             # ---- Send order acceptance confirmation email to driver ----
+#             try:
+#                 brand_primary = settings.BRAND_COLORS['primary']
+#                 brand_primary_dark = settings.BRAND_COLORS['primary_dark']
+#                 brand_accent = settings.BRAND_COLORS['accent']
+#                 now_str = timezone.now().strftime("%b %d, %Y %H:%M %Z")
+#                 logo_url = settings.LOGO_URL
+                
+#                 # Format pickup date
+#                 pickup_date_str = order.pickup_day.strftime("%A, %B %d, %Y")
+                
+#                 # Calculate estimated delivery time (pickup day + 1 hour as example)
+#                 # You can adjust this logic based on your business rules
+#                 estimated_delivery = "Same day delivery"
+
+#                 html = f"""\
+# <!doctype html>
+# <html lang="en">
+#   <head>
+#     <meta charset="utf-8">
+#     <title>Order Accepted • CanaLogistiX</title>
+#     <meta name="viewport" content="width=device-width, initial-scale=1">
+#     <style>
+#       @media (prefers-color-scheme: dark) {{
+#         body {{ background: #0b1220 !important; color: #e5e7eb !important; }}
+#         .card {{ background: #0f172a !important; border-color: #1f2937 !important; }}
+#         .muted {{ color: #94a3b8 !important; }}
+#       }}
+#     </style>
+#   </head>
+#   <body style="margin:0;padding:0;background:#f4f7f9;">
+#     <div style="display:none;visibility:hidden;opacity:0;height:0;width:0;overflow:hidden;">
+#       Order #{order.id} confirmed — ready for pickup and delivery.
+#     </div>
+
+#     <table role="presentation" width="100%" cellspacing="0" cellpadding="0" border="0" style="background:#f4f7f9;padding:24px 12px;">
+#       <tr>
+#         <td align="center">
+#           <table role="presentation" width="100%" cellspacing="0" cellpadding="0" border="0" class="card" style="max-width:640px;background:#ffffff;border:1px solid #e5e7eb;border-radius:16px;overflow:hidden;">
+#             <tr>
+#             <td style="background:{brand_primary};padding:18px 20px;">
+#                 <table width="100%" cellspacing="0" cellpadding="0" border="0">
+#                 <tr>
+#                     <td align="left">
+#                     <img src="{logo_url}"
+#                         alt="CanaLogistiX"
+#                         width="40"
+#                         height="40"
+#                         style="display:block;border:0;outline:none;text-decoration:none;border-radius:50%;object-fit:cover;">
+#                     </td>
+#                     <td align="right" style="font:600 16px/1.2 system-ui,-apple-system,'Segoe UI',Roboto,Helvetica,Arial;color:#e6fffb;">
+#                     Order Accepted
+#                     </td>
+#                 </tr>
+#                 </table>
+#             </td>
+#             </tr>
+
+
+#             <tr>
+#               <td style="padding:28px 24px 6px;">
+#                 <h1 style="margin:0 0 10px;font:800 24px/1.25 system-ui,-apple-system,'Segoe UI',Roboto,Helvetica,Arial;color:#0f172a;">
+#                   Hi {driver.name}, order confirmed!
+#                 </h1>
+#                 <p style="margin:0 0 16px;font:400 14px/1.7 system-ui,-apple-system,'Segoe UI',Roboto,Helvetica,Arial;color:#475569;">
+#                   You've successfully accepted delivery order <strong>#{order.id}</strong>. Please review the details below 
+#                   and ensure timely pickup and delivery. Safe travels!
+#                 </p>
+
+#                 <div style="margin:18px 0;background:#f0fdfa;border:1px solid {brand_primary};border-radius:12px;padding:16px 18px;">
+#                   <p style="margin:0 0 12px;font:700 15px/1.3 system-ui,-apple-system,'Segoe UI',Roboto,Helvetica,Arial;color:#0f172a;">
+#                     📦 Order Information
+#                   </p>
+#                   <table width="100%" cellspacing="0" cellpadding="0" border="0">
+#                     <tr>
+#                       <td style="padding:4px 0;font:600 13px/1.5 system-ui,-apple-system,'Segoe UI',Roboto,Helvetica,Arial;color:#334155;">
+#                         Order ID:
+#                       </td>
+#                       <td style="padding:4px 0;font:400 13px/1.5 system-ui,-apple-system,'Segoe UI',Roboto,Helvetica,Arial;color:#334155;">
+#                         #{order.id}
+#                       </td>
+#                     </tr>
+#                     <tr>
+#                       <td style="padding:4px 0;font:600 13px/1.5 system-ui,-apple-system,'Segoe UI',Roboto,Helvetica,Arial;color:#334155;">
+#                         Pharmacy:
+#                       </td>
+#                       <td style="padding:4px 0;font:400 13px/1.5 system-ui,-apple-system,'Segoe UI',Roboto,Helvetica,Arial;color:#334155;">
+#                         {order.pharmacy.name}
+#                       </td>
+#                     </tr>
+#                     <tr>
+#                       <td style="padding:4px 0;font:600 13px/1.5 system-ui,-apple-system,'Segoe UI',Roboto,Helvetica,Arial;color:#334155;">
+#                         Customer:
+#                       </td>
+#                       <td style="padding:4px 0;font:400 13px/1.5 system-ui,-apple-system,'Segoe UI',Roboto,Helvetica,Arial;color:#334155;">
+#                         {order.customer_name}
+#                       </td>
+#                     </tr>
+#                     <tr>
+#                       <td style="padding:4px 0;font:600 13px/1.5 system-ui,-apple-system,'Segoe UI',Roboto,Helvetica,Arial;color:#334155;">
+#                         Delivery Rate:
+#                       </td>
+#                       <td style="padding:4px 0;font:400 13px/1.5 system-ui,-apple-system,'Segoe UI',Roboto,Helvetica,Arial;color:#334155;">
+#                         ${order.rate}
+#                       </td>
+#                     </tr>
+#                     <tr>
+#                       <td style="padding:4px 0;font:600 13px/1.5 system-ui,-apple-system,'Segoe UI',Roboto,Helvetica,Arial;color:#334155;">
+#                         Pickup Date:
+#                       </td>
+#                       <td style="padding:4px 0;font:400 13px/1.5 system-ui,-apple-system,'Segoe UI',Roboto,Helvetica,Arial;color:#334155;">
+#                         {pickup_date_str}
+#                       </td>
+#                     </tr>
+#                   </table>
+#                 </div>
+
+#                 <div style="margin:18px 0;background:#fff7ed;border:1px solid {brand_accent};border-radius:12px;padding:16px 18px;">
+#                   <p style="margin:0 0 10px;font:700 15px/1.3 system-ui,-apple-system,'Segoe UI',Roboto,Helvetica,Arial;color:#0f172a;">
+#                     📍 Pickup Location
+#                   </p>
+#                   <p style="margin:0 0 4px;font:600 13px/1.5 system-ui,-apple-system,'Segoe UI',Roboto,Helvetica,Arial;color:#334155;">
+#                     {order.pharmacy.name}
+#                   </p>
+#                   <p style="margin:0 0 2px;font:400 13px/1.6 system-ui,-apple-system,'Segoe UI',Roboto,Helvetica,Arial;color:#475569;">
+#                     {order.pickup_address}
+#                   </p>
+#                   <p style="margin:0;font:400 13px/1.6 system-ui,-apple-system,'Segoe UI',Roboto,Helvetica,Arial;color:#475569;">
+#                     {order.pickup_city}
+#                   </p>
+#                   <p style="margin:8px 0 0;font:400 12px/1.5 system-ui,-apple-system,'Segoe UI',Roboto,Helvetica,Arial;color:#64748b;">
+#                     📞 {order.pharmacy.phone_number}
+#                   </p>
+#                 </div>
+
+#                 <div style="margin:18px 0;background:#f0fdf4;border:1px solid #10b981;border-radius:12px;padding:16px 18px;">
+#                   <p style="margin:0 0 10px;font:700 15px/1.3 system-ui,-apple-system,'Segoe UI',Roboto,Helvetica,Arial;color:#0f172a;">
+#                     🏠 Delivery Location
+#                   </p>
+#                   <p style="margin:0 0 4px;font:600 13px/1.5 system-ui,-apple-system,'Segoe UI',Roboto,Helvetica,Arial;color:#334155;">
+#                     Customer: {order.customer_name}
+#                   </p>
+#                   <p style="margin:0 0 2px;font:400 13px/1.6 system-ui,-apple-system,'Segoe UI',Roboto,Helvetica,Arial;color:#475569;">
+#                     {order.drop_address}
+#                   </p>
+#                   <p style="margin:0;font:400 13px/1.6 system-ui,-apple-system,'Segoe UI',Roboto,Helvetica,Arial;color:#475569;">
+#                     {order.drop_city}
+#                   </p>
+#                   <p style="margin:8px 0 0;font:400 12px/1.5 system-ui,-apple-system,'Segoe UI',Roboto,Helvetica,Arial;color:#64748b;">
+#                     ⏱️ {estimated_delivery}
+#                   </p>
+#                 </div>
+
+#                 <div style="margin:18px 0;background:#fef3c7;border-left:3px solid #f59e0b;border-radius:8px;padding:14px 16px;">
+#                   <p style="margin:0;font:600 13px/1.6 system-ui,-apple-system,'Segoe UI',Roboto,Helvetica,Arial;color:#92400e;">
+#                     ⚠️ Important: Please capture photos at pickup and delivery for order verification and tracking.
+#                   </p>
+#                 </div>
+
+#                 <p style="margin:8px 0 0;font:400 12px/1.7 system-ui,-apple-system,'Segoe UI',Roboto,Helvetica,Arial;color:#64748b;">
+#                   Order accepted on <strong style="color:{brand_primary_dark};">{now_str}</strong>.
+#                 </p>
+
+#                 <hr style="border:0;border-top:1px solid #e5e7eb;margin:24px 0;">
+#                 <p class="muted" style="margin:0;font:400 12px/1.7 system-ui,-apple-system,'Segoe UI',Roboto,Helvetica,Arial;color:#6b7280;">
+#                   Questions or issues with this delivery? Contact operations at {settings.EMAIL_OPERATIONS} or reply to this email.
+#                 </p>
+#               </td>
+#             </tr>
+
+#             <tr>
+#               <td style="padding:0 24px 24px;">
+#                 <table width="100%" cellspacing="0" cellpadding="0" border="0" style="background:#f8fafc;border:1px dashed #e2e8f0;border-radius:12px;">
+#                   <tr>
+#                     <td style="padding:12px 16px;">
+#                       <p style="margin:0;font:400 12px/1.6 system-ui,-apple-system,'Segoe UI',Roboto,Helvetica,Arial;color:#64748b;">
+#                         Drive safe and thank you for being part of the CanaLogistiX team!
+#                       </p>
+#                     </td>
+#                   </tr>
+#                 </table>
+#               </td>
+#             </tr>
+
+#           </table>
+
+#           <p style="margin:14px 0 0;font:400 12px/1.6 system-ui,-apple-system,'Segoe UI',Roboto,Helvetica,Arial;color:#94a3b8;">
+#             © {timezone.now().year} CanaLogistiX - Cana Group of Companies. All rights reserved.
+#           </p>
+#         </td>
+#       </tr>
+#     </table>
+#   </body>
+# </html>
+# """
+#                 text = (
+#                     f"Order Accepted - CanaLogistiX\n\n"
+#                     f"Hi {driver.name},\n\n"
+#                     f"You've successfully accepted delivery order #{order.id}.\n\n"
+#                     f"ORDER DETAILS:\n"
+#                     f"- Pharmacy: {order.pharmacy.name}\n"
+#                     f"- Customer: {order.customer_name}\n"
+#                     f"- Delivery Rate: ${order.rate}\n"
+#                     f"- Pickup Date: {pickup_date_str}\n\n"
+#                     f"PICKUP LOCATION:\n"
+#                     f"{order.pharmacy.name}\n"
+#                     f"{order.pickup_address}\n"
+#                     f"{order.pickup_city}\n"
+#                     f"Phone: {order.pharmacy.phone_number}\n\n"
+#                     f"DELIVERY LOCATION:\n"
+#                     f"Customer: {order.customer_name}\n"
+#                     f"{order.drop_address}\n"
+#                     f"{order.drop_city}\n\n"
+#                     f"Remember to capture photos at pickup and delivery.\n\n"
+#                     f"Questions? Contact operations at {settings.EMAIL_OPERATIONS}\n"
+#                 )
+
+#                 _send_html_email_operations(
+#                     subject=f"Order #{order.id} Accepted • CanaLogistiX Delivery",
+#                     to_email=driver.email,
+#                     html=html,
+#                     text_fallback=text,
+#                 )
+#             except Exception as e:
+#                 print(f"ERROR sending driver email: {str(e)}")
+#                 import traceback
+#                 traceback.print_exc()
+
+#             # ---- Send order assignment notification email to pharmacy ----
+#             try:
+#                 brand_primary = settings.BRAND_COLORS['primary']
+#                 brand_primary_dark = settings.BRAND_COLORS['primary_dark']
+#                 brand_accent = settings.BRAND_COLORS['accent']
+#                 now_str = timezone.now().strftime("%b %d, %Y %H:%M %Z")
+#                 logo_url = settings.LOGO_URL
+                
+#                 pickup_date_str = order.pickup_day.strftime("%A, %B %d, %Y")
+#                 estimated_delivery = "Same day delivery"
+
+#                 pharmacy_html = f"""\
+# <!doctype html>
+# <html lang="en">
+#   <head>
+#     <meta charset="utf-8">
+#     <title>Driver Assigned • CanaLogistiX</title>
+#     <meta name="viewport" content="width=device-width, initial-scale=1">
+#     <style>
+#       @media (prefers-color-scheme: dark) {{
+#         body {{ background: #0b1220 !important; color: #e5e7eb !important; }}
+#         .card {{ background: #0f172a !important; border-color: #1f2937 !important; }}
+#         .muted {{ color: #94a3b8 !important; }}
+#       }}
+#     </style>
+#   </head>
+#   <body style="margin:0;padding:0;background:#f4f7f9;">
+#     <table role="presentation" width="100%" cellspacing="0" cellpadding="0" border="0" style="background:#f4f7f9;padding:24px 12px;">
+#       <tr>
+#         <td align="center">
+#           <table role="presentation" width="100%" cellspacing="0" cellpadding="0" border="0" class="card" style="max-width:640px;background:#ffffff;border:1px solid #e5e7eb;border-radius:16px;overflow:hidden;">
+#             <tr>
+#             <td style="background:{brand_primary};padding:18px 20px;">
+#                 <table width="100%" cellspacing="0" cellpadding="0" border="0">
+#                 <tr>
+#                     <td align="left">
+#                     <img src="{logo_url}" alt="CanaLogistiX" width="40" height="40" style="display:block;border:0;outline:none;text-decoration:none;border-radius:50%;object-fit:cover;">
+#                     </td>
+#                     <td align="right" style="font:600 16px/1.2 system-ui,-apple-system,'Segoe UI',Roboto,Helvetica,Arial;color:#e6fffb;">
+#                     Driver Assigned
+#                     </td>
+#                 </tr>
+#                 </table>
+#             </td>
+#             </tr>
+#             <tr>
+#               <td style="padding:28px 24px 6px;">
+#                 <h1 style="margin:0 0 10px;font:800 24px/1.25 system-ui,-apple-system,'Segoe UI',Roboto,Helvetica,Arial;color:#0f172a;">
+#                   Great news! Driver assigned to your order
+#                 </h1>
+#                 <p style="margin:0 0 16px;font:400 14px/1.7 system-ui,-apple-system,'Segoe UI',Roboto,Helvetica,Arial;color:#475569;">
+#                   Hello <strong>{order.pharmacy.name}</strong>, your delivery order <strong>#{order.id}</strong> has been accepted by a driver and is now in progress.
+#                 </p>
+#                 <div style="margin:18px 0;background:#f0fdf4;border:1px solid #10b981;border-radius:12px;padding:14px 18px;">
+#                   <p style="margin:0;font:600 13px/1.6 system-ui,-apple-system,'Segoe UI',Roboto,Helvetica,Arial;color:#166534;">
+#                     ✓ Order Status: <strong>Accepted</strong> — Driver will arrive for pickup soon.
+#                   </p>
+#                 </div>
+#                 <div style="margin:18px 0;background:#f0fdfa;border:1px solid {brand_primary};border-radius:12px;padding:16px 18px;">
+#                   <p style="margin:0 0 12px;font:700 15px/1.3 system-ui,-apple-system,'Segoe UI',Roboto,Helvetica,Arial;color:#0f172a;">📦 Order Information</p>
+#                   <table width="100%" cellspacing="0" cellpadding="0" border="0">
+#                     <tr><td style="padding:4px 0;font:600 13px/1.5 system-ui,-apple-system,'Segoe UI',Roboto,Helvetica,Arial;color:#334155;">Order ID:</td><td style="padding:4px 0;font:400 13px/1.5 system-ui,-apple-system,'Segoe UI',Roboto,Helvetica,Arial;color:#334155;">#{order.id}</td></tr>
+#                     <tr><td style="padding:4px 0;font:600 13px/1.5 system-ui,-apple-system,'Segoe UI',Roboto,Helvetica,Arial;color:#334155;">Customer:</td><td style="padding:4px 0;font:400 13px/1.5 system-ui,-apple-system,'Segoe UI',Roboto,Helvetica,Arial;color:#334155;">{order.customer_name}</td></tr>
+#                     <tr><td style="padding:4px 0;font:600 13px/1.5 system-ui,-apple-system,'Segoe UI',Roboto,Helvetica,Arial;color:#334155;">Delivery Rate:</td><td style="padding:4px 0;font:400 13px/1.5 system-ui,-apple-system,'Segoe UI',Roboto,Helvetica,Arial;color:#334155;">${order.rate}</td></tr>
+#                     <tr><td style="padding:4px 0;font:600 13px/1.5 system-ui,-apple-system,'Segoe UI',Roboto,Helvetica,Arial;color:#334155;">Pickup Date:</td><td style="padding:4px 0;font:400 13px/1.5 system-ui,-apple-system,'Segoe UI',Roboto,Helvetica,Arial;color:#334155;">{pickup_date_str}</td></tr>
+#                     <tr><td style="padding:4px 0;font:600 13px/1.5 system-ui,-apple-system,'Segoe UI',Roboto,Helvetica,Arial;color:#334155;">Estimated Delivery:</td><td style="padding:4px 0;font:400 13px/1.5 system-ui,-apple-system,'Segoe UI',Roboto,Helvetica,Arial;color:#334155;">{estimated_delivery}</td></tr>
+#                   </table>
+#                 </div>
+#                 <div style="margin:18px 0;background:#eff6ff;border:1px solid #3b82f6;border-radius:12px;padding:16px 18px;">
+#                   <p style="margin:0 0 10px;font:700 15px/1.3 system-ui,-apple-system,'Segoe UI',Roboto,Helvetica,Arial;color:#0f172a;">🚗 Driver Information</p>
+#                   <table width="100%" cellspacing="0" cellpadding="0" border="0">
+#                     <tr><td style="padding:4px 0;font:600 13px/1.5 system-ui,-apple-system,'Segoe UI',Roboto,Helvetica,Arial;color:#334155;">Driver Name:</td><td style="padding:4px 0;font:400 13px/1.5 system-ui,-apple-system,'Segoe UI',Roboto,Helvetica,Arial;color:#334155;">{driver.name}</td></tr>
+#                     <tr><td style="padding:4px 0;font:600 13px/1.5 system-ui,-apple-system,'Segoe UI',Roboto,Helvetica,Arial;color:#334155;">Driver Phone:</td><td style="padding:4px 0;font:400 13px/1.5 system-ui,-apple-system,'Segoe UI',Roboto,Helvetica,Arial;color:#334155;">{driver.phone_number}</td></tr>
+#                     <tr><td style="padding:4px 0;font:600 13px/1.5 system-ui,-apple-system,'Segoe UI',Roboto,Helvetica,Arial;color:#334155;">Vehicle:</td><td style="padding:4px 0;font:400 13px/1.5 system-ui,-apple-system,'Segoe UI',Roboto,Helvetica,Arial;color:#334155;">{driver.vehicle_model} ({driver.vehicle_plate})</td></tr>
+#                   </table>
+#                 </div>
+#                 <div style="margin:18px 0;background:#fff7ed;border:1px solid {brand_accent};border-radius:12px;padding:16px 18px;">
+#                   <p style="margin:0 0 10px;font:700 15px/1.3 system-ui,-apple-system,'Segoe UI',Roboto,Helvetica,Arial;color:#0f172a;">📍 Pickup Location</p>
+#                   <p style="margin:0 0 4px;font:600 13px/1.5 system-ui,-apple-system,'Segoe UI',Roboto,Helvetica,Arial;color:#334155;">{order.pharmacy.name}</p>
+#                   <p style="margin:0 0 2px;font:400 13px/1.6 system-ui,-apple-system,'Segoe UI',Roboto,Helvetica,Arial;color:#475569;">{order.pickup_address}</p>
+#                   <p style="margin:0;font:400 13px/1.6 system-ui,-apple-system,'Segoe UI',Roboto,Helvetica,Arial;color:#475569;">{order.pickup_city}</p>
+#                 </div>
+#                 <div style="margin:18px 0;background:#f0fdf4;border:1px solid #10b981;border-radius:12px;padding:16px 18px;">
+#                   <p style="margin:0 0 10px;font:700 15px/1.3 system-ui,-apple-system,'Segoe UI',Roboto,Helvetica,Arial;color:#0f172a;">🏠 Delivery Location</p>
+#                   <p style="margin:0 0 4px;font:600 13px/1.5 system-ui,-apple-system,'Segoe UI',Roboto,Helvetica,Arial;color:#334155;">Customer: {order.customer_name}</p>
+#                   <p style="margin:0 0 2px;font:400 13px/1.6 system-ui,-apple-system,'Segoe UI',Roboto,Helvetica,Arial;color:#475569;">{order.drop_address}</p>
+#                   <p style="margin:0;font:400 13px/1.6 system-ui,-apple-system,'Segoe UI',Roboto,Helvetica,Arial;color:#475569;">{order.drop_city}</p>
+#                 </div>
+#                 <p style="margin:8px 0 0;font:400 12px/1.7 system-ui,-apple-system,'Segoe UI',Roboto,Helvetica,Arial;color:#64748b;">Driver assigned on <strong style="color:{brand_primary_dark};">{now_str}</strong>.</p>
+#                 <hr style="border:0;border-top:1px solid #e5e7eb;margin:24px 0;">
+#                 <p class="muted" style="margin:0;font:400 12px/1.7 system-ui,-apple-system,'Segoe UI',Roboto,Helvetica,Arial;color:#6b7280;">
+#                   Track your order in real-time through your dashboard. Questions? Contact support at {settings.EMAIL_ADMIN_OFFICE}.
+#                 </p>
+#               </td>
+#             </tr>
+#             <tr>
+#               <td style="padding:0 24px 24px;">
+#                 <table width="100%" cellspacing="0" cellpadding="0" border="0" style="background:#f8fafc;border:1px dashed #e2e8f0;border-radius:12px;">
+#                   <tr><td style="padding:12px 16px;"><p style="margin:0;font:400 12px/1.6 system-ui,-apple-system,'Segoe UI',Roboto,Helvetica,Arial;color:#64748b;">Thank you for trusting CanaLogistiX with your deliveries!</p></td></tr>
+#                 </table>
+#               </td>
+#             </tr>
+#           </table>
+#           <p style="margin:14px 0 0;font:400 12px/1.6 system-ui,-apple-system,'Segoe UI',Roboto,Helvetica,Arial;color:#94a3b8;">© {timezone.now().year} CanaLogistiX - Cana Group of Companies. All rights reserved.</p>
+#         </td>
+#       </tr>
+#     </table>
+#   </body>
+# </html>
+# """
+#                 pharmacy_text = (
+#                     f"Driver Assigned - CanaLogistiX\n\n"
+#                     f"Hello {order.pharmacy.name},\n\n"
+#                     f"Your delivery order #{order.id} has been accepted by a driver.\n\n"
+#                     f"ORDER DETAILS:\n- Order ID: #{order.id}\n- Customer: {order.customer_name}\n- Delivery Rate: ${order.rate}\n- Pickup Date: {pickup_date_str}\n- Estimated Delivery: {estimated_delivery}\n\n"
+#                     f"DRIVER INFORMATION:\n- Name: {driver.name}\n- Phone: {driver.phone_number}\n- Vehicle Number: {driver.vehicle_number or 'N/A'}\n\n"
+#                     f"PICKUP LOCATION:\n{order.pharmacy.name}\n{order.pickup_address}\n{order.pickup_city}\n\n"
+#                     f"DELIVERY LOCATION:\nCustomer: {order.customer_name}\n{order.drop_address}\n{order.drop_city}\n\n"
+#                     f"Track your order through your dashboard. Questions? Contact {settings.EMAIL_ADMIN_OFFICE}\n"
+#                 )
+
+#                 _send_html_email_operations(
+#                     subject=f"Driver Assigned to Order #{order.id} • CanaLogistiX",
+#                     to_email=order.pharmacy.email,
+#                     html=pharmacy_html,
+#                     text_fallback=pharmacy_text,
+#                 )
+#             except Exception as e:
+#                 print(f"ERROR sending pharmacy email: {str(e)}")
+#                 import traceback
+#                 traceback.print_exc()
+
+#             return JsonResponse({
+#                 "message": "Driver assigned and order accepted",
+#                 "orderId": order.id,
+#                 "driverId": driver.id,
+#                 "trackingId": tracking.id
+#             }, status=200)
+
+#         except DeliveryOrder.DoesNotExist:
+#             return JsonResponse({"error": "Order not found"}, status=404)
+#         except Driver.DoesNotExist:
+#             return JsonResponse({"error": "Driver not found"}, status=404)
+#         except Exception as e:
+#             return JsonResponse({"error": str(e)}, status=500)
+
+#     return JsonResponse({"error": "Invalid request method"}, status=405)
+
 @csrf_exempt
 def assign_driver(request):
     if request.method == "POST":
@@ -1066,7 +1749,6 @@ def assign_driver(request):
             return JsonResponse({"error": str(e)}, status=500)
 
     return JsonResponse({"error": "Invalid request method"}, status=405)
-
 
 @csrf_exempt
 def get_driver_details(request):
@@ -1868,52 +2550,36 @@ def create_checkout_session(request):
         return JsonResponse({'error': 'Internal server error'}, status=500)
 
 
+
 @csrf_exempt
 @require_http_methods(["POST"])
 def stripe_webhook(request):
     """Handle Stripe webhook events"""
-    logger.info("=== STRIPE WEBHOOK RECEIVED ===")
     
     payload = request.body
     sig_header = request.META.get('HTTP_STRIPE_SIGNATURE')
     endpoint_secret = getattr(settings, 'STRIPE_WEBHOOK_SECRET', None)
     
-    logger.info(f"Webhook payload length: {len(payload)}")
-    logger.info(f"Stripe signature header: {sig_header}")
-    logger.info(f"Endpoint secret configured: {bool(endpoint_secret)}")
-    
     if not endpoint_secret:
-        logger.error("Webhook secret not configured in settings")
         return HttpResponse('Webhook secret not configured', status=400)
     
     try:
         event = stripe.Webhook.construct_event(
             payload, sig_header, endpoint_secret
         )
-        logger.info(f"Webhook event constructed successfully: {event['type']}")
     except ValueError as e:
-        logger.error(f"Invalid payload: {e}")
         return HttpResponse('Invalid payload', status=400)
     except stripe.error.SignatureVerificationError as e:
-        logger.error(f"Invalid signature: {e}")
         return HttpResponse('Invalid signature', status=400)
     
     # Handle the event
-    logger.info(f"Processing webhook event type: {event['type']}")
-    
     if event['type'] == 'checkout.session.completed':
         session = event['data']['object']
-        logger.info(f"Checkout session completed: {session['id']}")
-        logger.info(f"Session metadata: {session.get('metadata', {})}")
         
         # Get invoice details from metadata
         invoice_id = session.get('metadata', {}).get('invoice_id')
         pharmacy_id = session.get('metadata', {}).get('pharmacy_id')
         payment_intent_id = session.get('payment_intent')
-        
-        logger.info(f"Invoice ID from metadata: {invoice_id}")
-        logger.info(f"Pharmacy ID from metadata: {pharmacy_id}")
-        logger.info(f"Payment intent ID: {payment_intent_id}")
         
         if invoice_id and pharmacy_id:
             try:
@@ -1921,50 +2587,232 @@ def stripe_webhook(request):
                 invoice_id = int(invoice_id)
                 pharmacy_id = int(pharmacy_id)
                 
-                # Update invoice status to paid
+                # Get invoice and pharmacy
                 invoice = Invoice.objects.get(id=invoice_id, pharmacy_id=pharmacy_id)
-                logger.info(f"Found invoice to update: {invoice}")
-                logger.info(f"Current invoice status: {invoice.status}")
+                pharmacy = invoice.pharmacy
                 
+                # Update invoice status to paid
                 invoice.status = 'paid'
                 
                 # Store the Stripe payment intent ID if the field exists
                 if payment_intent_id:
                     if hasattr(invoice, 'stripe_payment_id'):
                         invoice.stripe_payment_id = payment_intent_id
-                        logger.info(f"Stored payment intent ID: {payment_intent_id}")
                     elif hasattr(invoice, 'payment_id'):
                         invoice.payment_id = payment_intent_id
-                        logger.info(f"Stored payment ID: {payment_intent_id}")
-                    else:
-                        logger.warning("No payment ID field found in Invoice model")
                 
                 invoice.save()
-                logger.info(f"Invoice {invoice_id} successfully marked as paid")
+                
+                # Send payment confirmation email to pharmacy
+                try:
+                    brand_primary = settings.BRAND_COLORS['primary']
+                    brand_primary_dark = settings.BRAND_COLORS['primary_dark']
+                    brand_accent = settings.BRAND_COLORS['accent']
+                    now_str = timezone.now().strftime("%b %d, %Y %H:%M %Z")
+                    logo_url = settings.LOGO_URL
+
+                    html = f"""\
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <title>Payment Confirmation • CanaLogistiX</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <style>
+      @media (prefers-color-scheme: dark) {{
+        body {{ background: #0b1220 !important; color: #e5e7eb !important; }}
+        .card {{ background: #0f172a !important; border-color: #1f2937 !important; }}
+        .muted {{ color: #94a3b8 !important; }}
+        .info-row {{ background: #1e293b !important; }}
+      }}
+    </style>
+  </head>
+  <body style="margin:0;padding:0;background:#f4f7f9;">
+    <div style="display:none;visibility:hidden;opacity:0;height:0;width:0;overflow:hidden;">
+      Payment confirmed — thank you for your payment to CanaLogistiX.
+    </div>
+
+    <table role="presentation" width="100%" cellspacing="0" cellpadding="0" border="0" style="background:#f4f7f9;padding:24px 12px;">
+      <tr>
+        <td align="center">
+          <table role="presentation" width="100%" cellspacing="0" cellpadding="0" border="0" class="card" style="max-width:640px;background:#ffffff;border:1px solid #e5e7eb;border-radius:16px;overflow:hidden;">
+            <tr>
+              <td style="background:{brand_primary};padding:18px 20px;">
+                <table width="100%" cellspacing="0" cellpadding="0" border="0">
+                  <tr>
+                    <td align="left">
+                      <img src="{logo_url}"
+                           alt="CanaLogistiX"
+                           width="40"
+                           height="40"
+                           style="display:block;border:0;outline:none;text-decoration:none;border-radius:50%;object-fit:cover;">
+                    </td>
+                    <td align="right" style="font:600 16px/1.2 system-ui,-apple-system,'Segoe UI',Roboto,Helvetica,Arial;color:#e6fffb;">
+                      Payment Confirmation
+                    </td>
+                  </tr>
+                </table>
+              </td>
+            </tr>
+
+            <tr>
+              <td style="padding:28px 24px 6px;">
+                <h1 style="margin:0 0 10px;font:800 24px/1.25 system-ui,-apple-system,'Segoe UI',Roboto,Helvetica,Arial;color:#0f172a;">
+                  Payment Received Successfully ✓
+                </h1>
+                <p style="margin:0 0 16px;font:400 14px/1.7 system-ui,-apple-system,'Segoe UI',Roboto,Helvetica,Arial;color:#475569;">
+                  Thank you for your payment, <strong>{pharmacy.name}</strong>. Your invoice has been marked as paid and your account is up to date.
+                </p>
+
+                <div style="margin:20px 0;background:#f0fdf4;border:1px solid #86efac;border-radius:12px;padding:14px 18px;">
+                  <p style="margin:0;font:400 13px/1.6 system-ui,-apple-system,'Segoe UI',Roboto,Helvetica,Arial;color:#166534;">
+                    <strong>✓ Payment Confirmed</strong> — Your payment has been processed successfully on <strong>{now_str}</strong>.
+                  </p>
+                </div>
+
+                <h2 style="margin:24px 0 12px;font:700 18px/1.3 system-ui,-apple-system,'Segoe UI',Roboto,Helvetica,Arial;color:#0f172a;">
+                  Invoice Details
+                </h2>
+
+                <div style="margin:18px 0;background:#f8fafc;border:1px solid #e2e8f0;border-radius:12px;padding:0;overflow:hidden;">
+                  <table width="100%" cellspacing="0" cellpadding="0" border="0" style="font:400 14px/1.6 system-ui,-apple-system,'Segoe UI',Roboto,Helvetica,Arial;">
+                    <tr class="info-row" style="background:#f1f5f9;">
+                      <td style="padding:12px 18px;color:#64748b;font-weight:600;">Invoice Number</td>
+                      <td style="padding:12px 18px;color:#0f172a;font-weight:500;">#{invoice.id}</td>
+                    </tr>
+                    <tr>
+                      <td style="padding:12px 18px;color:#64748b;font-weight:600;border-top:1px solid #e2e8f0;">Invoice Period</td>
+                      <td style="padding:12px 18px;color:#0f172a;border-top:1px solid #e2e8f0;">{invoice.start_date.strftime("%b %d, %Y")} - {invoice.end_date.strftime("%b %d, %Y")}</td>
+                    </tr>
+                    <tr class="info-row" style="background:#f1f5f9;">
+                      <td style="padding:12px 18px;color:#64748b;font-weight:600;border-top:1px solid #e2e8f0;">Total Orders</td>
+                      <td style="padding:12px 18px;color:#0f172a;border-top:1px solid #e2e8f0;">{invoice.total_orders}</td>
+                    </tr>
+                    <tr>
+                      <td style="padding:12px 18px;color:#64748b;font-weight:600;border-top:1px solid #e2e8f0;">Amount Paid</td>
+                      <td style="padding:12px 18px;color:{brand_primary_dark};font-weight:700;font-size:16px;border-top:1px solid #e2e8f0;">${invoice.total_amount}</td>
+                    </tr>
+                    <tr class="info-row" style="background:#f1f5f9;">
+                      <td style="padding:12px 18px;color:#64748b;font-weight:600;border-top:1px solid #e2e8f0;">Payment Date</td>
+                      <td style="padding:12px 18px;color:#0f172a;border-top:1px solid #e2e8f0;">{now_str}</td>
+                    </tr>
+                    <tr>
+                      <td style="padding:12px 18px;color:#64748b;font-weight:600;border-top:1px solid #e2e8f0;">Payment Method</td>
+                      <td style="padding:12px 18px;color:#0f172a;border-top:1px solid #e2e8f0;">Stripe (Card)</td>
+                    </tr>
+                    <tr class="info-row" style="background:#f1f5f9;">
+                      <td style="padding:12px 18px;color:#64748b;font-weight:600;border-top:1px solid #e2e8f0;">Transaction ID</td>
+                      <td style="padding:12px 18px;color:#64748b;font-size:12px;border-top:1px solid #e2e8f0;">{payment_intent_id or 'N/A'}</td>
+                    </tr>
+                    <tr>
+                      <td style="padding:12px 18px;color:#64748b;font-weight:600;border-top:1px solid #e2e8f0;">Status</td>
+                      <td style="padding:12px 18px;border-top:1px solid #e2e8f0;">
+                        <span style="display:inline-block;background:#dcfce7;color:#166534;padding:4px 12px;border-radius:6px;font-weight:600;font-size:12px;">PAID</span>
+                      </td>
+                    </tr>
+                  </table>
+                </div>
+
+                <h2 style="margin:24px 0 12px;font:700 18px/1.3 system-ui,-apple-system,'Segoe UI',Roboto,Helvetica,Arial;color:#0f172a;">
+                  Pharmacy Information
+                </h2>
+
+                <div style="margin:18px 0;background:#f8fafc;border:1px solid #e2e8f0;border-radius:12px;padding:0;overflow:hidden;">
+                  <table width="100%" cellspacing="0" cellpadding="0" border="0" style="font:400 14px/1.6 system-ui,-apple-system,'Segoe UI',Roboto,Helvetica,Arial;">
+                    <tr class="info-row" style="background:#f1f5f9;">
+                      <td style="padding:12px 18px;color:#64748b;font-weight:600;">Pharmacy Name</td>
+                      <td style="padding:12px 18px;color:#0f172a;font-weight:500;">{pharmacy.name}</td>
+                    </tr>
+                    <tr>
+                      <td style="padding:12px 18px;color:#64748b;font-weight:600;border-top:1px solid #e2e8f0;">Email</td>
+                      <td style="padding:12px 18px;color:#0f172a;border-top:1px solid #e2e8f0;">{pharmacy.email}</td>
+                    </tr>
+                    <tr class="info-row" style="background:#f1f5f9;">
+                      <td style="padding:12px 18px;color:#64748b;font-weight:600;border-top:1px solid #e2e8f0;">Phone</td>
+                      <td style="padding:12px 18px;color:#0f172a;border-top:1px solid #e2e8f0;">{pharmacy.phone_number}</td>
+                    </tr>
+                    <tr>
+                      <td style="padding:12px 18px;color:#64748b;font-weight:600;border-top:1px solid #e2e8f0;">Address</td>
+                      <td style="padding:12px 18px;color:#0f172a;border-top:1px solid #e2e8f0;">{pharmacy.store_address}, {pharmacy.city}, {pharmacy.province} {pharmacy.postal_code}</td>
+                    </tr>
+                  </table>
+                </div>
+
+                <hr style="border:0;border-top:1px solid #e5e7eb;margin:24px 0;">
+                <p class="muted" style="margin:0;font:400 12px/1.7 system-ui,-apple-system,'Segoe UI',Roboto,Helvetica,Arial;color:#6b7280;">
+                  Questions about this payment? Log in to the portal and raise a Support Ticket by contacting the Admin. Our team will be happy to assist you.
+                </p>
+              </td>
+            </tr>
+
+            <tr>
+              <td style="padding:0 24px 24px;">
+                <table width="100%" cellspacing="0" cellpadding="0" border="0" style="background:#f8fafc;border:1px dashed #e2e8f0;border-radius:12px;">
+                  <tr>
+                    <td style="padding:12px 16px;">
+                      <p style="margin:0;font:400 12px/1.6 system-ui,-apple-system,'Segoe UI',Roboto,Helvetica,Arial;color:#64748b;">
+                        Thank you for your continued partnership with CanaLogistiX.
+                      </p>
+                    </td>
+                  </tr>
+                </table>
+              </td>
+            </tr>
+
+          </table>
+
+          <p style="margin:14px 0 0;font:400 12px/1.6 system-ui,-apple-system,'Segoe UI',Roboto,Helvetica,Arial;color:#94a3b8;">
+            © {timezone.now().year} CanaLogistiX - Cana Group of Companies. All rights reserved.
+          </p>
+        </td>
+      </tr>
+    </table>
+  </body>
+</html>
+"""
+                    text = (
+                        "Payment Confirmation - CanaLogistiX\n\n"
+                        f"Thank you for your payment, {pharmacy.name}.\n\n"
+                        "INVOICE DETAILS:\n"
+                        f"Invoice Number: #{invoice.id}\n"
+                        f"Invoice Period: {invoice.start_date.strftime('%b %d, %Y')} - {invoice.end_date.strftime('%b %d, %Y')}\n"
+                        f"Total Orders: {invoice.total_orders}\n"
+                        f"Amount Paid: ${invoice.total_amount}\n"
+                        f"Payment Date: {now_str}\n"
+                        f"Transaction ID: {payment_intent_id or 'N/A'}\n"
+                        f"Status: PAID\n\n"
+                        "PHARMACY INFORMATION:\n"
+                        f"Name: {pharmacy.name}\n"
+                        f"Email: {pharmacy.email}\n"
+                        f"Phone: {pharmacy.phone_number}\n"
+                        f"Address: {pharmacy.store_address}, {pharmacy.city}, {pharmacy.province} {pharmacy.postal_code}\n\n"
+                        "Questions or need a hand? Log in to the portal and raise a Support Ticket by contacting the Admin. Our team will be happy to assist you.\n"
+                    )
+
+                    _send_html_email_admin_office(
+                        subject=f"Payment Confirmation • Invoice #{invoice.id}",
+                        to_email=pharmacy.email,
+                        html=html,
+                        text_fallback=text,
+                    )
+                except Exception:
+                    logger.exception("Failed to send payment confirmation email")
                 
             except Invoice.DoesNotExist:
-                logger.error(f"Invoice {invoice_id} not found for pharmacy {pharmacy_id}")
                 return HttpResponse('Invoice not found', status=404)
             except ValueError as e:
-                logger.error(f"Error converting metadata to integers: {e}")
                 return HttpResponse('Invalid metadata format', status=400)
             except Exception as e:
-                logger.error(f"Error updating invoice {invoice_id}: {str(e)}")
                 return HttpResponse('Error updating invoice', status=500)
         else:
-            logger.error("Missing invoice_id or pharmacy_id in session metadata")
             return HttpResponse('Missing required metadata', status=400)
     
     elif event['type'] == 'payment_intent.succeeded':
         # Handle successful payment intent if needed
         payment_intent = event['data']['object']
-        logger.info(f"Payment intent {payment_intent['id']} succeeded")
     
-    else:
-        logger.info(f"Unhandled event type: {event['type']}")
-    
-    logger.info("=== STRIPE WEBHOOK PROCESSED SUCCESSFULLY ===")
     return HttpResponse(status=200)
+
 
 
 
@@ -2578,7 +3426,6 @@ def driver_invoice_weeks(request):
     return JsonResponse(response_payload, safe=True)
 
 
-
 @csrf_exempt
 @require_http_methods(["POST"])
 def contact_admin_api(request):
@@ -2637,11 +3484,23 @@ def contact_admin_api(request):
         if subject == 'other':
             contact_data['other_subject'] = other_subject.strip()
         
+        # Variables for email sending
+        user_email = None
+        user_name = None
+        user_type = None
+        user_id = None
+        user_phone = None
+        
         # Add pharmacy or driver reference
         if pharmacy_id:
             try:
                 pharmacy = Pharmacy.objects.get(id=pharmacy_id)
                 contact_data['pharmacy'] = pharmacy
+                user_email = pharmacy.email
+                user_name = pharmacy.name
+                user_type = "Pharmacy"
+                user_id = pharmacy.id
+                user_phone = pharmacy.phone_number
             except Pharmacy.DoesNotExist:
                 return JsonResponse({'error': 'Invalid pharmacy ID'}, status=400)
         
@@ -2649,11 +3508,330 @@ def contact_admin_api(request):
             try:
                 driver = Driver.objects.get(id=driver_id)
                 contact_data['driver'] = driver
+                user_email = driver.email
+                user_name = driver.name
+                user_type = "Driver"
+                user_id = driver.id
+                user_phone = driver.phone_number
             except Driver.DoesNotExist:
                 return JsonResponse({'error': 'Invalid driver ID'}, status=400)
         
         # Create record
         contact = ContactAdmin.objects.create(**contact_data)
+        
+        # ---- Send confirmation email ----
+        if user_email:
+            try:
+                brand_primary = settings.BRAND_COLORS['primary']
+                brand_primary_dark = settings.BRAND_COLORS['primary_dark']
+                brand_accent = settings.BRAND_COLORS['accent']
+                now_str = timezone.now().strftime("%b %d, %Y %H:%M %Z")
+                logo_url = settings.LOGO_URL
+                
+                # Format subject for display
+                subject_display = subject.replace('_', ' ').title()
+                if subject == 'other' and other_subject:
+                    subject_display = other_subject
+                
+                # Truncate message for email preview (first 150 chars)
+                message_preview = message.strip()
+                if len(message_preview) > 150:
+                    message_preview = message_preview[:150] + "..."
+
+                html = f"""\
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <title>Support Query Received • CanaLogistiX</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <style>
+      @media (prefers-color-scheme: dark) {{
+        body {{ background: #0b1220 !important; color: #e5e7eb !important; }}
+        .card {{ background: #0f172a !important; border-color: #1f2937 !important; }}
+        .muted {{ color: #94a3b8 !important; }}
+      }}
+    </style>
+  </head>
+  <body style="margin:0;padding:0;background:#f4f7f9;">
+    <div style="display:none;visibility:hidden;opacity:0;height:0;width:0;overflow:hidden;">
+      Your support query has been received — we'll get back to you soon.
+    </div>
+
+    <table role="presentation" width="100%" cellspacing="0" cellpadding="0" border="0" style="background:#f4f7f9;padding:24px 12px;">
+      <tr>
+        <td align="center">
+          <table role="presentation" width="100%" cellspacing="0" cellpadding="0" border="0" class="card" style="max-width:640px;background:#ffffff;border:1px solid #e5e7eb;border-radius:16px;overflow:hidden;">
+            <tr>
+            <td style="background:{brand_primary};padding:18px 20px;">
+                <table width="100%" cellspacing="0" cellpadding="0" border="0">
+                <tr>
+                    <td align="left">
+                    <img src="{logo_url}"
+                        alt="CanaLogistiX"
+                        width="40"
+                        height="40"
+                        style="display:block;border:0;outline:none;text-decoration:none;border-radius:50%;object-fit:cover;">
+                    </td>
+                    <td align="right" style="font:600 16px/1.2 system-ui,-apple-system,'Segoe UI',Roboto,Helvetica,Arial;color:#e6fffb;">
+                    Support Query Received
+                    </td>
+                </tr>
+                </table>
+            </td>
+            </tr>
+
+
+            <tr>
+              <td style="padding:28px 24px 6px;">
+                <h1 style="margin:0 0 10px;font:800 24px/1.25 system-ui,-apple-system,'Segoe UI',Roboto,Helvetica,Arial;color:#0f172a;">
+                  Hi {user_name or "there"}, we've received your message 
+                </h1>
+                <p style="margin:0 0 16px;font:400 14px/1.7 system-ui,-apple-system,'Segoe UI',Roboto,Helvetica,Arial;color:#475569;">
+                  Thank you for reaching out to <strong>CanaLogistiX</strong>. Your support query has been successfully 
+                  submitted and our team will review it shortly. We typically respond within 24-48 hours.
+                </p>
+
+                <div style="margin:18px 0;background:#f0fdfa;border:1px solid {brand_primary};border-radius:12px;padding:16px 18px;">
+                  <p style="margin:0 0 8px;font:600 13px/1.4 system-ui,-apple-system,'Segoe UI',Roboto,Helvetica,Arial;color:#0f172a;">
+                    Query Details:
+                  </p>
+                  <ul style="margin:0;padding-left:18px;font:400 14px/1.8 system-ui,-apple-system,'Segoe UI',Roboto,Helvetica,Arial;color:#334155;">
+                    <li><strong>Ticket ID:</strong> #{contact.id}</li>
+                    <li><strong>Subject:</strong> {subject_display}</li>
+                    <li><strong>User Type:</strong> {user_type}</li>
+                    <li><strong>Status:</strong> Pending Review</li>
+                  </ul>
+                </div>
+
+                <div style="margin:18px 0;background:#f8fafc;border-left:3px solid {brand_accent};border-radius:8px;padding:14px 16px;">
+                  <p style="margin:0 0 4px;font:600 12px/1.4 system-ui,-apple-system,'Segoe UI',Roboto,Helvetica,Arial;color:#64748b;">
+                    YOUR MESSAGE:
+                  </p>
+                  <p style="margin:0;font:400 13px/1.6 system-ui,-apple-system,'Segoe UI',Roboto,Helvetica,Arial;color:#334155;">
+                    {message_preview}
+                  </p>
+                </div>
+
+                <p style="margin:8px 0 0;font:400 12px/1.7 system-ui,-apple-system,'Segoe UI',Roboto,Helvetica,Arial;color:#64748b;">
+                  Submitted on <strong style="color:{brand_primary_dark};">{now_str}</strong>.
+                </p>
+
+                <hr style="border:0;border-top:1px solid #e5e7eb;margin:24px 0;">
+                <p class="muted" style="margin:0;font:400 12px/1.7 system-ui,-apple-system,'Segoe UI',Roboto,Helvetica,Arial;color:#6b7280;">
+                  Need to add more details? Just reply to this email with your ticket ID <strong>#{contact.id}</strong>.
+                </p>
+              </td>
+            </tr>
+
+            <tr>
+              <td style="padding:0 24px 24px;">
+                <table width="100%" cellspacing="0" cellpadding="0" border="0" style="background:#f8fafc;border:1px dashed #e2e8f0;border-radius:12px;">
+                  <tr>
+                    <td style="padding:12px 16px;">
+                      <p style="margin:0;font:400 12px/1.6 system-ui,-apple-system,'Segoe UI',Roboto,Helvetica,Arial;color:#64748b;">
+                        Our support team is here to help — we'll respond as soon as possible.
+                      </p>
+                    </td>
+                  </tr>
+                </table>
+              </td>
+            </tr>
+
+          </table>
+
+          <p style="margin:14px 0 0;font:400 12px/1.6 system-ui,-apple-system,'Segoe UI',Roboto,Helvetica,Arial;color:#94a3b8;">
+            © {timezone.now().year} CanaLogistiX - Cana Group of Companies. All rights reserved.
+          </p>
+        </td>
+      </tr>
+    </table>
+  </body>
+</html>
+"""
+                text = (
+                    "Support Query Received - CanaLogistiX\n\n"
+                    f"Hi {user_name or 'there'},\n\n"
+                    "Thank you for reaching out. Your support query has been successfully submitted.\n\n"
+                    f"Ticket ID: #{contact.id}\n"
+                    f"Subject: {subject_display}\n"
+                    f"User Type: {user_type}\n"
+                    f"Status: Pending Review\n\n"
+                    "Our team will review your message and respond within 24-48 hours.\n\n"
+                    f"Need to add more details? Reply to this email with your ticket ID #{contact.id}.\n"
+                )
+
+                _send_html_email_help_desk(
+                    subject=f"Support Query Received • Ticket #{contact.id}",
+                    to_email=user_email,
+                    html=html,
+                    text_fallback=text,
+                )
+            except Exception as e:
+                logger.exception("Failed to send support query confirmation email")
+        
+        # ---- Office notification email (New Support Ticket) ----
+        try:
+            brand_primary = settings.BRAND_COLORS['primary']
+            brand_primary_dark = settings.BRAND_COLORS['primary_dark']
+            now_str = timezone.now().strftime("%b %d, %Y %H:%M %Z")
+            logo_url = settings.LOGO_URL
+            
+            # Format subject for display
+            subject_display = subject.replace('_', ' ').title()
+            if subject == 'other' and other_subject:
+                subject_display = other_subject
+            
+            # Full message for office
+            message_full = message.strip()
+
+            office_html = f"""\
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <title>New Support Ticket • CanaLogistiX</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <style>
+      @media (prefers-color-scheme: dark) {{
+        body {{ background: #0b1220 !important; color: #e5e7eb !important; }}
+        .card {{ background: #0f172a !important; border-color: #1f2937 !important; }}
+        .info-row {{ background: #1e293b !important; }}
+      }}
+    </style>
+  </head>
+  <body style="margin:0;padding:0;background:#f4f7f9;">
+    <table role="presentation" width="100%" cellspacing="0" cellpadding="0" border="0" style="background:#f4f7f9;padding:24px 12px;">
+      <tr>
+        <td align="center">
+          <table role="presentation" width="100%" cellspacing="0" cellpadding="0" border="0" class="card" style="max-width:640px;background:#ffffff;border:1px solid #e5e7eb;border-radius:16px;overflow:hidden;">
+            <tr>
+              <td style="background:{brand_primary};padding:18px 20px;">
+                <table width="100%" cellspacing="0" cellpadding="0" border="0">
+                  <tr>
+                    <td align="left">
+                      <img src="{logo_url}"
+                           alt="CanaLogistiX"
+                           width="40"
+                           height="40"
+                           style="display:block;border:0;outline:none;text-decoration:none;border-radius:50%;object-fit:cover;">
+                    </td>
+                    <td align="right" style="font:600 16px/1.2 system-ui,-apple-system,'Segoe UI',Roboto,Helvetica,Arial;color:#e6fffb;">
+                      New Support Ticket
+                    </td>
+                  </tr>
+                </table>
+              </td>
+            </tr>
+
+            <tr>
+              <td style="padding:28px 24px 6px;">
+                <h1 style="margin:0 0 10px;font:800 24px/1.25 system-ui,-apple-system,'Segoe UI',Roboto,Helvetica,Arial;color:#0f172a;">
+                  New Support Ticket Raised
+                </h1>
+                <p style="margin:0 0 20px;font:400 14px/1.7 system-ui,-apple-system,'Segoe UI',Roboto,Helvetica,Arial;color:#475569;">
+                  A <strong>{user_type}</strong> has raised a support ticket on the CanaLogistiX platform.
+                </p>
+
+                <div style="margin:18px 0;background:#fff7ed;border:1px solid #fb923c;border-radius:12px;padding:14px 18px;">
+                  <p style="margin:0;font:600 14px/1.6 system-ui,-apple-system,'Segoe UI',Roboto,Helvetica,Arial;color:#9a3412;">
+                    ⚠️ <strong>Action Required:</strong> This ticket is pending review and requires attention.
+                  </p>
+                </div>
+
+                <div style="margin:18px 0;background:#f8fafc;border:1px solid #e2e8f0;border-radius:12px;padding:0;overflow:hidden;">
+                  <table width="100%" cellspacing="0" cellpadding="0" border="0" style="font:400 14px/1.6 system-ui,-apple-system,'Segoe UI',Roboto,Helvetica,Arial;">
+                    <tr class="info-row" style="background:#f1f5f9;">
+                      <td style="padding:12px 18px;color:#64748b;font-weight:600;">Ticket ID</td>
+                      <td style="padding:12px 18px;color:#0f172a;font-weight:500;">#{contact.id}</td>
+                    </tr>
+                    <tr>
+                      <td style="padding:12px 18px;color:#64748b;font-weight:600;border-top:1px solid #e2e8f0;">User Type</td>
+                      <td style="padding:12px 18px;color:#0f172a;border-top:1px solid #e2e8f0;">{user_type}</td>
+                    </tr>
+                    <tr class="info-row" style="background:#f1f5f9;">
+                      <td style="padding:12px 18px;color:#64748b;font-weight:600;border-top:1px solid #e2e8f0;">User Name</td>
+                      <td style="padding:12px 18px;color:#0f172a;border-top:1px solid #e2e8f0;">{user_name}</td>
+                    </tr>
+                    <tr>
+                      <td style="padding:12px 18px;color:#64748b;font-weight:600;border-top:1px solid #e2e8f0;">Email</td>
+                      <td style="padding:12px 18px;color:#0f172a;border-top:1px solid #e2e8f0;">{user_email}</td>
+                    </tr>
+                    <tr class="info-row" style="background:#f1f5f9;">
+                      <td style="padding:12px 18px;color:#64748b;font-weight:600;border-top:1px solid #e2e8f0;">Phone</td>
+                      <td style="padding:12px 18px;color:#0f172a;border-top:1px solid #e2e8f0;">{user_phone or 'N/A'}</td>
+                    </tr>
+                    <tr>
+                      <td style="padding:12px 18px;color:#64748b;font-weight:600;border-top:1px solid #e2e8f0;">User ID</td>
+                      <td style="padding:12px 18px;color:#0f172a;border-top:1px solid #e2e8f0;">{user_id}</td>
+                    </tr>
+                    <tr class="info-row" style="background:#f1f5f9;">
+                      <td style="padding:12px 18px;color:#64748b;font-weight:600;border-top:1px solid #e2e8f0;">Subject</td>
+                      <td style="padding:12px 18px;color:#0f172a;font-weight:500;border-top:1px solid #e2e8f0;">{subject_display}</td>
+                    </tr>
+                    <tr>
+                      <td style="padding:12px 18px;color:#64748b;font-weight:600;border-top:1px solid #e2e8f0;">Status</td>
+                      <td style="padding:12px 18px;color:#f59e0b;font-weight:600;border-top:1px solid #e2e8f0;">PENDING</td>
+                    </tr>
+                    <tr class="info-row" style="background:#f1f5f9;">
+                      <td style="padding:12px 18px;color:#64748b;font-weight:600;border-top:1px solid #e2e8f0;">Submitted On</td>
+                      <td style="padding:12px 18px;color:{brand_primary_dark};font-weight:500;border-top:1px solid #e2e8f0;">{now_str}</td>
+                    </tr>
+                  </table>
+                </div>
+
+                <div style="margin:20px 0;background:#f8fafc;border-left:3px solid {brand_primary};border-radius:8px;padding:16px 18px;">
+                  <p style="margin:0 0 8px;font:600 13px/1.4 system-ui,-apple-system,'Segoe UI',Roboto,Helvetica,Arial;color:#64748b;">
+                    MESSAGE FROM USER:
+                  </p>
+                  <p style="margin:0;font:400 14px/1.7 system-ui,-apple-system,'Segoe UI',Roboto,Helvetica,Arial;color:#0f172a;white-space:pre-wrap;">
+{message_full}
+                  </p>
+                </div>
+
+                <hr style="border:0;border-top:1px solid #e5e7eb;margin:24px 0;">
+                <p style="margin:0;font:400 12px/1.7 system-ui,-apple-system,'Segoe UI',Roboto,Helvetica,Arial;color:#64748b;">
+                  This is an automated notification from the CanaLogistiX support system. Please review and respond to this ticket at your earliest convenience.
+                </p>
+              </td>
+            </tr>
+
+          </table>
+
+          <p style="margin:14px 0 0;font:400 12px/1.6 system-ui,-apple-system,'Segoe UI',Roboto,Helvetica,Arial;color:#94a3b8;">
+            © {timezone.now().year} CanaLogistiX - Cana Group of Companies. All rights reserved.
+          </p>
+        </td>
+      </tr>
+    </table>
+  </body>
+</html>
+"""
+            office_text = (
+                "New Support Ticket on CanaLogistiX\n\n"
+                f"A {user_type} has raised a support ticket.\n\n"
+                f"Ticket ID: #{contact.id}\n"
+                f"User Type: {user_type}\n"
+                f"User Name: {user_name}\n"
+                f"Email: {user_email}\n"
+                f"Phone: {user_phone or 'N/A'}\n"
+                f"User ID: {user_id}\n"
+                f"Subject: {subject_display}\n"
+                f"Status: PENDING\n"
+                f"Submitted On: {now_str}\n\n"
+                "MESSAGE FROM USER:\n"
+                f"{message_full}\n\n"
+                "Please review and respond to this ticket at your earliest convenience.\n"
+            )
+
+            _send_html_email_help_desk(
+                subject=f"New Support Ticket #{contact.id} from {user_type}: {subject_display}",
+                to_email=settings.EMAIL_ADMIN_OFFICE,
+                html=office_html,
+                text_fallback=office_text,
+            )
+        except Exception:
+            logger.exception("Failed to send office notification email for support ticket")
         
         return JsonResponse({
             'success': True,
@@ -2671,7 +3849,6 @@ def contact_admin_api(request):
 OTP_TTL_SECONDS = settings.OTP_TTL_SECONDS
 VERIFY_TOKEN_TTL_SECONDS = settings.VERIFY_TOKEN_TTL_SECONDS
 SIGNING_SALT = settings.OTP_SIGNING_SALT
-# EMAIL_FROM = settings.GMAIL_ADDRESS
 
 # ---- tiny helpers ----
 def _json(request: HttpRequest):
@@ -3387,7 +4564,7 @@ def register_pharmacy(request: HttpRequest):
 
                 <hr style="border:0;border-top:1px solid #e5e7eb;margin:24px 0;">
                 <p class="muted" style="margin:0;font:400 12px/1.7 system-ui,-apple-system,'Segoe UI',Roboto,Helvetica,Arial;color:#6b7280;">
-                  Questions or need a hand? Just reply to this email—our team is happy to help.
+                  Questions or need a hand? Log in to the portal and raise a Support Ticket by contacting the Admin. Our team will be happy to assist you.
                 </p>
               </td>
             </tr>
@@ -3434,6 +4611,154 @@ def register_pharmacy(request: HttpRequest):
         )
     except Exception:
         logger.exception("Failed to send pharmacy registration email")
+    
+    # ---- Office notification email (New Pharmacy Registration) ----
+    try:
+        brand_primary = settings.BRAND_COLORS['primary']
+        brand_primary_dark = settings.BRAND_COLORS['primary_dark']
+        now_str = timezone.now().strftime("%b %d, %Y %H:%M %Z")
+        logo_url = settings.LOGO_URL
+
+        office_html = f"""\
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <title>New Pharmacy Registration • CanaLogistiX</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <style>
+      @media (prefers-color-scheme: dark) {{
+        body {{ background: #0b1220 !important; color: #e5e7eb !important; }}
+        .card {{ background: #0f172a !important; border-color: #1f2937 !important; }}
+        .info-row {{ background: #1e293b !important; }}
+      }}
+    </style>
+  </head>
+  <body style="margin:0;padding:0;background:#f4f7f9;">
+    <table role="presentation" width="100%" cellspacing="0" cellpadding="0" border="0" style="background:#f4f7f9;padding:24px 12px;">
+      <tr>
+        <td align="center">
+          <table role="presentation" width="100%" cellspacing="0" cellpadding="0" border="0" class="card" style="max-width:640px;background:#ffffff;border:1px solid #e5e7eb;border-radius:16px;overflow:hidden;">
+            <tr>
+              <td style="background:{brand_primary};padding:18px 20px;">
+                <table width="100%" cellspacing="0" cellpadding="0" border="0">
+                  <tr>
+                    <td align="left">
+                      <img src="{logo_url}"
+                           alt="CanaLogistiX"
+                           width="40"
+                           height="40"
+                           style="display:block;border:0;outline:none;text-decoration:none;border-radius:50%;object-fit:cover;">
+                    </td>
+                    <td align="right" style="font:600 16px/1.2 system-ui,-apple-system,'Segoe UI',Roboto,Helvetica,Arial;color:#e6fffb;">
+                      New Pharmacy Registered
+                    </td>
+                  </tr>
+                </table>
+              </td>
+            </tr>
+
+            <tr>
+              <td style="padding:28px 24px 6px;">
+                <h1 style="margin:0 0 10px;font:800 24px/1.25 system-ui,-apple-system,'Segoe UI',Roboto,Helvetica,Arial;color:#0f172a;">
+                  New Pharmacy Registration
+                </h1>
+                <p style="margin:0 0 20px;font:400 14px/1.7 system-ui,-apple-system,'Segoe UI',Roboto,Helvetica,Arial;color:#475569;">
+                  A new pharmacy has successfully registered on the CanaLogistiX platform.
+                </p>
+
+                <div style="margin:18px 0;background:#f8fafc;border:1px solid #e2e8f0;border-radius:12px;padding:0;overflow:hidden;">
+                  <table width="100%" cellspacing="0" cellpadding="0" border="0" style="font:400 14px/1.6 system-ui,-apple-system,'Segoe UI',Roboto,Helvetica,Arial;">
+                    <tr class="info-row" style="background:#f1f5f9;">
+                      <td style="padding:12px 18px;color:#64748b;font-weight:600;">Pharmacy Name</td>
+                      <td style="padding:12px 18px;color:#0f172a;font-weight:500;">{name}</td>
+                    </tr>
+                    <tr>
+                      <td style="padding:12px 18px;color:#64748b;font-weight:600;border-top:1px solid #e2e8f0;">Email</td>
+                      <td style="padding:12px 18px;color:#0f172a;border-top:1px solid #e2e8f0;">{email}</td>
+                    </tr>
+                    <tr class="info-row" style="background:#f1f5f9;">
+                      <td style="padding:12px 18px;color:#64748b;font-weight:600;border-top:1px solid #e2e8f0;">Phone</td>
+                      <td style="padding:12px 18px;color:#0f172a;border-top:1px solid #e2e8f0;">{phone_number}</td>
+                    </tr>
+                    <tr>
+                      <td style="padding:12px 18px;color:#64748b;font-weight:600;border-top:1px solid #e2e8f0;">Address</td>
+                      <td style="padding:12px 18px;color:#0f172a;border-top:1px solid #e2e8f0;">{store_address}</td>
+                    </tr>
+                    <tr class="info-row" style="background:#f1f5f9;">
+                      <td style="padding:12px 18px;color:#64748b;font-weight:600;border-top:1px solid #e2e8f0;">City</td>
+                      <td style="padding:12px 18px;color:#0f172a;border-top:1px solid #e2e8f0;">{city}</td>
+                    </tr>
+                    <tr>
+                      <td style="padding:12px 18px;color:#64748b;font-weight:600;border-top:1px solid #e2e8f0;">Province</td>
+                      <td style="padding:12px 18px;color:#0f172a;border-top:1px solid #e2e8f0;">{province}</td>
+                    </tr>
+                    <tr class="info-row" style="background:#f1f5f9;">
+                      <td style="padding:12px 18px;color:#64748b;font-weight:600;border-top:1px solid #e2e8f0;">Postal Code</td>
+                      <td style="padding:12px 18px;color:#0f172a;border-top:1px solid #e2e8f0;">{postal_code}</td>
+                    </tr>
+                    <tr>
+                      <td style="padding:12px 18px;color:#64748b;font-weight:600;border-top:1px solid #e2e8f0;">Country</td>
+                      <td style="padding:12px 18px;color:#0f172a;border-top:1px solid #e2e8f0;">{country}</td>
+                    </tr>
+                    <tr class="info-row" style="background:#f1f5f9;">
+                      <td style="padding:12px 18px;color:#64748b;font-weight:600;border-top:1px solid #e2e8f0;">Registration Time</td>
+                      <td style="padding:12px 18px;color:{brand_primary_dark};font-weight:500;border-top:1px solid #e2e8f0;">{now_str}</td>
+                    </tr>
+                    <tr>
+                      <td style="padding:12px 18px;color:#64748b;font-weight:600;border-top:1px solid #e2e8f0;">Pharmacy ID</td>
+                      <td style="padding:12px 18px;color:#0f172a;border-top:1px solid #e2e8f0;">{pharmacy.id}</td>
+                    </tr>
+                  </table>
+                </div>
+
+                <div style="margin:20px 0;background:#f0fdf4;border:1px solid #86efac;border-radius:12px;padding:14px 18px;">
+                  <p style="margin:0;font:400 13px/1.6 system-ui,-apple-system,'Segoe UI',Roboto,Helvetica,Arial;color:#166534;">
+                    <strong>✓ Registration Complete</strong> — The pharmacy has been added to the system and received their welcome email.
+                  </p>
+                </div>
+
+                <hr style="border:0;border-top:1px solid #e5e7eb;margin:24px 0;">
+                <p style="margin:0;font:400 12px/1.7 system-ui,-apple-system,'Segoe UI',Roboto,Helvetica,Arial;color:#64748b;">
+                  This is an automated notification from the CanaLogistiX registration system.
+                </p>
+              </td>
+            </tr>
+
+          </table>
+
+          <p style="margin:14px 0 0;font:400 12px/1.6 system-ui,-apple-system,'Segoe UI',Roboto,Helvetica,Arial;color:#94a3b8;">
+            © {timezone.now().year} CanaLogistiX - Cana Group of Companies. All rights reserved.
+          </p>
+        </td>
+      </tr>
+    </table>
+  </body>
+</html>
+"""
+        office_text = (
+            "New Pharmacy Registration on CanaLogistiX\n\n"
+            f"Pharmacy Name: {name}\n"
+            f"Email: {email}\n"
+            f"Phone: {phone_number}\n"
+            f"Address: {store_address}\n"
+            f"City: {city}\n"
+            f"Province: {province}\n"
+            f"Postal Code: {postal_code}\n"
+            f"Country: {country}\n"
+            f"Registration Time: {now_str}\n"
+            f"Pharmacy ID: {pharmacy.id}\n\n"
+            "The pharmacy has been added to the system and received their welcome email.\n"
+        )
+
+        _send_html_email_help_desk(
+            subject=f"New Pharmacy Registration: {name}",
+            to_email=settings.EMAIL_ADMIN_OFFICE,
+            html=office_html,
+            text_fallback=office_text,
+        )
+    except Exception:
+        logger.exception("Failed to send office notification email for pharmacy registration")
 
     return _ok("Registration successful.", id=pharmacy.id, email=pharmacy.email)
 
@@ -3558,7 +4883,7 @@ def register_driver(request: HttpRequest):
             <tr>
               <td style="padding:28px 24px 6px;">
                 <h1 style="margin:0 0 10px;font:800 24px/1.25 system-ui,-apple-system,'Segoe UI',Roboto,Helvetica,Arial;color:{text_light};">
-                  Hey {name or "driver"}, you’re in! 🚚
+                  Hey {name or "driver"}, you're in!
                 </h1>
                 <p style="margin:0 0 16px;font:400 14px/1.7 system-ui,-apple-system,'Segoe UI',Roboto,Helvetica,Arial;color:{text_muted};">
                   Welcome to <strong style="color:{text_light};">CanaLogistiX</strong> and the <strong style="color:{text_light};">Cana Family by CGC</strong>.
@@ -3602,17 +4927,145 @@ def register_driver(request: HttpRequest):
             "• Photo-verified delivery steps\n"
             "• Clear delivery details and navigation\n"
             "• Weekly earnings summaries\n\n"
-            "Questions? Just reply to this email.\n"
+            "Questions or need a hand? Log in to the portal and raise a Support Ticket by contacting the Admin. Our team will be happy to assist you.\n"
         )
 
         _send_html_email_help_desk(
-            subject="Welcome to CanaLogistiX • Driver Registration Confirmed",
+            subject="Welcome to CanaLogistiX • Delivery Partner Registration Confirmed",
             to_email=email,
             html=html,
             text_fallback=text,
         )
     except Exception:
         logger.exception("Failed to send driver registration email")
+    
+    # ---- Office notification email (New Driver Registration) ----
+    try:
+        brand_primary = settings.BRAND_COLORS['primary']
+        brand_primary_dark = settings.BRAND_COLORS['primary_dark']
+        now_str = timezone.now().strftime("%b %d, %Y %H:%M %Z")
+        logo_url = settings.LOGO_URL
+
+        office_html = f"""\
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <title>New Delivery Partner Registration • CanaLogistiX</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <style>
+      @media (prefers-color-scheme: dark) {{
+        body {{ background: #0b1220 !important; color: #e5e7eb !important; }}
+        .card {{ background: #0f172a !important; border-color: #1f2937 !important; }}
+        .info-row {{ background: #1e293b !important; }}
+      }}
+    </style>
+  </head>
+  <body style="margin:0;padding:0;background:#f4f7f9;">
+    <table role="presentation" width="100%" cellspacing="0" cellpadding="0" border="0" style="background:#f4f7f9;padding:24px 12px;">
+      <tr>
+        <td align="center">
+          <table role="presentation" width="100%" cellspacing="0" cellpadding="0" border="0" class="card" style="max-width:640px;background:#ffffff;border:1px solid #e5e7eb;border-radius:16px;overflow:hidden;">
+            <tr>
+              <td style="background:{brand_primary};padding:18px 20px;">
+                <table width="100%" cellspacing="0" cellpadding="0" border="0">
+                  <tr>
+                    <td align="left">
+                      <img src="{logo_url}"
+                           alt="CanaLogistiX"
+                           width="40"
+                           height="40"
+                           style="display:block;border:0;outline:none;text-decoration:none;border-radius:50%;object-fit:cover;">
+                    </td>
+                    <td align="right" style="font:600 16px/1.2 system-ui,-apple-system,'Segoe UI',Roboto,Helvetica,Arial;color:#e6fffb;">
+                      New Delivery Partner Registered
+                    </td>
+                  </tr>
+                </table>
+              </td>
+            </tr>
+
+            <tr>
+              <td style="padding:28px 24px 6px;">
+                <h1 style="margin:0 0 10px;font:800 24px/1.25 system-ui,-apple-system,'Segoe UI',Roboto,Helvetica,Arial;color:#0f172a;">
+                  New Delivery Partner Registration
+                </h1>
+                <p style="margin:0 0 20px;font:400 14px/1.7 system-ui,-apple-system,'Segoe UI',Roboto,Helvetica,Arial;color:#475569;">
+                  A new delivery partner has successfully registered on the CanaLogistiX platform.
+                </p>
+
+                <div style="margin:18px 0;background:#f8fafc;border:1px solid #e2e8f0;border-radius:12px;padding:0;overflow:hidden;">
+                  <table width="100%" cellspacing="0" cellpadding="0" border="0" style="font:400 14px/1.6 system-ui,-apple-system,'Segoe UI',Roboto,Helvetica,Arial;">
+                    <tr class="info-row" style="background:#f1f5f9;">
+                      <td style="padding:12px 18px;color:#64748b;font-weight:600;">Driver Name</td>
+                      <td style="padding:12px 18px;color:#0f172a;font-weight:500;">{name}</td>
+                    </tr>
+                    <tr>
+                      <td style="padding:12px 18px;color:#64748b;font-weight:600;border-top:1px solid #e2e8f0;">Email</td>
+                      <td style="padding:12px 18px;color:#0f172a;border-top:1px solid #e2e8f0;">{email}</td>
+                    </tr>
+                    <tr class="info-row" style="background:#f1f5f9;">
+                      <td style="padding:12px 18px;color:#64748b;font-weight:600;border-top:1px solid #e2e8f0;">Phone</td>
+                      <td style="padding:12px 18px;color:#0f172a;border-top:1px solid #e2e8f0;">{phone_number}</td>
+                    </tr>
+                    <tr>
+                      <td style="padding:12px 18px;color:#64748b;font-weight:600;border-top:1px solid #e2e8f0;">Vehicle Number</td>
+                      <td style="padding:12px 18px;color:#0f172a;border-top:1px solid #e2e8f0;">{vehicle_number}</td>
+                    </tr>
+                    <tr class="info-row" style="background:#f1f5f9;">
+                      <td style="padding:12px 18px;color:#64748b;font-weight:600;border-top:1px solid #e2e8f0;">Registration Time</td>
+                      <td style="padding:12px 18px;color:{brand_primary_dark};font-weight:500;border-top:1px solid #e2e8f0;">{now_str}</td>
+                    </tr>
+                    <tr>
+                      <td style="padding:12px 18px;color:#64748b;font-weight:600;border-top:1px solid #e2e8f0;">Driver ID</td>
+                      <td style="padding:12px 18px;color:#0f172a;border-top:1px solid #e2e8f0;">{driver.id}</td>
+                    </tr>
+                  </table>
+                </div>
+
+                <div style="margin:20px 0;background:#f0fdf4;border:1px solid #86efac;border-radius:12px;padding:14px 18px;">
+                  <p style="margin:0;font:400 13px/1.6 system-ui,-apple-system,'Segoe UI',Roboto,Helvetica,Arial;color:#166534;">
+                    <strong>✓ Registration Complete</strong> — The driver has been added to the system and received their welcome email.
+                  </p>
+                </div>
+
+                <hr style="border:0;border-top:1px solid #e5e7eb;margin:24px 0;">
+                <p style="margin:0;font:400 12px/1.7 system-ui,-apple-system,'Segoe UI',Roboto,Helvetica,Arial;color:#64748b;">
+                  This is an automated notification from the CanaLogistiX registration system.
+                </p>
+              </td>
+            </tr>
+
+          </table>
+
+          <p style="margin:14px 0 0;font:400 12px/1.6 system-ui,-apple-system,'Segoe UI',Roboto,Helvetica,Arial;color:#94a3b8;">
+            © {timezone.now().year} CanaLogistiX - Cana Group of Companies. All rights reserved.
+          </p>
+        </td>
+      </tr>
+    </table>
+  </body>
+</html>
+"""
+        office_text = (
+            "New Driver Registration on CanaLogistiX\n\n"
+            f"Driver Name: {name}\n"
+            f"Email: {email}\n"
+            f"Phone: {phone_number}\n"
+            f"Vehicle Number: {vehicle_number}\n"
+            f"Registration Time: {now_str}\n"
+            f"Driver ID: {driver.id}\n\n"
+            "The driver has been added to the system and received their welcome email.\n"
+        )
+
+        _send_html_email_help_desk(
+            subject=f"New Driver Registration: {name}",
+            to_email=settings.EMAIL_ADMIN_OFFICE,
+            html=office_html,
+            text_fallback=office_text,
+        )
+    except Exception:
+        logger.exception("Failed to send office notification email for driver registration")
 
     return _ok("Driver registration successful.", id=driver.id, email=driver.email)
 
@@ -6717,10 +8170,182 @@ def update_ticket_status(request, ticket_id):
         )
 
     # 4️⃣ Update & save
+    old_status = ticket.status
     ticket.status = new_status
     ticket.save()
 
-    # 5️⃣ Build response
+    # 5️⃣ Send email notification to ticket raiser
+    try:
+        # Get ticket raiser info
+        user_email = None
+        user_name = None
+        user_type = None
+        
+        if ticket.pharmacy:
+            user_email = ticket.pharmacy.email
+            user_name = ticket.pharmacy.name
+            user_type = "Pharmacy"
+        elif ticket.driver:
+            user_email = ticket.driver.email
+            user_name = ticket.driver.name
+            user_type = "Driver"
+        
+        if user_email:
+            brand_primary = settings.BRAND_COLORS['primary']
+            brand_primary_dark = settings.BRAND_COLORS['primary_dark']
+            brand_accent = settings.BRAND_COLORS['accent']
+            now_str = timezone.now().strftime("%b %d, %Y %H:%M %Z")
+            logo_url = settings.LOGO_URL
+            
+            # Format subject for display
+            subject_display = ticket.other_subject if ticket.subject == 'other' else ticket.get_subject_display()
+            
+            # Status color mapping
+            status_colors = {
+                'pending': '#f59e0b',
+                'in_progress': '#3b82f6',
+                'resolved': '#10b981'
+            }
+            status_bg_colors = {
+                'pending': '#fff7ed',
+                'in_progress': '#eff6ff',
+                'resolved': '#f0fdf4'
+            }
+            status_text = new_status.replace('_', ' ').title()
+            status_color = status_colors.get(new_status, '#6b7280')
+            status_bg = status_bg_colors.get(new_status, '#f8fafc')
+
+            html = f"""\
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <title>Ticket Status Updated • CanaLogistiX</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <style>
+      @media (prefers-color-scheme: dark) {{
+        body {{ background: #0b1220 !important; color: #e5e7eb !important; }}
+        .card {{ background: #0f172a !important; border-color: #1f2937 !important; }}
+        .muted {{ color: #94a3b8 !important; }}
+      }}
+    </style>
+  </head>
+  <body style="margin:0;padding:0;background:#f4f7f9;">
+    <div style="display:none;visibility:hidden;opacity:0;height:0;width:0;overflow:hidden;">
+      Your support ticket status has been updated.
+    </div>
+
+    <table role="presentation" width="100%" cellspacing="0" cellpadding="0" border="0" style="background:#f4f7f9;padding:24px 12px;">
+      <tr>
+        <td align="center">
+          <table role="presentation" width="100%" cellspacing="0" cellpadding="0" border="0" class="card" style="max-width:640px;background:#ffffff;border:1px solid #e5e7eb;border-radius:16px;overflow:hidden;">
+            <tr>
+              <td style="background:{brand_primary};padding:18px 20px;">
+                <table width="100%" cellspacing="0" cellpadding="0" border="0">
+                  <tr>
+                    <td align="left">
+                      <img src="{logo_url}"
+                           alt="CanaLogistiX"
+                           width="40"
+                           height="40"
+                           style="display:block;border:0;outline:none;text-decoration:none;border-radius:50%;object-fit:cover;">
+                    </td>
+                    <td align="right" style="font:600 16px/1.2 system-ui,-apple-system,'Segoe UI',Roboto,Helvetica,Arial;color:#e6fffb;">
+                      Ticket Status Updated
+                    </td>
+                  </tr>
+                </table>
+              </td>
+            </tr>
+
+            <tr>
+              <td style="padding:28px 24px 6px;">
+                <h1 style="margin:0 0 10px;font:800 24px/1.25 system-ui,-apple-system,'Segoe UI',Roboto,Helvetica,Arial;color:#0f172a;">
+                  Hi {user_name}, your ticket status changed
+                </h1>
+                <p style="margin:0 0 16px;font:400 14px/1.7 system-ui,-apple-system,'Segoe UI',Roboto,Helvetica,Arial;color:#475569;">
+                  Your support ticket <strong>#{ticket.id}</strong> status has been updated by our admin team.
+                </p>
+
+                <div style="margin:18px 0;background:{status_bg};border:1px solid {status_color};border-radius:12px;padding:16px 18px;">
+                  <p style="margin:0 0 8px;font:600 13px/1.4 system-ui,-apple-system,'Segoe UI',Roboto,Helvetica,Arial;color:#0f172a;">
+                    Ticket Status:
+                  </p>
+                  <p style="margin:0;font:700 18px/1.4 system-ui,-apple-system,'Segoe UI',Roboto,Helvetica,Arial;color:{status_color};text-transform:uppercase;">
+                    {status_text}
+                  </p>
+                </div>
+
+                <div style="margin:18px 0;background:#f8fafc;border:1px solid #e2e8f0;border-radius:12px;padding:0;overflow:hidden;">
+                  <table width="100%" cellspacing="0" cellpadding="0" border="0" style="font:400 14px/1.6 system-ui,-apple-system,'Segoe UI',Roboto,Helvetica,Arial;">
+                    <tr style="background:#f1f5f9;">
+                      <td style="padding:12px 18px;color:#64748b;font-weight:600;">Ticket ID</td>
+                      <td style="padding:12px 18px;color:#0f172a;font-weight:500;">#{ticket.id}</td>
+                    </tr>
+                    <tr>
+                      <td style="padding:12px 18px;color:#64748b;font-weight:600;border-top:1px solid #e2e8f0;">Subject</td>
+                      <td style="padding:12px 18px;color:#0f172a;border-top:1px solid #e2e8f0;">{subject_display}</td>
+                    </tr>
+                    <tr style="background:#f1f5f9;">
+                      <td style="padding:12px 18px;color:#64748b;font-weight:600;border-top:1px solid #e2e8f0;">Updated On</td>
+                      <td style="padding:12px 18px;color:{brand_primary_dark};font-weight:500;border-top:1px solid #e2e8f0;">{now_str}</td>
+                    </tr>
+                  </table>
+                </div>
+
+                <hr style="border:0;border-top:1px solid #e5e7eb;margin:24px 0;">
+                <p class="muted" style="margin:0;font:400 12px/1.7 system-ui,-apple-system,'Segoe UI',Roboto,Helvetica,Arial;color:#6b7280;">
+                  You'll receive another notification when our team responds to your ticket. If you have additional questions, login to the portal and raise another Support Ticket by contacting the Admin.
+                </p>
+              </td>
+            </tr>
+
+            <tr>
+              <td style="padding:0 24px 24px;">
+                <table width="100%" cellspacing="0" cellpadding="0" border="0" style="background:#f8fafc;border:1px dashed #e2e8f0;border-radius:12px;">
+                  <tr>
+                    <td style="padding:12px 16px;">
+                      <p style="margin:0;font:400 12px/1.6 system-ui,-apple-system,'Segoe UI',Roboto,Helvetica,Arial;color:#64748b;">
+                        Thank you for your patience — we're working on your request.
+                      </p>
+                    </td>
+                  </tr>
+                </table>
+              </td>
+            </tr>
+
+          </table>
+
+          <p style="margin:14px 0 0;font:400 12px/1.6 system-ui,-apple-system,'Segoe UI',Roboto,Helvetica,Arial;color:#94a3b8;">
+            © {timezone.now().year} CanaLogistiX - Cana Group of Companies. All rights reserved.
+          </p>
+        </td>
+      </tr>
+    </table>
+  </body>
+</html>
+"""
+            text = (
+                "Ticket Status Updated - CanaLogistiX\n\n"
+                f"Hi {user_name},\n\n"
+                f"Your support ticket #{ticket.id} status has been updated.\n\n"
+                f"Ticket ID: #{ticket.id}\n"
+                f"Subject: {subject_display}\n"
+                f"New Status: {status_text}\n"
+                f"Updated On: {now_str}\n\n"
+                "You'll receive another notification when our team responds to your ticket.\n"
+            )
+
+            _send_html_email_admin_office(
+                subject=f"Ticket #{ticket.id} Status Updated: {status_text}",
+                to_email=user_email,
+                html=html,
+                text_fallback=text,
+            )
+    except Exception:
+        logger.exception("Failed to send ticket status update email")
+
+    # 6️⃣ Build response
     return JsonResponse(
         {
             "success": True,
@@ -6787,6 +8412,184 @@ def add_admin_response(request, ticket_id):
         ticket.status = "resolved"
 
     ticket.save()
+
+    # 4️⃣ Send email notification to ticket raiser
+    try:
+        # Get ticket raiser info
+        user_email = None
+        user_name = None
+        user_type = None
+        
+        if ticket.pharmacy:
+            user_email = ticket.pharmacy.email
+            user_name = ticket.pharmacy.name
+            user_type = "Pharmacy"
+        elif ticket.driver:
+            user_email = ticket.driver.email
+            user_name = ticket.driver.name
+            user_type = "Driver"
+        
+        if user_email:
+            brand_primary = settings.BRAND_COLORS['primary']
+            brand_primary_dark = settings.BRAND_COLORS['primary_dark']
+            brand_accent = settings.BRAND_COLORS['accent']
+            now_str = timezone.now().strftime("%b %d, %Y %H:%M %Z")
+            logo_url = settings.LOGO_URL
+            
+            # Format subject for display
+            subject_display = ticket.other_subject if ticket.subject == 'other' else ticket.get_subject_display()
+            
+            # Truncate original message for context (first 100 chars)
+            message_context = ticket.message[:100] + "..." if len(ticket.message) > 100 else ticket.message
+
+            html = f"""\
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <title>Admin Response • CanaLogistiX</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <style>
+      @media (prefers-color-scheme: dark) {{
+        body {{ background: #0b1220 !important; color: #e5e7eb !important; }}
+        .card {{ background: #0f172a !important; border-color: #1f2937 !important; }}
+        .muted {{ color: #94a3b8 !important; }}
+      }}
+    </style>
+  </head>
+  <body style="margin:0;padding:0;background:#f4f7f9;">
+    <div style="display:none;visibility:hidden;opacity:0;height:0;width:0;overflow:hidden;">
+      Admin response received for your support ticket.
+    </div>
+
+    <table role="presentation" width="100%" cellspacing="0" cellpadding="0" border="0" style="background:#f4f7f9;padding:24px 12px;">
+      <tr>
+        <td align="center">
+          <table role="presentation" width="100%" cellspacing="0" cellpadding="0" border="0" class="card" style="max-width:640px;background:#ffffff;border:1px solid #e5e7eb;border-radius:16px;overflow:hidden;">
+            <tr>
+              <td style="background:{brand_primary};padding:18px 20px;">
+                <table width="100%" cellspacing="0" cellpadding="0" border="0">
+                  <tr>
+                    <td align="left">
+                      <img src="{logo_url}"
+                           alt="CanaLogistiX"
+                           width="40"
+                           height="40"
+                           style="display:block;border:0;outline:none;text-decoration:none;border-radius:50%;object-fit:cover;">
+                    </td>
+                    <td align="right" style="font:600 16px/1.2 system-ui,-apple-system,'Segoe UI',Roboto,Helvetica,Arial;color:#e6fffb;">
+                      Admin Response Received
+                    </td>
+                  </tr>
+                </table>
+              </td>
+            </tr>
+
+            <tr>
+              <td style="padding:28px 24px 6px;">
+                <h1 style="margin:0 0 10px;font:800 24px/1.25 system-ui,-apple-system,'Segoe UI',Roboto,Helvetica,Arial;color:#0f172a;">
+                  Hi {user_name}, we've responded to your ticket ✓
+                </h1>
+                <p style="margin:0 0 16px;font:400 14px/1.7 system-ui,-apple-system,'Segoe UI',Roboto,Helvetica,Arial;color:#475569;">
+                  Our admin team has reviewed and responded to your support ticket <strong>#{ticket.id}</strong>.
+                </p>
+
+                <div style="margin:18px 0;background:#f0fdf4;border:1px solid #86efac;border-radius:12px;padding:16px 18px;">
+                  <p style="margin:0 0 8px;font:600 13px/1.4 system-ui,-apple-system,'Segoe UI',Roboto,Helvetica,Arial;color:#166534;">
+                    ✓ Ticket Status: <span style="font-weight:700;">RESOLVED</span>
+                  </p>
+                </div>
+
+                <div style="margin:18px 0;background:#f8fafc;border:1px solid #e2e8f0;border-radius:12px;padding:0;overflow:hidden;">
+                  <table width="100%" cellspacing="0" cellpadding="0" border="0" style="font:400 14px/1.6 system-ui,-apple-system,'Segoe UI',Roboto,Helvetica,Arial;">
+                    <tr style="background:#f1f5f9;">
+                      <td style="padding:12px 18px;color:#64748b;font-weight:600;">Ticket ID</td>
+                      <td style="padding:12px 18px;color:#0f172a;font-weight:500;">#{ticket.id}</td>
+                    </tr>
+                    <tr>
+                      <td style="padding:12px 18px;color:#64748b;font-weight:600;border-top:1px solid #e2e8f0;">Subject</td>
+                      <td style="padding:12px 18px;color:#0f172a;border-top:1px solid #e2e8f0;">{subject_display}</td>
+                    </tr>
+                    <tr style="background:#f1f5f9;">
+                      <td style="padding:12px 18px;color:#64748b;font-weight:600;border-top:1px solid #e2e8f0;">Responded On</td>
+                      <td style="padding:12px 18px;color:{brand_primary_dark};font-weight:500;border-top:1px solid #e2e8f0;">{now_str}</td>
+                    </tr>
+                  </table>
+                </div>
+
+                <div style="margin:20px 0;background:#fffbeb;border-left:3px solid {brand_accent};border-radius:8px;padding:16px 18px;">
+                  <p style="margin:0 0 8px;font:600 13px/1.4 system-ui,-apple-system,'Segoe UI',Roboto,Helvetica,Arial;color:#78350f;">
+                    YOUR ORIGINAL MESSAGE:
+                  </p>
+                  <p style="margin:0;font:400 13px/1.6 system-ui,-apple-system,'Segoe UI',Roboto,Helvetica,Arial;color:#451a03;">
+                    {message_context}
+                  </p>
+                </div>
+
+                <div style="margin:20px 0;background:#f0fdfa;border-left:3px solid {brand_primary};border-radius:8px;padding:16px 18px;">
+                  <p style="margin:0 0 8px;font:600 13px/1.4 system-ui,-apple-system,'Segoe UI',Roboto,Helvetica,Arial;color:#0f172a;">
+                    ADMIN RESPONSE:
+                  </p>
+                  <p style="margin:0;font:400 14px/1.7 system-ui,-apple-system,'Segoe UI',Roboto,Helvetica,Arial;color:#0f172a;white-space:pre-wrap;">
+{admin_response}
+                  </p>
+                </div>
+
+                <hr style="border:0;border-top:1px solid #e5e7eb;margin:24px 0;">
+                <p class="muted" style="margin:0;font:400 12px/1.7 system-ui,-apple-system,'Segoe UI',Roboto,Helvetica,Arial;color:#6b7280;">
+                  If you have further questions or need additional assistance, please login to the portal and raise another Support Ticket by mentioning current Ticket ID. <strong>#{ticket.id}</strong>.
+                </p>
+              </td>
+            </tr>
+
+            <tr>
+              <td style="padding:0 24px 24px;">
+                <table width="100%" cellspacing="0" cellpadding="0" border="0" style="background:#f8fafc;border:1px dashed #e2e8f0;border-radius:12px;">
+                  <tr>
+                    <td style="padding:12px 16px;">
+                      <p style="margin:0;font:400 12px/1.6 system-ui,-apple-system,'Segoe UI',Roboto,Helvetica,Arial;color:#64748b;">
+                        Thank you for contacting CanaLogistiX support. We're here to help!
+                      </p>
+                    </td>
+                  </tr>
+                </table>
+              </td>
+            </tr>
+
+          </table>
+
+          <p style="margin:14px 0 0;font:400 12px/1.6 system-ui,-apple-system,'Segoe UI',Roboto,Helvetica,Arial;color:#94a3b8;">
+            © {timezone.now().year} CanaLogistiX - Cana Group of Companies. All rights reserved.
+          </p>
+        </td>
+      </tr>
+    </table>
+  </body>
+</html>
+"""
+            text = (
+                "Admin Response Received - CanaLogistiX\n\n"
+                f"Hi {user_name},\n\n"
+                f"Our admin team has responded to your support ticket #{ticket.id}.\n\n"
+                f"Ticket ID: #{ticket.id}\n"
+                f"Subject: {subject_display}\n"
+                f"Status: RESOLVED\n"
+                f"Responded On: {now_str}\n\n"
+                "YOUR ORIGINAL MESSAGE:\n"
+                f"{message_context}\n\n"
+                "ADMIN RESPONSE:\n"
+                f"{admin_response}\n\n"
+                f"If you have further questions, reply to this email with your ticket ID #{ticket.id}.\n"
+            )
+
+            _send_html_email_admin_office(
+                subject=f"Response to Ticket #{ticket.id}: {subject_display}",
+                to_email=user_email,
+                html=html,
+                text_fallback=text,
+            )
+    except Exception:
+        logger.exception("Failed to send admin response email")
 
     # Build sender info
     sender_type = "Pharmacy" if ticket.pharmacy else "Driver"
