@@ -2933,6 +2933,162 @@ def generate_invoice_pdf(invoice, pharmacy, orders_data, subtotal, hst_amount, t
     return buffer
 
 
+# @csrf_exempt
+# def generate_weekly_invoices(request):
+#     pharmacy_id = request.GET.get("pharmacyId")
+#     if not pharmacy_id:
+#         return HttpResponseBadRequest("Missing pharmacyId parameter")
+
+#     try:
+#         pharmacy_id = int(pharmacy_id)
+#     except ValueError:
+#         return HttpResponseBadRequest("pharmacyId must be an integer")
+
+#     pharmacy = get_object_or_404(Pharmacy, id=pharmacy_id)
+#     logger.info(f"Generating weekly invoices for pharmacy {pharmacy.name} (ID: {pharmacy_id})")
+
+#     # Only delivered orders for this pharmacy
+#     orders_qs = DeliveryOrder.objects.filter(
+#         pharmacy_id=pharmacy_id,
+#         status="delivered"
+#     ).order_by("created_at")
+
+#     if not orders_qs.exists():
+#         logger.info(f"No delivered orders found for pharmacy {pharmacy.name} (ID: {pharmacy_id})")
+#         return JsonResponse({"message": "No delivered orders for this pharmacy yet", "invoices": []})
+
+#     earliest = orders_qs.first().created_at.date()
+#     latest = orders_qs.last().created_at.date()
+
+#     invoices_list = []
+#     week_start = earliest
+
+#     # === CHANGE 1: include current partial week ===
+#     # Previously: while week_start + timedelta(days=6) <= latest:
+#     while week_start <= latest:
+#         week_end = min(week_start + timedelta(days=6), latest)
+
+#         # Filter orders only in this week and delivered
+#         week_orders = orders_qs.filter(
+#             created_at__date__gte=week_start,
+#             created_at__date__lte=week_end
+#         )
+#         total_orders = week_orders.count()
+
+#         if total_orders > 0:
+#             logger.debug(f"Processing week {week_start} to {week_end} with {total_orders} orders")
+
+#             # Calculate subtotal, HST, and final total
+#             subtotal = sum(Decimal(str(o.rate)) for o in week_orders)
+#             hst_rate = Decimal('0.13')  # 13% HST
+#             hst_amount = (subtotal * hst_rate)
+#             total_amount_with_hst = (subtotal + hst_amount)
+
+#             due_date = week_end + timedelta(days=2)  # due date 2 days after end_date
+
+#             # get or create invoice
+#             invoice, created = Invoice.objects.get_or_create(
+#                 pharmacy=pharmacy,
+#                 start_date=week_start,
+#                 end_date=week_end,
+#                 defaults={
+#                     "total_orders": total_orders,
+#                     "total_amount": total_amount_with_hst,  # Store final amount including HST
+#                     "due_date": due_date,
+#                     "status": "generated"
+#                 }
+#             )
+
+#             if created:
+#                 logger.info(f"Created new invoice {invoice.id} for pharmacy {pharmacy.name}")
+#             else:
+#                 logger.debug(f"Updated existing invoice {invoice.id} for pharmacy {pharmacy.name}")
+#                 # Keep totals up to date
+#                 invoice.total_orders = total_orders
+#                 invoice.total_amount = total_amount_with_hst
+#                 invoice.due_date = due_date
+#                 if invoice.status is None:
+#                     invoice.status = "generated"
+#                 invoice.save()
+
+#             # Build order rows for the PDF
+#             orders_data = [{
+#                 "order_id": o.id,
+#                 "pickup_address": o.pickup_address,
+#                 "pickup_city": o.pickup_city,
+#                 "drop_address": o.drop_address,
+#                 "drop_city": o.drop_city,
+#                 "pickup_day": o.pickup_day.strftime('%Y-%m-%d'),
+#                 "rate": float(o.rate),
+#                 "created_at": o.created_at.strftime('%Y-%m-%d %H:%M'),
+#                 "driver": o.driver.name if o.driver else "N/A"
+#             } for o in week_orders]
+
+#             # Determine whether we must (re)generate/upload the PDF
+#             pdf_url = invoice.pdf_url or ""
+#             needs_upload = (
+#                 not pdf_url                                         # missing
+#                 or pdf_url.startswith("/")                          # local temp path like "/temp_..."
+#                 or pdf_url.startswith("/media/")                    # local media path
+#             )
+
+#             if needs_upload:
+#                 try:
+#                     # Generate PDF buffer
+#                     pdf_buffer = generate_invoice_pdf(
+#                         invoice, pharmacy, orders_data, subtotal, hst_amount, total_amount_with_hst
+#                     )
+
+#                     # Create filename: pharmacyId_PharmacyName_StartDate_EndDate.pdf
+#                     pharmacy_name_clean = pharmacy.name.replace(' ', '_').replace('/', '_').replace('\\', '_')
+#                     start_date_str = invoice.start_date.strftime('%Y-%m-%d')
+#                     end_date_str = invoice.end_date.strftime('%Y-%m-%d')
+#                     filename = f"{pharmacy.id}_{pharmacy_name_clean}_{start_date_str}_{end_date_str}.pdf"
+
+#                     # === CHANGE 2: require GCS upload to succeed; NO local fallback ===
+#                     uploaded_url = upload_pdf_to_gcp(pdf_buffer, filename)
+#                     if not uploaded_url:
+#                         logger.error(f"GCS upload returned empty URL for invoice {invoice.id}")
+#                         return JsonResponse(
+#                             {"error": f"Failed to upload invoice PDF for invoice {invoice.id}"},
+#                             status=500
+#                         )
+
+#                     invoice.pdf_url = uploaded_url
+#                     invoice.save()
+#                     pdf_url = uploaded_url
+#                     logger.info(f"Successfully generated and uploaded PDF for invoice {invoice.id}")
+
+#                 except Exception as e:
+#                     logger.exception(f"Error generating/uploading PDF for invoice {invoice.id}: {e}")
+#                     return JsonResponse(
+#                         {"error": f"Error generating/uploading PDF for invoice {invoice.id}: {str(e)}"},
+#                         status=500
+#                     )
+#             else:
+#                 logger.debug(f"Using existing PDF URL for invoice {invoice.id}")
+
+#             invoices_list.append({
+#                 "invoice_id": invoice.id,
+#                 "start_date": invoice.start_date.strftime('%Y-%m-%d'),
+#                 "end_date": invoice.end_date.strftime('%Y-%m-%d'),
+#                 "total_orders": invoice.total_orders,
+#                 "subtotal": float(subtotal),
+#                 "hst_amount": float(hst_amount),
+#                 "total_amount": float(invoice.total_amount),
+#                 "due_date": invoice.due_date.strftime('%Y-%m-%d'),
+#                 "status": invoice.status,
+#                 "pdf_url": pdf_url,
+#                 "orders": orders_data
+#             })
+
+#         # Move to next week window
+#         week_start += timedelta(days=7)
+
+#     logger.info(f"Generated {len(invoices_list)} invoices for pharmacy {pharmacy.name}")
+#     return JsonResponse({"invoices": invoices_list})
+
+
 @csrf_exempt
 def generate_weekly_invoices(request):
     pharmacy_id = request.GET.get("pharmacyId")
@@ -3068,6 +3224,167 @@ def generate_weekly_invoices(request):
             else:
                 logger.debug(f"Using existing PDF URL for invoice {invoice.id}")
 
+            # ---- Send invoice notification email to pharmacy ----
+            if created and pharmacy.email:  # Only send email for newly created invoices
+                try:
+                    brand_primary = settings.BRAND_COLORS['primary']
+                    brand_primary_dark = settings.BRAND_COLORS['primary_dark']
+                    brand_accent = settings.BRAND_COLORS['accent']
+                    now_str = timezone.now().strftime("%b %d, %Y %H:%M %Z")
+                    logo_url = settings.LOGO_URL
+                    
+                    start_date_formatted = invoice.start_date.strftime("%B %d, %Y")
+                    end_date_formatted = invoice.end_date.strftime("%B %d, %Y")
+                    due_date_formatted = invoice.due_date.strftime("%B %d, %Y")
+
+invoice_html = f"""\
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <title>Invoice Generated • CanaLogistiX</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <style>
+      @media (prefers-color-scheme: dark) {{
+        body {{ background: #0b1220 !important; color: #e5e7eb !important; }}
+        .card {{ background: #0f172a !important; border-color: #1f2937 !important; }}
+        .muted {{ color: #94a3b8 !important; }}
+      }}
+    </style>
+  </head>
+  <body style="margin:0;padding:0;background:#f4f7f9;">
+    <table role="presentation" width="100%" cellspacing="0" cellpadding="0" border="0" style="background:#f4f7f9;padding:24px 12px;">
+      <tr>
+        <td align="center">
+          <table role="presentation" width="100%" cellspacing="0" cellpadding="0" border="0" class="card" style="max-width:640px;background:#ffffff;border:1px solid #e5e7eb;border-radius:16px;overflow:hidden;">
+            <tr>
+              <td style="background:{brand_primary};padding:18px 20px;">
+                <table width="100%" cellspacing="0" cellpadding="0" border="0">
+                  <tr>
+                    <td align="left">
+                      <img src="{logo_url}" alt="CanaLogistiX" width="40" height="40" style="display:block;border:0;outline:none;text-decoration:none;border-radius:50%;object-fit:cover;">
+                    </td>
+                    <td align="right" style="font:600 16px/1.2 system-ui,-apple-system,'Segoe UI',Roboto,Helvetica,Arial;color:#e6fffb;">
+                      Invoice Generated
+                    </td>
+                  </tr>
+                </table>
+              </td>
+            </tr>
+            
+            <tr>
+              <td style="padding:28px 24px 6px;">
+                <h1 style="margin:0 0 10px;font:800 24px/1.25 system-ui,-apple-system,'Segoe UI',Roboto,Helvetica,Arial;color:#0f172a;">
+                  Your weekly invoice is ready
+                </h1>
+                <p style="margin:0 0 16px;font:400 14px/1.7 system-ui,-apple-system,'Segoe UI',Roboto,Helvetica,Arial;color:#475569;">
+                  Hello <strong>{pharmacy.name}</strong>, your invoice for the week of <strong>{start_date_formatted}</strong> to <strong>{end_date_formatted}</strong> has been generated.
+                </p>
+                
+                <div style="margin:18px 0;background:#eff6ff;border:1px solid #3b82f6;border-radius:12px;padding:14px 18px;">
+                  <p style="margin:0;font:600 13px/1.6 system-ui,-apple-system,'Segoe UI',Roboto,Helvetica,Arial;color:#1e40af;">
+                    📄 Invoice #{invoice.id} — Payment due by <strong>{due_date_formatted}</strong>
+                  </p>
+                </div>
+                
+                <div style="margin:18px 0;background:#f0fdfa;border:1px solid {brand_primary};border-radius:12px;padding:16px 18px;">
+                  <p style="margin:0 0 8px;font:700 15px/1.3 system-ui,-apple-system,'Segoe UI',Roboto,Helvetica,Arial;color:#0f172a;">
+                    📊 Quick Summary
+                  </p>
+                  <p style="margin:0;font:400 13px/1.6 system-ui,-apple-system,'Segoe UI',Roboto,Helvetica,Arial;color:#334155;">
+                    <strong>{total_orders} deliveries</strong> completed from {start_date_formatted} to {end_date_formatted}.
+                  </p>
+                  <p style="margin:8px 0 0;font:700 16px/1.4 system-ui,-apple-system,'Segoe UI',Roboto,Helvetica,Arial;color:{brand_primary};">
+                    Total Amount: ${total_amount_with_hst:.2f}
+                  </p>
+                </div>
+                
+                <div style="margin:18px 0;text-align:center;">
+                  <a href="{pdf_url}" 
+                     style="display:inline-block;background:{brand_primary};color:#ffffff;text-decoration:none;padding:12px 32px;border-radius:8px;font:600 14px/1.5 system-ui,-apple-system,'Segoe UI',Roboto,Helvetica,Arial;margin-bottom:12px;">
+                    📥 Download Invoice PDF
+                  </a>
+                </div>
+                
+                <div style="margin:18px 0;background:#f8fafc;border:1px solid #e2e8f0;border-radius:12px;padding:16px 18px;text-align:center;">
+                  <p style="margin:0 0 8px;font:600 14px/1.4 system-ui,-apple-system,'Segoe UI',Roboto,Helvetica,Arial;color:#0f172a;">
+                    📋 View Full Invoice Details
+                  </p>
+                  <p style="margin:0;font:400 13px/1.6 system-ui,-apple-system,'Segoe UI',Roboto,Helvetica,Arial;color:#475569;">
+                    For a complete breakdown of charges, payment history, and delivery details, please visit the <strong>Invoices Section</strong> in your pharmacy portal.
+                  </p>
+                </div>
+                
+                <div style="margin:18px 0;background:#fef2f2;border-left:3px solid #ef4444;border-radius:8px;padding:14px 16px;">
+                  <p style="margin:0;font:600 13px/1.6 system-ui,-apple-system,'Segoe UI',Roboto,Helvetica,Arial;color:#7f1d1d;">
+                    ⚠️ Payment due by <strong>{due_date_formatted}</strong> to avoid penalties or service interruptions.
+                  </p>
+                </div>
+                
+                <p style="margin:18px 0 0;font:400 12px/1.7 system-ui,-apple-system,'Segoe UI',Roboto,Helvetica,Arial;color:#64748b;">
+                  Invoice generated on <strong style="color:{brand_primary_dark};">{now_str}</strong>.
+                </p>
+                
+                <hr style="border:0;border-top:1px solid #e5e7eb;margin:24px 0;">
+                <p class="muted" style="margin:0;font:400 12px/1.7 system-ui,-apple-system,'Segoe UI',Roboto,Helvetica,Arial;color:#6b7280;">
+                  For payment inquiries or invoice questions, Log in to the portal and raise a Support Ticket by contacting the Admin. Our team will be happy to assist you.
+                </p>
+              </td>
+            </tr>
+            
+            <tr>
+              <td style="padding:0 24px 24px;">
+                <table width="100%" cellspacing="0" cellpadding="0" border="0" style="background:#f8fafc;border:1px dashed #e2e8f0;border-radius:12px;">
+                  <tr>
+                    <td style="padding:12px 16px;">
+                      <p style="margin:0;font:400 12px/1.6 system-ui,-apple-system,'Segoe UI',Roboto,Helvetica,Arial;color:#64748b;">
+                        Thank you for choosing CanaLogistiX for your delivery needs!
+                      </p>
+                    </td>
+                  </tr>
+                </table>
+              </td>
+            </tr>
+
+          </table>
+          
+          <p style="margin:14px 0 0;font:400 12px/1.6 system-ui,-apple-system,'Segoe UI',Roboto,Helvetica,Arial;color:#94a3b8;">
+            © {timezone.now().year} CanaLogistiX - Cana Group of Companies. All rights reserved.
+          </p>
+        </td>
+      </tr>
+    </table>
+  </body>
+</html>
+"""
+                    invoice_text = (
+                        f"Invoice Generated - CanaLogistiX\n\n"
+                        f"Hello {pharmacy.name},\n\n"
+                        f"Your invoice for the week of {start_date_formatted} to {end_date_formatted} has been generated.\n\n"
+                        f"Invoice #{invoice.id}\n"
+                        f"Total Amount: ${total_amount_with_hst:.2f}\n"
+                        f"Payment Due: {due_date_formatted}\n\n"
+                        f"{total_orders} deliveries completed during this period.\n\n"
+                        f"IMPORTANT: Payment due by {due_date_formatted} to avoid penalties or service interruptions.\n\n"
+                        f"Download your invoice: {pdf_url}\n\n"
+                        f"For complete invoice details, payment history, and delivery breakdowns, please visit the Invoices Section in your pharmacy portal.\n\n"
+                        f"For payment inquiries, contact billing at {settings.EMAIL_BILLING}\n"
+                    )
+
+                    _send_html_email_billing(
+                        subject=f"Invoice #{invoice.id} Generated • Week of {start_date_formatted}",
+                        to_email=pharmacy.email,
+                        html=invoice_html,
+                        text_fallback=invoice_text,
+                    )
+                    logger.info(f"Invoice notification email sent to {pharmacy.email} for invoice {invoice.id}")
+                    
+                except Exception as e:
+                    logger.error(f"ERROR sending invoice email to {pharmacy.email}: {str(e)}")
+                    import traceback
+                    traceback.print_exc()
+                    # Don't fail the invoice generation if email fails
+
             invoices_list.append({
                 "invoice_id": invoice.id,
                 "start_date": invoice.start_date.strftime('%Y-%m-%d'),
@@ -3087,9 +3404,6 @@ def generate_weekly_invoices(request):
 
     logger.info(f"Generated {len(invoices_list)} invoices for pharmacy {pharmacy.name}")
     return JsonResponse({"invoices": invoices_list})
-
-
-
 
 
 
@@ -3942,6 +4256,165 @@ def _generate_invoice_pdf(driver, week_data, orders):
     return buffer
 
 
+# @csrf_exempt
+# def driver_invoice_weeks(request):
+#     """
+#     GET param: driverId
+#     Returns weekly invoice buckets for delivered orders for that driver.
+#     Generates PDF and uploads to GCP only after period ends (11:59 PM on end_date).
+#     """
+#     driver_id = request.GET.get("driverId") or request.POST.get("driverId")
+#     if not driver_id:
+#         return HttpResponseBadRequest('Missing "driverId" parameter.')
+
+#     # Validate driver exists
+#     try:
+#         driver = Driver.objects.get(pk=driver_id)
+#     except Driver.DoesNotExist:
+#         return HttpResponseBadRequest("Driver not found.")
+
+#     # Fetch delivered orders for this driver
+#     orders_qs = DeliveryOrder.objects.filter(status="delivered", driver_id=driver_id).order_by("updated_at")
+
+#     if not orders_qs.exists():
+#         return JsonResponse({"message": "No delivered orders found for this driver.", "weeks": []})
+
+#     # Convert updated_at to user's local tz and collect (order, local_date)
+#     orders_with_local_dt = []
+#     for o in orders_qs:
+#         if not o.updated_at:
+#             continue
+#         local_dt = _ensure_local(o.updated_at)
+#         orders_with_local_dt.append((o, local_dt))
+
+#     if not orders_with_local_dt:
+#         return JsonResponse({"message": "No orders with updated_at timestamps.", "weeks": []})
+
+#     # Determine overall earliest and latest based on local updated_at
+#     local_datetimes = [ldt for (_, ldt) in orders_with_local_dt]
+#     earliest_local = min(local_datetimes)
+#     latest_local = max(local_datetimes)
+
+#     overall_start_date = _start_of_week(earliest_local.date())
+#     overall_end_date = _end_of_week(latest_local.date())
+
+#     # Build week buckets
+#     weeks = []
+#     cur_start = overall_start_date
+#     while cur_start <= overall_end_date:
+#         cur_end = cur_start + timedelta(days=6)
+#         weeks.append((cur_start, cur_end))
+#         cur_start = cur_start + timedelta(days=7)
+
+#     # Prepare result weeks
+#     result_weeks = []
+#     for wstart, wend in weeks:
+#         # Select orders whose local updated_at date falls inside this week
+#         week_orders = [
+#             o for (o, ldt) in orders_with_local_dt
+#             if (ldt.date() >= wstart and ldt.date() <= wend)
+#         ]
+
+#         if not week_orders:  # Skip weeks with no orders
+#             continue
+
+#         total_orders = len(week_orders)
+#         total_amount = Decimal("0.00")
+#         for o in week_orders:
+#             rate = o.rate if o.rate is not None else Decimal("0.00")
+#             if not isinstance(rate, Decimal):
+#                 rate = Decimal(str(rate))
+#             total_amount += (rate * Decimal("0.85"))
+
+#         due_date = wend + timedelta(days=7)
+
+#         # Check if DriverInvoice already exists for this period
+#         existing_invoice = DriverInvoice.objects.filter(
+#             driver=driver,
+#             start_date=wstart,
+#             end_date=wend
+#         ).first()
+
+#         pdf_url = None
+#         invoice_status = "pending"
+
+#         # Only generate invoice if period is complete (after 11:59 PM on end date)
+#         if _is_period_complete(wend):
+#             if existing_invoice:
+#                 # Use existing PDF URL if available
+#                 pdf_url = existing_invoice.pdf_url
+#                 invoice_status = "generated" if pdf_url else "pending"
+#             else:
+#                 # Create new DriverInvoice and generate PDF
+#                 new_invoice = DriverInvoice.objects.create(
+#                     driver=driver,
+#                     start_date=wstart,
+#                     end_date=wend,
+#                     total_deliveries=total_orders,
+#                     total_amount=total_amount.quantize(Decimal("0.01")),
+#                     due_date=due_date,
+#                     status="generated"
+#                 )
+
+#                 # Generate PDF
+#                 week_data = {
+#                     "payment_period": {
+#                         "start_date": wstart.isoformat(),
+#                         "end_date": wend.isoformat()
+#                     },
+#                     "total_orders": total_orders,
+#                     "total_amount": str(total_amount.quantize(Decimal("0.01"))),
+#                     "due_date": due_date.isoformat(),
+#                     "status": "generated",
+#                 }
+
+#                 try:
+#                     pdf_buffer = _generate_invoice_pdf(driver, week_data, week_orders)
+                    
+#                     # Create filename: driverId_driverName_StartDate_EndDate.pdf
+#                     filename = f"{driver.id}_{driver.name.replace(' ', '_')}_{wstart.isoformat()}_{wend.isoformat()}.pdf"
+                    
+#                     # Upload to GCP
+#                     pdf_url = _upload_to_gcp(pdf_buffer, filename)
+                    
+#                     if pdf_url:
+#                         new_invoice.pdf_url = pdf_url
+#                         new_invoice.save()
+#                         invoice_status = "generated"
+#                     else:
+#                         invoice_status = "error"
+                        
+#                 except Exception as e:
+#                     invoice_status = "error"
+
+#         # Serialize orders
+#         orders_serialized = [_order_to_dict(o) for o in week_orders]
+
+#         result_weeks.append({
+#             "payment_period": {
+#                 "start_date": wstart.isoformat(),
+#                 "end_date": wend.isoformat()
+#             },
+#             "total_orders": total_orders,
+#             "total_amount": str(total_amount.quantize(Decimal("0.01"))),
+#             "due_date": due_date.isoformat(),
+#             "status": invoice_status,
+#             "pdf_url": pdf_url,
+#             "orders": orders_serialized,
+#         })
+
+#     response_payload = {
+#         "driver_id": int(driver_id),
+#         "overall_period": {
+#             "start_date": overall_start_date.isoformat(),
+#             "end_date": overall_end_date.isoformat()
+#         },
+#         "weeks": result_weeks,
+#     }
+
+#     return JsonResponse(response_payload, safe=True)
+
+
 @csrf_exempt
 def driver_invoice_weeks(request):
     """
@@ -4023,6 +4496,7 @@ def driver_invoice_weeks(request):
 
         pdf_url = None
         invoice_status = "pending"
+        invoice_created = False
 
         # Only generate invoice if period is complete (after 11:59 PM on end date)
         if _is_period_complete(wend):
@@ -4041,6 +4515,7 @@ def driver_invoice_weeks(request):
                     due_date=due_date,
                     status="generated"
                 )
+                invoice_created = True
 
                 # Generate PDF
                 week_data = {
@@ -4072,6 +4547,238 @@ def driver_invoice_weeks(request):
                         
                 except Exception as e:
                     invoice_status = "error"
+
+                # ---- Send invoice notification email to delivery partner ----
+                if invoice_created and pdf_url and driver.email:
+                    try:
+                        brand_primary = settings.BRAND_COLORS['primary']
+                        brand_primary_dark = settings.BRAND_COLORS['primary_dark']
+                        brand_accent = settings.BRAND_COLORS['accent']
+                        now_str = timezone.now().strftime("%b %d, %Y %H:%M %Z")
+                        logo_url = settings.LOGO_URL
+                        
+                        start_date_formatted = wstart.strftime("%B %d, %Y")
+                        end_date_formatted = wend.strftime("%B %d, %Y")
+                        due_date_formatted = due_date.strftime("%B %d, %Y")
+                        total_amount_formatted = total_amount.quantize(Decimal("0.01"))
+
+                        driver_invoice_html = f"""\
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <title>Payment Statement Available • CanaLogistiX</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <style>
+      @media (prefers-color-scheme: dark) {{
+        body {{ background: #0b1220 !important; color: #e5e7eb !important; }}
+        .card {{ background: #0f172a !important; border-color: #1f2937 !important; }}
+        .muted {{ color: #94a3b8 !important; }}
+      }}
+    </style>
+  </head>
+  <body style="margin:0;padding:0;background:#f4f7f9;">
+    <table role="presentation" width="100%" cellspacing="0" cellpadding="0" border="0" style="background:#f4f7f9;padding:24px 12px;">
+      <tr>
+        <td align="center">
+          <table role="presentation" width="100%" cellspacing="0" cellpadding="0" border="0" class="card" style="max-width:640px;background:#ffffff;border:1px solid #e5e7eb;border-radius:16px;overflow:hidden;">
+            <tr>
+              <td style="background:{brand_primary};padding:18px 20px;">
+                <table width="100%" cellspacing="0" cellpadding="0" border="0">
+                  <tr>
+                    <td align="left">
+                      <img src="{logo_url}" alt="CanaLogistiX" width="40" height="40" style="display:block;border:0;outline:none;text-decoration:none;border-radius:50%;object-fit:cover;">
+                    </td>
+                    <td align="right" style="font:600 16px/1.2 system-ui,-apple-system,'Segoe UI',Roboto,Helvetica,Arial;color:#e6fffb;">
+                      Payment Statement Ready
+                    </td>
+                  </tr>
+                </table>
+              </td>
+            </tr>
+            
+            <tr>
+              <td style="padding:28px 24px 6px;">
+                <h1 style="margin:0 0 10px;font:800 24px/1.25 system-ui,-apple-system,'Segoe UI',Roboto,Helvetica,Arial;color:#0f172a;">
+                  Your weekly payment statement is ready
+                </h1>
+                <p style="margin:0 0 16px;font:400 14px/1.7 system-ui,-apple-system,'Segoe UI',Roboto,Helvetica,Arial;color:#475569;">
+                  Hello <strong>{driver.name}</strong>, your payment statement for the week of <strong>{start_date_formatted}</strong> to <strong>{end_date_formatted}</strong> has been generated and is now available.
+                </p>
+                
+                <div style="margin:18px 0;background:#f0fdf4;border:1px solid #10b981;border-radius:12px;padding:14px 18px;">
+                  <p style="margin:0;font:600 13px/1.6 system-ui,-apple-system,'Segoe UI',Roboto,Helvetica,Arial;color:#166534;">
+                    💰 Payment of <strong>${total_amount_formatted}</strong> will be processed by <strong>{due_date_formatted}</strong>
+                  </p>
+                </div>
+                
+                <div style="margin:18px 0;background:#f0fdfa;border:1px solid {brand_primary};border-radius:12px;padding:16px 18px;">
+                  <p style="margin:0 0 12px;font:700 15px/1.3 system-ui,-apple-system,'Segoe UI',Roboto,Helvetica,Arial;color:#0f172a;">
+                    📊 Payment Summary
+                  </p>
+                  <table width="100%" cellspacing="0" cellpadding="0" border="0">
+                    <tr>
+                      <td style="padding:4px 0;font:600 13px/1.5 system-ui,-apple-system,'Segoe UI',Roboto,Helvetica,Arial;color:#334155;">
+                        Statement Period:
+                      </td>
+                      <td style="padding:4px 0;font:400 13px/1.5 system-ui,-apple-system,'Segoe UI',Roboto,Helvetica,Arial;color:#334155;">
+                        {start_date_formatted} - {end_date_formatted}
+                      </td>
+                    </tr>
+                    <tr>
+                      <td style="padding:4px 0;font:600 13px/1.5 system-ui,-apple-system,'Segoe UI',Roboto,Helvetica,Arial;color:#334155;">
+                        Total Deliveries:
+                      </td>
+                      <td style="padding:4px 0;font:400 13px/1.5 system-ui,-apple-system,'Segoe UI',Roboto,Helvetica,Arial;color:#334155;">
+                        {total_orders} completed deliveries
+                      </td>
+                    </tr>
+                    <tr>
+                      <td style="padding:4px 0;font:600 13px/1.5 system-ui,-apple-system,'Segoe UI',Roboto,Helvetica,Arial;color:#334155;">
+                        Payment Rate:
+                      </td>
+                      <td style="padding:4px 0;font:400 13px/1.5 system-ui,-apple-system,'Segoe UI',Roboto,Helvetica,Arial;color:#334155;">
+                        85% of delivery rate
+                      </td>
+                    </tr>
+                    <tr>
+                      <td style="padding:8px 0 4px;font:700 15px/1.5 system-ui,-apple-system,'Segoe UI',Roboto,Helvetica,Arial;color:#0f172a;border-top:2px solid #e5e7eb;">
+                        Total Payment:
+                      </td>
+                      <td style="padding:8px 0 4px;font:700 15px/1.5 system-ui,-apple-system,'Segoe UI',Roboto,Helvetica,Arial;color:#10b981;border-top:2px solid #e5e7eb;">
+                        ${total_amount_formatted}
+                      </td>
+                    </tr>
+                  </table>
+                </div>
+                
+                <div style="margin:18px 0;background:#fef3c7;border:1px solid {brand_accent};border-radius:12px;padding:16px 18px;">
+                  <p style="margin:0 0 12px;font:700 15px/1.3 system-ui,-apple-system,'Segoe UI',Roboto,Helvetica,Arial;color:#0f172a;">
+                    📅 Payment Processing
+                  </p>
+                  <table width="100%" cellspacing="0" cellpadding="0" border="0">
+                    <tr>
+                      <td style="padding:4px 0;font:600 13px/1.5 system-ui,-apple-system,'Segoe UI',Roboto,Helvetica,Arial;color:#334155;">
+                        Payment Date:
+                      </td>
+                      <td style="padding:4px 0;font:400 13px/1.5 system-ui,-apple-system,'Segoe UI',Roboto,Helvetica,Arial;color:#334155;">
+                        {due_date_formatted}
+                      </td>
+                    </tr>
+                    <tr>
+                      <td style="padding:4px 0;font:600 13px/1.5 system-ui,-apple-system,'Segoe UI',Roboto,Helvetica,Arial;color:#334155;">
+                        Payment Amount:
+                      </td>
+                      <td style="padding:4px 0;font:700 13px/1.5 system-ui,-apple-system,'Segoe UI',Roboto,Helvetica,Arial;color:#0f172a;">
+                        ${total_amount_formatted}
+                      </td>
+                    </tr>
+                    <tr>
+                      <td style="padding:4px 0;font:600 13px/1.5 system-ui,-apple-system,'Segoe UI',Roboto,Helvetica,Arial;color:#334155;">
+                        Status:
+                      </td>
+                      <td style="padding:4px 0;font:400 13px/1.5 system-ui,-apple-system,'Segoe UI',Roboto,Helvetica,Arial;color:#334155;">
+                        Pending Processing
+                      </td>
+                    </tr>
+                  </table>
+                </div>
+                
+                <div style="margin:18px 0;text-align:center;">
+                  <a href="{pdf_url}" 
+                     style="display:inline-block;background:{brand_primary};color:#ffffff;text-decoration:none;padding:12px 32px;border-radius:8px;font:600 14px/1.5 system-ui,-apple-system,'Segoe UI',Roboto,Helvetica,Arial;">
+                    📥 Download Payment Statement PDF
+                  </a>
+                </div>
+                
+                <div style="margin:18px 0;background:#f8fafc;border:1px solid #e2e8f0;border-radius:12px;padding:16px 18px;">
+                  <p style="margin:0 0 12px;font:700 15px/1.3 system-ui,-apple-system,'Segoe UI',Roboto,Helvetica,Arial;color:#0f172a;">
+                    📋 Statement Details
+                  </p>
+                  <p style="margin:0 0 8px;font:400 13px/1.6 system-ui,-apple-system,'Segoe UI',Roboto,Helvetica,Arial;color:#475569;">
+                    This statement covers <strong>{total_orders} completed deliveries</strong> during the period from {start_date_formatted} to {end_date_formatted}.
+                  </p>
+                  <p style="margin:0;font:400 13px/1.6 system-ui,-apple-system,'Segoe UI',Roboto,Helvetica,Arial;color:#475569;">
+                    Your payment is calculated at 85% of the total delivery rates. Download the detailed PDF statement using the button above or access it through your driver dashboard.
+                  </p>
+                </div>
+                
+                <div style="margin:18px 0;background:#eff6ff;border-left:3px solid #3b82f6;border-radius:8px;padding:14px 16px;">
+                  <p style="margin:0 0 8px;font:700 14px/1.4 system-ui,-apple-system,'Segoe UI',Roboto,Helvetica,Arial;color:#1e40af;">
+                    ℹ️ Payment Information
+                  </p>
+                  <p style="margin:0;font:400 13px/1.6 system-ui,-apple-system,'Segoe UI',Roboto,Helvetica,Arial;color:#1e3a8a;">
+                    Your payment will be processed automatically by {due_date_formatted}. If you have any questions about this statement, please contact our operations team.
+                  </p>
+                </div>
+                
+                <p style="margin:18px 0 0;font:400 12px/1.7 system-ui,-apple-system,'Segoe UI',Roboto,Helvetica,Arial;color:#64748b;">
+                  Statement generated on <strong style="color:{brand_primary_dark};">{now_str}</strong>.
+                </p>
+                
+                <hr style="border:0;border-top:1px solid #e5e7eb;margin:24px 0;">
+                <p class="muted" style="margin:0;font:400 12px/1.7 system-ui,-apple-system,'Segoe UI',Roboto,Helvetica,Arial;color:#6b7280;">
+                  For payment inquiries or statement questions, Log in to the portal and raise a Support Ticket by contacting the Admin. Our team will be happy to assist you.
+                </p>
+              </td>
+            </tr>
+            
+            <tr>
+              <td style="padding:0 24px 24px;">
+                <table width="100%" cellspacing="0" cellpadding="0" border="0" style="background:#f8fafc;border:1px dashed #e2e8f0;border-radius:12px;">
+                  <tr>
+                    <td style="padding:12px 16px;">
+                      <p style="margin:0;font:400 12px/1.6 system-ui,-apple-system,'Segoe UI',Roboto,Helvetica,Arial;color:#64748b;">
+                        Thank you for being a valued Delivery Partner with CanaLogistiX!
+                      </p>
+                    </td>
+                  </tr>
+                </table>
+              </td>
+            </tr>
+
+          </table>
+          
+          <p style="margin:14px 0 0;font:400 12px/1.6 system-ui,-apple-system,'Segoe UI',Roboto,Helvetica,Arial;color:#94a3b8;">
+            © {timezone.now().year} CanaLogistiX - Cana Group of Companies. All rights reserved.
+          </p>
+        </td>
+      </tr>
+    </table>
+  </body>
+</html>
+"""
+                        driver_invoice_text = (
+                            f"Payment Statement Available - CanaLogistiX\n\n"
+                            f"Hello {driver.name},\n\n"
+                            f"Your payment statement for the week of {start_date_formatted} to {end_date_formatted} is now available.\n\n"
+                            f"PAYMENT SUMMARY:\n"
+                            f"- Statement Period: {start_date_formatted} - {end_date_formatted}\n"
+                            f"- Total Deliveries: {total_orders} completed deliveries\n"
+                            f"- Payment Rate: 85% of delivery rate\n"
+                            f"- Total Payment: ${total_amount_formatted}\n\n"
+                            f"PAYMENT PROCESSING:\n"
+                            f"- Payment Date: {due_date_formatted}\n"
+                            f"- Payment Amount: ${total_amount_formatted}\n"
+                            f"- Status: Pending Processing\n\n"
+                            f"Your payment will be processed automatically by {due_date_formatted}.\n\n"
+                            f"Download your statement: {pdf_url}\n\n"
+                            f"For payment inquiries, contact operations at {settings.EMAIL_OPERATIONS}\n"
+                        )
+
+                        _send_html_email_billing(
+                            subject=f"Payment Statement Available • Week of {start_date_formatted}",
+                            to_email=driver.email,
+                            html=driver_invoice_html,
+                            text_fallback=driver_invoice_text,
+                        )
+                        logger.info(f"Driver payment statement email sent to {driver.email} for week {wstart} to {wend}")
+                        
+                    except Exception as e:
+                        logger.error(f"ERROR sending driver invoice email to {driver.email}: {str(e)}")
+                        import traceback
+                        traceback.print_exc()
+                        # Don't fail the invoice generation if email fails
 
         # Serialize orders
         orders_serialized = [_order_to_dict(o) for o in week_orders]
