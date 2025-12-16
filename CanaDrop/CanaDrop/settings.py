@@ -178,7 +178,8 @@ BRAND_COLORS = {
 
 USER_TIMEZONE = pytz.timezone("America/Toronto")
 
-DRIVER_COMMISSION_RATE = 0.15
+DRIVER_COMMISSION_RATE = 0.25
+PAYMENT_RATE_PERCENT = int(100 - (100 * DRIVER_COMMISSION_RATE))
 
 SITE_URL = "https://www.canalogistix.com"
 
