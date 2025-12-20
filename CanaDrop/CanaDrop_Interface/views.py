@@ -181,30 +181,38 @@ def adminSupportView(request):
 
 def adminDriversView(request):
     return render(request, 'adminDrivers.html')
+
+
+
 @csrf_exempt
 def pharmacy_login_api(request):
     if request.method != "POST":
         return JsonResponse({"success": False, "message": "Only POST method allowed"}, status=405)
-    
+
     try:
         data = json.loads(request.body)
         email = data.get("email")
         password = data.get("password")
-    except Exception as e:
+    except Exception:
         return JsonResponse({"success": False, "message": "Invalid JSON"}, status=400)
-    
+
     if not email or not password:
         return JsonResponse({"success": False, "message": "Email and password required"}, status=400)
-    
+
     try:
         pharmacy = Pharmacy.objects.get(email=email)
     except Pharmacy.DoesNotExist:
         return JsonResponse({"success": False, "message": "Invalid credentials"}, status=401)
-    
-    if pharmacy.check_password(password):
-        return JsonResponse({"success": True, "id": pharmacy.id})
+
+    # ✅ THIS IS THE KEY FIX
+    if check_password(password, pharmacy.password):
+        return JsonResponse({
+            "success": True,
+            "id": pharmacy.id
+        })
     else:
         return JsonResponse({"success": False, "message": "Invalid credentials"}, status=401)
+
 
 
 def validate_address_city(address, city):
@@ -317,6 +325,126 @@ def create_order_tracking_entry(order_id, step='pending', performed_by=None, not
 
 
 
+# @csrf_exempt
+# def create_delivery_order(request):
+#     if request.method == "POST":
+#         try:
+#             data = json.loads(request.body)
+#             # print(f"Request data: {data}")
+
+#             pharmacy_id = data.get('pharmacyId')
+#             pickup_address = data.get('pickupAddress')
+#             pickup_city = data.get('pickupCity')
+#             pickup_day = data.get('pickupDay')
+#             drop_address = data.get('dropAddress')
+#             drop_city = data.get('dropCity')
+#             customer_name = data.get('customerName')  # <-- added
+
+#             # Validate required fields
+#             if not all([pharmacy_id, pickup_address, pickup_city, pickup_day, drop_address, drop_city]):
+#                 # print("Validation failed: Missing required fields")
+#                 return JsonResponse({"success": False, "error": "Missing required fields"}, status=400)
+
+#             # print(f"Fetching pharmacy with ID: {pharmacy_id}")
+#             pharmacy = Pharmacy.objects.get(id=pharmacy_id)
+#             # print(f"Pharmacy found: {pharmacy.name}")
+
+#             # Get distance directly - no separate address validation
+#             # print("Calculating distance...")
+#             distance_km, error = get_distance_km(pickup_address, pickup_city, drop_address, drop_city)
+#             if error:
+#                 # print(f"Distance calculation failed: {error}")
+#                 return JsonResponse({"success": False, "error": error}, status=400)
+#             # print(f"Distance calculated: {distance_km} km")
+
+#             # Determine rate based on distance
+#             rate_entry = DeliveryDistanceRate.objects.filter(
+#                 min_distance_km__lte=distance_km
+#             ).order_by('min_distance_km').last()
+#             rate = rate_entry.rate if rate_entry else 0
+#             # print(f"Rate determined: {rate}")
+
+#             # Create the delivery order with status 'pending'
+#             # print("Creating DeliveryOrder...")
+#             create_kwargs = dict(
+#                 pharmacy=pharmacy,
+#                 pickup_address=pickup_address,
+#                 pickup_city=pickup_city,
+#                 pickup_day=parse_date(pickup_day),
+#                 drop_address=drop_address,
+#                 drop_city=drop_city,
+#                 status='pending',  # Set initial status
+#                 rate=rate
+#             )
+#             if customer_name:  # <-- only set if provided; otherwise model default applies
+#                 create_kwargs["customer_name"] = customer_name
+
+#             order = DeliveryOrder.objects.create(**create_kwargs)
+            
+#             # Force commit the order creation
+#             transaction.commit()
+#             # print(f"Order created and committed: ID={order.id}")
+            
+#             # Verify order exists in database
+#             order_exists = DeliveryOrder.objects.filter(id=order.id).exists()
+#             # print(f"Order {order.id} exists in database: {order_exists}")
+            
+#             if order_exists:
+#                 # Create initial tracking entry using the function
+#                 # print("Creating initial tracking entry...")
+#                 tracking_result = create_order_tracking_entry(
+#                     order_id=order.id,
+#                     step='pending',
+#                     performed_by=f'Pharmacy: {pharmacy.name}',
+#                     note='Order created and pending driver acceptance'
+#                 )
+                
+#                 if tracking_result["success"]:
+#                     # print(f"Tracking entry created successfully: {tracking_result}")
+#                     return JsonResponse({
+#                         "success": True,
+#                         "orderId": order.id,
+#                         "distance_km": distance_km,
+#                         "rate": str(rate),
+#                         "status": order.status,
+#                         "customerName": order.customer_name,  # <-- added to response
+#                         "tracking_id": tracking_result["tracking_id"],
+#                         "message": "Order and tracking created successfully"
+#                     })
+#                 else:
+#                     # print(f"Tracking entry creation failed: {tracking_result['error']}")
+#                     # Return success for order but note tracking failure
+#                     return JsonResponse({
+#                         "success": True,
+#                         "orderId": order.id,
+#                         "distance_km": distance_km,
+#                         "rate": str(rate),
+#                         "status": order.status,
+#                         "customerName": order.customer_name,  # <-- added to response
+#                         "tracking_created": False,
+#                         "tracking_error": tracking_result["error"],
+#                         "message": "Order created successfully but tracking entry failed"
+#                     })
+#             else:
+#                 # print("Order was not properly saved to database")
+#                 return JsonResponse({
+#                     "success": False, 
+#                     "error": "Order creation failed - not saved to database"
+#                 }, status=500)
+
+#         except Pharmacy.DoesNotExist:
+#             # print("Pharmacy not found")
+#             return JsonResponse({"success": False, "error": "Pharmacy not found"}, status=404)
+#         except Exception as e:
+#             # print(f"Error in create_delivery_order: {e}")
+#             import traceback
+#             traceback.print_exc()
+#             return JsonResponse({"success": False, "error": str(e)}, status=500)
+
+#     # print("Invalid HTTP method")
+#     return JsonResponse({"success": False, "error": "Invalid HTTP method"}, status=405)
+
+
 @csrf_exempt
 def create_delivery_order(request):
     if request.method == "POST":
@@ -330,34 +458,29 @@ def create_delivery_order(request):
             pickup_day = data.get('pickupDay')
             drop_address = data.get('dropAddress')
             drop_city = data.get('dropCity')
-            customer_name = data.get('customerName')  # <-- added
+            customer_name = data.get('customerName')
+            customer_phone = data.get('customerPhone')  # ✅ added
 
             # Validate required fields
             if not all([pharmacy_id, pickup_address, pickup_city, pickup_day, drop_address, drop_city]):
-                # print("Validation failed: Missing required fields")
                 return JsonResponse({"success": False, "error": "Missing required fields"}, status=400)
 
-            # print(f"Fetching pharmacy with ID: {pharmacy_id}")
             pharmacy = Pharmacy.objects.get(id=pharmacy_id)
-            # print(f"Pharmacy found: {pharmacy.name}")
 
-            # Get distance directly - no separate address validation
-            # print("Calculating distance...")
-            distance_km, error = get_distance_km(pickup_address, pickup_city, drop_address, drop_city)
+            # Calculate distance
+            distance_km, error = get_distance_km(
+                pickup_address, pickup_city, drop_address, drop_city
+            )
             if error:
-                # print(f"Distance calculation failed: {error}")
                 return JsonResponse({"success": False, "error": error}, status=400)
-            # print(f"Distance calculated: {distance_km} km")
 
-            # Determine rate based on distance
+            # Determine rate
             rate_entry = DeliveryDistanceRate.objects.filter(
                 min_distance_km__lte=distance_km
             ).order_by('min_distance_km').last()
             rate = rate_entry.rate if rate_entry else 0
-            # print(f"Rate determined: {rate}")
 
-            # Create the delivery order with status 'pending'
-            # print("Creating DeliveryOrder...")
+            # Create order
             create_kwargs = dict(
                 pharmacy=pharmacy,
                 pickup_address=pickup_address,
@@ -365,76 +488,69 @@ def create_delivery_order(request):
                 pickup_day=parse_date(pickup_day),
                 drop_address=drop_address,
                 drop_city=drop_city,
-                status='pending',  # Set initial status
+                status='pending',
                 rate=rate
             )
-            if customer_name:  # <-- only set if provided; otherwise model default applies
+
+            if customer_name:
                 create_kwargs["customer_name"] = customer_name
 
+            if customer_phone:  # ✅ added
+                create_kwargs["customer_phone"] = customer_phone
+
             order = DeliveryOrder.objects.create(**create_kwargs)
-            
-            # Force commit the order creation
+
             transaction.commit()
-            # print(f"Order created and committed: ID={order.id}")
-            
-            # Verify order exists in database
-            order_exists = DeliveryOrder.objects.filter(id=order.id).exists()
-            # print(f"Order {order.id} exists in database: {order_exists}")
-            
-            if order_exists:
-                # Create initial tracking entry using the function
-                # print("Creating initial tracking entry...")
+
+            if DeliveryOrder.objects.filter(id=order.id).exists():
                 tracking_result = create_order_tracking_entry(
                     order_id=order.id,
                     step='pending',
                     performed_by=f'Pharmacy: {pharmacy.name}',
                     note='Order created and pending driver acceptance'
                 )
-                
+
                 if tracking_result["success"]:
-                    # print(f"Tracking entry created successfully: {tracking_result}")
                     return JsonResponse({
                         "success": True,
                         "orderId": order.id,
                         "distance_km": distance_km,
                         "rate": str(rate),
                         "status": order.status,
-                        "customerName": order.customer_name,  # <-- added to response
+                        "customerName": order.customer_name,
+                        "customerPhone": order.customer_phone,  # ✅ added
                         "tracking_id": tracking_result["tracking_id"],
                         "message": "Order and tracking created successfully"
                     })
                 else:
-                    # print(f"Tracking entry creation failed: {tracking_result['error']}")
-                    # Return success for order but note tracking failure
                     return JsonResponse({
                         "success": True,
                         "orderId": order.id,
                         "distance_km": distance_km,
                         "rate": str(rate),
                         "status": order.status,
-                        "customerName": order.customer_name,  # <-- added to response
+                        "customerName": order.customer_name,
+                        "customerPhone": order.customer_phone,  # ✅ added
                         "tracking_created": False,
                         "tracking_error": tracking_result["error"],
                         "message": "Order created successfully but tracking entry failed"
                     })
             else:
-                # print("Order was not properly saved to database")
                 return JsonResponse({
-                    "success": False, 
+                    "success": False,
                     "error": "Order creation failed - not saved to database"
                 }, status=500)
 
         except Pharmacy.DoesNotExist:
-            # print("Pharmacy not found")
             return JsonResponse({"success": False, "error": "Pharmacy not found"}, status=404)
+
         except Exception as e:
-            # print(f"Error in create_delivery_order: {e}")
             import traceback
             traceback.print_exc()
             return JsonResponse({"success": False, "error": str(e)}, status=500)
 
-    # print("Invalid HTTP method")
     return JsonResponse({"success": False, "error": "Invalid HTTP method"}, status=405)
+
 
 
 
@@ -655,6 +771,7 @@ def pharmacy_orders_api(request, pharmacy_id):
                 'status': order.status,
                 'rate': order.rate,
                 'customer_name': order.customer_name,
+                'customer_phone' : order.customer_phone,
                 'created_at': order.created_at.strftime('%Y-%m-%d %H:%M:%S'),
                 'updated_at': order.updated_at.strftime('%Y-%m-%d %H:%M:%S'),
                 'driver_id': order.driver.id if order.driver else None,
@@ -1243,31 +1360,90 @@ def driver_login(request):
         }, status=500)
 
 
+# @csrf_exempt
+# def get_pending_orders(request):
+#     if request.method == "GET":
+#         # Fetch all pending orders ordered by created_at (oldest first)
+#         orders = DeliveryOrder.objects.filter(status="pending").order_by("created_at")
+
+#         # Prepare JSON data manually
+#         data = []
+#         for order in orders:
+#             data.append({
+#                 "id": order.id,
+#                 "pharmacy": order.pharmacy.name if order.pharmacy else None,
+#                 "driver": order.driver.name if order.driver else None,
+#                 "pickup_address": order.pickup_address,
+#                 "pickup_city": order.pickup_city,
+#                 "pickup_day": order.pickup_day.strftime("%Y-%m-%d"),
+#                 "drop_address": order.drop_address,
+#                 "drop_city": order.drop_city,
+#                 "status": order.status,
+#                 "rate": str(order.rate),
+#                 "created_at": order.created_at.strftime("%Y-%m-%d %H:%M:%S"),
+#                 "updated_at": order.updated_at.strftime("%Y-%m-%d %H:%M:%S"),
+#             })
+
+#         return JsonResponse({"orders": data}, safe=False)
+
+#     return JsonResponse({"error": "Invalid request method"}, status=405)
+
 @csrf_exempt
 def get_pending_orders(request):
     if request.method == "GET":
-        # Fetch all pending orders ordered by created_at (oldest first)
-        orders = DeliveryOrder.objects.filter(status="pending").order_by("created_at")
+        orders = (
+            DeliveryOrder.objects
+            .select_related("pharmacy", "driver")
+            .filter(status="pending")
+            .order_by("created_at")
+        )
 
-        # Prepare JSON data manually
         data = []
+
         for order in orders:
+            pharmacy = order.pharmacy
+            store_timing = None
+
+            if pharmacy and pharmacy.business_hours and order.pickup_day:
+                # Convert pickup_day to weekday key: Mon, Tue, etc.
+                day_key = order.pickup_day.strftime("%a")  # Mon, Tue, Wed
+                day_hours = pharmacy.business_hours.get(day_key)
+
+                if not day_hours or day_hours == "closed":
+                    store_timing = {
+                        "day": day_key,
+                        "status": "closed"
+                    }
+                else:
+                    store_timing = {
+                        "day": day_key,
+                        "status": "open",
+                        "open": day_hours.get("open"),
+                        "close": day_hours.get("close")
+                    }
+
             data.append({
                 "id": order.id,
-                "pharmacy": order.pharmacy.name if order.pharmacy else None,
+                "pharmacy": pharmacy.name if pharmacy else None,
                 "driver": order.driver.name if order.driver else None,
+
                 "pickup_address": order.pickup_address,
                 "pickup_city": order.pickup_city,
                 "pickup_day": order.pickup_day.strftime("%Y-%m-%d"),
+
                 "drop_address": order.drop_address,
                 "drop_city": order.drop_city,
+
                 "status": order.status,
                 "rate": str(order.rate),
+
+                "store_timing_for_pickup_day": store_timing,
+
                 "created_at": order.created_at.strftime("%Y-%m-%d %H:%M:%S"),
                 "updated_at": order.updated_at.strftime("%Y-%m-%d %H:%M:%S"),
             })
 
-        return JsonResponse({"orders": data}, safe=False)
+        return JsonResponse({"orders": data}, status=200)
 
     return JsonResponse({"error": "Invalid request method"}, status=405)
 
@@ -1814,6 +1990,59 @@ def get_driver_details(request):
 
     return JsonResponse({"error": "Invalid request method"}, status=405)
 
+# @csrf_exempt
+# def driver_accepted_orders(request):
+#     if request.method != "GET":
+#         return HttpResponseBadRequest("Only GET requests are allowed")
+
+#     driver_id = request.GET.get("driverId")
+#     if not driver_id:
+#         return HttpResponseBadRequest("Missing required parameter: driverId")
+
+#     try:
+#         driver_id = int(driver_id)
+#     except (ValueError, TypeError):
+#         return HttpResponseBadRequest("driverId must be an integer")
+
+#     qs = DeliveryOrder.objects.filter(
+#         driver_id=driver_id,
+#         status__in=["accepted", "picked_up", "inTransit"]  # Include all active statuses
+#     ).select_related("pharmacy")
+
+#     orders = []
+#     for o in qs:
+#         # Calculate distance for each order
+#         distance_km = 0  # Default value
+#         if o.pickup_address and o.pickup_city and o.drop_address and o.drop_city:
+#             calculated_distance, error = get_distance_km(
+#                 o.pickup_address, 
+#                 o.pickup_city, 
+#                 o.drop_address, 
+#                 o.drop_city
+#             )
+#             if calculated_distance is not None:
+#                 distance_km = calculated_distance
+        
+#         orders.append({
+#             "id": o.id,
+#             "pharmacy_id": o.pharmacy_id,
+#             "pharmacy_name": getattr(o.pharmacy, "name", None),
+#             "driver_id": o.driver_id,
+#             "pickup_address": o.pickup_address,
+#             "pickup_city": o.pickup_city,
+#             "pickup_day": o.pickup_day.isoformat() if o.pickup_day else None,
+#             "drop_address": o.drop_address,
+#             "drop_city": o.drop_city,
+#             "status": o.status,
+#             "rate": float(o.rate) if isinstance(o.rate, Decimal) else o.rate,
+#             "distance_km": round(distance_km, 2),  # Round to 2 decimal places
+#             "created_at": o.created_at.isoformat() if o.created_at else None,
+#             "updated_at": o.updated_at.isoformat() if o.updated_at else None,
+#         })
+
+#     return JsonResponse({"orders": orders})
+
+
 @csrf_exempt
 def driver_accepted_orders(request):
     if request.method != "GET":
@@ -1830,27 +2059,43 @@ def driver_accepted_orders(request):
 
     qs = DeliveryOrder.objects.filter(
         driver_id=driver_id,
-        status__in=["accepted", "picked_up", "inTransit"]  # Include all active statuses
+        status__in=["accepted", "picked_up", "inTransit"]
     ).select_related("pharmacy")
 
     orders = []
     for o in qs:
-        # Calculate distance for each order
-        distance_km = 0  # Default value
+        # ----------------------------
+        # Distance calculation
+        # ----------------------------
+        distance_km = 0
         if o.pickup_address and o.pickup_city and o.drop_address and o.drop_city:
             calculated_distance, error = get_distance_km(
-                o.pickup_address, 
-                o.pickup_city, 
-                o.drop_address, 
+                o.pickup_address,
+                o.pickup_city,
+                o.drop_address,
                 o.drop_city
             )
             if calculated_distance is not None:
                 distance_km = calculated_distance
-        
+
+        # ----------------------------
+        # Store hours for pickup day
+        # ----------------------------
+        store_hours_for_day = None
+        if o.pharmacy and o.pickup_day:
+            day_key = o.pickup_day.strftime("%a")  # Mon, Tue, Wed...
+            store_hours_for_day = o.pharmacy.business_hours.get(day_key)
+
         orders.append({
             "id": o.id,
             "pharmacy_id": o.pharmacy_id,
             "pharmacy_name": getattr(o.pharmacy, "name", None),
+
+            # ✅ NEW: only pickup-day hours
+            "store_hours_for_pickup_day": store_hours_for_day,
+
+            "customer_name": o.customer_name,
+            "customer_phone": o.customer_phone,
             "driver_id": o.driver_id,
             "pickup_address": o.pickup_address,
             "pickup_city": o.pickup_city,
@@ -1859,87 +2104,13 @@ def driver_accepted_orders(request):
             "drop_city": o.drop_city,
             "status": o.status,
             "rate": float(o.rate) if isinstance(o.rate, Decimal) else o.rate,
-            "distance_km": round(distance_km, 2),  # Round to 2 decimal places
+            "distance_km": round(distance_km, 2),
             "created_at": o.created_at.isoformat() if o.created_at else None,
             "updated_at": o.updated_at.isoformat() if o.updated_at else None,
         })
 
     return JsonResponse({"orders": orders})
-
-
-
-# @csrf_exempt
-# def driver_pickup_proof(request):
-#     if request.method != "POST":
-#         return HttpResponseBadRequest("Only POST method allowed")
-
-#     driver_id = request.POST.get("driverId")
-#     order_id = request.POST.get("orderId")
-#     pharmacy_id = request.POST.get("pharmacyId")
-#     image_file = request.FILES.get("image")
-
-#     if not (driver_id and order_id and pharmacy_id and image_file):
-#         return HttpResponseBadRequest("driverId, orderId, pharmacyId and image are required")
-
-#     try:
-#         # fetch objects
-#         driver = get_object_or_404(Driver, id=driver_id)
-#         order = get_object_or_404(DeliveryOrder, id=order_id)
-#         pharmacy = get_object_or_404(Pharmacy, id=pharmacy_id)
-
-#         # step 1: update order status to inTransit
-#         order.status = "inTransit"
-#         order.save()
-
-#         # step 2: upload image to GCP
-#         key_path = settings.GCP_KEY_PATH
-#         # bucket_name = "canadrop-bucket"  # Fixed bucket name
-#         bucket_name = settings.GCP_BUCKET_NAME  # Fixed bucket name
-
-#         client = storage.Client.from_service_account_json(key_path)
-#         bucket = client.bucket(bucket_name)
-
-#         safe_pharmacy_name = pharmacy.name.replace(" ", "_")
-#         filename = f"{driver_id}_{order_id}_{safe_pharmacy_name}_driverpickup.jpg"
-#         blob_name = f"Proof/{filename}"
-#         blob = bucket.blob(blob_name)
-#         blob.upload_from_file(image_file, content_type=image_file.content_type)
-
-#         # get public URL
-#         public_url = f"https://storage.googleapis.com/{bucket_name}/{blob_name}"
-
-#         # step 3a: create order tracking entry
-#         note_text = f"Driver Pickup Image Uploaded : {driver_id}_{order_id}_{pharmacy_id}_DriverPickup"
-#         performed_by = f"Driver: {driver.name}"
-#         OrderTracking.objects.create(
-#             order=order,
-#             driver=driver,
-#             pharmacy=pharmacy,
-#             step="inTransit",
-#             performed_by=performed_by,
-#             note=note_text,
-#             image_url=public_url,
-#         )
-
-#         # step 3b: create order image entry
-#         OrderImage.objects.create(
-#             order=order,
-#             image_url=public_url,
-#             stage="pickup"
-#         )
-
-#         return JsonResponse({
-#             "success": True,
-#             "message": "Pickup proof uploaded successfully",
-#             "image_url": public_url
-#         })
-
-#     except Exception as e:
-#         return JsonResponse({
-#             "success": False,
-#             "message": f"Error uploading pickup proof: {str(e)}"
-#         }, status=500)
-
+    
 
 @csrf_exempt
 def driver_pickup_proof(request):
@@ -6427,6 +6598,27 @@ def get_pharmacy_details(request, pharmacy_id):
     """
     try:
         pharmacy = Pharmacy.objects.get(id=pharmacy_id)
+
+        # ✅ Format business hours nicely
+        days_order = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"]
+        day_full = {
+            "Mon": "Monday", "Tue": "Tuesday", "Wed": "Wednesday",
+            "Thu": "Thursday", "Fri": "Friday", "Sat": "Saturday", "Sun": "Sunday"
+        }
+
+        business_hours = pharmacy.business_hours or {}
+        formatted_lines = []
+
+        for d in days_order:
+            v = business_hours.get(d)
+            if not v or v == "closed":
+                formatted_lines.append(f"{day_full[d]}: Closed")
+            else:
+                open_t = v.get("open", "")
+                close_t = v.get("close", "")
+                # Keep as HH:MM; if you want AM/PM later, tell me
+                formatted_lines.append(f"{day_full[d]}: {open_t} - {close_t}")
+
         data = {
             "success": True,
             "pharmacy": {
@@ -6440,14 +6632,17 @@ def get_pharmacy_details(request, pharmacy_id):
                 "phone_number": pharmacy.phone_number,
                 "email": pharmacy.email,
                 "created_at": pharmacy.created_at.strftime("%Y-%m-%d %H:%M:%S"),
+
+                "business_hours_raw": business_hours,
+                "business_hours_formatted": formatted_lines,  # array of strings
             },
         }
         return JsonResponse(data, status=200)
+
     except Pharmacy.DoesNotExist:
         return JsonResponse({"success": False, "error": "Pharmacy not found."}, status=404)
     except Exception as e:
         return JsonResponse({"success": False, "error": str(e)}, status=500)
-
 
 
 
@@ -6627,24 +6822,80 @@ def _send_password_change_email(email):
 
 
 
+# @csrf_exempt
+# @require_POST
+# def edit_pharmacy_profile(request):
+#     """
+#     POST API to update pharmacy profile information.
+#     It accepts pharmacyId and any combination of editable fields.
+#     Example Body:
+#     {
+#         "pharmacyId": 1,
+#         "name": "New Pharmacy Name",
+#         "store_address": "123 New Street",
+#         "city": "Waterloo",
+#         "province": "Ontario",
+#         "postal_code": "N2L 3E2",
+#         "country": "Canada",
+#         "phone_number": "9876543210",
+#         "email": "newemail@pharmacy.com"
+#     }
+#     """
+#     try:
+#         data = json.loads(request.body.decode("utf-8"))
+#         pharmacy_id = data.get("pharmacyId")
+
+#         if not pharmacy_id:
+#             return JsonResponse({"success": False, "error": "pharmacyId is required."}, status=400)
+
+#         try:
+#             pharmacy = Pharmacy.objects.get(id=pharmacy_id)
+#         except Pharmacy.DoesNotExist:
+#             return JsonResponse({"success": False, "error": "Pharmacy not found."}, status=404)
+
+#         # Allowed editable fields
+#         editable_fields = [
+#             "name",
+#             "store_address",
+#             "city",
+#             "province",
+#             "postal_code",
+#             "country",
+#             "phone_number",
+#             "email"
+#         ]
+
+#         # Track updated fields
+#         updated_fields = []
+
+#         for field in editable_fields:
+#             if field in data and getattr(pharmacy, field) != data[field]:
+#                 setattr(pharmacy, field, data[field])
+#                 updated_fields.append(field)
+
+#         if not updated_fields:
+#             return JsonResponse({"success": False, "message": "No fields were changed."}, status=200)
+
+#         # Save only changed fields
+#         pharmacy.save(update_fields=updated_fields)
+
+#         return JsonResponse({
+#             "success": True,
+#             "message": f"Profile updated successfully.",
+#             "updated_fields": updated_fields
+#         }, status=200)
+
+#     except json.JSONDecodeError:
+#         return JsonResponse({"success": False, "error": "Invalid JSON body."}, status=400)
+#     except Exception as e:
+#         return JsonResponse({"success": False, "error": str(e)}, status=500)
+
+
 @csrf_exempt
 @require_POST
 def edit_pharmacy_profile(request):
     """
-    POST API to update pharmacy profile information.
-    It accepts pharmacyId and any combination of editable fields.
-    Example Body:
-    {
-        "pharmacyId": 1,
-        "name": "New Pharmacy Name",
-        "store_address": "123 New Street",
-        "city": "Waterloo",
-        "province": "Ontario",
-        "postal_code": "N2L 3E2",
-        "country": "Canada",
-        "phone_number": "9876543210",
-        "email": "newemail@pharmacy.com"
-    }
+    POST API to update pharmacy profile information (including business hours).
     """
     try:
         data = json.loads(request.body.decode("utf-8"))
@@ -6658,7 +6909,7 @@ def edit_pharmacy_profile(request):
         except Pharmacy.DoesNotExist:
             return JsonResponse({"success": False, "error": "Pharmacy not found."}, status=404)
 
-        # Allowed editable fields
+        # Editable scalar fields
         editable_fields = [
             "name",
             "store_address",
@@ -6670,23 +6921,63 @@ def edit_pharmacy_profile(request):
             "email"
         ]
 
-        # Track updated fields
         updated_fields = []
 
+        # Handle normal fields
         for field in editable_fields:
             if field in data and getattr(pharmacy, field) != data[field]:
                 setattr(pharmacy, field, data[field])
                 updated_fields.append(field)
 
-        if not updated_fields:
-            return JsonResponse({"success": False, "message": "No fields were changed."}, status=200)
+        # ✅ Handle business hours separately
+        if "business_hours" in data:
+            incoming_hours = data["business_hours"]
 
-        # Save only changed fields
+            # Basic validation
+            if not isinstance(incoming_hours, dict):
+                return JsonResponse(
+                    {"success": False, "error": "business_hours must be an object."},
+                    status=400
+                )
+
+            valid_days = {"Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"}
+
+            for day, value in incoming_hours.items():
+                if day not in valid_days:
+                    return JsonResponse(
+                        {"success": False, "error": f"Invalid day: {day}"},
+                        status=400
+                    )
+
+                if value != "closed":
+                    if (
+                        not isinstance(value, dict)
+                        or "open" not in value
+                        or "close" not in value
+                    ):
+                        return JsonResponse(
+                            {
+                                "success": False,
+                                "error": f"Invalid hours format for {day}"
+                            },
+                            status=400
+                        )
+
+            if pharmacy.business_hours != incoming_hours:
+                pharmacy.business_hours = incoming_hours
+                updated_fields.append("business_hours")
+
+        if not updated_fields:
+            return JsonResponse(
+                {"success": False, "message": "No fields were changed."},
+                status=200
+            )
+
         pharmacy.save(update_fields=updated_fields)
 
         return JsonResponse({
             "success": True,
-            "message": f"Profile updated successfully.",
+            "message": "Profile updated successfully.",
             "updated_fields": updated_fields
         }, status=200)
 
@@ -6694,7 +6985,6 @@ def edit_pharmacy_profile(request):
         return JsonResponse({"success": False, "error": "Invalid JSON body."}, status=400)
     except Exception as e:
         return JsonResponse({"success": False, "error": str(e)}, status=500)
-
 
 
 

@@ -336,6 +336,51 @@
                         </form>
                     </div>
 
+                    <!-- Store Timings Section -->
+                    <div class="bg-white rounded-xl shadow-sm border border-gray-100 p-6 mt-6">
+                        <h3 class="text-lg font-semibold text-gray-900 mb-6 flex items-center">
+                            <svg class="w-5 h-5 mr-2 text-teal-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                    d="M8 7V3m8 4V3M5 11h14M5 11a2 2 0 00-2 2v6a2 2 0 002 2h14a2 2 0 002-2v-6a2 2 0 00-2-2" />
+                            </svg>
+                            Store Timings
+                        </h3>
+
+                        <!-- Timings List -->
+                        <div id="storeTimings" class="space-y-3">
+                            <!-- Rows will be injected from API -->
+                            <div class="flex justify-between text-sm">
+                                <span class="text-gray-600">Monday</span>
+                                <span class="text-gray-900 font-medium">09:00 – 18:00</span>
+                            </div>
+                            <div class="flex justify-between text-sm">
+                                <span class="text-gray-600">Tuesday</span>
+                                <span class="text-gray-900 font-medium">09:00 – 18:00</span>
+                            </div>
+                            <div class="flex justify-between text-sm">
+                                <span class="text-gray-600">Wednesday</span>
+                                <span class="text-gray-900 font-medium">09:00 – 18:00</span>
+                            </div>
+                            <div class="flex justify-between text-sm">
+                                <span class="text-gray-600">Thursday</span>
+                                <span class="text-gray-900 font-medium">09:00 – 18:00</span>
+                            </div>
+                            <div class="flex justify-between text-sm">
+                                <span class="text-gray-600">Friday</span>
+                                <span class="text-gray-900 font-medium">09:00 – 18:00</span>
+                            </div>
+                            <div class="flex justify-between text-sm">
+                                <span class="text-gray-600">Saturday</span>
+                                <span class="text-red-600 font-medium">Closed</span>
+                            </div>
+                            <div class="flex justify-between text-sm">
+                                <span class="text-gray-600">Sunday</span>
+                                <span class="text-red-600 font-medium">Closed</span>
+                            </div>
+                        </div>
+                    </div>
+
+
                     <!-- Change Password Section -->
                     <div class="bg-white rounded-xl shadow-sm border border-gray-100 p-6 mt-6">
                         <h3 class="text-lg font-semibold text-gray-900 mb-6 flex items-center">
@@ -405,6 +450,8 @@
 <script>
 // Store original profile data for comparison
 let originalProfileData = {};
+let originalBusinessHours = {};
+let isEditMode = false;
 
 // Get cookie value by name
 function getCookie(name) {
@@ -413,6 +460,88 @@ function getCookie(name) {
     if (parts.length === 2) return parts.pop().split(';').shift();
     return null;
 }
+
+function renderStoreTimings(formattedTimings, rawTimings, editable = false) {
+    const container = document.getElementById("storeTimings");
+    if (!container) return;
+
+    container.innerHTML = "";
+
+    const dayMap = {
+        "Mon": "Monday", "Tue": "Tuesday", "Wed": "Wednesday",
+        "Thu": "Thursday", "Fri": "Friday", "Sat": "Saturday", "Sun": "Sunday"
+    };
+
+    Object.entries(dayMap).forEach(([key, label]) => {
+        const value = rawTimings[key];
+        const isClosed = value === "closed";
+
+        if (!editable) {
+            // READ MODE
+            const row = document.createElement("div");
+            row.className = "flex justify-between text-sm";
+
+            row.innerHTML = `
+                <span class="text-gray-600">${label}</span>
+                <span class="${isClosed ? 'text-red-600 font-medium' : 'text-gray-900 font-medium'}">
+                    ${isClosed ? "Closed" : `${value.open} – ${value.close}`}
+                </span>
+            `;
+            container.appendChild(row);
+        } else {
+            // EDIT MODE
+            const row = document.createElement("div");
+            row.className = "grid grid-cols-4 gap-3 items-center text-sm";
+
+            row.innerHTML = `
+                <span class="text-gray-600">${label}</span>
+
+                <input type="time"
+                    class="border rounded p-1 text-sm"
+                    data-day="${key}"
+                    data-type="open"
+                    value="${!isClosed ? value.open : ""}"
+                    ${isClosed ? "disabled" : ""}
+                />
+
+                <input type="time"
+                    class="border rounded p-1 text-sm"
+                    data-day="${key}"
+                    data-type="close"
+                    value="${!isClosed ? value.close : ""}"
+                    ${isClosed ? "disabled" : ""}
+                />
+
+                <label class="flex items-center gap-1 text-xs">
+                    <input type="checkbox"
+                        data-day="${key}"
+                        class="closed-checkbox"
+                        ${isClosed ? "checked" : ""}
+                    />
+                    Closed
+                </label>
+            `;
+
+            container.appendChild(row);
+        }
+    });
+
+    // Handle Closed checkbox toggle
+    if (editable) {
+        document.querySelectorAll(".closed-checkbox").forEach(cb => {
+            cb.addEventListener("change", function () {
+                const day = this.dataset.day;
+                const openInput = document.querySelector(`input[data-day="${day}"][data-type="open"]`);
+                const closeInput = document.querySelector(`input[data-day="${day}"][data-type="close"]`);
+
+                openInput.disabled = this.checked;
+                closeInput.disabled = this.checked;
+            });
+        });
+    }
+}
+
+
 
 // Load pharmacy profile details
 async function loadPharmacyProfile() {
@@ -461,6 +590,17 @@ async function loadPharmacyProfile() {
                     day: 'numeric' 
                 });
             }
+
+            if (pharmacy.business_hours_raw) {
+                originalBusinessHours = JSON.parse(JSON.stringify(pharmacy.business_hours_raw));
+
+                renderStoreTimings(
+                    pharmacy.business_hours_formatted,
+                    pharmacy.business_hours_raw,
+                    false // read mode
+                );
+            }
+
 
             // Update profile header with initials
             const initials = pharmacy.name.split(' ').map(word => word.charAt(0).toUpperCase()).join('');
@@ -555,24 +695,35 @@ function closeNotification() {
     }
 }
 
-// Enable edit mode
 function enableEditMode() {
-    const formInputs = document.querySelectorAll('#profileForm input:not(#createdAt), #profileForm textarea, #profileForm select');
+    isEditMode = true;
+
+    const formInputs = document.querySelectorAll(
+        '#profileForm input:not(#createdAt), #profileForm textarea, #profileForm select'
+    );
     formInputs.forEach(input => input.disabled = false);
-    
+
+    renderStoreTimings(null, originalBusinessHours, true);
+
     document.getElementById('actionButtons').classList.remove('hidden');
     document.getElementById('editBtn').classList.add('hidden');
 }
 
-// Cancel edit mode
+
 function cancelEdit() {
-    const formInputs = document.querySelectorAll('#profileForm input:not(#createdAt), #profileForm textarea, #profileForm select');
+    isEditMode = false;
+
+    const formInputs = document.querySelectorAll(
+        '#profileForm input:not(#createdAt), #profileForm textarea, #profileForm select'
+    );
     formInputs.forEach(input => input.disabled = true);
-    
+
+    renderStoreTimings(null, originalBusinessHours, false);
+
     document.getElementById('actionButtons').classList.add('hidden');
     document.getElementById('editBtn').classList.remove('hidden');
-    
-    // Restore original values
+
+    // restore profile fields
     document.getElementById('name').value = originalProfileData.name || '';
     document.getElementById('storeAddress').value = originalProfileData.store_address || '';
     document.getElementById('city').value = originalProfileData.city || '';
@@ -582,6 +733,7 @@ function cancelEdit() {
     document.getElementById('phoneNumber').value = originalProfileData.phone_number || '';
     document.getElementById('email').value = originalProfileData.email || '';
 }
+
 
 // Show change password modal
 function showChangePasswordModal() {
@@ -649,7 +801,7 @@ async function changePassword() {
     }
 }
 
-// Save profile changes
+// Save profile changes (Profile Info + Store Timings)
 async function saveProfile() {
     const pharmacyId = getCookie("pharmacyId");
     if (!pharmacyId) {
@@ -657,7 +809,9 @@ async function saveProfile() {
         return;
     }
 
-    // Get current form values
+    /* -----------------------------
+       1. Collect profile fields
+    ----------------------------- */
     const formData = {
         name: document.getElementById('name').value.trim(),
         store_address: document.getElementById('storeAddress').value.trim(),
@@ -669,14 +823,16 @@ async function saveProfile() {
         email: document.getElementById('email').value.trim()
     };
 
-    // Validation
-    if (!formData.name || !formData.store_address || !formData.city || !formData.province || 
+    // Basic validation
+    if (!formData.name || !formData.store_address || !formData.city || !formData.province ||
         !formData.postal_code || !formData.country || !formData.phone_number || !formData.email) {
         showNotification("Please fill all required fields", "warning");
         return;
     }
 
-    // Check if any field has changed
+    /* -----------------------------
+       2. Detect profile field changes
+    ----------------------------- */
     const changedFields = {};
     let hasChanges = false;
 
@@ -687,21 +843,72 @@ async function saveProfile() {
         }
     }
 
+    /* -----------------------------
+       3. Collect & compare business hours
+    ----------------------------- */
+    const businessHours = {};
+    let timingsChanged = false;
+
+    Object.keys(originalBusinessHours).forEach(day => {
+        const closedCheckbox = document.querySelector(
+            `.closed-checkbox[data-day="${day}"]`
+        );
+
+        if (!closedCheckbox) return;
+
+        if (closedCheckbox.checked) {
+            businessHours[day] = "closed";
+        } else {
+            const openInput = document.querySelector(
+                `input[data-day="${day}"][data-type="open"]`
+            );
+            const closeInput = document.querySelector(
+                `input[data-day="${day}"][data-type="close"]`
+            );
+
+            const open = openInput?.value || "";
+            const close = closeInput?.value || "";
+
+            // Optional safety check
+            if (!open || !close) {
+                showNotification(`Please set both open and close times for ${day}`, "warning");
+                return;
+            }
+
+            businessHours[day] = { open, close };
+        }
+
+        if (
+            JSON.stringify(businessHours[day]) !==
+            JSON.stringify(originalBusinessHours[day])
+        ) {
+            timingsChanged = true;
+        }
+    });
+
+    if (timingsChanged) {
+        changedFields.business_hours = businessHours;
+        hasChanges = true;
+    }
+
+    /* -----------------------------
+       4. No changes at all
+    ----------------------------- */
     if (!hasChanges) {
         showNotification("No changes detected", "info");
         cancelEdit();
         return;
     }
 
-    // Add pharmacyId to the payload
+    /* -----------------------------
+       5. Submit payload
+    ----------------------------- */
     changedFields.pharmacyId = parseInt(pharmacyId);
 
     try {
         const response = await fetch('/api/editPharmacyProfile/', {
             method: 'POST',
-            headers: {
-                'Content-Type': 'application/json'
-            },
+            headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify(changedFields)
         });
 
@@ -709,31 +916,36 @@ async function saveProfile() {
 
         if (data.success) {
             showNotification("Profile updated successfully!", "success");
-            
-            // Update original data with new values
+
+            // Update originals
             originalProfileData = { ...formData };
-            
-            // Update profile header display
-            const initials = formData.name.split(' ').map(word => word.charAt(0).toUpperCase()).join('');
+            if (timingsChanged) {
+                originalBusinessHours = JSON.parse(JSON.stringify(businessHours));
+            }
+
+            // Update UI header
+            const initials = formData.name
+                .split(' ')
+                .map(w => w[0].toUpperCase())
+                .join('');
+
             document.getElementById('profileName').textContent = formData.name;
             document.getElementById('profileEmail').textContent = formData.email;
             document.getElementById('profileInitial').textContent = initials;
-            
-            // Update sidebar display
             document.getElementById('pharmacyName').textContent = formData.name;
             document.getElementById('pharmacyEmail').textContent = formData.email;
             document.getElementById('pharmacyInitial').textContent = initials;
-            
-            // Exit edit mode
+
             cancelEdit();
         } else {
-            showNotification(data.error || data.message || "Failed to update profile", "error");
+            showNotification(data.error || "Failed to update profile", "error");
         }
     } catch (error) {
         console.error("Error updating profile:", error);
         showNotification("Error updating profile. Please try again.", "error");
     }
 }
+
 
 // Initialize on page load
 document.addEventListener("DOMContentLoaded", function() {

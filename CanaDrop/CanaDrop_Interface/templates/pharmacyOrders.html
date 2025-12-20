@@ -676,29 +676,39 @@ function renderOrderDetails(order) {
             <!-- Left Column: Order Details + Timeline -->
             <div class="space-y-6">
                 <!-- Order Information -->
-                <div class="bg-white rounded-lg p-4 shadow-sm">
+                    <div class="bg-white rounded-lg p-4 shadow-sm">
                     <h4 class="text-sm font-semibold text-gray-900 mb-3">Order Information</h4>
+
                     <div class="space-y-3">
                         <div>
-                            <label class="text-xs font-medium text-gray-500">Pickup Address</label>
-                            <p class="text-sm text-gray-900">${order.pickup_address}</p>
+                        <label class="text-xs font-medium text-gray-500">Pickup Address</label>
+                        <p class="text-sm text-gray-900">${order.pickup_address}</p>
+                        </div>
+
+                        <div>
+                        <label class="text-xs font-medium text-gray-500">Drop Address</label>
+                        <p class="text-sm text-gray-900">${order.drop_address}</p>
+                        </div>
+
+                        <!-- ✅ ADDED: Customer Phone -->
+                        <div>
+                        <label class="text-xs font-medium text-gray-500">Customer Phone</label>
+                        <p class="text-sm text-gray-900">${order.customer_phone || '0000000000'}</p>
+                        </div>
+
+                        <div class="grid grid-cols-2 gap-3">
+                        <div>
+                            <label class="text-xs font-medium text-gray-500">Drop City</label>
+                            <p class="text-sm text-gray-900">${order.drop_city}</p>
                         </div>
                         <div>
-                            <label class="text-xs font-medium text-gray-500">Drop Address</label>
-                            <p class="text-sm text-gray-900">${order.drop_address}</p>
+                            <label class="text-xs font-medium text-gray-500">Pickup Day</label>
+                            <p class="text-sm text-gray-900">${formatDate(order.pickup_day)}</p>
                         </div>
-                        <div class="grid grid-cols-2 gap-3">
-                            <div>
-                                <label class="text-xs font-medium text-gray-500">Drop City</label>
-                                <p class="text-sm text-gray-900">${order.drop_city}</p>
-                            </div>
-                            <div>
-                                <label class="text-xs font-medium text-gray-500">Pickup Day</label>
-                                <p class="text-sm text-gray-900">${formatDate(order.pickup_day)}</p>
-                            </div>
                         </div>
                     </div>
-                </div>
+                    </div>
+
 
                 <!-- Timeline -->
                 <div class="bg-white rounded-lg p-4 shadow-sm">

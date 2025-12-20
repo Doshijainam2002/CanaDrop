@@ -222,6 +222,16 @@ let deliveries = [];
 let isOptimized = false;
 let routeOrder = {};
 
+function formatStoreHours(hours) {
+    if (!hours) return '(Hours N/A)';
+    if (hours === 'closed') return '(Closed)';
+    if (hours.open && hours.close) {
+        return `(${hours.open} – ${hours.close})`;
+    }
+    return '(Hours N/A)';
+}
+
+
 function showNotification(message, type = 'info') {
     const notification = document.createElement('div');
     notification.className = `fixed top-4 right-4 z-50 p-3 rounded-lg shadow-lg ${
@@ -319,6 +329,12 @@ async function loadDeliveries() {
             deliveries = data.orders.map(order => ({
                 id: order.id,
                 pharmacy_name: order.pharmacy_name,
+
+                // ✅ REQUIRED
+                store_hours: order.store_hours_for_pickup_day,
+                customer_name: order.customer_name,
+                customer_phone: order.customer_phone,
+
                 pickup_address: order.pickup_address,
                 pickup_city: order.pickup_city,
                 dropoff_address: order.drop_address,
@@ -329,6 +345,7 @@ async function loadDeliveries() {
                 distance_km: order.distance_km,
                 pharmacy_id: order.pharmacy_id
             }));
+
             renderDeliveries();
             
         } else {
@@ -626,7 +643,13 @@ function renderSingleDeliveryCard(delivery, date) {
         </div>
         
         <h3 class="text-lg font-bold text-slate-100 mb-1">ORD-${delivery.id}</h3>
-        <p class="text-slate-400 text-sm mb-4">${delivery.pharmacy_name}</p>
+        <p class="text-slate-400 text-sm mb-4">
+            ${delivery.pharmacy_name}
+            <span class="text-xs text-slate-500 ml-1">
+                ${formatStoreHours(delivery.store_hours)}
+            </span>
+        </p>
+
         
         <div class="space-y-3 mb-4">
             <div class="flex items-start text-sm text-slate-300">
@@ -701,7 +724,13 @@ function renderGroupedDeliveryCard(group, date) {
         </div>
         
         <h3 class="text-lg font-bold text-purple-300 mb-1">Batch Pickup</h3>
-        <p class="text-slate-400 text-sm mb-4">${group.pharmacy_name}</p>
+        <p class="text-slate-400 text-sm mb-4">
+            ${group.pharmacy_name}
+            <span class="text-xs text-slate-500 ml-1">
+                ${formatStoreHours(group.deliveries[0].store_hours)}
+            </span>
+        </p>
+
         
         <div class="mb-4">
             <div class="flex items-start text-sm text-slate-300">
@@ -745,25 +774,31 @@ function renderGroupedDeliveryCard(group, date) {
     </div>
 `;
 }
-
 function viewDelivery(orderId) {
     const delivery = deliveries.find(d => d.id == orderId);
     if (!delivery) return;
 
     document.getElementById('modalOrderId').textContent = `ORD-${delivery.id}`;
-    document.getElementById('modalPharmacy').textContent = delivery.pharmacy_name;
-    
+    document.getElementById('modalPharmacy').innerHTML = `
+        ${delivery.pharmacy_name}
+        <span class="text-xs text-slate-500 ml-1">
+            ${formatStoreHours(delivery.store_hours)}
+        </span>
+    `;
+
     const pickupPos = getRoutePosition(delivery.id, true, delivery.pickup_day);
     const dropoffPos = getRoutePosition(delivery.id, false, delivery.pickup_day);
-    
+
     const content = document.getElementById('modalContent');
     content.innerHTML = `
         <div class="space-y-4">
+
             ${isOptimized ? `
                 <div class="bg-emerald-900/30 border border-emerald-600 rounded-lg p-3 text-sm">
                     <div class="flex items-center text-emerald-400 font-semibold mb-2">
                         <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 20l-5.447-2.724A1 1 0 013 16.382V5.618a1 1 0 011.447-.894L9 7m0 13l6-3m-6 3V7m6 10l4.553 2.276A1 1 0 0021 18.382V7.618a1 1 0 00-.553-.894L15 4m0 13V4m0 0L9 7"/>
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                d="M9 20l-5.447-2.724A1 1 0 013 16.382V5.618a1 1 0 011.447-.894L9 7m0 13l6-3m-6 3V7m6 10l4.553 2.276A1 1 0 0021 18.382V7.618a1 1 0 00-.553-.894L15 4m0 13V4m0 0L9 7"/>
                         </svg>
                         Optimized Route Order
                     </div>
@@ -773,39 +808,49 @@ function viewDelivery(orderId) {
                     </div>
                 </div>
             ` : ''}
-            
+
+            <!-- CUSTOMER (always visible) -->
+            <div class="bg-slate-700 rounded-lg p-3 space-y-2">
+                <div>
+                    <div class="text-xs text-slate-400 mb-1">CUSTOMER</div>
+                    <div class="text-slate-200 text-sm">
+                        ${delivery.customer_name} • ${delivery.customer_phone}
+                    </div>
+                </div>
+            </div>
+
+            <!-- PICKUP / DROPOFF -->
             <div class="bg-slate-700 rounded-lg p-3 space-y-2">
                 <div>
                     <div class="text-xs text-slate-400 mb-1">PICKUP ADDRESS</div>
-                    <div class="text-slate-200 text-sm">${delivery.pickup_address}, ${delivery.pickup_city}</div>
+                    <div class="text-slate-200 text-sm">
+                        ${delivery.pickup_address}, ${delivery.pickup_city}
+                    </div>
                 </div>
                 <div>
                     <div class="text-xs text-slate-400 mb-1">DROP-OFF ADDRESS</div>
-                    <div class="text-slate-200 text-sm">${delivery.dropoff_address}, ${delivery.drop_city}</div>
+                    <div class="text-slate-200 text-sm">
+                        ${delivery.dropoff_address}, ${delivery.drop_city}
+                    </div>
                 </div>
             </div>
-            
+
             <div class="flex flex-col sm:flex-row gap-2">
-                <button onclick="navigate('${delivery.pickup_address}, ${delivery.pickup_city}')" class="flex-1 bg-blue-600 hover:bg-blue-700 text-white py-2 px-3 rounded-lg text-sm font-medium transition-colors flex items-center justify-center">
-                    <svg class="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z"/>
-                    </svg>
-                    <span class="hidden sm:inline">Navigate to </span>Pickup
+                <button onclick="navigate('${delivery.pickup_address}, ${delivery.pickup_city}')" class="flex-1 bg-blue-600 hover:bg-blue-700 text-white py-2 px-3 rounded-lg text-sm font-medium">
+                    Navigate to Pickup
                 </button>
-                <button onclick="navigate('${delivery.dropoff_address}, ${delivery.drop_city}')" class="flex-1 bg-emerald-600 hover:bg-emerald-700 text-white py-2 px-3 rounded-lg text-sm font-medium transition-colors flex items-center justify-center">
-                    <svg class="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z"/>
-                    </svg>
-                    <span class="hidden sm:inline">Navigate to </span>Drop-off
+                <button onclick="navigate('${delivery.dropoff_address}, ${delivery.drop_city}')" class="flex-1 bg-emerald-600 hover:bg-emerald-700 text-white py-2 px-3 rounded-lg text-sm font-medium">
+                    Navigate to Drop-off
                 </button>
             </div>
-            
+
             ${renderDeliveryProcess(delivery)}
         </div>
     `;
-    
+
     document.getElementById('detailsModal').classList.remove('hidden');
 }
+
 
 function renderDeliveryProcess(delivery) {
     switch (delivery.status) {

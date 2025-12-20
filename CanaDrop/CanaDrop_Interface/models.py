@@ -43,6 +43,18 @@ class AdminUser(models.Model):
         db_table = 'canadrop_interface_adminuser'  
 
 
+def default_business_hours():
+    return {
+        "Mon": {"open": "09:00", "close": "18:00"},
+        "Tue": {"open": "09:00", "close": "18:00"},
+        "Wed": {"open": "09:00", "close": "18:00"},
+        "Thu": {"open": "09:00", "close": "18:00"},
+        "Fri": {"open": "09:00", "close": "18:00"},
+        "Sat": "closed",
+        "Sun": "closed",
+    }
+
+
 class Pharmacy(models.Model):
     name = models.CharField(max_length=255)
     store_address = models.TextField()
@@ -52,25 +64,40 @@ class Pharmacy(models.Model):
     country = models.CharField(max_length=100)
     phone_number = models.CharField(max_length=20)
     email = models.EmailField(unique=True)
-    password = models.CharField(max_length=128, default="123456")  # Django hash length
+    password = models.CharField(max_length=128, default="123456")
     created_at = models.DateTimeField(auto_now_add=True)
 
-    # NEW
     active = models.BooleanField(default=True, db_index=True)
+
+    business_hours = models.JSONField(default=default_business_hours)
 
     def save(self, *args, **kwargs):
         if self.password and not self.password.startswith('pbkdf2_'):
             self.password = make_password(self.password)
         super().save(*args, **kwargs)
 
-    def check_password(self, raw_password):
-        return check_password(raw_password, self.password)
+    def is_open_now(self, tz="America/Toronto"):
+        from datetime import datetime
+        import pytz
+
+        now = datetime.now(pytz.timezone(tz))
+        day = now.strftime("%a")
+        today = self.business_hours.get(day)
+
+        if not today or today == "closed":
+            return False
+
+        open_time = datetime.strptime(today["open"], "%H:%M").time()
+        close_time = datetime.strptime(today["close"], "%H:%M").time()
+
+        return open_time <= now.time() <= close_time
 
     def __str__(self):
         return self.name
 
     class Meta:
         db_table = 'canadrop_interface_pharmacy'
+
 
 
 class Driver(models.Model):
@@ -131,6 +158,7 @@ class DeliveryOrder(models.Model):
     status = models.CharField(max_length=20, choices=STATUS_CHOICES, default='pending')
     rate = models.DecimalField(max_digits=8, decimal_places=2, default=0)  # Filled from DeliveryLocationRate
     customer_name = models.CharField(max_length=150, default="John Doe")
+    customer_phone = models.CharField(max_length=10, default="0000000000")
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
 
