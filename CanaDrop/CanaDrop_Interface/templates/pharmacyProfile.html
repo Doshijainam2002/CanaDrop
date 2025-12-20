@@ -45,27 +45,56 @@
         padding-right: 2.5rem;
         cursor: pointer;
     }
+
+    body { font-family: 'Inter', sans-serif; }
+
+/* Custom scrollbar */
+.custom-scrollbar::-webkit-scrollbar {
+    width: 8px;
+}
+.custom-scrollbar::-webkit-scrollbar-track {
+    background: #f1f5f9;
+    border-radius: 4px;
+}
+.custom-scrollbar::-webkit-scrollbar-thumb {
+    background: #cbd5e1;
+    border-radius: 4px;
+}
+.custom-scrollbar::-webkit-scrollbar-thumb:hover {
+    background: #94a3b8;
+}
+
+/* Prevent horizontal overflow on mobile */
+@media (max-width: 640px) {
+    html, body {
+        overflow-x: hidden;
+        max-width: 100vw;
+    }
+    
+    .overflow-x-auto {
+        -webkit-overflow-scrolling: touch;
+        max-width: 100%;
+    }
+    
+    main {
+        overflow-x: hidden;
+        max-width: 100vw;
+    }
+}
 </style>
 </head>
-<body class="bg-gray-50 font-inter">
-    <div class="flex h-screen overflow-hidden">
-        <!-- Mobile Sidebar Overlay -->
-        <div id="sidebarOverlay" class="fixed inset-0 bg-black bg-opacity-50 z-30 lg:hidden hidden"></div>
+<body class="min-h-screen bg-gray-50">
+<div class="flex h-screen overflow-hidden">
+    <!-- Sidebar -->
+    <aside id="sidebar" class="w-64 bg-white border-r border-gray-200 flex flex-col fixed lg:static inset-y-0 left-0 z-40 transform -translate-x-full lg:translate-x-0 transition-transform duration-300 overflow-y-auto">
 
-        <!-- Sidebar -->
-        <div id="sidebar" class="fixed inset-y-0 left-0 z-40 w-64 bg-white border-r border-gray-200 transform -translate-x-full transition-transform duration-300 ease-in-out lg:translate-x-0 lg:static lg:inset-0">
-        <!-- Logo with close button for mobile -->
-        <div class="flex items-center justify-between h-16 px-6 border-b border-gray-200 lg:justify-start">
-            <div class="flex items-center">
-                <img src="https://canalogistix.s3.us-east-2.amazonaws.com/Logo/CanaLogistiX_Logo_NOBG.png" alt="Logo" class="h-12 w-auto">
-                <span class="ml-2 text-lg font-semibold text-gray-900">CanaLogistiX</span>
-            </div>
-            <button id="closeSidebarBtn" class="lg:hidden p-2 text-gray-600 hover:text-gray-900 hover:bg-gray-100 rounded-lg transition-colors">
-                <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
-                </svg>
-            </button>
-        </div>
+        <!-- Logo -->
+        <div class="flex items-center h-16 px-6 border-b border-gray-200">
+                    <div class="flex items-center">
+                        <img src="https://canalogistix.s3.us-east-2.amazonaws.com/Logo/CanaLogistiX_Logo_NOBG.png" alt="Logo" class="h-12 w-auto">
+                        <span class="ml-2 text-lg font-semibold text-gray-900">CanaLogistiX</span>
+                    </div>
+                </div>
 
             <!-- Navigation -->
             <nav class="flex-1 px-4 py-6 space-y-2">
@@ -130,22 +159,26 @@
                     </div>
                 </div>
             </div>
-        </div>
+        </aside>
+
+    <div id="sidebarOverlay" class="hidden lg:hidden fixed inset-0 bg-black/50 z-30"></div>
 
         <!-- Main Content -->
-        <div class="flex flex-1 flex-col overflow-hidden">
+        <main class="flex-1 flex flex-col overflow-y-auto lg:ml-0">
             <!-- Top Header -->
-            <header class="bg-white shadow-sm border-b border-gray-200">
-                <div class="flex items-center justify-between px-6 py-4">
-                    <button id="mobileMenuBtn" class="lg:hidden p-2 text-gray-600 hover:text-gray-900 hover:bg-gray-100 rounded-lg transition-colors">
-                        <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16"/>
-                        </svg>
-                    </button>
-                    <div>
-                        <h1 class="text-2xl font-bold text-gray-900">My Profile</h1>
-                        <p class="text-sm text-gray-500">Manage your pharmacy information</p>
-                    </div>
+                    <header class="bg-white shadow-sm border-b border-gray-200">
+                        <div class="px-4 sm:px-6 py-4 flex items-center justify-between gap-4">
+                            <!-- Hamburger Menu Button -->
+                            <button id="mobileMenuBtn" class="lg:hidden text-gray-600 p-2 flex-shrink-0">
+                                <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16"/>
+                                </svg>
+                            </button>
+                            
+                            <div class="flex-1 min-w-0">
+                                <h1 class="text-xl sm:text-2xl font-bold text-gray-900 truncate">My Profile</h1>
+                                <p class="text-sm text-gray-500 hidden sm:block">Manage your pharmacy information</p>
+                            </div>
                     <button onclick="enableEditMode()" id="editBtn" class="inline-flex items-center px-4 py-2 bg-gradient-to-r from-teal-600 to-cyan-600 text-white text-sm font-medium rounded-lg hover:from-teal-700 hover:to-cyan-700 transition-all duration-200 shadow-lg hover:shadow-xl transform hover:scale-105">
                         <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"/>
@@ -156,7 +189,7 @@
             </header>
 
             <!-- Profile Content -->
-            <div class="flex-1 overflow-auto px-6 py-6">
+            <section class="p-4 sm:p-6 flex-1 overflow-y-auto">
                 <!-- Profile Card -->
                 <div class="max-w-4xl mx-auto">
                     <!-- Profile Header Card -->
@@ -320,8 +353,8 @@
                         </button>
                     </div>
                 </div>
-            </div>
-        </div>
+            </section>
+        </main>
     </div>
 
     <!-- Change Password Modal -->
@@ -702,21 +735,6 @@ async function saveProfile() {
     }
 }
 
-// Mobile menu functions
-function toggleMobileMenu() {
-    const sidebar = document.getElementById('sidebar');
-    const overlay = document.getElementById('sidebarOverlay');
-    sidebar.classList.toggle('-translate-x-full');
-    overlay.classList.toggle('hidden');
-}
-
-function closeMobileMenu() {
-    const sidebar = document.getElementById('sidebar');
-    const overlay = document.getElementById('sidebarOverlay');
-    sidebar.classList.add('-translate-x-full');
-    overlay.classList.add('hidden');
-}
-
 // Initialize on page load
 document.addEventListener("DOMContentLoaded", function() {
     // Load pharmacy profile data
@@ -724,28 +742,36 @@ document.addEventListener("DOMContentLoaded", function() {
     
     // Mobile menu event listeners
     const mobileMenuBtn = document.getElementById('mobileMenuBtn');
-    const closeSidebarBtn = document.getElementById('closeSidebarBtn');
     const sidebarOverlay = document.getElementById('sidebarOverlay');
 
     if (mobileMenuBtn) {
-        mobileMenuBtn.addEventListener('click', toggleMobileMenu);
-    }
-
-    if (closeSidebarBtn) {
-        closeSidebarBtn.addEventListener('click', closeMobileMenu);
+        mobileMenuBtn.addEventListener('click', () => {
+            const sidebar = document.getElementById('sidebar');
+            const overlay = document.getElementById('sidebarOverlay');
+            sidebar.classList.toggle('-translate-x-full');
+            overlay.classList.toggle('hidden');
+        });
     }
 
     if (sidebarOverlay) {
-        sidebarOverlay.addEventListener('click', closeMobileMenu);
+        sidebarOverlay.addEventListener('click', () => {
+            const sidebar = document.getElementById('sidebar');
+            sidebar.classList.add('-translate-x-full');
+            sidebarOverlay.classList.add('hidden');
+        });
     }
 
     // Close mobile menu when clicking on nav links
     const navLinks = document.querySelectorAll('#sidebar nav a');
     navLinks.forEach(link => {
-        link.addEventListener('click', closeMobileMenu);
+        link.addEventListener('click', () => {
+            const sidebar = document.getElementById('sidebar');
+            const overlay = document.getElementById('sidebarOverlay');
+            sidebar.classList.add('-translate-x-full');
+            overlay.classList.add('hidden');
+        });
     });
 });
-
 // Logout function
 function logoutPharmacy() {
     // Remove the pharmacyId cookie

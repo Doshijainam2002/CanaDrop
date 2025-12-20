@@ -939,8 +939,8 @@ def upload_handover_image_api(request):
                     <td align="left">
                       <img src="{logo_url}"
                            alt="CanaLogistiX"
-                           width="40"
-                           height="40"
+                           width="64"
+                           height="64"
                            style="display:block;border:0;outline:none;text-decoration:none;border-radius:50%;object-fit:cover;">
                     </td>
                     <td align="right" style="font:600 16px/1.2 system-ui,-apple-system,'Segoe UI',Roboto,Helvetica,Arial;color:#e6fffb;">
@@ -1349,8 +1349,8 @@ def assign_driver(request):
                     <td align="left">
                     <img src="{logo_url}"
                         alt="CanaLogistiX"
-                        width="40"
-                        height="40"
+                        width="64"
+                        height="64"
                         style="display:block;border:0;outline:none;text-decoration:none;border-radius:50%;object-fit:cover;">
                     </td>
                     <td align="right" style="font:600 16px/1.2 system-ui,-apple-system,'Segoe UI',Roboto,Helvetica,Arial;color:#e6fffb;">
@@ -1567,7 +1567,7 @@ def assign_driver(request):
                             <table width="100%" cellspacing="0" cellpadding="0" border="0">
                             <tr>
                                 <td align="left">
-                                <img src="{logo_url}" alt="CanaLogistiX" width="40" height="40" style="display:block;border:0;outline:none;text-decoration:none;border-radius:50%;object-fit:cover;">
+                                <img src="{logo_url}" alt="CanaLogistiX" width="64" height="64" style="display:block;border:0;outline:none;text-decoration:none;border-radius:50%;object-fit:cover;">
                                 </td>
                                 <td align="right" style="font:600 16px/1.2 system-ui,-apple-system,'Segoe UI',Roboto,Helvetica,Arial;color:#e6fffb;">
                                 Delivery Partner Assigned
@@ -2042,8 +2042,8 @@ def driver_pickup_proof(request):
                     <td align="left">
                     <img src="{logo_url}"
                         alt="CanaLogistiX"
-                        width="40"
-                        height="40"
+                        width="64"
+                        height="64"
                         style="display:block;border:0;outline:none;text-decoration:none;border-radius:50%;object-fit:cover;">
                     </td>
                     <td align="right" style="font:600 16px/1.2 system-ui,-apple-system,'Segoe UI',Roboto,Helvetica,Arial;color:#e6fffb;">
@@ -2393,8 +2393,8 @@ def driver_delivery_proof(request):
                     <td align="left">
                     <img src="{logo_url}"
                         alt="CanaLogistiX"
-                        width="40"
-                        height="40"
+                        width="64"
+                        height="64"
                         style="display:block;border:0;outline:none;text-decoration:none;border-radius:50%;object-fit:cover;">
                     </td>
                     <td align="right" style="font:600 16px/1.2 system-ui,-apple-system,'Segoe UI',Roboto,Helvetica,Arial;color:#e6fffb;">
@@ -2814,8 +2814,8 @@ def generate_invoice_pdf(invoice, pharmacy, orders_data, subtotal, hst_amount, t
     company_info_text = f'''
     <b><font color="#0F172A" size="11">CanaLogistiX Delivery Services</font></b><br/>
     <font color="#64748B" size="9">Cana Group of Companies<br/>
-    12 - 147 Fairway Road North<br/>
-    Kitchener, N2A 2N4, Ontario, Canada<br/>
+    Operating Name of CANABELLE INC.<br/>
+    BN: 758568562<br/>
     help.canalogistix@gmail.com</font>
     '''
     
@@ -3264,7 +3264,7 @@ def generate_weekly_invoices(request):
                 <table width="100%" cellspacing="0" cellpadding="0" border="0">
                   <tr>
                     <td align="left">
-                      <img src="{logo_url}" alt="CanaLogistiX" width="40" height="40" style="display:block;border:0;outline:none;text-decoration:none;border-radius:50%;object-fit:cover;">
+                      <img src="{logo_url}" alt="CanaLogistiX" width="64" height="64" style="display:block;border:0;outline:none;text-decoration:none;border-radius:50%;object-fit:cover;">
                     </td>
                     <td align="right" style="font:600 16px/1.2 system-ui,-apple-system,'Segoe UI',Roboto,Helvetica,Arial;color:#e6fffb;">
                       Invoice Generated
@@ -3649,8 +3649,8 @@ def stripe_webhook(request):
                     <td align="left">
                       <img src="{logo_url}"
                            alt="CanaLogistiX"
-                           width="40"
-                           height="40"
+                           width="64"
+                           height="64"
                            style="display:block;border:0;outline:none;text-decoration:none;border-radius:50%;object-fit:cover;">
                     </td>
                     <td align="right" style="font:600 16px/1.2 system-ui,-apple-system,'Segoe UI',Roboto,Helvetica,Arial;color:#e6fffb;">
@@ -4105,6 +4105,8 @@ def _generate_invoice_pdf(driver, week_data, orders):
     company_info_text = f'''
     <b><font color="#0F172A" size="11">CanaLogistiX Delivery Services</font></b><br/>
     <font color="#64748B" size="9">Cana Group of Companies<br/>
+    Operating Name of CANABELLE INC.<br/>
+    BN: 758568562<br/>
     help.canalogistix@gmail.com<br/>
     Ontario, Canada</font>
     '''
@@ -4533,7 +4535,7 @@ def driver_invoice_weeks(request):
                 <table width="100%" cellspacing="0" cellpadding="0" border="0">
                   <tr>
                     <td align="left">
-                      <img src="{logo_url}" alt="CanaLogistiX" width="40" height="40" style="display:block;border:0;outline:none;text-decoration:none;border-radius:50%;object-fit:cover;">
+                      <img src="{logo_url}" alt="CanaLogistiX" width="64" height="64" style="display:block;border:0;outline:none;text-decoration:none;border-radius:50%;object-fit:cover;">
                     </td>
                     <td align="right" style="font:600 16px/1.2 system-ui,-apple-system,'Segoe UI',Roboto,Helvetica,Arial;color:#e6fffb;">
                       Payment Statement Ready
@@ -4913,8 +4915,8 @@ def contact_admin_api(request):
                     <td align="left">
                     <img src="{logo_url}"
                         alt="CanaLogistiX"
-                        width="40"
-                        height="40"
+                        width="64"
+                        height="64"
                         style="display:block;border:0;outline:none;text-decoration:none;border-radius:50%;object-fit:cover;">
                     </td>
                     <td align="right" style="font:600 16px/1.2 system-ui,-apple-system,'Segoe UI',Roboto,Helvetica,Arial;color:#e6fffb;">
@@ -5056,8 +5058,8 @@ def contact_admin_api(request):
                     <td align="left">
                       <img src="{logo_url}"
                            alt="CanaLogistiX"
-                           width="40"
-                           height="40"
+                           width="64"
+                           height="64"
                            style="display:block;border:0;outline:none;text-decoration:none;border-radius:50%;object-fit:cover;">
                     </td>
                     <td align="right" style="font:600 16px/1.2 system-ui,-apple-system,'Segoe UI',Roboto,Helvetica,Arial;color:#e6fffb;">
@@ -5275,8 +5277,8 @@ def send_otp(request: HttpRequest):
                         <td align="left" style="vertical-align:middle;">
                         <img src="https://canalogistix.s3.us-east-2.amazonaws.com/Logo/CanaLogistiX_Logo_NOBG.png"
                             alt="CanaLogistiX"
-                            width="40"
-                            height="40"
+                            width="64"
+                            height="64"
                             style="display:block;border:0;outline:none;text-decoration:none;border-radius:50%;object-fit:cover;">
                         </td>
                         <td align="right" style="font:600 16px/1.2 system-ui,-apple-system,'Segoe UI',Roboto,Helvetica,Arial,'Apple Color Emoji','Segoe UI Emoji';color:#e6fffb;">
@@ -5479,7 +5481,7 @@ def change_password(request: HttpRequest):
                         <td align="left" style="vertical-align:middle;">
                         <img src="{logo_url}"
                             alt="CanaLogistiX"
-                            width="40" height="40"
+                            width="64" height="64"
                             style="display:block;border:0;outline:none;text-decoration:none;border-radius:50%;object-fit:cover;">
                         </td>
                         <td align="right" style="font:600 16px/1.2 system-ui,-apple-system,'Segoe UI',Roboto,Helvetica,Arial;color:#e6fffb;">
@@ -5652,8 +5654,8 @@ def change_password_driver(request: HttpRequest):
                     <td align="left" style="vertical-align:middle;">
                     <img src="{logo_url}"
                         alt="CanaLogistiX"
-                        width="40"
-                        height="40"
+                        width="64"
+                        height="64"
                         style="display:block;border:0;outline:none;text-decoration:none;border-radius:50%;object-fit:cover;">
                     </td>
                     <td align="right" style="font:600 16px/1.2 system-ui,-apple-system,'Segoe UI',Roboto,Helvetica,Arial;color:#e6fffb;">
@@ -5870,8 +5872,8 @@ def register_pharmacy(request: HttpRequest):
                     <td align="left">
                     <img src="{logo_url}"
                         alt="CanaLogistiX"
-                        width="40"
-                        height="40"
+                        width="64"
+                        height="64"
                         style="display:block;border:0;outline:none;text-decoration:none;border-radius:50%;object-fit:cover;">
                     </td>
                     <td align="right" style="font:600 16px/1.2 system-ui,-apple-system,'Segoe UI',Roboto,Helvetica,Arial;color:#e6fffb;">
@@ -5990,8 +5992,8 @@ def register_pharmacy(request: HttpRequest):
                     <td align="left">
                       <img src="{logo_url}"
                            alt="CanaLogistiX"
-                           width="40"
-                           height="40"
+                           width="64"
+                           height="64"
                            style="display:block;border:0;outline:none;text-decoration:none;border-radius:50%;object-fit:cover;">
                     </td>
                     <td align="right" style="font:600 16px/1.2 system-ui,-apple-system,'Segoe UI',Roboto,Helvetica,Arial;color:#e6fffb;">
@@ -6211,8 +6213,8 @@ def register_driver(request: HttpRequest):
                     <td align="left">
                     <img src="{logo_url}"
                         alt="CanaLogistiX"
-                        width="40"
-                        height="40"
+                        width="64"
+                        height="64"
                         style="display:block;border:0;outline:none;text-decoration:none;border-radius:50%;object-fit:cover;">
                     </td>
                     <td align="right" style="font:600 16px/1.2 system-ui,-apple-system,'Segoe UI',Roboto,Helvetica,Arial;color:#e6fffb;">
@@ -6317,8 +6319,8 @@ def register_driver(request: HttpRequest):
                     <td align="left">
                       <img src="{logo_url}"
                            alt="CanaLogistiX"
-                           width="40"
-                           height="40"
+                           width="64"
+                           height="64"
                            style="display:block;border:0;outline:none;text-decoration:none;border-radius:50%;object-fit:cover;">
                     </td>
                     <td align="right" style="font:600 16px/1.2 system-ui,-apple-system,'Segoe UI',Roboto,Helvetica,Arial;color:#e6fffb;">
@@ -8062,7 +8064,7 @@ def cancel_order(request, order_id: int):
                 <table width="100%" cellspacing="0" cellpadding="0" border="0">
                   <tr>
                     <td align="left">
-                      <img src="{logo_url}" alt="CanaLogistiX" width="40" height="40" style="display:block;border:0;outline:none;text-decoration:none;border-radius:50%;object-fit:cover;">
+                      <img src="{logo_url}" alt="CanaLogistiX" width="64" height="64" style="display:block;border:0;outline:none;text-decoration:none;border-radius:50%;object-fit:cover;">
                     </td>
                     <td align="right" style="font:600 16px/1.2 system-ui,-apple-system,'Segoe UI',Roboto,Helvetica,Arial;color:#ffffff;">
                       Order Cancelled
@@ -8262,7 +8264,7 @@ def cancel_order(request, order_id: int):
                 <table width="100%" cellspacing="0" cellpadding="0" border="0">
                   <tr>
                     <td align="left">
-                      <img src="{logo_url}" alt="CanaLogistiX" width="40" height="40" style="display:block;border:0;outline:none;text-decoration:none;border-radius:50%;object-fit:cover;">
+                      <img src="{logo_url}" alt="CanaLogistiX" width="64" height="64" style="display:block;border:0;outline:none;text-decoration:none;border-radius:50%;object-fit:cover;">
                     </td>
                     <td align="right" style="font:600 16px/1.2 system-ui,-apple-system,'Segoe UI',Roboto,Helvetica,Arial;color:#ffffff;">
                       Order Cancelled
@@ -10011,8 +10013,8 @@ def update_ticket_status(request, ticket_id):
                     <td align="left">
                       <img src="{logo_url}"
                            alt="CanaLogistiX"
-                           width="40"
-                           height="40"
+                           width="64"
+                           height="64"
                            style="display:block;border:0;outline:none;text-decoration:none;border-radius:50%;object-fit:cover;">
                     </td>
                     <td align="right" style="font:600 16px/1.2 system-ui,-apple-system,'Segoe UI',Roboto,Helvetica,Arial;color:#e6fffb;">
@@ -10238,8 +10240,8 @@ def add_admin_response(request, ticket_id):
                     <td align="left">
                       <img src="{logo_url}"
                            alt="CanaLogistiX"
-                           width="40"
-                           height="40"
+                           width="64"
+                           height="64"
                            style="display:block;border:0;outline:none;text-decoration:none;border-radius:50%;object-fit:cover;">
                     </td>
                     <td align="right" style="font:600 16px/1.2 system-ui,-apple-system,'Segoe UI',Roboto,Helvetica,Arial;color:#e6fffb;">

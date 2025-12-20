@@ -20,7 +20,7 @@
 
   <div class="flex h-screen overflow-hidden">
     <!-- Sidebar -->
-    <aside class="w-64 bg-neutral-800 border-r border-neutral-700 flex flex-col">
+    <aside id="sidebar" class="w-64 bg-neutral-800 border-r border-neutral-700 flex flex-col fixed lg:static inset-y-0 left-0 z-40 transform -translate-x-full lg:translate-x-0 transition-transform duration-300 overflow-y-auto">
       <div class="flex items-center h-16 border-b border-neutral-700 px-6">
         <img src="https://canalogistix.s3.us-east-2.amazonaws.com/Logo/CanaLogistiX_Logo_BG.png" alt="CanaLogistiX Logo" class="h-12 w-12 rounded-full object-cover"/>
         <span class="ml-2 text-lg font-semibold text-white">CanaLogistiX</span>
@@ -77,21 +77,27 @@
       </div>
     </aside>
 
-    <!-- Main -->
-    <main class="flex-1 flex flex-col overflow-y-auto">
-      <header class="bg-neutral-800 border-b border-neutral-700 px-6 py-4 flex items-center justify-between">
-        <div>
-          <h1 class="text-2xl font-bold text-white">Support & Contact Tickets</h1>
-          <p class="text-sm text-neutral-400">Manage support messages from pharmacies and drivers</p>
-        </div>
+    <div id="sidebarOverlay" class="hidden lg:hidden fixed inset-0 bg-black/50 z-30"></div>
 
+    <!-- Main -->
+    <main class="flex-1 flex flex-col overflow-y-auto lg:ml-0">
+      <header class="bg-neutral-800 border-b border-neutral-700 px-4 sm:px-6 py-4 flex items-center justify-between gap-4">
+        <button id="menuToggle" class="lg:hidden text-white p-2 flex-shrink-0">
+          <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16"/>
+          </svg>
+        </button>
+        <div class="flex-1 min-w-0">
+          <h1 class="text-xl sm:text-2xl font-bold text-white truncate">Support & Contact Tickets</h1>
+          <p class="text-sm text-neutral-400 hidden sm:block">Manage support messages from pharmacies and drivers</p>
+        </div>
       </header>
 
       <!-- Ticket Filters -->
-      <section class="px-6 py-6 bg-neutral-900">
-        <div class="bg-neutral-800/80 border border-neutral-700 rounded-xl p-6">
+      <section class="px-4 sm:px-6 py-6 bg-neutral-900">
+        <div class="bg-neutral-800/80 border border-neutral-700 rounded-xl p-4 sm:p-6">
           <h2 class="text-lg font-semibold text-white mb-4">Search & Filters</h2>
-          <div class="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-5 gap-4">
+          <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
             <input type="text" placeholder="Search by Ticket ID or Sender" class="bg-neutral-900 border border-neutral-700 rounded-lg px-3 py-2 text-sm w-full focus:ring-2 focus:ring-orange-500 focus:outline-none"/>
             <select class="bg-neutral-900 border border-neutral-700 rounded-lg px-3 py-2 text-sm text-neutral-300 focus:ring-2 focus:ring-orange-500 focus:outline-none">
               <option value="">Status (All)</option>
@@ -112,9 +118,9 @@
       </section>
 
       <!-- Ticket List -->
-      <section class="px-6 pb-8">
+      <section class="px-4 sm:px-6 pb-8">
         <div class="bg-neutral-800/80 border border-neutral-700 rounded-xl shadow">
-          <div class="px-6 py-4 border-b border-neutral-700 flex justify-between items-center">
+          <div class="px-4 sm:px-6 py-4 border-b border-neutral-700 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3">
             <h2 class="text-lg font-semibold text-white">Tickets</h2>
           </div>
           <div class="overflow-x-auto">
@@ -149,7 +155,7 @@
       </section>
 
       <!-- Ticket Details -->
-      <section class="px-6 pb-10 grid grid-cols-1 lg:grid-cols-2 gap-6">
+      <section class="px-4 sm:px-6 pb-10 grid grid-cols-1 lg:grid-cols-2 gap-6">
         <div class="bg-neutral-800/80 border border-neutral-700 rounded-xl p-6">
           <h2 class="text-lg font-semibold text-white mb-4">Ticket Details</h2>
           <div class="space-y-2 text-sm">
@@ -176,16 +182,16 @@
         <!-- Ticket Analytics -->
         <div class="bg-neutral-800/80 border border-neutral-700 rounded-xl p-6">
           <h2 class="text-lg font-semibold text-white mb-4">Ticket Analytics</h2>
-          <div class="grid grid-cols-1 md:grid-cols-3 gap-6 text-center">
-            <div class="bg-neutral-900 border border-neutral-700 rounded-xl p-5">
+          <div class="grid grid-cols-1 sm:grid-cols-3 gap-4 sm:gap-6 text-center">
+            <div class="bg-neutral-900 border border-neutral-700 rounded-xl p-4 sm:p-5">
               <p class="text-sm text-neutral-400 mb-1">Total Tickets</p>
               <p class="text-2xl font-bold text-orange-400">52</p>
             </div>
-            <div class="bg-neutral-900 border border-neutral-700 rounded-xl p-5">
+            <div class="bg-neutral-900 border border-neutral-700 rounded-xl p-4 sm:p-5">
               <p class="text-sm text-neutral-400 mb-1">Resolved</p>
               <p class="text-2xl font-bold text-green-400">37</p>
             </div>
-            <div class="bg-neutral-900 border border-neutral-700 rounded-xl p-5">
+            <div class="bg-neutral-900 border border-neutral-700 rounded-xl p-4 sm:p-5">
               <p class="text-sm text-neutral-400 mb-1">Pending / In Progress</p>
               <p class="text-2xl font-bold text-yellow-400">15</p>
             </div>
@@ -387,12 +393,12 @@ function renderTickets() {
     
     return `
       <tr class="hover:bg-neutral-700/50 transition">
-        <td class="px-6 py-4 text-neutral-100 font-medium">${ticketId}</td>
-        <td class="px-6 py-4 text-neutral-300">${senderName}</td>
-        <td class="px-6 py-4 text-neutral-300">${ticket.subject}</td>
-        <td class="px-6 py-4 text-neutral-400 truncate max-w-xs" title="${ticket.message}">${truncatedMessage}</td>
-        <td class="px-6 py-4">${statusBadge}</td>
-        <td class="px-6 py-4 space-x-2">
+          <td class="px-4 sm:px-6 py-3 sm:py-4 text-neutral-100 font-medium">${ticketId}</td>
+          <td class="px-4 sm:px-6 py-3 sm:py-4 text-neutral-300">${senderName}</td>
+          <td class="px-4 sm:px-6 py-3 sm:py-4 text-neutral-300">${ticket.subject}</td>
+          <td class="px-4 sm:px-6 py-3 sm:py-4 text-neutral-400 truncate max-w-xs" title="${ticket.message}">${truncatedMessage}</td>
+          <td class="px-4 sm:px-6 py-3 sm:py-4">${statusBadge}</td>
+          <td class="px-4 sm:px-6 py-3 sm:py-4 space-x-2">
           <button onclick="viewTicketDetails(${ticket.ticket_id})" class="text-xs text-orange-400 border border-orange-600/40 px-3 py-1 rounded hover:bg-orange-600/20">
             View
           </button>
@@ -437,7 +443,7 @@ function updatePagination() {
   let paginationDiv = document.querySelector('.pagination-controls');
   if (!paginationDiv) {
     paginationDiv = document.createElement('div');
-    paginationDiv.className = 'pagination-controls flex items-center justify-between px-6 py-4 border-t border-neutral-700';
+    paginationDiv.className = 'pagination-controls flex flex-col sm:flex-row items-center justify-between px-4 sm:px-6 py-4 border-t border-neutral-700 gap-3';
     paginationDiv.innerHTML = `
       <p class="text-sm text-neutral-400">
         Showing <span id="ticketStart">0</span>-<span id="ticketEnd">0</span> of <span id="ticketTotal">0</span>
@@ -706,6 +712,21 @@ async function loadTicketAnalytics() {
     console.error('Error loading ticket analytics:', error);
   }
 }
+
+// ==================== MOBILE MENU TOGGLE ====================
+const menuToggle = document.getElementById('menuToggle');
+const sidebar = document.getElementById('sidebar');
+const sidebarOverlay = document.getElementById('sidebarOverlay');
+
+menuToggle?.addEventListener('click', () => {
+  sidebar.classList.toggle('-translate-x-full');
+  sidebarOverlay.classList.toggle('hidden');
+});
+
+sidebarOverlay?.addEventListener('click', () => {
+  sidebar.classList.add('-translate-x-full');
+  sidebarOverlay.classList.add('hidden');
+});
 
 // ==================== EVENT LISTENERS ====================
 applyFiltersBtn.addEventListener('click', filterTickets);

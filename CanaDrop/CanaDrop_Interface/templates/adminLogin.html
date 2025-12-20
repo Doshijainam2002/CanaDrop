@@ -82,9 +82,11 @@
       </p>
     </div>
 
-    <div class="text-center mt-6">
-      <p class="text-xs text-neutral-500">© 2025 CanaLogistiX - Cana Group of Companies. All rights reserved.</p>
-    </div>
+        <div class="text-center mt-8">
+        <p class="text-sm text-gray-500">
+            © <span id="current-year"></span> CanaLogistiX - Cana Group of Companies. All rights reserved.
+        </p>
+        </div>
   </div>
 
   <!-- Modal -->
@@ -161,6 +163,8 @@
     function closeModal() {
       document.getElementById("modal").classList.add("hidden");
     }
+
+    document.getElementById("current-year").textContent = new Date().getFullYear();
   </script>
 </body>
 </html>

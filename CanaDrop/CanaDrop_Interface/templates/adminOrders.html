@@ -7,49 +7,69 @@
   <link rel="icon" href="https://canalogistix.s3.us-east-2.amazonaws.com/Logo/CanaLogistiX_Logo_BG.png">
   <script src="https://cdn.tailwindcss.com"></script>
   <style>
-    body { font-family: 'Inter', sans-serif; }
-    .logistics-bg {
-      background:
-        linear-gradient(135deg, rgba(255,255,255,0.04) 25%, rgba(0,0,0,0) 25%) 0 0/28px 28px,
-        linear-gradient(135deg, rgba(0,0,0,0) 75%, rgba(255,255,255,0.04) 75%) 0 0/28px 28px;
-      box-shadow: inset 0 0 120px rgba(0,0,0,0.35);
+  body { font-family: 'Inter', sans-serif; }
+  .logistics-bg {
+    background:
+      linear-gradient(135deg, rgba(255,255,255,0.04) 25%, rgba(0,0,0,0) 25%) 0 0/28px 28px,
+      linear-gradient(135deg, rgba(0,0,0,0) 75%, rgba(255,255,255,0.04) 75%) 0 0/28px 28px;
+    box-shadow: inset 0 0 120px rgba(0,0,0,0.35);
+  }
+  
+  /* White calendar icon for date inputs */
+  input[type="date"]::-webkit-calendar-picker-indicator {
+    filter: invert(1);
+    cursor: pointer;
+  }
+  
+  /* Custom scrollbar */
+  .custom-scrollbar::-webkit-scrollbar {
+    width: 8px;
+  }
+  .custom-scrollbar::-webkit-scrollbar-track {
+    background: #262626;
+    border-radius: 4px;
+  }
+  .custom-scrollbar::-webkit-scrollbar-thumb {
+    background: #525252;
+    border-radius: 4px;
+  }
+  .custom-scrollbar::-webkit-scrollbar-thumb:hover {
+    background: #737373;
+  }
+
+  /* Prevent horizontal overflow on mobile */
+  @media (max-width: 640px) {
+    html, body {
+      overflow-x: hidden;
+      max-width: 100vw;
     }
     
-    /* White calendar icon for date inputs */
-    input[type="date"]::-webkit-calendar-picker-indicator {
-      filter: invert(1);
-      cursor: pointer;
+    /* Ensure tables don't cause body overflow */
+    .overflow-x-auto {
+      -webkit-overflow-scrolling: touch;
+      max-width: 100%;
     }
     
-    /* Custom scrollbar */
-    .custom-scrollbar::-webkit-scrollbar {
-      width: 8px;
+    /* Ensure main content doesn't overflow */
+    main {
+      overflow-x: hidden;
+      max-width: 100vw;
     }
-    .custom-scrollbar::-webkit-scrollbar-track {
-      background: #262626;
-      border-radius: 4px;
-    }
-    .custom-scrollbar::-webkit-scrollbar-thumb {
-      background: #525252;
-      border-radius: 4px;
-    }
-    .custom-scrollbar::-webkit-scrollbar-thumb:hover {
-      background: #737373;
-    }
+  }
   </style>
 </head>
 <body class="min-h-screen bg-neutral-900 text-neutral-100 logistics-bg">
 
   <div class="flex h-screen overflow-hidden">
     <!-- Sidebar -->
-    <aside class="w-64 bg-neutral-800 border-r border-neutral-700 flex flex-col">
+    <aside id="sidebar" class="w-64 bg-neutral-800 border-r border-neutral-700 flex flex-col fixed lg:static inset-y-0 left-0 z-40 transform -translate-x-full lg:translate-x-0 transition-transform duration-300 overflow-y-auto">
       <div class="flex items-center h-16 border-b border-neutral-700 px-6">
         <img src="https://canalogistix.s3.us-east-2.amazonaws.com/Logo/CanaLogistiX_Logo_BG.png" alt="CanaLogistiX Logo" class="h-12 w-12 rounded-full object-cover"/>
         <span class="ml-2 text-lg font-semibold text-white">CanaLogistiX</span>
       </div>
 
       <!-- Navigation -->
-      <nav class="flex-1 p-4 space-y-2 text-sm">
+      <nav class="flex-1 p-4 space-y-2 text-sm overflow-y-auto">
         <a href="/adminDashboard/" class="flex items-center px-3 py-2 rounded-lg text-neutral-300 hover:bg-neutral-700 transition">
           <svg class="w-5 h-5 mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 12l2-2m0 0l7-7 7 7M13 5v6h6"/></svg>
           Dashboard
@@ -94,20 +114,27 @@
       </div>
     </aside>
 
+    <div id="sidebarOverlay" class="hidden lg:hidden fixed inset-0 bg-black/50 z-30"></div>
+
     <!-- Main -->
-    <main class="flex-1 flex flex-col overflow-y-auto">
-      <header class="bg-neutral-800 border-b border-neutral-700 px-6 py-4 flex items-center justify-between">
-        <div>
-          <h1 class="text-2xl font-bold text-white">Orders Management</h1>
-          <p class="text-sm text-neutral-400">Central control of all delivery orders</p>
+    <main class="flex-1 flex flex-col overflow-y-auto lg:ml-0">
+      <header class="bg-neutral-800 border-b border-neutral-700 px-4 sm:px-6 py-4 flex items-center justify-between gap-4">
+        <button id="menuToggle" class="lg:hidden text-white p-2 flex-shrink-0">
+          <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16"/>
+          </svg>
+        </button>
+        <div class="flex-1 min-w-0">
+          <h1 class="text-xl sm:text-2xl font-bold text-white truncate">Orders Management</h1>
+          <p class="text-sm text-neutral-400 hidden sm:block">Central control of all delivery orders</p>
         </div>
       </header>
 
       <!-- Filters Section -->
-      <section class="px-6 py-6 bg-neutral-900">
+      <section class="px-4 sm:px-6 py-6 bg-neutral-900">
         <div class="bg-neutral-800/80 border border-neutral-700 rounded-xl p-6">
           <h2 class="text-lg font-semibold text-white mb-4">Search & Filters</h2>
-          <div class="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-5 gap-4">
+          <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4">
             <input id="searchOrderId" type="text" placeholder="Search by Order ID"
               class="bg-neutral-900 border border-neutral-700 rounded-lg px-3 py-2 text-sm w-full text-neutral-300 focus:ring-2 focus:ring-orange-500 focus:outline-none" />
 
@@ -128,20 +155,28 @@
             <input id="filterDriver" type="text" placeholder="Driver Name"
               class="bg-neutral-900 border border-neutral-700 rounded-lg px-3 py-2 text-sm text-neutral-300 focus:ring-2 focus:ring-orange-500 focus:outline-none" />
 
-            <div class="flex space-x-2">
-              <input id="filterDateStart" type="date"
-                class="bg-neutral-900 border border-neutral-700 rounded-lg px-3 py-2 text-sm text-neutral-300 w-1/2 focus:ring-2 focus:ring-orange-500 focus:outline-none" />
-              <input id="filterDateEnd" type="date"
-                class="bg-neutral-900 border border-neutral-700 rounded-lg px-3 py-2 text-sm text-neutral-300 w-1/2 focus:ring-2 focus:ring-orange-500 focus:outline-none" />
+            <div class="col-span-1 sm:col-span-2 lg:col-span-1">
+              <div class="flex flex-col gap-2">
+                <div>
+                  <label class="block text-xs text-neutral-400 mb-1 lg:hidden">Start Date</label>
+                  <input id="filterDateStart" type="date" placeholder="Start Date"
+                    class="bg-neutral-900 border border-neutral-700 rounded-lg px-3 py-2 text-sm text-neutral-300 w-full focus:ring-2 focus:ring-orange-500 focus:outline-none" />
+                </div>
+                <div>
+                  <label class="block text-xs text-neutral-400 mb-1 lg:hidden">End Date</label>
+                  <input id="filterDateEnd" type="date" placeholder="End Date"
+                    class="bg-neutral-900 border border-neutral-700 rounded-lg px-3 py-2 text-sm text-neutral-300 w-full focus:ring-2 focus:ring-orange-500 focus:outline-none" />
+                </div>
+              </div>
             </div>
           </div>
         </div>
       </section>
 
       <!-- Orders Table -->
-      <section class="px-6 pb-6">
+      <section class="px-4 sm:px-6 pb-6">
         <div class="bg-neutral-800/80 border border-neutral-700 rounded-xl shadow">
-          <div class="px-6 py-4 border-b border-neutral-700 flex justify-between items-center">
+          <div class="px-4 sm:px-6 py-4 border-b border-neutral-700 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3">
             <h2 class="text-lg font-semibold text-white">Orders List</h2>
             <button class="text-sm text-orange-400 hover:text-orange-300">Export CSV</button>
           </div>
@@ -149,31 +184,31 @@
             <table class="min-w-full text-sm">
               <thead class="bg-neutral-800 border-b border-neutral-700">
                 <tr>
-                  <th class="px-6 py-3 text-left text-neutral-400 uppercase tracking-wider">Order ID</th>
-                  <th class="px-6 py-3 text-left text-neutral-400 uppercase tracking-wider">Pharmacy</th>
-                  <th class="px-6 py-3 text-left text-neutral-400 uppercase tracking-wider">Driver</th>
-                  <th class="px-6 py-3 text-left text-neutral-400 uppercase tracking-wider">Pickup → Drop</th>
-                  <th class="px-6 py-3 text-left text-neutral-400 uppercase tracking-wider">Pickup Date</th>
-                  <th class="px-6 py-3 text-left text-neutral-400 uppercase tracking-wider">Status</th>
-                  <th class="px-6 py-3 text-left text-neutral-400 uppercase tracking-wider">Amount</th>
-                  <th class="px-6 py-3 text-left text-neutral-400 uppercase tracking-wider">Actions</th>
+                  <th class="px-4 sm:px-6 py-3 text-left text-neutral-400 uppercase tracking-wider">Order ID</th>
+                  <th class="px-4 sm:px-6 py-3 text-left text-neutral-400 uppercase tracking-wider">Pharmacy</th>
+                  <th class="px-4 sm:px-6 py-3 text-left text-neutral-400 uppercase tracking-wider">Driver</th>
+                  <th class="px-4 sm:px-6 py-3 text-left text-neutral-400 uppercase tracking-wider">Pickup → Drop</th>
+                  <th class="px-4 sm:px-6 py-3 text-left text-neutral-400 uppercase tracking-wider">Pickup Date</th>
+                  <th class="px-4 sm:px-6 py-3 text-left text-neutral-400 uppercase tracking-wider">Status</th>
+                  <th class="px-4 sm:px-6 py-3 text-left text-neutral-400 uppercase tracking-wider">Amount</th>
+                  <th class="px-4 sm:px-6 py-3 text-left text-neutral-400 uppercase tracking-wider">Actions</th>
                 </tr>
               </thead>
               <tbody id="ordersTableBody" class="divide-y divide-neutral-700"></tbody>
             </table>
           </div>
 
-          <div class="flex justify-between items-center px-6 py-3 border-t border-neutral-700">
-            <button id="prevPage" class="text-sm text-neutral-400 hover:text-white">Prev</button>
+          <div class="flex flex-col sm:flex-row justify-between items-center gap-3 px-4 sm:px-6 py-3 border-t border-neutral-700">
+            <button id="prevPage" class="w-full sm:w-auto px-4 py-2 text-sm text-neutral-400 hover:text-white border border-neutral-700 rounded-lg">Prev</button>
             <p id="pageInfo" class="text-sm text-neutral-400"></p>
-            <button id="nextPage" class="text-sm text-neutral-400 hover:text-white">Next</button>
+            <button id="nextPage" class="w-full sm:w-auto px-4 py-2 text-sm text-neutral-400 hover:text-white border border-neutral-700 rounded-lg">Next</button>
           </div>
         </div>
       </section>
 
       <!-- View Modal -->
       <div id="viewModal" class="hidden fixed inset-0 bg-black/70 flex justify-center items-center z-50 p-4">
-        <div class="bg-neutral-800 rounded-xl w-full max-w-4xl max-h-[90vh] overflow-hidden flex flex-col">
+        <div class="bg-neutral-800 rounded-xl w-full max-w-4xl max-h-[90vh] overflow-hidden flex flex-col shadow-xl">
           <div class="px-6 py-4 border-b border-neutral-700 flex justify-between items-center">
             <h3 id="viewTitle" class="text-xl font-semibold text-white">Order Details</h3>
             <button onclick="closeModal('viewModal')" class="text-neutral-400 hover:text-white">
@@ -193,7 +228,7 @@
 
       <!-- Edit Modal -->
       <div id="editModal" class="hidden fixed inset-0 bg-black/70 flex justify-center items-center z-50 p-4">
-        <div class="bg-neutral-800 rounded-xl w-full max-w-4xl max-h-[90vh] overflow-hidden flex flex-col">
+        <div class="bg-neutral-800 rounded-xl w-full max-w-4xl max-h-[90vh] overflow-hidden flex flex-col shadow-xl">
           <div class="px-6 py-4 border-b border-neutral-700 flex justify-between items-center">
             <h3 id="editTitle" class="text-xl font-semibold text-white">Edit Order</h3>
             <button onclick="closeModal('editModal')" class="text-neutral-400 hover:text-white">
@@ -232,9 +267,9 @@
       </div>
 
       <!-- Delivery Rate Management Section -->
-      <section class="px-6 pb-10">
+      <section class="px-4 sm:px-6 pb-10">
         <div class="bg-neutral-800/80 border border-neutral-700 rounded-xl p-6 shadow">
-          <div class="flex justify-between items-center mb-4">
+          <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3 mb-4">
             <h2 class="text-lg font-semibold text-white">Delivery Rate Management</h2>
             <button id="addRateBtn"
               class="px-3 py-1 bg-gradient-to-r from-orange-600 to-orange-500 text-white text-xs rounded-lg hover:from-orange-500 hover:to-orange-400">
@@ -242,14 +277,15 @@
             </button>
           </div>
 
-          <table class="min-w-full text-sm">
+          <div class="overflow-x-auto">
+            <table class="min-w-full text-sm">
             <thead class="bg-neutral-800 border-b border-neutral-700">
               <tr>
-                <th class="px-6 py-3 text-left text-neutral-400 uppercase tracking-wider">ID</th>
-                <th class="px-6 py-3 text-left text-neutral-400 uppercase tracking-wider">Min Distance (KM)</th>
-                <th class="px-6 py-3 text-left text-neutral-400 uppercase tracking-wider">Max Distance (KM)</th>
-                <th class="px-6 py-3 text-left text-neutral-400 uppercase tracking-wider">Base Rate ($)</th>
-                <th class="px-6 py-3 text-left text-neutral-400 uppercase tracking-wider">Actions</th>
+                <th class="px-4 sm:px-6 py-3 text-left text-neutral-400 uppercase tracking-wider">ID</th>
+                <th class="px-4 sm:px-6 py-3 text-left text-neutral-400 uppercase tracking-wider">Min Distance (KM)</th>
+                <th class="px-4 sm:px-6 py-3 text-left text-neutral-400 uppercase tracking-wider">Max Distance (KM)</th>
+                <th class="px-4 sm:px-6 py-3 text-left text-neutral-400 uppercase tracking-wider">Base Rate ($)</th>
+                <th class="px-4 sm:px-6 py-3 text-left text-neutral-400 uppercase tracking-wider">Actions</th>
               </tr>
             </thead>
             <tbody id="deliveryRatesTableBody" class="divide-y divide-neutral-700">
@@ -260,11 +296,12 @@
             </tbody>
           </table>
         </div>
+        </div>
       </section>
 
       <!-- Add Rate Modal -->
-      <div id="addRateModal" class="hidden fixed inset-0 bg-black/70 flex justify-center items-center z-50">
-        <div class="bg-neutral-800 p-6 rounded-xl w-11/12 md:w-1/3 shadow-lg border border-neutral-700">
+      <div id="addRateModal" class="hidden fixed inset-0 bg-black/70 flex justify-center items-center z-50 p-4">
+        <div class="bg-neutral-800 p-4 sm:p-6 rounded-xl w-11/12 max-w-md shadow-lg border border-neutral-700 max-h-[90vh] overflow-y-auto">
           <h3 class="text-lg font-semibold text-white mb-4">Add Delivery Rate</h3>
 
           <form id="addRateForm" class="space-y-3">
@@ -342,21 +379,23 @@
           tbody.innerHTML = pageOrders
             .map((o) => `
               <tr class="hover:bg-neutral-700/40 transition">
-                <td class="px-6 py-4 text-neutral-100 font-medium">#${o.order_id}</td>
-                <td class="px-6 py-4 text-neutral-300">${o.pharmacy?.name || "-"}</td>
-                <td class="px-6 py-4 text-neutral-300">${o.driver?.name || "Unassigned"}</td>
-                <td class="px-6 py-4 text-neutral-400 text-xs">
+                <td class="px-4 sm:px-6 py-3 sm:py-4 text-neutral-100 font-medium">#${o.order_id}</td>
+                <td class="px-4 sm:px-6 py-3 sm:py-4 text-neutral-300">${o.pharmacy?.name || "-"}</td>
+                <td class="px-4 sm:px-6 py-3 sm:py-4 text-neutral-300">${o.driver?.name || "Unassigned"}</td>
+                <td class="px-4 sm:px-6 py-3 sm:py-4 text-neutral-400 text-xs">
                   <p>${o.pickup_city}</p><p class="text-neutral-500">→ ${o.drop_city}</p>
                 </td>
-                <td class="px-6 py-4 text-neutral-300">${o.pickup_day || "-"}</td>
-                <td class="px-6 py-4">
+                <td class="px-4 sm:px-6 py-3 sm:py-4 text-neutral-300">${o.pickup_day || "-"}</td>
+                <td class="px-4 sm:px-6 py-3 sm:py-4">
                   <span class="inline-flex px-3 py-1 text-xs font-medium rounded-full ${getStatusColor(o.status)}">${formatStatus(o.status)}</span>
                 </td>
-                <td class="px-6 py-4 text-neutral-100 font-semibold">$${o.amount.toFixed(2)}</td>
-                <td class="px-6 py-4 space-x-2">
-                  <button onclick="viewOrder(${o.order_id})" class="text-xs text-orange-400 border border-orange-600/40 px-3 py-1 rounded hover:bg-orange-600/20">View</button>
-                  <button onclick="editOrder(${o.order_id})" class="text-xs text-neutral-300 border border-neutral-600 px-3 py-1 rounded hover:bg-neutral-700">Edit</button>
-                  <button onclick="deleteOrder(${o.order_id})" class="text-xs text-red-400 border border-red-600/40 px-3 py-1 rounded hover:bg-red-600/20">Delete</button>
+                <td class="px-4 sm:px-6 py-3 sm:py-4 text-neutral-100 font-semibold">$${o.amount.toFixed(2)}</td>
+                <td class="px-4 sm:px-6 py-3 sm:py-4">
+                  <div class="flex flex-col sm:flex-row gap-2">
+                    <button onclick="viewOrder(${o.order_id})" class="text-xs text-orange-400 border border-orange-600/40 px-3 py-1 rounded hover:bg-orange-600/20 whitespace-nowrap">View</button>
+                    <button onclick="editOrder(${o.order_id})" class="text-xs text-neutral-300 border border-neutral-600 px-3 py-1 rounded hover:bg-neutral-700 whitespace-nowrap">Edit</button>
+                    <button onclick="deleteOrder(${o.order_id})" class="text-xs text-red-400 border border-red-600/40 px-3 py-1 rounded hover:bg-red-600/20 whitespace-nowrap">Delete</button>
+                  </div>
                 </td>
               </tr>
             `).join("");
@@ -442,7 +481,7 @@
                   </svg>
                   Order Information
                 </h4>
-                <div class="grid grid-cols-2 gap-3 text-sm">
+                <div class="grid grid-cols-1 sm:grid-cols-2 gap-3 text-sm">
                   <div><span class="text-neutral-400">Order ID:</span> <span class="text-white font-medium">#${order.order_id}</span></div>
                   <div><span class="text-neutral-400">Status:</span> <span class="inline-flex px-2 py-1 text-xs rounded-full ${getStatusColor(order.status)}">${formatStatus(order.status)}</span></div>
                   <div><span class="text-neutral-400">Customer:</span> <span class="text-neutral-200">${order.customer_name || "N/A"}</span></div>
@@ -461,7 +500,7 @@
                   </svg>
                   Pharmacy Details
                 </h4>
-                <div class="grid grid-cols-2 gap-3 text-sm">
+                <div class="grid grid-cols-1 sm:grid-cols-2 gap-3 text-sm">
                   <div><span class="text-neutral-400">Name:</span> <span class="text-neutral-200">${order.pharmacy.name}</span></div>
                   <div><span class="text-neutral-400">Email:</span> <span class="text-neutral-200">${order.pharmacy.email}</span></div>
                   <div><span class="text-neutral-400">Phone:</span> <span class="text-neutral-200">${order.pharmacy.phone_number}</span></div>
@@ -480,7 +519,7 @@
                   </svg>
                   Driver Details
                 </h4>
-                <div class="grid grid-cols-2 gap-3 text-sm">
+                <div class="grid grid-cols-1 sm:grid-cols-2 gap-3 text-sm">
                   <div><span class="text-neutral-400">Name:</span> <span class="text-neutral-200">${order.driver.name}</span></div>
                   <div><span class="text-neutral-400">Email:</span> <span class="text-neutral-200">${order.driver.email}</span></div>
                   <div><span class="text-neutral-400">Phone:</span> <span class="text-neutral-200">${order.driver.phone_number}</span></div>
@@ -535,7 +574,7 @@
                   </svg>
                   Financial Breakdown
                 </h4>
-                <div class="grid grid-cols-2 gap-3 text-sm">
+                <div class="grid grid-cols-1 sm:grid-cols-2 gap-3 text-sm">
                   <div><span class="text-neutral-400">Total Amount:</span> <span class="text-white font-semibold">${order.amount.toFixed(2)}</span></div>
                   <div><span class="text-neutral-400">Commission Rate:</span> <span class="text-neutral-200">${order.commission_info.commission_rate}</span></div>
                   <div><span class="text-neutral-400">Commission Amount:</span> <span class="text-orange-400 font-medium">${order.commission_info.commission_amount.toFixed(2)}</span></div>
@@ -576,7 +615,7 @@
                   </svg>
                   Proof Images
                 </h4>
-                <div class="grid grid-cols-3 gap-3">
+                <div class="grid grid-cols-2 sm:grid-cols-3 gap-3">
                   ${order.proof_images.map(img => `
                     <div class="space-y-1">
                       <a href="${img.image_url}" target="_blank" class="block">
@@ -606,7 +645,7 @@
             <!-- Order Status -->
             <div class="bg-neutral-900/50 rounded-lg p-4 border border-neutral-700">
               <h4 class="text-sm font-semibold text-orange-400 mb-3">Order Status</h4>
-              <div class="grid grid-cols-2 gap-4">
+              <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div>
                   <label class="block text-xs text-neutral-400 mb-1">Status</label>
                   <select id="editStatus" class="w-full px-3 py-2 rounded-lg bg-neutral-900 border border-neutral-700 text-neutral-300 focus:ring-2 focus:ring-orange-500 focus:outline-none">
@@ -630,7 +669,7 @@
             <!-- Customer Info -->
             <div class="bg-neutral-900/50 rounded-lg p-4 border border-neutral-700">
               <h4 class="text-sm font-semibold text-orange-400 mb-3">Customer Information</h4>
-              <div class="grid grid-cols-2 gap-4">
+              <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div>
                   <label class="block text-xs text-neutral-400 mb-1">Customer Name</label>
                   <input type="text" id="editCustomerName" 
@@ -649,7 +688,7 @@
             <!-- Pickup Address -->
             <div class="bg-neutral-900/50 rounded-lg p-4 border border-neutral-700">
               <h4 class="text-sm font-semibold text-orange-400 mb-3">Pickup Address</h4>
-              <div class="grid grid-cols-2 gap-4">
+              <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div class="col-span-2">
                   <label class="block text-xs text-neutral-400 mb-1">Pickup Address</label>
                   <textarea id="editPickupAddress" rows="2"
@@ -667,7 +706,7 @@
             <!-- Drop Address -->
             <div class="bg-neutral-900/50 rounded-lg p-4 border border-neutral-700">
               <h4 class="text-sm font-semibold text-orange-400 mb-3">Drop Address</h4>
-              <div class="grid grid-cols-2 gap-4">
+              <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div class="col-span-2">
                   <label class="block text-xs text-neutral-400 mb-1">Drop Address</label>
                   <textarea id="editDropAddress" rows="2"
@@ -833,13 +872,15 @@
               row.className = "hover:bg-neutral-700/50 transition";
 
               row.innerHTML = `
-                <td class="px-6 py-4 text-neutral-100">${rate.id}</td>
-                <td class="px-6 py-4 text-neutral-300">${rate.min_distance_km.toFixed(2)}</td>
-                <td class="px-6 py-4 text-neutral-300">${rate.max_distance_km !== null ? rate.max_distance_km.toFixed(2) : "∞"}</td>
-                <td class="px-6 py-4 text-neutral-100">$${rate.rate.toFixed(2)}</td>
-                <td class="px-6 py-4 space-x-2">
-                  <button class="text-xs text-neutral-300 border border-neutral-600 px-3 py-1 rounded hover:bg-neutral-700" onclick="editRate(${rate.id})">Edit</button>
-                  <button class="text-xs text-red-400 border border-red-600/40 px-3 py-1 rounded hover:bg-red-600/20" onclick="deleteRate(${rate.id})">Delete</button>
+                <td class="px-4 sm:px-6 py-3 sm:py-4 text-neutral-100">${rate.id}</td>
+                <td class="px-4 sm:px-6 py-3 sm:py-4 text-neutral-300">${rate.min_distance_km.toFixed(2)}</td>
+                <td class="px-4 sm:px-6 py-3 sm:py-4 text-neutral-300">${rate.max_distance_km !== null ? rate.max_distance_km.toFixed(2) : "∞"}</td>
+                <td class="px-4 sm:px-6 py-3 sm:py-4 text-neutral-100">$${rate.rate.toFixed(2)}</td>
+                <td class="px-4 sm:px-6 py-3 sm:py-4">
+                  <div class="flex flex-col sm:flex-row gap-2">
+                    <button class="text-xs text-neutral-300 border border-neutral-600 px-3 py-1 rounded hover:bg-neutral-700 whitespace-nowrap" onclick="editRate(${rate.id})">Edit</button>
+                    <button class="text-xs text-red-400 border border-red-600/40 px-3 py-1 rounded hover:bg-red-600/20 whitespace-nowrap" onclick="deleteRate(${rate.id})">Delete</button>
+                  </div>
                 </td>
               `;
 
@@ -953,7 +994,7 @@ async function editRate(id) {
       editRateModal.id = "editRateModal";
       editRateModal.className = "hidden fixed inset-0 bg-black/70 flex justify-center items-center z-50";
       editRateModal.innerHTML = `
-        <div class="bg-neutral-800 p-6 rounded-xl w-11/12 md:w-1/3 shadow-lg border border-neutral-700">
+        <div class="bg-neutral-800 p-4 sm:p-6 rounded-xl w-11/12 max-w-md shadow-lg border border-neutral-700 max-h-[90vh] overflow-y-auto">
           <h3 class="text-lg font-semibold text-white mb-4">Edit Delivery Rate</h3>
 
           <form id="editRateForm" class="space-y-3">
@@ -1088,7 +1129,7 @@ async function deleteRate(id) {
       deleteRateModal.id = "deleteRateModal";
       deleteRateModal.className = "hidden fixed inset-0 bg-black/70 flex justify-center items-center z-50";
       deleteRateModal.innerHTML = `
-        <div class="bg-neutral-800 p-6 rounded-xl text-center max-w-md">
+        <div class="bg-neutral-800 p-6 rounded-xl text-center max-w-md max-h-[90vh] overflow-y-auto">
           <div class="w-12 h-12 rounded-full bg-red-500/20 flex items-center justify-center mx-auto mb-4">
             <svg class="w-6 h-6 text-red-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"/>
@@ -1167,6 +1208,21 @@ async function confirmDeleteRate() {
     showNotification("❌ Error connecting to server", "error");
   }
 }
+
+// Mobile menu toggle
+const menuToggle = document.getElementById('menuToggle');
+const sidebar = document.getElementById('sidebar');
+const sidebarOverlay = document.getElementById('sidebarOverlay');
+
+menuToggle?.addEventListener('click', () => {
+  sidebar.classList.toggle('-translate-x-full');
+  sidebarOverlay.classList.toggle('hidden');
+});
+
+sidebarOverlay?.addEventListener('click', () => {
+  sidebar.classList.add('-translate-x-full');
+  sidebarOverlay.classList.add('hidden');
+});
       </script>
     </main>
   </div>

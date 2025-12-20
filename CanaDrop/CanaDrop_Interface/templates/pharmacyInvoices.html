@@ -18,26 +18,57 @@
             }
         }
     </script>
+
+    <style>
+    body { font-family: 'Inter', sans-serif; }
+
+    /* Custom scrollbar */
+    .custom-scrollbar::-webkit-scrollbar {
+        width: 8px;
+    }
+    .custom-scrollbar::-webkit-scrollbar-track {
+        background: #f1f5f9;
+        border-radius: 4px;
+    }
+    .custom-scrollbar::-webkit-scrollbar-thumb {
+        background: #cbd5e1;
+        border-radius: 4px;
+    }
+    .custom-scrollbar::-webkit-scrollbar-thumb:hover {
+        background: #94a3b8;
+    }
+
+    /* Prevent horizontal overflow on mobile */
+    @media (max-width: 640px) {
+        html, body {
+            overflow-x: hidden;
+            max-width: 100vw;
+        }
+        
+        .overflow-x-auto {
+            -webkit-overflow-scrolling: touch;
+            max-width: 100%;
+        }
+        
+        main {
+            overflow-x: hidden;
+            max-width: 100vw;
+        }
+    }
+</style>
 </head>
-<body class="bg-gray-50 font-inter">
+<body class="min-h-screen bg-gray-50">
 <div class="flex h-screen overflow-hidden">
-        <!-- Mobile Sidebar Overlay -->
-        <div id="sidebarOverlay" class="fixed inset-0 bg-black bg-opacity-50 z-30 lg:hidden hidden"></div>
+    
         
         <!-- Sidebar -->
-        <div id="sidebar" class="fixed inset-y-0 left-0 z-40 w-64 bg-white border-r border-gray-200 transform -translate-x-full transition-transform duration-300 ease-in-out lg:translate-x-0 lg:static lg:inset-0">
-            <div class="flex flex-col w-64 bg-white border-r border-gray-200">
+        <aside id="sidebar" class="w-64 bg-white border-r border-gray-200 flex flex-col fixed lg:static inset-y-0 left-0 z-40 transform -translate-x-full lg:translate-x-0 transition-transform duration-300 overflow-y-auto">
         <!-- Logo with close button for mobile -->
-        <div class="flex items-center justify-between h-16 px-6 border-b border-gray-200 lg:justify-start">
+        <div class="flex items-center h-16 px-6 border-b border-gray-200">
             <div class="flex items-center">
                 <img src="https://canalogistix.s3.us-east-2.amazonaws.com/Logo/CanaLogistiX_Logo_NOBG.png" alt="Logo" class="h-12 w-auto">
                 <span class="ml-2 text-lg font-semibold text-gray-900">CanaLogistiX</span>
             </div>
-            <button id="closeSidebarBtn" class="lg:hidden p-2 text-gray-600 hover:text-gray-900 hover:bg-gray-100 rounded-lg transition-colors">
-                <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
-                </svg>
-            </button>
         </div>
                 <!-- Navigation -->
                 <nav class="flex-1 px-4 py-6 space-y-2">
@@ -103,36 +134,38 @@
                         </div>
                     </div>
                 </div>
-            </div>
-        </div>
+</aside>
+
+        <div id="sidebarOverlay" class="hidden lg:hidden fixed inset-0 bg-black/50 z-30"></div>
+
 
         <!-- Main Content -->
-        <div class="flex flex-1 flex-col overflow-hidden">
+        <main class="flex-1 flex flex-col overflow-y-auto lg:ml-0">
             <!-- Top Header -->
 <!-- Top Header -->
             <header class="bg-white shadow-sm border-b border-gray-200">
-                <div class="flex items-center justify-between px-6 py-4">
+                <div class="px-4 sm:px-6 py-4 flex items-center justify-between gap-4">
                     <!-- Hamburger Menu Button -->
-                    <button id="mobileMenuBtn" class="lg:hidden p-2 text-gray-600 hover:text-gray-900 hover:bg-gray-100 rounded-lg transition-colors">
+                    <button id="mobileMenuBtn" class="lg:hidden text-gray-600 p-2 flex-shrink-0">
                         <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16"/>
                         </svg>
                     </button>
                     
-                    <div>
-                        <h1 class="text-2xl font-bold text-gray-900">Invoices Dashboard</h1>
-                        <p class="text-sm text-gray-500">Manage your invoices and payments</p>
+                    <div class="flex-1 min-w-0">
+                        <h1 class="text-xl sm:text-2xl font-bold text-gray-900 truncate">Invoices Dashboard</h1>
+                        <p class="text-sm text-gray-500 hidden sm:block">Manage your invoices and payments</p>
                     </div>
-                    <div class="flex items-center space-x-3">
+                    <div class="flex items-center space-x-2 md:space-x-4">
                         <!-- You can add refresh button here if needed -->
                     </div>
                 </div>
             </header>
 
             <!-- Dashboard Stats -->
-            <div class="px-6 py-6 overflow-y-auto">
-               <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 lg:gap-6 mb-8">
-                    <div class="bg-white p-6 rounded-xl shadow-sm border border-gray-100 hover:shadow-lg transition-shadow">
+            <section class="p-4 sm:p-6">
+                <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-6 mb-6 sm:mb-8">
+                    <div class="bg-white p-4 sm:p-6 rounded-xl shadow-sm border border-gray-100 hover:shadow-lg transition-shadow">
                         <div class="flex items-center">
                             <div class="p-2 bg-blue-100 rounded-lg">
                                 <svg class="w-6 h-6 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -146,7 +179,7 @@
                         </div>
                     </div>
                     
-                    <div class="bg-white p-6 rounded-xl shadow-sm border border-gray-100 hover:shadow-lg transition-shadow">
+                    <div class="bg-white p-4 sm:p-6 rounded-xl shadow-sm border border-gray-100 hover:shadow-lg transition-shadow">
                         <div class="flex items-center">
                             <div class="p-2 bg-yellow-100 rounded-lg">
                                 <svg class="w-6 h-6 text-yellow-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -160,7 +193,7 @@
                         </div>
                     </div>
                     
-                    <div class="bg-white p-6 rounded-xl shadow-sm border border-gray-100 hover:shadow-lg transition-shadow">
+                    <div class="bg-white p-4 sm:p-6 rounded-xl shadow-sm border border-gray-100 hover:shadow-lg transition-shadow">
                         <div class="flex items-center">
                             <div class="p-2 bg-red-100 rounded-lg">
                                 <svg class="w-6 h-6 text-red-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -174,7 +207,7 @@
                         </div>
                     </div>
                     
-                    <div class="bg-white p-6 rounded-xl shadow-sm border border-gray-100 hover:shadow-lg transition-shadow">
+                    <div class="bg-white p-4 sm:p-6 rounded-xl shadow-sm border border-gray-100 hover:shadow-lg transition-shadow">
                         <div class="flex items-center">
                             <div class="p-2 bg-teal-100 rounded-lg">
                                 <svg class="w-6 h-6 text-teal-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -191,11 +224,11 @@
 
                 <!-- Invoices Table Card -->
                 <div class="bg-white rounded-xl shadow-sm border border-gray-100">
-                    <div class="px-6 py-4 border-b border-gray-100">
-                        <div class="flex items-center justify-between">
-                            <h2 class="text-lg font-semibold text-gray-900">All Invoices</h2>
-                            <div class="flex space-x-2">
-                                <select id="statusFilter" class="text-sm border border-gray-300 rounded-lg px-3 py-1 focus:ring-2 focus:ring-teal-500 focus:border-transparent">
+                    <div class="px-4 sm:px-6 py-4 border-b border-gray-100">
+                        <div class="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 sm:gap-0">
+                            <h2 class="text-base sm:text-lg font-semibold text-gray-900">All Invoices</h2>
+                            <div class="flex items-center space-x-2 w-full sm:w-auto">
+                                <select id="statusFilter" class="flex-1 sm:flex-none text-sm border border-gray-300 rounded-lg px-3 py-1.5 focus:ring-2 focus:ring-teal-500 focus:border-transparent">
                                     <option>All Status</option>
                                     <option>Generated</option>
                                     <option>Paid</option>
@@ -204,6 +237,7 @@
                             </div>
                         </div>
                     </div>
+
                     
 <!-- Desktop Table -->
 <div class="hidden lg:block overflow-x-auto">
@@ -225,17 +259,15 @@
 </div>
 
 <!-- Mobile Cards -->
-<!-- Mobile Cards -->
-<div class="lg:hidden overflow-y-auto max-h-96 space-y-4 px-1" id="invoicesTableMobile">
-</div>
+<div class="lg:hidden space-y-3 sm:space-y-4 p-4" id="invoicesTableMobile"></div>
                 </div>
-            </div>
-        </div>
+                            </section>
+        </main>
     </div>
 
     <!-- Payment Modal -->
     <div id="paymentModal" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50 hidden">
-        <div class="bg-white rounded-2xl p-6 max-w-md w-full mx-4 animate-slide-up">
+        <div class="bg-white rounded-2xl p-4 sm:p-6 max-w-md w-full mx-4 animate-slide-up max-h-[90vh] overflow-y-auto">
             <div class="flex justify-between items-center mb-6">
                 <h3 class="text-xl font-semibold text-gray-900">Make Payment</h3>
                 <button onclick="closePaymentModal()" class="text-gray-400 hover:text-gray-600 transition-colors">
@@ -316,7 +348,7 @@
 
     <!-- Invoice Details Modal -->
     <div id="detailsModal" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50 hidden">
-        <div class="bg-white rounded-2xl p-6 max-w-2xl w-full mx-4 animate-slide-up max-h-[80vh] overflow-y-auto">
+        <div class="bg-white rounded-2xl p-4 sm:p-6 max-w-2xl w-full mx-4 animate-slide-up max-h-[90vh] overflow-y-auto">
             <div class="flex justify-between items-center mb-6">
                 <h3 class="text-xl font-semibold text-gray-900">Invoice Details</h3>
                 <button onclick="closeDetailsModal()" class="text-gray-400 hover:text-gray-600 transition-colors">
@@ -837,58 +869,57 @@ function renderInvoices() {
     
     // Render mobile cards
     if (mobileContainer) {
-            mobileContainer.innerHTML = filteredInvoices.map(invoice => `
-                <div class="bg-white border border-gray-200 rounded-lg p-4 shadow-sm flex-shrink-0">
-                <div class="space-y-3">
-                    <div class="flex justify-between items-start">
-                        <div>
-                            <p class="text-sm font-medium text-gray-900">#${String(invoice.id).padStart(6, '0')}</p>
-                            <p class="text-xs text-gray-500">${formatDate(invoice.startDate)} - ${formatDate(invoice.endDate)}</p>
-                        </div>
-                        <div class="text-right">
-                            ${getStatusBadge(invoice.displayStatus)}
-                        </div>
-                    </div>
-                    
-                    <div class="grid grid-cols-2 gap-3 text-sm">
-                        <div>
-                            <p class="text-xs text-gray-500">Orders</p>
-                            <p class="font-medium">${invoice.totalOrders}</p>
-                        </div>
-                        <div>
-                            <p class="text-xs text-gray-500">Amount</p>
-                            <p class="font-medium">$${invoice.totalAmount.toFixed(2)}</p>
-                        </div>
-                    </div>
-                    
-                    <div class="text-sm">
-                        <p class="text-xs text-gray-500">Due Date</p>
-                        <p class="font-medium ${isPastDue(invoice.dueDate) && invoice.displayStatus !== 'paid' ? 'text-red-600' : ''}">${formatDate(invoice.dueDate)}</p>
-                    </div>
-                    
-                    <div class="flex items-center justify-between pt-2 border-t border-gray-100">
-                        <button onclick="downloadPDF(${invoice.id})" class="text-blue-600 hover:text-blue-800 transition-colors flex items-center text-sm">
-                            <svg class="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/>
-                            </svg>
-                            Download
-                        </button>
-                        ${invoice.displayStatus !== 'paid' ? `
-                            <button onclick="redirectToStripe(${invoice.id}, this)" class="bg-gradient-to-r from-teal-600 to-cyan-600 text-white px-4 py-2 rounded-lg text-sm font-medium hover:from-teal-700 hover:to-cyan-700 transition-all duration-200">
-                                Pay Now
-                            </button>
-                        ` : `
-                            <span class="text-green-600 text-sm font-medium flex items-center">
-                                <svg class="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/>
-                                </svg>
-                                Paid
-                            </span>
-                        `}
-                    </div>
+mobileContainer.innerHTML = filteredInvoices.map(invoice => `
+    <div class="bg-white border border-gray-200 rounded-lg p-4 shadow-sm hover:shadow-md transition-shadow">
+        <div class="space-y-3">
+            <div class="flex justify-between items-start gap-2">
+                <div class="flex-1 min-w-0">
+                    <p class="text-sm font-medium text-gray-900 truncate">#${String(invoice.id).padStart(6, '0')}</p>
+                    <p class="text-xs text-gray-500 truncate">${formatDate(invoice.startDate)} - ${formatDate(invoice.endDate)}</p>
+                </div>
+                <div class="flex-shrink-0">
+                    ${getStatusBadge(invoice.displayStatus)}
                 </div>
             </div>
-        `).join('');
+            
+            <div class="grid grid-cols-2 gap-3 text-sm">
+                <div>
+                    <p class="text-xs text-gray-500">Orders</p>
+                    <p class="font-medium text-gray-900">${invoice.totalOrders}</p>
+                </div>
+                <div>
+                    <p class="text-xs text-gray-500">Amount</p>
+                    <p class="font-medium text-gray-900">$${invoice.totalAmount.toFixed(2)}</p>
+                </div>
+                <div class="col-span-2">
+                    <p class="text-xs text-gray-500">Due Date</p>
+                    <p class="font-medium ${isPastDue(invoice.dueDate) && invoice.displayStatus !== 'paid' ? 'text-red-600' : 'text-gray-900'}">${formatDate(invoice.dueDate)}</p>
+                </div>
+            </div>
+            
+            <div class="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-2 pt-3 border-t border-gray-100">
+                <button onclick="downloadPDF(${invoice.id})" class="text-blue-600 hover:text-blue-800 transition-colors flex items-center justify-center sm:justify-start text-sm py-2 sm:py-0">
+                    <svg class="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/>
+                    </svg>
+                    Download PDF
+                </button>
+                ${invoice.displayStatus !== 'paid' ? `
+                    <button onclick="redirectToStripe(${invoice.id}, this)" class="bg-gradient-to-r from-teal-600 to-cyan-600 text-white px-4 py-2 rounded-lg text-sm font-medium hover:from-teal-700 hover:to-cyan-700 transition-all duration-200 shadow-sm hover:shadow-md w-full sm:w-auto">
+                        Pay Now
+                    </button>
+                ` : `
+                    <span class="text-green-600 text-sm font-medium flex items-center justify-center sm:justify-start py-2 sm:py-0">
+                        <svg class="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/>
+                        </svg>
+                        Paid
+                    </span>
+                `}
+            </div>
+        </div>
+    </div>
+`).join('');
     }
 }
 
@@ -911,61 +942,7 @@ function updateStats() {
     document.getElementById('totalOutstanding').textContent = '$' + totalOutstanding.toFixed(2);
 }
 
-// Initialize the page
-document.addEventListener('DOMContentLoaded', function() {
-    
-    
-    // Fetch invoices from API on page load
-    fetchInvoices();
-    handlePaymentSuccess();
 
-    // Filter change handler
-    const statusFilter = document.getElementById('statusFilter');
-    if (statusFilter) {
-        statusFilter.addEventListener('change', renderInvoices);
-    }
-
-    // Close modals when clicking outside
-    const paymentModal = document.getElementById('paymentModal');
-    if (paymentModal) {
-        paymentModal.addEventListener('click', function(e) {
-            if (e.target === this) closePaymentModal();
-        });
-    }
-
-    // Handle payment method change
-    const paymentMethod = document.getElementById('paymentMethod');
-    if (paymentMethod) {
-        paymentMethod.addEventListener('change', function() {
-            const creditCardForm = document.getElementById('creditCardForm');
-            if (creditCardForm) {
-                if (this.value === 'credit_card') {
-                    creditCardForm.style.display = 'block';
-                } else {
-                    creditCardForm.style.display = 'none';
-                }
-            }
-        });
-    }
-
-    // Add refresh button functionality
-    const refreshButton = document.createElement('button');
-    refreshButton.id = 'refreshButton';
-    refreshButton.innerHTML = `
-        <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"/>
-        </svg>
-        <span class="refresh-text">Refresh</span>
-    `;
-    refreshButton.className = 'flex items-center px-3 py-1 text-sm border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors';
-    refreshButton.onclick = fetchInvoices;
-    
-    // Add refresh button to the header
-    const headerControls = document.querySelector('.flex.space-x-2');
-    if (headerControls) {
-        headerControls.appendChild(refreshButton);
-    }
-});
 
 // --- Your function (only alerts replaced with showToast) ---
 function handlePaymentSuccess() {
@@ -1043,47 +1020,86 @@ function logoutPharmacy() {
     window.location.href = "/pharmacyLogin/";
 }
 
-// Mobile menu toggle functions
-function toggleMobileMenu() {
-    const sidebar = document.getElementById('sidebar');
-    const overlay = document.getElementById('sidebarOverlay');
-    
-    sidebar.classList.toggle('-translate-x-full');
-    overlay.classList.toggle('hidden');
-}
-
-function closeMobileMenu() {
-    const sidebar = document.getElementById('sidebar');
-    const overlay = document.getElementById('sidebarOverlay');
-    
-    sidebar.classList.add('-translate-x-full');
-    overlay.classList.add('hidden');
-}
-
-// Add event listeners for mobile menu
+// Initialize the page
 document.addEventListener('DOMContentLoaded', function() {
-    // Mobile menu event listeners
-    const mobileMenuBtn = document.getElementById('mobileMenuBtn');
-    const closeSidebarBtn = document.getElementById('closeSidebarBtn');
+    // Fetch invoices from API on page load
+    fetchInvoices();
+    handlePaymentSuccess();
+
+    // Mobile menu toggle
+    const menuToggle = document.getElementById('mobileMenuBtn');
+    const sidebar = document.getElementById('sidebar');
     const sidebarOverlay = document.getElementById('sidebarOverlay');
-    
-    if (mobileMenuBtn) {
-        mobileMenuBtn.addEventListener('click', toggleMobileMenu);
+
+    if (menuToggle) {
+        menuToggle.addEventListener('click', () => {
+            sidebar.classList.toggle('-translate-x-full');
+            sidebarOverlay.classList.toggle('hidden');
+        });
     }
-    
-    if (closeSidebarBtn) {
-        closeSidebarBtn.addEventListener('click', closeMobileMenu);
-    }
-    
+
     if (sidebarOverlay) {
-        sidebarOverlay.addEventListener('click', closeMobileMenu);
+        sidebarOverlay.addEventListener('click', () => {
+            sidebar.classList.add('-translate-x-full');
+            sidebarOverlay.classList.add('hidden');
+        });
     }
-    
+
     // Close mobile menu when clicking on nav links
     const navLinks = document.querySelectorAll('#sidebar nav a');
     navLinks.forEach(link => {
-        link.addEventListener('click', closeMobileMenu);
+        link.addEventListener('click', () => {
+            sidebar.classList.add('-translate-x-full');
+            sidebarOverlay.classList.add('hidden');
+        });
     });
+
+    // Filter change handler
+    const statusFilter = document.getElementById('statusFilter');
+    if (statusFilter) {
+        statusFilter.addEventListener('change', renderInvoices);
+    }
+
+    // Close modals when clicking outside
+    const paymentModal = document.getElementById('paymentModal');
+    if (paymentModal) {
+        paymentModal.addEventListener('click', function(e) {
+            if (e.target === this) closePaymentModal();
+        });
+    }
+
+    // Handle payment method change
+    const paymentMethod = document.getElementById('paymentMethod');
+    if (paymentMethod) {
+        paymentMethod.addEventListener('change', function() {
+            const creditCardForm = document.getElementById('creditCardForm');
+            if (creditCardForm) {
+                if (this.value === 'credit_card') {
+                    creditCardForm.style.display = 'block';
+                } else {
+                    creditCardForm.style.display = 'none';
+                }
+            }
+        });
+    }
+
+    // Add refresh button functionality
+    const refreshButton = document.createElement('button');
+    refreshButton.id = 'refreshButton';
+    refreshButton.innerHTML = `
+        <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"/>
+        </svg>
+        <span class="refresh-text">Refresh</span>
+    `;
+    refreshButton.className = 'flex items-center px-3 py-1 text-sm border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors';
+    refreshButton.onclick = fetchInvoices;
+    
+    // Add refresh button to the header
+    const headerControls = document.querySelector('.flex.space-x-2');
+    if (headerControls) {
+        headerControls.appendChild(refreshButton);
+    }
 });
     </script>
 </body>

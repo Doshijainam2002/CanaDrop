@@ -24,7 +24,7 @@
 
   <div class="flex h-screen overflow-hidden">
     <!-- Sidebar -->
-    <aside class="w-64 bg-neutral-800 border-r border-neutral-700 flex flex-col">
+    <aside id="sidebar" class="w-64 bg-neutral-800 border-r border-neutral-700 flex flex-col fixed lg:static inset-y-0 left-0 z-40 transform -translate-x-full lg:translate-x-0 transition-transform duration-300 overflow-y-auto">
       <div class="flex items-center h-16 border-b border-neutral-700 px-6">
         <img src="https://canalogistix.s3.us-east-2.amazonaws.com/Logo/CanaLogistiX_Logo_BG.png" alt="CanaLogistiX Logo" class="h-12 w-12 rounded-full object-cover"/>
         <span class="ml-2 text-lg font-semibold text-white">CanaLogistiX</span>
@@ -76,12 +76,19 @@
       </div>
     </aside>
 
+    <div id="sidebarOverlay" class="hidden lg:hidden fixed inset-0 bg-black/50 z-30"></div>
+
     <!-- Main -->
-    <main class="flex-1 flex flex-col overflow-y-auto">
-      <header class="bg-neutral-800 border-b border-neutral-700 px-6 py-4 flex items-center justify-between">
-        <div>
-          <h1 class="text-2xl font-bold text-white">Pharmacies Management</h1>
-          <p class="text-sm text-neutral-400">Manage pharmacy accounts, orders, and payments</p>
+    <main class="flex-1 flex flex-col overflow-y-auto lg:ml-0">
+      <header class="bg-neutral-800 border-b border-neutral-700 px-4 sm:px-6 py-4 flex items-center justify-between gap-4">
+        <button id="menuToggle" class="lg:hidden text-white p-2 flex-shrink-0">
+          <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16"/>
+          </svg>
+        </button>
+        <div class="flex-1 min-w-0">
+          <h1 class="text-xl sm:text-2xl font-bold text-white truncate">Pharmacies Management</h1>
+          <p class="text-sm text-neutral-400 hidden sm:block">Manage pharmacy accounts, orders, and payments</p>
         </div>
       </header>
 
@@ -89,7 +96,7 @@
       <section class="px-6 py-6 bg-neutral-900">
         <div class="bg-neutral-800/80 border border-neutral-700 rounded-xl p-6">
           <h2 class="text-lg font-semibold text-white mb-4">Search & Filters</h2>
-          <div class="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-5 gap-4">
+          <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4">
             <input id="searchPharmacy" type="text" placeholder="Search Pharmacy by Name or Email" class="bg-neutral-900 border border-neutral-700 rounded-lg px-3 py-2 text-sm w-full text-neutral-300 focus:ring-2 focus:ring-orange-500 focus:outline-none"/>
             
             <select id="filterCity" class="bg-neutral-900 border border-neutral-700 rounded-lg px-3 py-2 text-sm text-neutral-300 focus:ring-2 focus:ring-orange-500 focus:outline-none">
@@ -114,9 +121,9 @@
       </section>
 
       <!-- Pharmacy Table -->
-      <section class="px-6 pb-8">
+      <section class="px-4 sm:px-6 pb-8">
         <div class="bg-neutral-800/80 border border-neutral-700 rounded-xl shadow">
-          <div class="px-6 py-4 border-b border-neutral-700 flex justify-between items-center">
+          <div class="px-4 sm:px-6 py-4 border-b border-neutral-700 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3">
             <h2 class="text-lg font-semibold text-white">Pharmacy List</h2>
             <button onclick="addPharmacy()" class="text-sm text-orange-400 hover:text-orange-300">+ Add Pharmacy</button>
           </div>
@@ -142,7 +149,7 @@
       </section>
 
       <!-- Pharmacy Details -->
-      <section id="pharmacyDetailsSection" class="px-6 pb-10 grid grid-cols-1 lg:grid-cols-2 gap-6 hidden">
+      <section id="pharmacyDetailsSection" class="px-4 sm:px-6 pb-10 grid grid-cols-1 lg:grid-cols-2 gap-6 hidden">
         <!-- Pharmacy Profile -->
         <div class="bg-neutral-800/80 border border-neutral-700 rounded-xl p-6">
           <h2 class="text-lg font-semibold text-white mb-4">Pharmacy Profile</h2>
@@ -157,10 +164,10 @@
           </div>
           <div class="mt-6 border-t border-neutral-700 pt-4">
             <h3 class="text-sm font-semibold text-white mb-2">Account Actions</h3>
-            <div class="flex space-x-3">
-              <button onclick="deactivatePharmacy()" class="flex-1 text-xs text-yellow-400 border border-yellow-600/40 px-3 py-2 rounded hover:bg-yellow-600/20">Deactivate</button>
-              <button onclick="reactivatePharmacy()" class="flex-1 text-xs text-green-400 border border-green-600/40 px-3 py-2 rounded hover:bg-green-600/20">Reactivate</button>
-              <button onclick="resetCredentials()" class="flex-1 text-xs text-orange-400 border border-orange-600/40 px-3 py-2 rounded hover:bg-orange-600/20">Reset Credentials</button>
+            <div class="flex flex-wrap gap-3">
+              <button onclick="deactivatePharmacy()" class="flex-1 sm:flex-none text-xs text-yellow-400 border border-yellow-600/40 px-3 py-2 rounded hover:bg-yellow-600/20">Deactivate</button>
+              <button onclick="reactivatePharmacy()" class="flex-1 sm:flex-none text-xs text-green-400 border border-green-600/40 px-3 py-2 rounded hover:bg-green-600/20">Reactivate</button>
+              <button onclick="resetCredentials()" class="flex-1 sm:flex-none text-xs text-orange-400 border border-orange-600/40 px-3 py-2 rounded hover:bg-orange-600/20">Reset Credentials</button>
             </div>
           </div>
         </div>
@@ -489,17 +496,17 @@ function renderPharmaciesTable() {
   
   tbody.innerHTML = filteredPharmacies.map(p => `
     <tr class="hover:bg-neutral-700/50 transition">
-      <td class="px-6 py-4 text-neutral-100 font-medium">${p.name}</td>
-      <td class="px-6 py-4 text-neutral-300">${p.city}</td>
-      <td class="px-6 py-4 text-neutral-300">${p.province}</td>
-      <td class="px-6 py-4">
+        <td class="px-4 sm:px-6 py-3 sm:py-4 text-neutral-100 font-medium">${p.name}</td>
+        <td class="px-4 sm:px-6 py-3 sm:py-4 text-neutral-300">${p.city}</td>
+        <td class="px-4 sm:px-6 py-3 sm:py-4 text-neutral-300">${p.province}</td>
+        <td class="px-4 sm:px-6 py-3 sm:py-4">
         <span class="inline-flex px-3 py-1 text-xs font-medium rounded-full ${p.active ? 'bg-green-500/20 text-green-400 border border-green-600/40' : 'bg-red-500/20 text-red-400 border border-red-600/40'}">
           ${p.active ? 'Active' : 'Inactive'}
         </span>
       </td>
-      <td class="px-6 py-4 text-neutral-100">${p.total_valid_orders || 0}</td>
-      <td class="px-6 py-4 text-orange-400 font-semibold">$${(p.total_outstanding_amount || 0).toFixed(2)}</td>
-      <td class="px-6 py-4 space-x-2">
+      <td class="px-4 sm:px-6 py-3 sm:py-4 text-neutral-100">${p.total_valid_orders || 0}</td>
+      <td class="px-4 sm:px-6 py-3 sm:py-4 text-orange-400 font-semibold">$${(p.total_outstanding_amount || 0).toFixed(2)}</td>
+      <td class="px-4 sm:px-6 py-3 sm:py-4 space-x-2">
         <button onclick="viewPharmacy(${p.id})" class="text-xs text-orange-400 border border-orange-600/40 px-3 py-1 rounded hover:bg-orange-600/20">View</button>
         <button onclick="editPharmacy(${p.id})" class="text-xs text-neutral-300 border border-neutral-600 px-3 py-1 rounded hover:bg-neutral-700">Edit</button>
         <button onclick="togglePharmacyStatus(${p.id})" class="text-xs text-red-400 border border-red-600/40 px-3 py-1 rounded hover:bg-red-600/20">
@@ -1016,6 +1023,21 @@ document.addEventListener("DOMContentLoaded", () => {
   
   // Add real-time search
   document.getElementById("searchPharmacy").addEventListener("input", applyFilters);
+});
+
+// Mobile menu toggle
+const menuToggle = document.getElementById('menuToggle');
+const sidebar = document.getElementById('sidebar');
+const sidebarOverlay = document.getElementById('sidebarOverlay');
+
+menuToggle?.addEventListener('click', () => {
+  sidebar.classList.toggle('-translate-x-full');
+  sidebarOverlay.classList.toggle('hidden');
+});
+
+sidebarOverlay?.addEventListener('click', () => {
+  sidebar.classList.add('-translate-x-full');
+  sidebarOverlay.classList.add('hidden');
 });
 
       </script>

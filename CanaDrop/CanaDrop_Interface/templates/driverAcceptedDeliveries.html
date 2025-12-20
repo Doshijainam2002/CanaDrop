@@ -35,23 +35,16 @@
     </style>
 </head>
 <body class="min-h-screen bg-gradient-to-br from-slate-900 to-gray-900">
-    <!-- Sidebar -->
-    <div class="fixed inset-y-0 left-0 z-50 w-64 bg-slate-800 border-r border-slate-700 transform transition-transform duration-300 ease-in-out -translate-x-full md:translate-x-0" id="sidebar">
-        <div class="flex items-center justify-between h-16 px-4 border-b border-slate-700">
-            <div class="flex items-center">
+    <div class="flex h-screen overflow-hidden">
+        <!-- Sidebar -->
+        <aside id="sidebar" class="w-64 bg-slate-800 border-r border-slate-700 flex flex-col fixed lg:static inset-y-0 left-0 z-40 transform -translate-x-full lg:translate-x-0 transition-transform duration-300 overflow-y-auto">
+            <div class="flex items-center h-16 px-6 border-b border-slate-700">
                 <img src="https://canalogistix.s3.us-east-2.amazonaws.com/Logo/CanaLogistiX_Logo_BG.png" alt="CanaLogistiX Logo" class="h-10 w-10 rounded-full object-cover"/>
                 <span class="ml-2 text-lg font-semibold text-slate-100">CanaLogistiX</span>
             </div>
-            <!-- Close button for mobile -->
-            <button id="closeSidebarBtn" class="md:hidden p-2 text-slate-300 hover:text-emerald-400 transition-colors">
-                <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
-                </svg>
-            </button>
-        </div>
 
         
-        <nav class="mt-8">
+        <nav class="flex-1 p-4 space-y-2 text-sm overflow-y-auto">
             <a href="/driverDashboard/" onclick="navigateTo('dashboard')" class="nav-item flex items-center px-6 py-3 text-slate-300 hover:bg-slate-700 hover:text-emerald-400 transition-colors">
                 <svg class="w-5 h-5 mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 7v10a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2H5a2 2 0 00-2-2z"/>
@@ -84,27 +77,38 @@
                 Logout
             </a>
         </nav>
-    </div>
+
+        <!-- Profile -->
+        <div class="p-4 border-t border-slate-700">
+            <div class="flex items-center">
+                <div id="profileInitialSidebar" class="flex-shrink-0 w-9 h-9 bg-gradient-to-r from-emerald-600 to-emerald-500 rounded-full flex items-center justify-center text-sm font-semibold text-white">?</div>
+                <div class="ml-3">
+                    <p id="driverNameSidebar" class="text-sm font-medium text-slate-100">Driver</p>
+                    <p id="driverEmailSidebar" class="text-xs text-slate-400">Loading...</p>
+                </div>
+            </div>
+        </div>
+    </aside>
 
     <!-- Mobile overlay -->
-    <div id="mobileOverlay" class="fixed inset-0 bg-black bg-opacity-50 z-40 hidden md:hidden"></div>
+    <div id="sidebarOverlay" class="hidden lg:hidden fixed inset-0 bg-black/50 z-30"></div>
 
     <!-- Main Content -->
-    <div class="md:ml-64">
+    <main class="flex-1 flex flex-col overflow-y-auto">
         <!-- Header -->
-        <header class="bg-slate-800 border-b border-slate-700 px-4 md:px-6 py-4">
-            <div class="flex items-center justify-between">
-                <button id="mobileMenuBtn" class="md:hidden p-2 text-slate-300 hover:text-emerald-400 transition-colors">
+        <header class="bg-slate-800 border-b border-slate-700 px-4 sm:px-6 py-4">
+            <div class="flex items-center justify-between gap-4">
+                <button id="menuToggle" class="lg:hidden text-slate-300 p-2 flex-shrink-0 hover:text-emerald-400 transition-colors">
                     <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16"/>
                     </svg>
                 </button>
                 
-                <div>
-                    <h1 class="text-xl md:text-2xl font-bold text-slate-100">Accepted Deliveries</h1>
-                    <p class="text-slate-400 text-xs md:text-sm hidden sm:block">Manage your current delivery assignments</p>
+                <div class="flex-1 min-w-0">
+                    <h1 class="text-xl sm:text-2xl font-bold text-slate-100 truncate">Accepted Deliveries</h1>
+                    <p class="text-slate-400 text-sm hidden sm:block">Manage your current delivery assignments</p>
                 </div>
-                <div class="flex items-center space-x-2 md:space-x-4">
+                <div class="flex items-center space-x-2 sm:space-x-4">
                     <button onclick="refreshDeliveries()" 
                             class="p-2 text-slate-400 hover:text-emerald-400 transition-colors"
                             title="Refresh Deliveries">
@@ -114,7 +118,7 @@
                         </svg>
                     </button>
                     <button id="optimizeBtn" onclick="optimizeRoute()" 
-                            class="bg-emerald-600 hover:bg-emerald-700 text-white px-4 py-2 rounded-lg text-sm font-medium transition-colors flex items-center disabled:opacity-50 disabled:cursor-not-allowed">
+                            class="bg-emerald-600 hover:bg-emerald-700 text-white px-3 sm:px-4 py-2 rounded-lg text-xs sm:text-sm font-medium transition-colors flex items-center disabled:opacity-50 disabled:cursor-not-allowed">
                         <svg id="optimizeIcon" class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" 
                                 d="M9 20l-5.447-2.724A1 1 0 013 16.382V5.618a1 1 0 011.447-.894L9 7m0 13l6-3m-6 3V7m6 10l4.553 2.276A1 1 0 0021 18.382V7.618a1 1 0 00-.553-.894L15 4m0 13V4m0 0L9 7"/>
@@ -125,8 +129,8 @@
                         </svg>
                         <span id="optimizeBtnText">Optimize Route</span>
                     </button>
-                    <span id="welcomeText" class="text-slate-300 text-sm hidden lg:inline">Welcome back, ...</span>
-                    <div class="w-8 h-8 bg-emerald-500 rounded-full flex items-center justify-center">
+                    <span id="welcomeText" class="text-slate-300 text-sm hidden xl:inline">Welcome back, ...</span>
+                    <div class="w-8 h-8 bg-emerald-500 rounded-full flex items-center justify-center hidden sm:flex">
                         <span id="profileInitial" class="text-white font-semibold">?</span>
                     </div>
                 </div>
@@ -134,7 +138,7 @@
         </header>
 
         <!-- Color Legend -->
-        <div class="bg-slate-800 border-b border-slate-700 px-4 md:px-6 py-3">
+        <div class="bg-slate-800 border-b border-slate-700 px-4 sm:px-6 py-3">
             <div class="flex items-center justify-between flex-wrap gap-2">
                 <div class="flex items-center text-xs text-slate-400">
                     <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -164,7 +168,7 @@
         </div>
 
         <!-- Route Summary Banner (hidden by default) -->
-        <div id="routeSummary" class="hidden bg-gradient-to-r from-emerald-600 to-emerald-700 px-4 md:px-6 py-3 shadow-lg">
+        <div id="routeSummary" class="hidden bg-gradient-to-r from-emerald-600 to-emerald-700 px-4 sm:px-6 py-3 shadow-lg">
             <div class="flex items-center justify-between">
                 <div class="flex items-center space-x-4">
                     <svg class="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -185,17 +189,17 @@
         </div>
 
         <!-- Deliveries Cards -->
-        <main class="p-4 md:p-6">
-            <div id="deliveriesContainer" class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
+        <div class="p-4 sm:p-6">
+            <div id="deliveriesContainer" class="grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-3 gap-4">
                 <!-- Cards will be populated by JavaScript -->
             </div>
         </main>
     </div>
 
     <!-- Delivery Details Modal -->
-    <div id="detailsModal" class="fixed inset-0 bg-black bg-opacity-75 hidden z-50 flex items-center justify-center p-4">
-        <div class="bg-slate-800 rounded-xl max-w-lg w-full max-h-[85vh] overflow-y-auto border border-slate-700 shadow-2xl mx-4">
-            <div class="flex items-center justify-between p-4 border-b border-slate-700">
+        <div id="detailsModal" class="fixed inset-0 bg-black bg-opacity-75 hidden z-50 flex items-center justify-center p-4">
+            <div class="bg-slate-800 rounded-xl max-w-lg w-full max-h-[90vh] overflow-y-auto border border-slate-700 shadow-2xl">
+            <div class="flex items-center justify-between p-4 sm:p-6 border-b border-slate-700">
                 <div>
                     <h3 id="modalOrderId" class="text-lg font-bold text-slate-100"></h3>
                     <p id="modalPharmacy" class="text-slate-400 text-sm"></p>
@@ -206,11 +210,12 @@
                     </svg>
                 </button>
             </div>
-            <div class="p-4" id="modalContent">
+            <div class="p-4 sm:p-6" id="modalContent">
                 <!-- Content populated by JS -->
             </div>
         </div>
     </div>
+
 
     <script>
 let deliveries = [];
@@ -921,6 +926,7 @@ async function loadDriverInfo() {
 
         const data = await response.json();
 
+        // Update header elements
         const welcomeEl = document.getElementById("welcomeText");
         const profileEl = document.getElementById("profileInitial");
         
@@ -930,63 +936,47 @@ async function loadDriverInfo() {
         if (profileEl) {
             profileEl.textContent = data.name.charAt(0).toUpperCase();
         }
+        
+        // Also update sidebar profile
+        const sidebarInitial = document.getElementById("profileInitialSidebar");
+        const sidebarName = document.getElementById("driverNameSidebar");
+        const sidebarEmail = document.getElementById("driverEmailSidebar");
+
+        if (sidebarInitial) {
+            sidebarInitial.textContent = data.name.charAt(0).toUpperCase();
+        }
+        if (sidebarName) {
+            sidebarName.textContent = data.name;
+        }
+        if (sidebarEmail) {
+            sidebarEmail.textContent = data.email;
+        }
 
     } catch (error) {
         console.error("Error loading driver info:", error);
     }
 }
 
-function toggleMobileMenu() {
-    const sidebar = document.getElementById('sidebar');
-    const overlay = document.getElementById('mobileOverlay');
-    
-    if (sidebar) sidebar.classList.toggle('-translate-x-full');
-    if (overlay) overlay.classList.toggle('hidden');
-}
+// Mobile menu toggle
+const menuToggle = document.getElementById('menuToggle');
+const sidebar = document.getElementById('sidebar');
+const sidebarOverlay = document.getElementById('sidebarOverlay');
 
-function closeMobileMenu() {
-    const sidebar = document.getElementById('sidebar');
-    const overlay = document.getElementById('mobileOverlay');
-    
-    if (sidebar) sidebar.classList.add('-translate-x-full');
-    if (overlay) overlay.classList.add('hidden');
-}
+menuToggle?.addEventListener('click', () => {
+    sidebar.classList.toggle('-translate-x-full');
+    sidebarOverlay.classList.toggle('hidden');
+});
+
+sidebarOverlay?.addEventListener('click', () => {
+    sidebar.classList.add('-translate-x-full');
+    sidebarOverlay.classList.add('hidden');
+});
 
 document.addEventListener('DOMContentLoaded', function() {
     loadDeliveries();
     loadDriverInfo();
     
-    const mobileMenuBtn = document.getElementById('mobileMenuBtn');
-    const closeSidebarBtn = document.getElementById('closeSidebarBtn');
-    const mobileOverlay = document.getElementById('mobileOverlay');
-    const navItems = document.querySelectorAll('.nav-item');
     const detailsModal = document.getElementById('detailsModal');
-    
-    if (mobileMenuBtn) {
-        mobileMenuBtn.addEventListener('click', toggleMobileMenu);
-    }
-    
-    if (closeSidebarBtn) {
-        closeSidebarBtn.addEventListener('click', closeMobileMenu);
-    }
-    
-    if (mobileOverlay) {
-        mobileOverlay.addEventListener('click', closeMobileMenu);
-    }
-    
-    navItems.forEach(item => {
-        item.addEventListener('click', () => {
-            if (window.innerWidth < 768) {
-                closeMobileMenu();
-            }
-        });
-    });
-    
-    window.addEventListener('resize', () => {
-        if (window.innerWidth >= 768) {
-            closeMobileMenu();
-        }
-    });
     
     if (detailsModal) {
         detailsModal.addEventListener('click', function(e) {

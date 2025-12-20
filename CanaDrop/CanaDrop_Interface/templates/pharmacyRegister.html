@@ -151,9 +151,11 @@
     </div>
 
     <!-- Footer -->
-    <div class="text-center mt-8">
-      <p class="text-sm text-gray-500">© 2024 CanaLogistiX - Cana Group of Companies. All rights reserved.</p>
-    </div>
+        <div class="text-center mt-8">
+        <p class="text-sm text-gray-500">
+            © <span id="current-year"></span> CanaLogistiX - Cana Group of Companies. All rights reserved.
+        </p>
+        </div>
   </div>
 
   <!-- Modal -->
@@ -458,6 +460,8 @@
         setLoading(btnRegister, false, 'Create Account');
       }
     });
+
+    document.getElementById("current-year").textContent = new Date().getFullYear();
   </script>
 </body>
 </html>

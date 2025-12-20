@@ -20,14 +20,14 @@
 
   <div class="flex h-screen overflow-hidden">
     <!-- Sidebar -->
-    <aside class="w-64 bg-neutral-800 border-r border-neutral-700 flex flex-col">
+    <aside id="sidebar" class="w-64 bg-neutral-800 border-r border-neutral-700 flex flex-col fixed lg:static inset-y-0 left-0 z-40 transform -translate-x-full lg:translate-x-0 transition-transform duration-300 overflow-y-auto">
       <div class="flex items-center h-16 border-b border-neutral-700 px-6">
         <img src="https://canalogistix.s3.us-east-2.amazonaws.com/Logo/CanaLogistiX_Logo_BG.png" alt="CanaLogistiX Logo" class="h-12 w-12 rounded-full object-cover"/>
         <span class="ml-2 text-lg font-semibold text-white">CanaLogistiX</span>
       </div>
 
       <!-- Navigation -->
-      <nav class="flex-1 p-4 space-y-2 text-sm">
+      <nav class="flex-1 p-4 space-y-2 text-sm overflow-y-auto">
         <a href="/adminDashboard/" class="flex items-center px-3 py-2 rounded-lg text-neutral-300 hover:bg-neutral-700 transition">
           <svg class="w-5 h-5 mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 12l2-2m0 0l7-7 7 7M13 5v6h6"/></svg>
           Dashboard
@@ -76,19 +76,26 @@
       </div>
     </aside>
 
+    <div id="sidebarOverlay" class="hidden lg:hidden fixed inset-0 bg-black/50 z-30"></div>
+
     <!-- Main -->
-    <main class="flex-1 flex flex-col overflow-y-auto">
-      <header class="bg-neutral-800 border-b border-neutral-700 px-6 py-4 flex items-center justify-between">
-        <div>
-          <h1 class="text-2xl font-bold text-white">Invoices & Payments</h1>
-          <p class="text-sm text-neutral-400">Manage pharmacy and driver billing cycles, payments, and reports</p>
+    <main class="flex-1 flex flex-col overflow-y-auto lg:ml-0">
+      <header class="bg-neutral-800 border-b border-neutral-700 px-4 sm:px-6 py-4 flex items-center justify-between gap-4">
+        <button id="menuToggle" class="lg:hidden text-white p-2 flex-shrink-0">
+          <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16"/>
+          </svg>
+        </button>
+        <div class="flex-1 min-w-0">
+          <h1 class="text-xl sm:text-2xl font-bold text-white truncate">Invoices & Payments</h1>
+          <p class="text-sm text-neutral-400 hidden sm:block">Manage pharmacy and driver billing cycles, payments, and reports</p>
         </div>
       </header>
 
       <!-- Pharmacy Invoices -->
-      <section class="px-6 py-8">
+      <section class="px-4 sm:px-6 py-6 sm:py-8">
         <div class="bg-neutral-800/80 border border-neutral-700 rounded-xl p-6">
-          <div class="flex justify-between items-center mb-4">
+          <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3 mb-4">
             <h2 class="text-lg font-semibold text-white">Pharmacy Invoices</h2>
           </div>
           <div class="mb-4 flex flex-col sm:flex-row gap-3">
@@ -138,12 +145,12 @@
             </table>
 
             <!-- Pagination -->
-          <div class="flex items-center justify-between mt-4 pt-4 border-t border-neutral-700">
-            <p class="text-sm text-neutral-400">
-              Showing <span id="pharmacyStart">1</span>-<span id="pharmacyEnd">10</span> of <span id="pharmacyTotal">0</span>
-            </p>
-            <div class="flex gap-2">
-              <button id="pharmacyPrevBtn" class="px-3 py-1 text-sm border border-neutral-600 rounded hover:bg-neutral-700 disabled:opacity-50 disabled:cursor-not-allowed">
+            <div class="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 mt-4 pt-4 border-t border-neutral-700">
+              <p class="text-sm text-neutral-400">
+                Showing <span id="pharmacyStart">1</span>-<span id="pharmacyEnd">10</span> of <span id="pharmacyTotal">0</span>
+              </p>
+              <div class="flex gap-2 w-full sm:w-auto">
+                <button id="pharmacyPrevBtn" class="flex-1 sm:flex-none px-3 py-1 text-sm border border-neutral-600 rounded hover:bg-neutral-700 disabled:opacity-50 disabled:cursor-not-allowed">
                 Previous
               </button>
               <button id="pharmacyNextBtn" class="px-3 py-1 text-sm border border-neutral-600 rounded hover:bg-neutral-700 disabled:opacity-50 disabled:cursor-not-allowed">
@@ -156,9 +163,9 @@
       </section>
 
       <!-- Driver Invoices -->
-      <section class="px-6 pb-8">
+      <section class="px-4 sm:px-6 pb-6 sm:pb-8">
         <div class="bg-neutral-800/80 border border-neutral-700 rounded-xl p-6">
-          <div class="flex justify-between items-center mb-4">
+          <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3 mb-4">
             <h2 class="text-lg font-semibold text-white">Driver Invoices</h2>
           </div>
           <div class="mb-4 flex flex-col sm:flex-row gap-3">
@@ -207,15 +214,15 @@
             </table>
 
             <!-- Pagination -->
-            <div class="flex items-center justify-between mt-4 pt-4 border-t border-neutral-700">
+            <div class="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 mt-4 pt-4 border-t border-neutral-700">
               <p class="text-sm text-neutral-400">
                 Showing <span id="driverStart">1</span>-<span id="driverEnd">10</span> of <span id="driverTotal">0</span>
               </p>
-              <div class="flex gap-2">
-                <button id="driverPrevBtn" class="px-3 py-1 text-sm border border-neutral-600 rounded hover:bg-neutral-700 disabled:opacity-50 disabled:cursor-not-allowed">
+              <div class="flex gap-2 w-full sm:w-auto">
+                <button id="driverPrevBtn" class="flex-1 sm:flex-none px-3 py-1 text-sm border border-neutral-600 rounded hover:bg-neutral-700 disabled:opacity-50 disabled:cursor-not-allowed">
                   Previous
                 </button>
-                <button id="driverNextBtn" class="px-3 py-1 text-sm border border-neutral-600 rounded hover:bg-neutral-700 disabled:opacity-50 disabled:cursor-not-allowed">
+                <button id="driverNextBtn" class="flex-1 sm:flex-none px-3 py-1 text-sm border border-neutral-600 rounded hover:bg-neutral-700 disabled:opacity-50 disabled:cursor-not-allowed">
                   Next
                 </button>
               </div>
@@ -225,7 +232,7 @@
       </section>
 
       <!-- Payment Alerts -->
-      <section class="px-6 pb-8">
+      <section class="px-4 sm:px-6 pb-6 sm:pb-8">
         <div class="bg-neutral-800/80 border border-neutral-700 rounded-xl p-6">
           <h2 class="text-lg font-semibold text-white mb-4">Payment Alerts</h2>
 
@@ -251,15 +258,15 @@
           </ul>
 
           <!-- Pagination -->
-          <div class="flex items-center justify-between mt-4 pt-4 border-t border-neutral-700">
+          <div class="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 mt-4 pt-4 border-t border-neutral-700">
             <p class="text-sm text-neutral-400">
               Showing <span id="alertsStart">1</span>-<span id="alertsEnd">10</span> of <span id="alertsTotal">0</span>
             </p>
-            <div class="flex gap-2">
-              <button id="alertsPrevBtn" class="px-3 py-1 text-sm border border-neutral-600 rounded hover:bg-neutral-700 disabled:opacity-50 disabled:cursor-not-allowed">
+            <div class="flex gap-2 w-full sm:w-auto">
+              <button id="alertsPrevBtn" class="flex-1 sm:flex-none px-3 py-1 text-sm border border-neutral-600 rounded hover:bg-neutral-700 disabled:opacity-50 disabled:cursor-not-allowed">
                 Previous
               </button>
-              <button id="alertsNextBtn" class="px-3 py-1 text-sm border border-neutral-600 rounded hover:bg-neutral-700 disabled:opacity-50 disabled:cursor-not-allowed">
+              <button id="alertsNextBtn" class="flex-1 sm:flex-none px-3 py-1 text-sm border border-neutral-600 rounded hover:bg-neutral-700 disabled:opacity-50 disabled:cursor-not-allowed">
                 Next
               </button>
             </div>
@@ -270,26 +277,26 @@
 
 
       <!-- Revenue Reports -->
-      <section class="px-6 pb-10">
+      <section class="px-4 sm:px-6 pb-8 sm:pb-10">
         <div class="bg-neutral-800/80 border border-neutral-700 rounded-xl p-6">
           <h2 class="text-lg font-semibold text-white mb-4">Revenue Reports</h2>
 
-          <div class="grid grid-cols-1 md:grid-cols-3 gap-6 text-center">
+          <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4 sm:gap-6 text-center">
 
             <!-- Revenue -->
-            <div class="bg-neutral-900 border border-neutral-700 rounded-xl p-5">
+            <div class="bg-neutral-900 border border-neutral-700 rounded-xl p-4 sm:p-5">
               <p class="text-sm text-neutral-400 mb-1">Total Revenue (This Month)</p>
               <p id="revThisMonth" class="text-2xl font-bold text-green-400">$0.00</p>
             </div>
 
             <!-- Driver Payout -->
-            <div class="bg-neutral-900 border border-neutral-700 rounded-xl p-5">
+            <div class="bg-neutral-900 border border-neutral-700 rounded-xl p-4 sm:p-5">
               <p class="text-sm text-neutral-400 mb-1">Driver Payouts (This Month)</p>
               <p id="payoutThisMonth" class="text-2xl font-bold text-orange-400">$0.00</p>
             </div>
 
             <!-- Net Commission -->
-            <div class="bg-neutral-900 border border-neutral-700 rounded-xl p-5">
+            <div class="bg-neutral-900 border border-neutral-700 rounded-xl p-4 sm:p-5">
               <p class="text-sm text-neutral-400 mb-1">Net Commission Margin</p>
               <p id="netCommission" class="text-2xl font-bold text-blue-400">0% ($0.00)</p>
             </div>
@@ -549,18 +556,20 @@ function renderPharmacyInvoices(invoices, page = 1) {
 
     return `
       <tr class="hover:bg-neutral-700/50 transition">
-        <td class="px-6 py-4 text-neutral-100 font-medium">${invoiceCode}</td>
-        <td class="px-6 py-4 text-neutral-300">${inv.pharmacy_name}</td>
-        <td class="px-6 py-4 text-neutral-300">${periodText}</td>
-        <td class="px-6 py-4 text-neutral-100 font-semibold">$${totalFormatted}</td>
-        <td class="px-6 py-4">
+        <td class="px-4 sm:px-6 py-3 sm:py-4 text-neutral-100 font-medium">${invoiceCode}</td>
+        <td class="px-4 sm:px-6 py-3 sm:py-4 text-neutral-300">${inv.pharmacy_name}</td>
+        <td class="px-4 sm:px-6 py-3 sm:py-4 text-neutral-300">${periodText}</td>
+        <td class="px-4 sm:px-6 py-3 sm:py-4 text-neutral-100 font-semibold">$${totalFormatted}</td>
+        <td class="px-4 sm:px-6 py-3 sm:py-4">
           ${getInvoiceStatusBadge(inv.status)}
         </td>
-        <td class="px-6 py-4 space-x-2">
-          ${viewPdfButton}
-          <button onclick="markInvoicePaid(${inv.invoice_id})" class="text-xs text-green-400 border border-green-600/40 px-3 py-1 rounded hover:bg-green-600/20">
-            Mark Paid
-          </button>
+        <td class="px-4 sm:px-6 py-3 sm:py-4">
+          <div class="flex flex-col sm:flex-row gap-2">
+            ${viewPdfButton}
+            <button onclick="..." class="text-xs text-green-400 border border-green-600/40 px-3 py-1 rounded hover:bg-green-600/20 whitespace-nowrap">
+              Mark Paid
+            </button>
+          </div>
         </td>
       </tr>
     `;
@@ -680,18 +689,20 @@ function renderDriverInvoices(invoices, page = 1) {
 
       return `
         <tr class="hover:bg-neutral-700/50 transition">
-          <td class="px-6 py-4 text-neutral-100 font-medium">${invoiceCode}</td>
-          <td class="px-6 py-4 text-neutral-300">${inv.driver_name}</td>
-          <td class="px-6 py-4 text-neutral-300">${periodText}</td>
-          <td class="px-6 py-4 text-neutral-100 font-semibold">$${totalFormatted}</td>
-          <td class="px-6 py-4">
+          <td class="px-4 sm:px-6 py-3 sm:py-4 text-neutral-100 font-medium">${invoiceCode}</td>
+          <td class="px-4 sm:px-6 py-3 sm:py-4 text-neutral-300">${inv.driver_name}</td>
+          <td class="px-4 sm:px-6 py-3 sm:py-4 text-neutral-300">${periodText}</td>
+          <td class="px-4 sm:px-6 py-3 sm:py-4 text-neutral-100 font-semibold">$${totalFormatted}</td>
+          <td class="px-4 sm:px-6 py-3 sm:py-4">
             ${getDriverInvoiceStatusBadge(inv.status)}
           </td>
-          <td class="px-6 py-4 space-x-2">
-            ${viewPdfButton}
-            <button onclick="markDriverInvoicePaid(${inv.invoice_id})" class="text-xs text-green-400 border border-green-600/40 px-3 py-1 rounded hover:bg-green-600/20">
-              Mark Paid
-            </button>
+          <td class="px-4 sm:px-6 py-3 sm:py-4">
+            <div class="flex flex-col sm:flex-row gap-2">
+              ${viewPdfButton}
+              <button onclick="markDriverInvoicePaid(${inv.invoice_id})" class="text-xs text-green-400 border border-green-600/40 px-3 py-1 rounded hover:bg-green-600/20 whitespace-nowrap">
+                Mark Paid
+              </button>
+            </div>
           </td>
         </tr>
       `;
@@ -830,6 +841,21 @@ async function loadFinancialMetrics() {
     showNotification("Failed to load revenue metrics", "error");
   }
 }
+
+// Mobile menu toggle
+const menuToggle = document.getElementById('menuToggle');
+const sidebar = document.getElementById('sidebar');
+const sidebarOverlay = document.getElementById('sidebarOverlay');
+
+menuToggle?.addEventListener('click', () => {
+  sidebar.classList.toggle('-translate-x-full');
+  sidebarOverlay.classList.toggle('hidden');
+});
+
+sidebarOverlay?.addEventListener('click', () => {
+  sidebar.classList.add('-translate-x-full');
+  sidebarOverlay.classList.add('hidden');
+});
 
 
 loadPharmacyInvoices();

@@ -163,7 +163,7 @@ GCP_DRIVER_INVOICE_FOLDER = "DriverSummary"
 GCP_PROOF_FOLDER = "Proof"
 
 LOGO_PATH = os.path.join(BASE_DIR, "Logo", "Website_Logo_No_Background.png")
-LOGO_URL = "https://canalogistix.s3.us-east-2.amazonaws.com/Logo/CanaLogistiX_Logo_NOBG.png"
+LOGO_URL = "https://canalogistix.s3.us-east-2.amazonaws.com/Logo/CanaLogistiX_Logo_BG.png"
 
 BRAND_COLORS = {
     'primary': '#0d9488',

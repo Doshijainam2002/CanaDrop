@@ -9,6 +9,19 @@
 </head>
 <body class="min-h-screen bg-gradient-to-br from-teal-50 to-cyan-100 flex items-center justify-center p-4">
     <div class="w-full max-w-md">
+
+          <!-- Back to Home (ADD THIS HERE) -->
+        <div class="mb-4 text-left">
+            <a href="/"
+            class="inline-flex items-center text-sm text-teal-600 hover:text-teal-700 font-medium transition-colors">
+            <svg class="h-4 w-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                    d="M15 19l-7-7 7-7"/>
+            </svg>
+            Back to Home
+            </a>
+        </div>
+        
         <div class="bg-white rounded-2xl shadow-2xl p-8 backdrop-blur-sm">
             <!-- Logo -->
             <div class="text-center mb-8">
@@ -72,7 +85,9 @@
 
         <!-- Copyright -->
         <div class="text-center mt-8">
-            <p class="text-sm text-gray-500">© 2025 CanaLogistiX - Cana Group of Companies. All rights reserved.</p>
+        <p class="text-sm text-gray-500">
+            © <span id="current-year"></span> CanaLogistiX - Cana Group of Companies. All rights reserved.
+        </p>
         </div>
     </div>
 
@@ -209,6 +224,9 @@
                 }
             });
         });
+
+          document.getElementById("current-year").textContent =
+    new Date().getFullYear();
 
 
     </script>

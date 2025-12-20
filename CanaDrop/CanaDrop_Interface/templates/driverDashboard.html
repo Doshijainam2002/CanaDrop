@@ -10,75 +10,79 @@
 <body class="min-h-screen bg-gradient-to-br from-slate-900 to-gray-900">
     <!-- Sidebar -->
 <!-- Sidebar -->
-<div class="fixed inset-y-0 left-0 z-50 w-64 bg-slate-800 border-r border-slate-700 transform transition-transform duration-300 ease-in-out -translate-x-full md:translate-x-0" id="sidebar">
-    <div class="flex items-center justify-between h-16 px-4 border-b border-slate-700">
-        <div class="flex items-center">
+<div class="flex h-screen overflow-hidden">
+    <aside id="sidebar" class="w-64 bg-slate-800 border-r border-slate-700 flex flex-col fixed lg:static inset-y-0 left-0 z-40 transform -translate-x-full lg:translate-x-0 transition-transform duration-300 overflow-y-auto">
+        <div class="flex items-center h-16 px-6 border-b border-slate-700">
             <img src="https://canalogistix.s3.us-east-2.amazonaws.com/Logo/CanaLogistiX_Logo_BG.png" alt="CanaLogistiX Logo" class="h-10 w-10 rounded-full object-cover"/>
             <span class="ml-2 text-lg font-semibold text-slate-100">CanaLogistiX</span>
         </div>
-        <!-- Close button for mobile -->
-        <button id="closeSidebarBtn" class="md:hidden p-2 text-slate-300 hover:text-emerald-400 transition-colors">
-            <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
-            </svg>
-        </button>
-    </div>
+        
+        <nav class="flex-1 p-4 space-y-2 text-sm overflow-y-auto">
+            <a href="/driverDashboard/" onclick="showSection('dashboard')" class="nav-item active flex items-center px-6 py-3 text-slate-300 hover:bg-slate-700 hover:text-emerald-400 transition-colors rounded-lg">
+                <svg class="w-5 h-5 mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 7v10a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2H5a2 2 0 00-2-2z"/>
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 5a2 2 0 012-2h4a2 2 0 012 2v4H8V5z"/>
+                </svg>
+                Dashboard
+            </a>
+            <a href="/driverAcceptedDeliveries/" onclick="showSection('accepted')" class="nav-item flex items-center px-6 py-3 text-slate-300 hover:bg-slate-700 hover:text-emerald-400 transition-colors rounded-lg">
+                <svg class="w-5 h-5 mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 8l6 6 10-10"/>
+                </svg>
+                Accepted Deliveries
+            </a>
+            <a href="/driverFinances/" onclick="showSection('finances')" class="nav-item flex items-center px-6 py-3 text-slate-300 hover:bg-slate-700 hover:text-emerald-400 transition-colors rounded-lg">
+                <svg class="w-5 h-5 mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1"/>
+                </svg>
+                Finances
+            </a>
+            <a href="/contactAdmin/" onclick="showSection('contactAdmin')" class="nav-item flex items-center px-6 py-3 text-slate-300 hover:bg-slate-700 hover:text-emerald-400 transition-colors rounded-lg">
+                <svg class="w-5 h-5 mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 10h.01M12 10h.01M16 10h.01M21 12c0 4.418-4.03 8-9 8s-9-3.582-9-8 4.03-8 9-8 9 3.582 9 8zM12 14v-4m0 4h.01"/>
+                </svg>
+                Contact Admin
+            </a>
+            <a href="#" onclick="handleLogout()" class="nav-item flex items-center px-6 py-3 text-slate-300 hover:bg-slate-700 hover:text-red-400 transition-colors mt-8 rounded-lg">
+                <svg class="w-5 h-5 mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1"/>
+                </svg>
+                Logout
+            </a>
+        </nav>
 
-    
-    <nav class="mt-8">
-        <a href="/driverDashboard/" onclick="showSection('dashboard')" class="nav-item active flex items-center px-6 py-3 text-slate-300 hover:bg-slate-700 hover:text-emerald-400 transition-colors">
-            <svg class="w-5 h-5 mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 7v10a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2H5a2 2 0 00-2-2z"/>
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 5a2 2 0 012-2h4a2 2 0 012 2v4H8V5z"/>
-            </svg>
-            Dashboard
-        </a>
-        <a href="/driverAcceptedDeliveries/" onclick="showSection('accepted')" class="nav-item flex items-center px-6 py-3 text-slate-300 hover:bg-slate-700 hover:text-emerald-400 transition-colors">
-            <svg class="w-5 h-5 mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 8l6 6 10-10"/>
-            </svg>
-            Accepted Deliveries
-        </a>
-        <a href="/driverFinances/" onclick="showSection('finances')" class="nav-item flex items-center px-6 py-3 text-slate-300 hover:bg-slate-700 hover:text-emerald-400 transition-colors">
-            <svg class="w-5 h-5 mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1"/>
-            </svg>
-            Finances
-        </a>
-        <a href="/contactAdmin/" onclick="showSection('contactAdmin')" class="nav-item flex items-center px-6 py-3 text-slate-300 hover:bg-slate-700 hover:text-emerald-400 transition-colors">
-            <svg class="w-5 h-5 mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 10h.01M12 10h.01M16 10h.01M21 12c0 4.418-4.03 8-9 8s-9-3.582-9-8 4.03-8 9-8 9 3.582 9 8zM12 14v-4m0 4h.01"/>
-            </svg>
-            Contact Admin
-        </a>
-        <a href="#" onclick="handleLogout()" class="nav-item flex items-center px-6 py-3 text-slate-300 hover:bg-slate-700 hover:text-red-400 transition-colors mt-8">
-            <svg class="w-5 h-5 mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1"/>
-            </svg>
-            Logout
-        </a>
-    </nav>
-</div>
+        <!-- Profile -->
+        <div class="p-4 border-t border-slate-700">
+            <div class="flex items-center">
+                <div id="profileInitialSidebar" class="flex-shrink-0 w-9 h-9 bg-gradient-to-r from-emerald-600 to-emerald-500 rounded-full flex items-center justify-center text-sm font-semibold text-white">D</div>
+                <div class="ml-3">
+                    <p id="driverNameSidebar" class="text-sm font-medium text-slate-100">Driver</p>
+                    <p id="driverEmailSidebar" class="text-xs text-slate-400">Loading...</p>
+                </div>
+            </div>
+        </div>
+    </aside>
 
-<!-- Mobile overlay -->
-<div id="mobileOverlay" class="fixed inset-0 bg-black bg-opacity-50 z-40 hidden md:hidden"></div>
+    <div id="sidebarOverlay" class="hidden lg:hidden fixed inset-0 bg-black/50 z-30"></div>
 
     <!-- Main Content -->
-    <div class="md:ml-64">
+    <main class="flex-1 flex flex-col overflow-y-auto">
 <!-- Header -->
-<header class="bg-slate-800 border-b border-slate-700 px-4 md:px-6 py-4">
-    <div class="flex items-center justify-between">
-        <!-- Mobile menu button -->
-        <button id="mobileMenuBtn" class="md:hidden p-2 text-slate-300 hover:text-emerald-400 transition-colors">
+<header class="bg-slate-800 border-b border-slate-700 px-4 sm:px-6 py-4">
+    <div class="flex items-center justify-between gap-4">
+        <button id="menuToggle" class="lg:hidden text-slate-300 p-2 flex-shrink-0 hover:text-emerald-400 transition-colors">
             <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16"/>
             </svg>
         </button>
         
-        <h1 class="text-xl md:text-2xl font-bold text-slate-100" id="pageTitle">Dashboard</h1>
-        <div class="flex items-center space-x-2 md:space-x-4">
-            <span class="text-slate-300 text-sm md:text-base hidden sm:inline" id="welcomeText">Welcome back, Driver!</span>
-            <div class="w-8 h-8 bg-emerald-500 rounded-full flex items-center justify-center">
+        <div class="flex-1 min-w-0">
+            <h1 class="text-xl sm:text-2xl font-bold text-slate-100 truncate" id="pageTitle">Dashboard</h1>
+        </div>
+        
+        <div class="flex items-center space-x-2 sm:space-x-4">
+            <span class="text-slate-300 text-sm hidden xl:inline" id="welcomeText">Welcome back, Driver!</span>
+            <div class="w-8 h-8 bg-emerald-500 rounded-full flex items-center justify-center hidden sm:flex">
                 <span class="text-white font-semibold" id="profileInitial">D</span>
             </div>
         </div>
@@ -87,17 +91,17 @@
 
 
         <!-- Dashboard Content -->
-        <main class="p-4 md:p-6" id="mainContent">
+        <div class="p-4 sm:p-6" id="mainContent">
             <!-- Dashboard Section -->
             <div id="dashboard-section">
                 <div class="mb-6">
-                    <h2 class="text-xl font-semibold text-slate-100 mb-2">New Delivery Requests</h2>
+                    <h2 class="text-lg sm:text-xl font-semibold text-slate-100 mb-2">New Delivery Requests</h2>
                     <p class="text-slate-400">Accept deliveries that match your schedule</p>
 
                     <!-- Filters -->
-                    <div class="bg-slate-800 border border-slate-700 rounded-lg p-4 mb-6 flex flex-wrap gap-4">
+                    <div class="bg-slate-800 border border-slate-700 rounded-lg p-3 sm:p-4 mb-6 flex flex-col sm:flex-row sm:flex-wrap gap-3 sm:gap-4">
                     <!-- Pickup City -->
-                    <div class="flex flex-col flex-1 min-w-[200px]">
+                    <div class="flex flex-col flex-1 min-w-0 sm:min-w-[200px]">
                     <label for="filterPickup" class="text-slate-300 text-sm mb-1">Pickup City</label>
                     <select id="filterPickup"
                             class="bg-slate-700 border border-slate-600 rounded-lg px-3 py-2 text-slate-100 focus:ring-2 focus:ring-emerald-500 focus:border-transparent">
@@ -109,7 +113,7 @@
                     </div>
 
                     <!-- Delivery City -->
-                    <div class="flex flex-col flex-1 min-w-[200px]">
+                    <div class="flex flex-col flex-1 min-w-0 sm:min-w-[200px]">
                     <label for="filterDelivery" class="text-slate-300 text-sm mb-1">Delivery City</label>
                     <select id="filterDelivery"
                             class="bg-slate-700 border border-slate-600 rounded-lg px-3 py-2 text-slate-100 focus:ring-2 focus:ring-emerald-500 focus:border-transparent">
@@ -122,7 +126,7 @@
 
 
                     <!-- Pickup Date Range -->
-                    <div class="flex flex-col sm:flex-row items-center gap-2 min-w-[300px]">
+                    <div class="flex flex-col sm:flex-row items-stretch sm:items-center gap-2 w-full sm:w-auto sm:min-w-[300px]">
                         <div class="flex flex-col">
                         <label for="filterDateFrom" class="text-slate-300 text-sm mb-1">Pickup From</label>
                         <input id="filterDateFrom" type="date"
@@ -136,17 +140,16 @@
                     </div>
 
                     <!-- Apply Button -->
-                    <div class="flex items-end">
+                    <div class="flex flex-col sm:flex-row items-stretch sm:items-end gap-2 w-full sm:w-auto">
                         <button id="applyFiltersBtn"
-                                class="bg-emerald-600 hover:bg-emerald-700 text-white px-4 py-2 rounded-lg font-semibold transition-all mt-2">
+                                class="bg-emerald-600 hover:bg-emerald-700 text-white px-4 py-2 rounded-lg text-sm sm:text-base font-semibold transition-all">
                         Apply Filters
                         </button>
 
                         <button id="clearFiltersBtn"
-                                class="bg-slate-700 hover:bg-slate-600 text-white px-4 py-2 rounded-lg font-semibold transition-all mt-2">
+                                class="bg-slate-700 hover:bg-slate-600 text-white px-4 py-2 rounded-lg text-sm sm:text-base font-semibold transition-all">
                         Clear
                         </button>
-
                     </div>
                     </div>
 
@@ -159,7 +162,7 @@
                 </div>
 
                 <!-- Delivery Cards Container - Updated to Grid Layout -->
-                <div id="deliveryCards" class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4 md:gap-6 hidden">
+                <div id="deliveryCards" class="grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-3 gap-4 sm:gap-6 hidden">
                     <!-- Delivery cards will be populated here -->
                 </div>
 
@@ -194,12 +197,13 @@
                     <p class="text-slate-400">Financial information will be shown here</p>
                 </div>
             </div>
+            </div>
         </main>
     </div>
 
     <!-- Accept Confirmation Modal -->
     <div id="acceptModal" class="fixed inset-0 bg-black bg-opacity-70 flex items-center justify-center p-4 z-50 hidden">
-        <div class="bg-slate-800 border border-slate-700 rounded-2xl p-4 md:p-6 max-w-sm w-full mx-4 relative">
+        <div class="bg-slate-800 border border-slate-700 rounded-2xl p-4 sm:p-6 max-w-sm w-full relative">
             <div class="text-center">
                 <svg class="h-16 w-16 text-emerald-500 mx-auto mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/>
@@ -487,7 +491,7 @@
             loadDeliveries();
         });
 
-        async function loadDriverInfo() {
+async function loadDriverInfo() {
     try {
         const driverId = getCookie("driverId");
         if (!driverId) {
@@ -502,69 +506,53 @@
 
         const data = await response.json();
 
-        // Update text & profile circle
-        document.getElementById("welcomeText").textContent =
-            `Welcome back, ${data.name} (${data.email})`;
-        document.getElementById("profileInitial").textContent =
-            data.name.charAt(0).toUpperCase();
+        // Update header text & profile circle
+        const welcomeEl = document.getElementById("welcomeText");
+        const profileEl = document.getElementById("profileInitial");
+        
+        if (welcomeEl) {
+            welcomeEl.textContent = `Welcome back, ${data.name} (${data.email})`;
+        }
+        if (profileEl) {
+            profileEl.textContent = data.name.charAt(0).toUpperCase();
+        }
+        
+        // Also update sidebar profile
+        const sidebarInitial = document.getElementById("profileInitialSidebar");
+        const sidebarName = document.getElementById("driverNameSidebar");
+        const sidebarEmail = document.getElementById("driverEmailSidebar");
+
+        if (sidebarInitial) {
+            sidebarInitial.textContent = data.name.charAt(0).toUpperCase();
+        }
+        if (sidebarName) {
+            sidebarName.textContent = data.name;
+        }
+        if (sidebarEmail) {
+            sidebarEmail.textContent = data.email;
+        }
 
     } catch (error) {
         console.error("Error loading driver info:", error);
     }
 }
 
-// Mobile menu functionality
-function toggleMobileMenu() {
-    const sidebar = document.getElementById('sidebar');
-    const overlay = document.getElementById('mobileOverlay');
-    
+// Mobile menu toggle
+const menuToggle = document.getElementById('menuToggle');
+const sidebar = document.getElementById('sidebar');
+const sidebarOverlay = document.getElementById('sidebarOverlay');
+
+menuToggle?.addEventListener('click', () => {
     sidebar.classList.toggle('-translate-x-full');
-    overlay.classList.toggle('hidden');
-}
-
-function closeMobileMenu() {
-    const sidebar = document.getElementById('sidebar');
-    const overlay = document.getElementById('mobileOverlay');
-    
-    sidebar.classList.add('-translate-x-full');
-    overlay.classList.add('hidden');
-}
-
-// Add event listeners for mobile menu
-document.addEventListener('DOMContentLoaded', function() {
-    const mobileMenuBtn = document.getElementById('mobileMenuBtn');
-    const closeSidebarBtn = document.getElementById('closeSidebarBtn');
-    const mobileOverlay = document.getElementById('mobileOverlay');
-    const navItems = document.querySelectorAll('.nav-item');
-    
-    if (mobileMenuBtn) {
-        mobileMenuBtn.addEventListener('click', toggleMobileMenu);
-    }
-    
-    if (closeSidebarBtn) {
-        closeSidebarBtn.addEventListener('click', closeMobileMenu);
-    }
-    
-    if (mobileOverlay) {
-        mobileOverlay.addEventListener('click', closeMobileMenu);
-    }
-    
-    // Close menu when navigation item is clicked on mobile
-    navItems.forEach(item => {
-        item.addEventListener('click', () => {
-            if (window.innerWidth < 768) {
-                closeMobileMenu();
-            }
-        });
-    });
-    
-    // Close menu on window resize if desktop size
-    window.addEventListener('resize', () => {
-        if (window.innerWidth >= 768) {
-            closeMobileMenu();
-        }
-    });
+    sidebarOverlay.classList.toggle('hidden');
 });
+
+sidebarOverlay?.addEventListener('click', () => {
+    sidebar.classList.add('-translate-x-full');
+    sidebarOverlay.classList.add('hidden');
+});
+
+
 
 
 function applyFilters() {

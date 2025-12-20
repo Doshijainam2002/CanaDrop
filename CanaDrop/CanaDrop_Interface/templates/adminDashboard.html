@@ -19,7 +19,7 @@
 
   <div class="flex h-screen overflow-hidden">
     <!-- Sidebar -->
-    <aside class="w-64 bg-neutral-800 border-r border-neutral-700 flex flex-col">
+    <aside id="sidebar" class="w-64 bg-neutral-800 border-r border-neutral-700 flex flex-col fixed lg:static inset-y-0 left-0 z-40 transform -translate-x-full lg:translate-x-0 transition-transform duration-300 overflow-y-auto">
       <div class="flex items-center h-16 border-b border-neutral-700 px-6">
         <img src="https://canalogistix.s3.us-east-2.amazonaws.com/Logo/CanaLogistiX_Logo_BG.png" alt="CanaLogistiX Logo" class="h-12 w-12 rounded-full object-cover"/>
         <span class="ml-2 text-lg font-semibold text-white">CanaLogistiX</span>
@@ -27,7 +27,7 @@
 
 
       <!-- Navigation -->
-      <nav class="flex-1 p-4 space-y-2 text-sm">
+      <nav class="flex-1 p-4 space-y-2 text-sm overflow-y-auto">
         <a href="/adminDashboard/" class="flex items-center px-3 py-2 rounded-lg bg-gradient-to-r from-orange-600 to-orange-500 text-white font-medium">
           <svg class="w-5 h-5 mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 12l2-2m0 0l7-7 7 7M13 5v6h6"/></svg>
           Dashboard
@@ -76,18 +76,25 @@
       </div>
     </aside>
 
+    <div id="sidebarOverlay" class="hidden lg:hidden fixed inset-0 bg-black/50 z-30"></div>
+
     <!-- Main Content -->
-    <main class="flex-1 flex flex-col overflow-y-auto">
+    <main class="flex-1 flex flex-col overflow-y-auto lg:ml-0">
       <!-- Header -->
-      <header class="bg-neutral-800 border-b border-neutral-700 px-6 py-4 flex items-center justify-between">
-        <div>
-          <h1 class="text-2xl font-bold text-white">Admin Dashboard</h1>
+      <header class="bg-neutral-800 border-b border-neutral-700 px-4 sm:px-6 py-4 flex items-center justify-between gap-4">
+        <button id="menuToggle" class="lg:hidden text-white p-2 flex-shrink-0">
+          <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16"/>
+          </svg>
+        </button>
+        <div class="flex-1 min-w-0">
+          <h1 class="text-xl sm:text-2xl font-bold text-white truncate">Admin Dashboard</h1>
           <p class="text-sm text-neutral-400">Manage system-wide operations and insights</p>
         </div>
       </header>
 
         <!-- Summary Cards -->
-        <section class="px-6 py-6 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-6">
+        <section class="px-4 sm:px-6 py-6 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-6">
         <!-- Total Pharmacies -->
         <div class="bg-neutral-800/80 border border-neutral-700 p-6 rounded-xl shadow">
             <p class="text-sm text-neutral-400">Total Pharmacies</p>
@@ -121,7 +128,7 @@
 
 
       <!-- 3-column insights section -->
-      <section class="px-6 grid grid-cols-1 lg:grid-cols-3 gap-6 pb-8">
+      <section class="px-4 sm:px-6 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 pb-8">
 
         <!-- Recent Activity Feed -->
         <div id="recentActivity" class="bg-neutral-800/80 border border-neutral-700 rounded-xl p-6">
@@ -144,14 +151,14 @@
 
         <!-- 🧭 Order Tracking Manager -->
         <div class="bg-neutral-800/80 border border-neutral-700 rounded-xl p-6">
-        <div class="flex items-center justify-between mb-4">
-            <h2 class="text-lg font-semibold text-white">Order Tracking Manager</h2>
-            <input
+        <div class="flex flex-col gap-3 mb-4">
+          <h2 class="text-lg font-semibold text-white">Order Tracking Manager</h2>
+          <input
             id="orderSearch"
             type="text"
             placeholder="Search by Order ID, Pharmacy, or Driver..."
-            class="px-3 py-2 bg-neutral-700 text-neutral-200 text-sm rounded-md w-72 focus:outline-none focus:ring-2 focus:ring-amber-500"
-            />
+            class="px-3 py-2 bg-neutral-700 text-neutral-200 text-sm rounded-md w-full focus:outline-none focus:ring-2 focus:ring-amber-500"
+          />
         </div>
 
         <div id="ordersContainer" class="overflow-y-auto max-h-80 divide-y divide-neutral-700">
@@ -182,7 +189,7 @@
 
         <!-- 🔍 Modal for Order Details -->
         <div id="orderModal" class="hidden fixed inset-0 bg-black/70 flex items-center justify-center z-50">
-        <div class="bg-neutral-900 p-6 rounded-xl border border-neutral-700 w-11/12 md:w-2/3 lg:w-1/2 relative">
+        <div class="bg-neutral-900 p-6 rounded-xl border border-neutral-700 w-11/12 max-h-[90vh] overflow-y-auto md:w-2/3 lg:w-1/2 relative">
             <button
             id="closeModal"
             class="absolute top-3 right-3 text-neutral-400 hover:text-white text-xl font-bold"
@@ -215,18 +222,18 @@
         </div>
 
         <!-- Alert summary counts -->
-        <div id="alertSummary" class="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-4 text-center">
-            <div class="bg-neutral-700/50 border border-neutral-700 rounded-lg p-3">
-            <p class="text-xs text-neutral-400 uppercase">Operational</p>
-            <p id="countOperational" class="text-xl font-semibold text-yellow-400">0</p>
+        <div id="alertSummary" class="grid grid-cols-3 gap-2 md:gap-3 lg:gap-4 mb-4 text-center">
+            <div class="bg-neutral-700/50 border border-neutral-700 rounded-lg p-2 sm:p-3">
+              <p class="text-xs text-neutral-400 uppercase truncate">Operational</p>
+              <p id="countOperational" class="text-lg sm:text-xl font-semibold text-yellow-400">0</p>
             </div>
-            <div class="bg-neutral-700/50 border border-neutral-700 rounded-lg p-3">
-            <p class="text-xs text-neutral-400 uppercase">Financial</p>
-            <p id="countFinancial" class="text-xl font-semibold text-red-400">0</p>
+            <div class="bg-neutral-700/50 border border-neutral-700 rounded-lg p-2 sm:p-3">
+              <p class="text-xs text-neutral-400 uppercase truncate">Financial</p>
+              <p id="countFinancial" class="text-lg sm:text-xl font-semibold text-red-400">0</p>
             </div>
-            <div class="bg-neutral-700/50 border border-neutral-700 rounded-lg p-3">
-            <p class="text-xs text-neutral-400 uppercase">Support</p>
-            <p id="countSupport" class="text-xl font-semibold text-orange-400">0</p>
+            <div class="bg-neutral-700/50 border border-neutral-700 rounded-lg p-2 sm:p-3">
+              <p class="text-xs text-neutral-400 uppercase truncate">Support</p>
+              <p id="countSupport" class="text-lg sm:text-xl font-semibold text-orange-400">0</p>
             </div>
         </div>
 
@@ -240,7 +247,7 @@
       </section>
 
     <!-- Recent Orders Table -->
-    <section class="px-6 pb-10">
+    <section class="px-4 sm:px-6 pb-10">
     <div class="bg-neutral-800/80 border border-neutral-700 rounded-xl shadow">
         <div class="px-6 py-4 border-b border-neutral-700 flex justify-between items-center">
         <h2 class="text-lg font-semibold text-white">Recent Orders</h2>
@@ -740,6 +747,21 @@ document.getElementById("logoutBtn").addEventListener("click", function (event) 
 
   // 🚀 Redirect to admin login page
   window.location.href = "/adminLogin/";
+});
+
+// Mobile menu toggle
+const menuToggle = document.getElementById('menuToggle');
+const sidebar = document.getElementById('sidebar');
+const sidebarOverlay = document.getElementById('sidebarOverlay');
+
+menuToggle?.addEventListener('click', () => {
+  sidebar.classList.toggle('-translate-x-full');
+  sidebarOverlay.classList.toggle('hidden');
+});
+
+sidebarOverlay?.addEventListener('click', () => {
+  sidebar.classList.add('-translate-x-full');
+  sidebarOverlay.classList.add('hidden');
 });
 
       </script>
