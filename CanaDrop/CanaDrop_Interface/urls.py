@@ -20,6 +20,8 @@ urlpatterns = [
     path("api/getPharmacyDetails/<int:pharmacy_id>/", views.get_pharmacy_details, name="get_pharmacy_details"),
     path("api/changeExistingPassword/", views.change_existing_password, name="change_existing_password"),
     path("api/editPharmacyProfile/", views.edit_pharmacy_profile, name="edit_pharmacy_profile"),
+    path('api/pharmacy-onboarding/', views.pharmacy_onboarding_api, name='pharmacy_onboarding_api'),
+    path('pharmacyTrial/', views.pharmacyTrialOnboarding, name='PharmacyTrialOnboardingPage'),  
 
 
     path('driverLogin/', views.driverLoginView, name='DriverLoginPage'),  

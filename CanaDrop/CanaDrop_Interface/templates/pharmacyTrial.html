@@ -1,0 +1,756 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Pharmacy Trial Onboarding - CanaLogistiX</title>
+    <link rel="icon" href="https://canalogistix.s3.us-east-2.amazonaws.com/Logo/CanaLogistiX_Logo_BG.png">
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+            background: linear-gradient(135deg, #f0fdf4 0%, #dcfce7 50%, #bbf7d0 100%);
+            min-height: 100vh;
+            padding: 40px 20px;
+            line-height: 1.6;
+            position: relative;
+        }
+
+        body::before {
+            content: '';
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: 
+                radial-gradient(circle at 20% 50%, rgba(16, 185, 129, 0.1) 0%, transparent 50%),
+                radial-gradient(circle at 80% 80%, rgba(5, 150, 105, 0.1) 0%, transparent 50%);
+            pointer-events: none;
+            z-index: 0;
+        }
+
+        .container {
+            max-width: 950px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 24px;
+            box-shadow: 
+                0 4px 6px rgba(0, 0, 0, 0.05),
+                0 10px 20px rgba(0, 0, 0, 0.08),
+                0 0 0 1px rgba(16, 185, 129, 0.1);
+            overflow: hidden;
+            position: relative;
+            z-index: 1;
+        }
+
+        .header {
+            background: linear-gradient(135deg, #10b981 0%, #059669 100%);
+            color: white;
+            padding: 50px 40px;
+            text-align: center;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .header::before {
+            content: '';
+            position: absolute;
+            top: -50%;
+            left: -50%;
+            width: 200%;
+            height: 200%;
+            background: radial-gradient(circle, rgba(255, 255, 255, 0.1) 0%, transparent 70%);
+            animation: pulse 15s ease-in-out infinite;
+        }
+
+        @keyframes pulse {
+            0%, 100% { transform: translate(0, 0) scale(1); }
+            50% { transform: translate(30px, 30px) scale(1.1); }
+        }
+
+        .logo-container {
+            margin-bottom: 25px;
+            position: relative;
+            z-index: 1;
+        }
+
+        .logo {
+            width: 140px;
+            height: 140px;
+            object-fit: contain;
+            filter: drop-shadow(0 4px 12px rgba(0, 0, 0, 0.15));
+            animation: fadeInDown 0.8s ease-out;
+        }
+
+        @keyframes fadeInDown {
+            from {
+                opacity: 0;
+                transform: translateY(-20px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        .header h1 {
+            font-size: 32px;
+            margin-bottom: 10px;
+            font-weight: 700;
+            position: relative;
+            z-index: 1;
+            text-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+        }
+
+        .header p {
+            opacity: 0.95;
+            font-size: 15px;
+            position: relative;
+            z-index: 1;
+            font-weight: 300;
+        }
+
+        .form-container {
+            padding: 50px;
+            background: white;
+        }
+
+        .section {
+            margin-bottom: 50px;
+            animation: fadeInUp 0.6s ease-out backwards;
+        }
+
+        .section:nth-child(1) { animation-delay: 0.1s; }
+        .section:nth-child(2) { animation-delay: 0.2s; }
+        .section:nth-child(3) { animation-delay: 0.3s; }
+        .section:nth-child(4) { animation-delay: 0.4s; }
+        .section:nth-child(5) { animation-delay: 0.5s; }
+        .section:nth-child(6) { animation-delay: 0.6s; }
+
+        @keyframes fadeInUp {
+            from {
+                opacity: 0;
+                transform: translateY(30px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        .section-title {
+            font-size: 22px;
+            font-weight: 700;
+            color: #065f46;
+            margin-bottom: 25px;
+            padding-bottom: 12px;
+            border-bottom: 3px solid #d1fae5;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            position: relative;
+        }
+
+        .section-title::before {
+            content: '';
+            width: 6px;
+            height: 6px;
+            background: #10b981;
+            border-radius: 50%;
+            box-shadow: 0 0 0 4px rgba(16, 185, 129, 0.2);
+        }
+
+        .section-number {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            width: 32px;
+            height: 32px;
+            background: linear-gradient(135deg, #10b981 0%, #059669 100%);
+            color: white;
+            border-radius: 50%;
+            font-size: 14px;
+            font-weight: 700;
+            margin-right: 4px;
+            box-shadow: 0 4px 12px rgba(16, 185, 129, 0.3);
+        }
+
+        .form-row {
+            display: grid;
+            grid-template-columns: 1fr;
+            gap: 24px;
+            margin-bottom: 24px;
+        }
+
+        .form-group {
+            display: flex;
+            flex-direction: column;
+            position: relative;
+        }
+
+        label {
+            font-weight: 600;
+            color: #1f2937;
+            margin-bottom: 8px;
+            font-size: 14px;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+
+        label.required::after {
+            content: "*";
+            color: #ef4444;
+            font-weight: 700;
+        }
+
+        input[type="text"],
+        input[type="email"],
+        input[type="tel"],
+        input[type="date"],
+        input[type="time"],
+        input[type="number"],
+        select,
+        textarea {
+            padding: 14px 16px;
+            border: 2px solid #e5e7eb;
+            border-radius: 10px;
+            font-size: 15px;
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            font-family: inherit;
+            background: white;
+        }
+
+        input:hover,
+        select:hover,
+        textarea:hover {
+            border-color: #d1d5db;
+        }
+
+        input:focus,
+        select:focus,
+        textarea:focus {
+            outline: none;
+            border-color: #10b981;
+            box-shadow: 0 0 0 4px rgba(16, 185, 129, 0.1);
+            transform: translateY(-1px);
+        }
+
+        textarea {
+            resize: vertical;
+            min-height: 120px;
+        }
+
+        .checkbox-group {
+            display: flex;
+            align-items: flex-start;
+            gap: 12px;
+            padding: 16px 18px;
+            background: linear-gradient(135deg, #f0fdf4 0%, #dcfce7 100%);
+            border: 2px solid #d1fae5;
+            border-radius: 12px;
+            cursor: pointer;
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            position: relative;
+        }
+
+        .checkbox-group:hover {
+            background: linear-gradient(135deg, #dcfce7 0%, #d1fae5 100%);
+            border-color: #a7f3d0;
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(16, 185, 129, 0.15);
+        }
+
+        .checkbox-group input[type="checkbox"] {
+            width: 20px;
+            height: 20px;
+            cursor: pointer;
+            accent-color: #10b981;
+            margin-top: 2px;
+        }
+
+        .checkbox-group label {
+            margin: 0;
+            cursor: pointer;
+            flex: 1;
+            font-weight: 500;
+            color: #065f46;
+        }
+
+        .help-text {
+            font-size: 13px;
+            color: #6b7280;
+            margin-top: 6px;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+
+        .help-text::before {
+            content: 'ℹ';
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            width: 16px;
+            height: 16px;
+            background: #e5e7eb;
+            border-radius: 50%;
+            font-size: 11px;
+            font-weight: 700;
+        }
+
+        .submit-btn {
+            background: linear-gradient(135deg, #10b981 0%, #059669 100%);
+            color: white;
+            padding: 18px 48px;
+            border: none;
+            border-radius: 12px;
+            font-size: 17px;
+            font-weight: 700;
+            cursor: pointer;
+            width: 100%;
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            box-shadow: 
+                0 4px 6px rgba(16, 185, 129, 0.2),
+                0 10px 20px rgba(16, 185, 129, 0.15);
+            position: relative;
+            overflow: hidden;
+        }
+
+        .submit-btn::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: -100%;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.3), transparent);
+            transition: left 0.5s;
+        }
+
+        .submit-btn:hover::before {
+            left: 100%;
+        }
+
+        .submit-btn:hover {
+            transform: translateY(-3px);
+            box-shadow: 
+                0 6px 12px rgba(16, 185, 129, 0.3),
+                0 15px 30px rgba(16, 185, 129, 0.2);
+        }
+
+        .submit-btn:active {
+            transform: translateY(-1px);
+        }
+
+        .submit-btn:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+            transform: none;
+        }
+
+        .success-message,
+        .error-message {
+            padding: 18px 22px;
+            border-radius: 12px;
+            margin-bottom: 30px;
+            display: none;
+            font-weight: 500;
+            animation: slideInDown 0.4s ease-out;
+        }
+
+        @keyframes slideInDown {
+            from {
+                opacity: 0;
+                transform: translateY(-20px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        .success-message {
+            background: linear-gradient(135deg, #d1fae5 0%, #a7f3d0 100%);
+            border: 2px solid #10b981;
+            color: #065f46;
+        }
+
+        .error-message {
+            background: linear-gradient(135deg, #fee2e2 0%, #fecaca 100%);
+            border: 2px solid #ef4444;
+            color: #991b1b;
+        }
+
+        .consent-box {
+            background: linear-gradient(135deg, #fef3c7 0%, #fde68a 100%);
+            border: 2px solid #fbbf24;
+            border-radius: 16px;
+            padding: 24px;
+            margin-bottom: 24px;
+            box-shadow: 0 4px 12px rgba(251, 191, 36, 0.15);
+        }
+
+        .consent-box h3 {
+            color: #92400e;
+            margin-bottom: 12px;
+            font-size: 17px;
+            font-weight: 700;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .consent-box h3::before {
+            content: '⚠';
+            font-size: 20px;
+        }
+
+        .consent-box p {
+            color: #78350f;
+            font-size: 14px;
+            line-height: 1.7;
+        }
+
+        /* Tablet styles */
+        @media (min-width: 640px) {
+            .form-row.two-col {
+                grid-template-columns: 1fr 1fr;
+            }
+
+            .form-container {
+                padding: 50px;
+            }
+
+            .header h1 {
+                font-size: 36px;
+            }
+        }
+
+        /* Laptop styles */
+        @media (min-width: 1024px) {
+            body {
+                padding: 60px 20px;
+            }
+
+            .form-row.three-col {
+                grid-template-columns: 1fr 1fr 1fr;
+            }
+
+            .header {
+                padding: 60px;
+            }
+
+            .section-title {
+                font-size: 24px;
+            }
+        }
+
+        /* Mobile optimizations */
+        @media (max-width: 639px) {
+            body {
+                padding: 20px 10px;
+            }
+
+            .container {
+                border-radius: 20px;
+            }
+
+            .form-container {
+                padding: 30px 20px;
+            }
+
+            .header {
+                padding: 40px 20px;
+            }
+
+            .logo {
+                width: 110px;
+                height: 110px;
+            }
+
+            .header h1 {
+                font-size: 26px;
+            }
+
+            .section-title {
+                font-size: 19px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <div class="logo-container">
+                <img src="https://canalogistix.s3.us-east-2.amazonaws.com/Logo/CanaLogistiX_Logo_NOBG.png" alt="CanaLogistiX Logo" class="logo">
+            </div>
+            <h1>Pharmacy Trial Onboarding</h1>
+            <p>Join our delivery network and start your trial program today</p>
+        </div>
+
+        <form class="form-container" id="onboardingForm">
+            <div id="successMessage" class="success-message"></div>
+            <div id="errorMessage" class="error-message"></div>
+            
+            <!-- Section 1: Pharmacy Info -->
+            <div class="section">
+                <h2 class="section-title">
+                    <span class="section-number">1</span>
+                    Pharmacy Information
+                </h2>
+                
+                <div class="form-row">
+                    <div class="form-group">
+                        <label for="pharmacy_name" class="required">Pharmacy Name</label>
+                        <input type="text" id="pharmacy_name" name="pharmacy_name" placeholder="Enter your pharmacy name" required>
+                    </div>
+                </div>
+
+                <div class="form-row two-col">
+                    <div class="form-group">
+                        <label for="pharmacy_phone" class="required">Phone Number</label>
+                        <input type="tel" id="pharmacy_phone" name="pharmacy_phone" placeholder="(555) 123-4567" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="pharmacy_email" class="required">Email Address</label>
+                        <input type="email" id="pharmacy_email" name="pharmacy_email" placeholder="pharmacy@example.com" required>
+                    </div>
+                </div>
+
+                <div class="form-row">
+                    <div class="form-group">
+                        <label for="address_line_1" class="required">Street Address</label>
+                        <input type="text" id="address_line_1" name="address_line_1" placeholder="123 Main Street" required>
+                    </div>
+                </div>
+
+                <div class="form-row two-col">
+                    <div class="form-group">
+                        <label for="city" class="required">City</label>
+                        <input type="text" id="city" name="city" placeholder="Toronto" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="postal_code" class="required">Postal Code</label>
+                        <input type="text" id="postal_code" name="postal_code" placeholder="A1B 2C3" required>
+                    </div>
+                </div>
+
+                <div class="form-row">
+                    <div class="form-group">
+                        <label for="store_hours" class="required">Store Hours</label>
+                        <input type="text" id="store_hours" name="store_hours" placeholder="Mon–Fri 9am–7pm, Sat 10am–5pm" required>
+                        <span class="help-text">Example: Mon–Fri 9am–7pm</span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Section 2: Owner/Manager -->
+            <div class="section">
+                <h2 class="section-title">
+                    <span class="section-number">2</span>
+                    Primary Contact Information
+                </h2>
+                
+                <div class="form-row two-col">
+                    <div class="form-group">
+                        <label for="contact_name" class="required">Contact Name</label>
+                        <input type="text" id="contact_name" name="contact_name" placeholder="John Doe" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="contact_role" class="required">Role</label>
+                        <select id="contact_role" name="contact_role" required>
+                            <option value="">Select role...</option>
+                            <option value="owner">Owner</option>
+                            <option value="manager">Manager</option>
+                            <option value="pharmacist">Pharmacist</option>
+                            <option value="staff">Staff Member</option>
+                        </select>
+                    </div>
+                </div>
+
+                <div class="form-row two-col">
+                    <div class="form-group">
+                        <label for="contact_phone" class="required">Contact Phone</label>
+                        <input type="tel" id="contact_phone" name="contact_phone" placeholder="(555) 987-6543" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="contact_email" class="required">Contact Email</label>
+                        <input type="email" id="contact_email" name="contact_email" placeholder="john@example.com" required>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Section 3: Trial Delivery Setup -->
+            <div class="section">
+                <h2 class="section-title">
+                    <span class="section-number">3</span>
+                    Delivery Setup
+                </h2>
+                
+                <div class="form-row">
+                    <div class="checkbox-group">
+                        <input type="checkbox" id="currently_offers_delivery" name="currently_offers_delivery">
+                        <label for="currently_offers_delivery">Currently offers delivery service</label>
+                    </div>
+                </div>
+
+                <div class="form-row two-col">
+                    <div class="form-group">
+                        <label for="estimated_deliveries_per_day" class="required">Est. Deliveries Per Day</label>
+                        <input type="number" id="estimated_deliveries_per_day" name="estimated_deliveries_per_day" min="0" placeholder="10" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="delivery_radius_km" class="required">Delivery Radius (km)</label>
+                        <input type="number" id="delivery_radius_km" name="delivery_radius_km" min="1" placeholder="15" required>
+                        <span class="help-text">Maximum distance for deliveries</span>
+                    </div>
+                </div>
+
+                <div class="form-row">
+                    <div class="form-group">
+                        <label for="preferred_delivery_type" class="required">Delivery Type</label>
+                        <select id="preferred_delivery_type" name="preferred_delivery_type" required>
+                            <option value="">Select type...</option>
+                            <option value="same_day">Same-day</option>
+                            <option value="next_day">Next-day</option>
+                            <option value="both">Both</option>
+                        </select>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Section 4: Compliance Basics -->
+            <div class="section">
+                <h2 class="section-title">
+                    <span class="section-number">4</span>
+                    Compliance & Security
+                </h2>
+
+                <div class="form-row">
+                    <div class="form-group">
+                        <label for="special_delivery_instructions">Special Delivery Instructions</label>
+                        <textarea id="special_delivery_instructions" name="special_delivery_instructions" placeholder="Enter any special handling requirements, temperature control needs, or other instructions..."></textarea>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Section 5: Trial Confirmation -->
+            <div class="section">
+                <h2 class="section-title">
+                    <span class="section-number">5</span>
+                    Trial Details
+                </h2>
+                
+                <div class="form-row two-col">
+                    <div class="form-group">
+                        <label for="trial_start_date" class="required">Trial Start Date</label>
+                        <input type="date" id="trial_start_date" name="trial_start_date" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="trial_duration_days" class="required">Trial Duration (days)</label>
+                        <input type="number" id="trial_duration_days" name="trial_duration_days" value="7" min="1" placeholder="7" required>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Section 6: Consent -->
+            <div class="section">
+                <h2 class="section-title">
+                    <span class="section-number">6</span>
+                    Consent & Agreement
+                </h2>
+                
+                <div class="consent-box">
+                    <h3>Terms & Conditions</h3>
+                    <p>By submitting this form, you agree to participate in the pharmacy delivery trial program. You understand that this is a trial period to evaluate the service, and either party may discontinue at the end of the trial period. All delivery operations will comply with applicable pharmacy regulations and privacy laws.</p>
+                </div>
+
+                <div class="form-row">
+                    <div class="checkbox-group">
+                        <input type="checkbox" id="consent_given" name="consent_given" required>
+                        <label for="consent_given" class="required">I agree to the terms and conditions outlined above</label>
+                    </div>
+                </div>
+
+                <div class="form-row">
+                    <div class="form-group">
+                        <label for="onboarding_notes">Additional Notes (Internal Use)</label>
+                        <textarea id="onboarding_notes" name="onboarding_notes" placeholder="Any additional information or special requirements..."></textarea>
+                    </div>
+                </div>
+            </div>
+
+            <button type="submit" class="submit-btn">Submit Onboarding Form</button>
+        </form>
+    </div>
+
+    <script>
+        const form = document.getElementById('onboardingForm');
+        const submitBtn = form.querySelector('.submit-btn');
+        const successMessage = document.getElementById('successMessage');
+        const errorMessage = document.getElementById('errorMessage');
+        
+        form.addEventListener('submit', async function(e) {
+            e.preventDefault();
+            
+            // Disable submit button
+            submitBtn.disabled = true;
+            submitBtn.textContent = 'Submitting...';
+            
+            // Hide previous messages
+            successMessage.style.display = 'none';
+            errorMessage.style.display = 'none';
+            
+            const formData = new FormData(form);
+            const data = {};
+            
+            // Convert FormData to JSON
+            for (let [key, value] of formData.entries()) {
+                if (key === 'currently_offers_delivery' || 
+                    key === 'consent_given') {
+                    data[key] = form.elements[key].checked;
+                } else {
+                    data[key] = value || null;
+                }
+            }
+            
+            try {
+                const response = await fetch('/api/pharmacy-onboarding/', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify(data)
+                });
+                
+                const result = await response.json();
+                
+                if (response.ok) {
+                    successMessage.textContent = result.message || 'Onboarding form submitted successfully!';
+                    successMessage.style.display = 'block';
+                    form.reset();
+                    window.scrollTo({ top: 0, behavior: 'smooth' });
+                } else {
+                    throw new Error(result.error || 'Submission failed');
+                }
+            } catch (error) {
+                errorMessage.textContent = 'Error: ' + error.message;
+                errorMessage.style.display = 'block';
+                window.scrollTo({ top: 0, behavior: 'smooth' });
+            } finally {
+                submitBtn.disabled = false;
+                submitBtn.textContent = 'Submit Onboarding Form';
+            }
+        });
+
+        // Dynamic cutoff time field requirement removed
+    </script>
+</body>
+</html>
