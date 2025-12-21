@@ -185,6 +185,9 @@ def adminDriversView(request):
 def pharmacyTrialOnboarding(request):
     return render(request, 'pharmacyTrial.html')
 
+def pharmacyCCPointsView(request):
+    return render(request, 'pharmacyCCPoints.html')
+
 
 
 @csrf_exempt
@@ -11105,3 +11108,29 @@ def pharmacy_onboarding_api(request):
         status=201
     )
 
+
+@csrf_exempt
+@require_http_methods(["GET"])
+def get_pharmacy_cc_points(request, pharmacy_id):
+    try:
+        # Get count of delivered orders for this pharmacy
+        delivered_orders_count = DeliveryOrder.objects.filter(
+            pharmacy_id=pharmacy_id,
+            status='delivered'
+        ).count()
+        
+        # Calculate CC Points (50 points per delivered order)
+        cc_points = delivered_orders_count * (int(settings.CC_POINTS_PER_ORDER))
+        
+        return JsonResponse({
+            'success': True,
+            'pharmacy_id': pharmacy_id,
+            'delivered_orders': delivered_orders_count,
+            'cc_points': cc_points
+        })
+        
+    except Exception as e:
+        return JsonResponse({
+            'success': False,
+            'error': str(e)
+        }, status=400)

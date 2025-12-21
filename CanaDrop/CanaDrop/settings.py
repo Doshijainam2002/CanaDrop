@@ -183,6 +183,8 @@ PAYMENT_RATE_PERCENT = int(100 - (100 * DRIVER_COMMISSION_RATE))
 
 SITE_URL = "https://www.canalogistix.com"
 
+CC_POINTS_PER_ORDER = 50
+
 
 LOGGING = {
     'version': 1,

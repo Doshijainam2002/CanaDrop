@@ -22,6 +22,8 @@ urlpatterns = [
     path("api/editPharmacyProfile/", views.edit_pharmacy_profile, name="edit_pharmacy_profile"),
     path('api/pharmacy-onboarding/', views.pharmacy_onboarding_api, name='pharmacy_onboarding_api'),
     path('pharmacyTrial/', views.pharmacyTrialOnboarding, name='PharmacyTrialOnboardingPage'),  
+    path('pharmacyCCPoints/', views.pharmacyCCPointsView, name='PharmacyCCPointsPage'), 
+    path('api/pharmacy/<int:pharmacy_id>/cc-points/', views.get_pharmacy_cc_points, name='pharmacy_cc_points'),
 
 
     path('driverLogin/', views.driverLoginView, name='DriverLoginPage'),  
