@@ -159,7 +159,9 @@ OTP_SIGNING_SALT = "canadrop-otp-verify"
 
 GCP_BUCKET_NAME = "canadrop-bucket"
 GCP_INVOICE_FOLDER = "PharmacyInvoices"
+GCP_CUSTOMER_PHARMACY_SIGNED_ACKNOWLEDGEMENTS = "PharmacySignedAcknowledgements"
 GCP_DRIVER_INVOICE_FOLDER = "DriverSummary"
+GCP_DRIVER_PROFILE_FOLDER = "DriverProfileImages"
 GCP_PROOF_FOLDER = "Proof"
 
 LOGO_PATH = os.path.join(BASE_DIR, "Logo", "Website_Logo_No_Background.png")
@@ -178,12 +180,19 @@ BRAND_COLORS = {
 
 USER_TIMEZONE = pytz.timezone("America/Toronto")
 
-DRIVER_COMMISSION_RATE = 0.25
+DRIVER_COMMISSION_RATE = 0.40
 PAYMENT_RATE_PERCENT = int(100 - (100 * DRIVER_COMMISSION_RATE))
 
 SITE_URL = "https://www.canalogistix.com"
 
 CC_POINTS_PER_ORDER = 50
+
+# ----------------------------
+# JWT SETTINGS (Centralized)
+# ----------------------------
+JWT_ALGORITHM = "HS256"
+JWT_EXPIRY_HOURS = 24
+JWT_SECRET_KEY = secrets.get("JWT_SECRET_KEY")
 
 
 LOGGING = {

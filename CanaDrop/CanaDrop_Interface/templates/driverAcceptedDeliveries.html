@@ -70,6 +70,29 @@
                 </svg>
                 Contact Admin
             </a>
+            <a href="/driverIdentity/"
+            class="nav-item flex items-center px-6 py-3 text-slate-300 hover:bg-slate-700 hover:text-emerald-400 transition-colors rounded-lg">
+                <svg class="w-5 h-5 mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                        d="M10 6H5a2 2 0 00-2 2v9a2 2 0 002 2h14a2 2 0 002-2V8a2 2 0 00-2-2h-5m-4 0V5a2 2 0 114 0v1m-4 0a2 2 0 104 0m-5 8a2 2 0 100-4 2 2 0 000 4zm0 0c1.306 0 2.417.835 2.83 2M9 14a3.001 3.001 0 00-2.83 2M15 11h3m-3 4h2"/>
+                </svg>
+                My Identity
+            </a>
+
+            <!-- CC Points (Inactive) -->
+            <a href="/driverCCPoints/" class="nav-item flex items-center px-6 py-3 text-slate-300 hover:text-white hover:bg-slate-700 rounded-lg transition">
+                <svg class="w-5 h-5 mr-3 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                        d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2
+                            m0-8c1.11 0 2.08.402 2.599 1M12 8V7
+                            m0 1v8m0 0v1m0-1
+                            c-1.11 0-2.08-.402-2.599-1
+                            M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/>
+                </svg>
+                CC Points
+            </a>
+
+
             <a href="#" onclick="handleLogout()" class="nav-item flex items-center px-6 py-3 text-slate-300 hover:bg-slate-700 hover:text-red-400 transition-colors mt-8">
                 <svg class="w-5 h-5 mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013 3v1"/>
@@ -329,12 +352,11 @@ async function loadDeliveries() {
             deliveries = data.orders.map(order => ({
                 id: order.id,
                 pharmacy_name: order.pharmacy_name,
-
-                // ✅ REQUIRED
                 store_hours: order.store_hours_for_pickup_day,
                 customer_name: order.customer_name,
                 customer_phone: order.customer_phone,
-
+                alternate_contact: order.alternate_contact || null,  // ADD THIS
+                delivery_notes: order.delivery_notes || null,        // ADD THIS
                 pickup_address: order.pickup_address,
                 pickup_city: order.pickup_city,
                 dropoff_address: order.drop_address,
@@ -343,7 +365,11 @@ async function loadDeliveries() {
                 rate: order.rate,
                 status: order.status,
                 distance_km: order.distance_km,
-                pharmacy_id: order.pharmacy_id
+                pharmacy_id: order.pharmacy_id,
+                signature_required: order.signature_required || false,
+                signature_ack_url: order.signature_ack_url || null,
+                id_verification_required: order.id_verification_required || false,
+                id_verified: order.id_verified || false
             }));
 
             renderDeliveries();
@@ -809,7 +835,7 @@ function viewDelivery(orderId) {
                 </div>
             ` : ''}
 
-            <!-- CUSTOMER (always visible) -->
+            <!-- CUSTOMER INFO -->
             <div class="bg-slate-700 rounded-lg p-3 space-y-2">
                 <div>
                     <div class="text-xs text-slate-400 mb-1">CUSTOMER</div>
@@ -817,7 +843,32 @@ function viewDelivery(orderId) {
                         ${delivery.customer_name} • ${delivery.customer_phone}
                     </div>
                 </div>
+                ${delivery.alternate_contact ? `
+                    <div>
+                        <div class="text-xs text-slate-400 mb-1">ALTERNATE CONTACT</div>
+                        <div class="text-slate-200 text-sm">
+                            ${delivery.alternate_contact}
+                        </div>
+                    </div>
+                ` : ''}
             </div>
+
+            <!-- DELIVERY NOTES (if exists) -->
+            ${delivery.delivery_notes ? `
+                <div class="bg-amber-900/20 border border-amber-600 rounded-lg p-3">
+                    <div class="flex items-start">
+                        <svg class="w-4 h-4 mr-2 text-amber-400 flex-shrink-0 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/>
+                        </svg>
+                        <div class="flex-1">
+                            <div class="text-xs text-amber-400 font-semibold mb-1">DELIVERY NOTES</div>
+                            <div class="text-slate-200 text-sm">
+                                ${delivery.delivery_notes}
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            ` : ''}
 
             <!-- PICKUP / DROPOFF -->
             <div class="bg-slate-700 rounded-lg p-3 space-y-2">
@@ -849,6 +900,11 @@ function viewDelivery(orderId) {
     `;
 
     document.getElementById('detailsModal').classList.remove('hidden');
+
+    // Initialize signature canvas if needed
+    if (delivery.status === 'inTransit' && delivery.signature_required && !delivery.signature_ack_url) {
+        setTimeout(() => initSignatureCanvas(delivery.id), 100);
+    }
 }
 
 
@@ -863,11 +919,92 @@ function renderDeliveryProcess(delivery) {
             `;
         
         case 'inTransit':
+            const signatureSection = delivery.signature_required ? `
+                <div class="bg-slate-700/50 rounded-lg p-4 mb-3 border border-slate-600">
+                    <div class="flex items-center justify-between mb-3">
+                        <div class="flex items-center text-yellow-400 text-sm">
+                            <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z"/>
+                            </svg>
+                            Customer Signature Required
+                        </div>
+                        ${delivery.signature_ack_url ? `
+                            <span class="text-emerald-400 text-xs font-semibold flex items-center">
+                                <svg class="w-3 h-3 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/>
+                                </svg>
+                                Signed
+                            </span>
+                        ` : ''}
+                    </div>
+                    ${!delivery.signature_ack_url ? `
+                        <canvas id="signatureCanvas_${delivery.id}" 
+                                class="w-full h-32 bg-white rounded border-2 border-slate-500 cursor-crosshair touch-none"
+                                style="touch-action: none;">
+                        </canvas>
+                        <div class="flex gap-2 mt-2">
+                            <button onclick="clearSignature('${delivery.id}')" 
+                                    class="flex-1 bg-slate-600 hover:bg-slate-500 text-white py-2 px-3 rounded text-sm font-medium transition-colors">
+                                Clear
+                            </button>
+                            <button onclick="submitSignature('${delivery.id}')" 
+                                    class="flex-1 bg-yellow-600 hover:bg-yellow-700 text-white py-2 px-3 rounded text-sm font-medium transition-colors">
+                                Save Signature
+                            </button>
+                        </div>
+                    ` : `
+                        <div class="text-center text-emerald-400 text-sm py-2">
+                            <svg class="w-8 h-8 mx-auto mb-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/>
+                            </svg>
+                            Signature captured successfully
+                        </div>
+                    `}
+                </div>
+            ` : '';
+
+                const idVerificationSection = delivery.id_verification_required ? `
+                <div class="bg-slate-700/50 rounded-lg p-4 mb-3 border border-slate-600">
+                    <div class="flex items-center justify-between mb-2">
+                        <div class="flex items-center text-orange-400 text-sm">
+                            <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 6H5a2 2 0 00-2 2v9a2 2 0 002 2h14a2 2 0 002-2V8a2 2 0 00-2-2h-5m-4 0V5a2 2 0 114 0v1m-4 0a2 2 0 104 0m-5 8a2 2 0 100-4 2 2 0 000 4zm0 0c1.306 0 2.417.835 2.83 2M9 14a3.001 3.001 0 00-2.83 2M15 11h3m-3 4h2"/>
+                            </svg>
+                            Customer ID Verification Required
+                        </div>
+                        ${delivery.id_verified ? `
+                            <span class="text-emerald-400 text-xs font-semibold flex items-center">
+                                <svg class="w-3 h-3 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/>
+                                </svg>
+                                Verified
+                            </span>
+                        ` : ''}
+                    </div>
+                    ${!delivery.id_verified ? `
+                        <button onclick="verifyCustomerId('${delivery.id}')" 
+                                class="w-full bg-orange-600 hover:bg-orange-700 text-white py-2 px-4 rounded-lg text-sm font-medium transition-colors">
+                            Mark ID as Verified
+                        </button>
+                    ` : `
+                        <div class="text-center text-emerald-400 text-sm py-2">
+                            <svg class="w-8 h-8 mx-auto mb-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/>
+                            </svg>
+                            ID verification completed
+                        </div>
+                    `}
+                </div>
+            ` : '';
+            
             return `
+                ${signatureSection}
+                ${idVerificationSection}
                 <button onclick="uploadPhoto('${delivery.id}', 'delivery')" class="w-full bg-emerald-600 hover:bg-emerald-700 text-white py-3 px-4 rounded-lg font-medium transition-colors">
                     Take Delivery Photo
                 </button>
             `;
+        
         
         case 'delivered':
             return `
@@ -999,6 +1136,212 @@ async function loadDriverInfo() {
 
     } catch (error) {
         console.error("Error loading driver info:", error);
+    }
+}
+
+// Signature Canvas Functionality
+let signatureCanvases = {};
+
+function initSignatureCanvas(orderId) {
+    const canvas = document.getElementById(`signatureCanvas_${orderId}`);
+    if (!canvas) return;
+    
+    const ctx = canvas.getContext('2d');
+    
+    // Set canvas size to match display size
+    const rect = canvas.getBoundingClientRect();
+    canvas.width = rect.width * window.devicePixelRatio;
+    canvas.height = rect.height * window.devicePixelRatio;
+    ctx.scale(window.devicePixelRatio, window.devicePixelRatio);
+    
+    // Configure drawing style
+    ctx.strokeStyle = '#000000';
+    ctx.lineWidth = 2;
+    ctx.lineCap = 'round';
+    ctx.lineJoin = 'round';
+    
+    let isDrawing = false;
+    let lastX = 0;
+    let lastY = 0;
+    
+    function getCoordinates(e) {
+        const rect = canvas.getBoundingClientRect();
+        const clientX = e.touches ? e.touches[0].clientX : e.clientX;
+        const clientY = e.touches ? e.touches[0].clientY : e.clientY;
+        return {
+            x: clientX - rect.left,
+            y: clientY - rect.top
+        };
+    }
+    
+    function startDrawing(e) {
+        e.preventDefault();
+        isDrawing = true;
+        const coords = getCoordinates(e);
+        lastX = coords.x;
+        lastY = coords.y;
+    }
+    
+    function draw(e) {
+        e.preventDefault();
+        if (!isDrawing) return;
+        
+        const coords = getCoordinates(e);
+        
+        ctx.beginPath();
+        ctx.moveTo(lastX, lastY);
+        ctx.lineTo(coords.x, coords.y);
+        ctx.stroke();
+        
+        lastX = coords.x;
+        lastY = coords.y;
+    }
+    
+    function stopDrawing(e) {
+        e.preventDefault();
+        isDrawing = false;
+    }
+    
+    // Mouse events
+    canvas.addEventListener('mousedown', startDrawing);
+    canvas.addEventListener('mousemove', draw);
+    canvas.addEventListener('mouseup', stopDrawing);
+    canvas.addEventListener('mouseout', stopDrawing);
+    
+    // Touch events
+    canvas.addEventListener('touchstart', startDrawing);
+    canvas.addEventListener('touchmove', draw);
+    canvas.addEventListener('touchend', stopDrawing);
+    canvas.addEventListener('touchcancel', stopDrawing);
+    
+    signatureCanvases[orderId] = { canvas, ctx };
+}
+
+function clearSignature(orderId) {
+    const canvasData = signatureCanvases[orderId];
+    if (!canvasData) return;
+    
+    const { canvas, ctx } = canvasData;
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+    showNotification('Signature cleared', 'info');
+}
+
+async function submitSignature(orderId) {
+    const canvasData = signatureCanvases[orderId];
+    if (!canvasData) {
+        showNotification('Signature canvas not found', 'error');
+        return;
+    }
+    
+    const { canvas } = canvasData;
+    
+    // Check if canvas is empty
+    const ctx = canvas.getContext('2d');
+    const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
+    const isEmpty = !imageData.data.some(channel => channel !== 0);
+    
+    if (isEmpty) {
+        showNotification('Please provide a signature first', 'error');
+        return;
+    }
+    
+    try {
+        showNotification('Uploading signature...', 'info');
+        
+        // Convert canvas directly to base64 (this is more reliable than blob)
+        const base64data = canvas.toDataURL('image/png');
+        
+        // Log for debugging (remove after testing)
+        console.log('Base64 data length:', base64data.length);
+        console.log('Base64 starts with:', base64data.substring(0, 50));
+        
+        // Prepare form data
+        const formData = new FormData();
+        formData.append('orderId', orderId);
+        formData.append('signature', base64data);
+        
+        const response = await fetch('/api/upload-signature-acknowledgement/', {
+            method: 'POST',
+            headers: {
+                'X-CSRFToken': getCookie('csrftoken')
+            },
+            body: formData
+        });
+        
+        const data = await response.json();
+        
+        if (response.ok && data.success) {
+            showNotification('Signature saved successfully!', 'success');
+            
+            // Update the delivery in local array
+            const delivery = deliveries.find(d => d.id == orderId);
+            if (delivery) {
+                delivery.signature_ack_url = data.acknowledgement_url;
+            }
+            
+            // Reload deliveries to refresh UI
+            await loadDeliveries();
+            
+            // Close and reopen modal to show updated state
+            closeModal();
+            setTimeout(() => viewDelivery(orderId), 300);
+        } else {
+            console.error('Server error:', data);
+            showNotification(data.error || 'Failed to save signature', 'error');
+        }
+    } catch (error) {
+        console.error('Error submitting signature:', error);
+        showNotification('Error submitting signature', 'error');
+    }
+}
+
+async function verifyCustomerId(orderId) {
+    const driverId = getCookie('driverId');
+    
+    if (!driverId) {
+        showNotification('Error: Driver ID not found', 'error');
+        return;
+    }
+    
+    try {
+        showNotification('Verifying customer ID...', 'info');
+        
+        const formData = new FormData();
+        formData.append('orderId', orderId);
+        formData.append('driverId', driverId);
+        formData.append('verified', 'true');
+        
+        const response = await fetch('/api/verify-customer-id/', {
+            method: 'POST',
+            headers: {
+                'X-CSRFToken': getCookie('csrftoken')
+            },
+            body: formData
+        });
+        
+        const data = await response.json();
+        
+        if (response.ok && data.success) {
+            showNotification('Customer ID verified successfully!', 'success');
+            
+            // Update the delivery in local array
+            const delivery = deliveries.find(d => d.id == orderId);
+            if (delivery) {
+                delivery.id_verified = true;
+            }
+            
+            // Reload deliveries to refresh UI
+            await loadDeliveries();
+            
+            // Close and reopen modal to show updated state
+            closeModal();
+            setTimeout(() => viewDelivery(orderId), 300);
+        } else {
+            showNotification(data.error || 'Failed to verify customer ID', 'error');
+        }
+    } catch (error) {
+        console.error('Error verifying customer ID:', error);
+        showNotification('Error verifying customer ID', 'error');
     }
 }
 

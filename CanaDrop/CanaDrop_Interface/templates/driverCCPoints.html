@@ -1,0 +1,350 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>CC Points - CanaLogistiX</title>
+    <link rel="icon" href="https://canalogistix.s3.us-east-2.amazonaws.com/Logo/CanaLogistiX_Logo_BG.png">
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    animation: {
+                        'fade-in': 'fadeIn 0.3s ease-in-out',
+                        'slide-up': 'slideUp 0.3s ease-out',
+                        'pulse-slow': 'pulse 3s cubic-bezier(0.4, 0, 0.6, 1) infinite'
+                    }
+                }
+            }
+        }
+    </script>
+    <style>
+        @keyframes fadeIn {
+            from { opacity: 0; }
+            to { opacity: 1; }
+        }
+        @keyframes slideUp {
+            from { transform: translateY(20px); opacity: 0; }
+            to { transform: translateY(0); opacity: 1; }
+        }
+        .nav-item.active {
+            background-color: rgb(51 65 85);
+            color: rgb(52 211 153);
+        }
+    </style>
+</head>
+<body class="min-h-screen bg-gradient-to-br from-slate-900 to-gray-900">
+    <div class="flex h-screen overflow-hidden">
+        <!-- Sidebar -->
+        <aside id="sidebar" class="w-64 bg-slate-800 border-r border-slate-700 flex flex-col fixed lg:static inset-y-0 left-0 z-40 transform -translate-x-full lg:translate-x-0 transition-transform duration-300 overflow-y-auto">
+            <div class="flex items-center h-16 px-6 border-b border-slate-700">
+                <img src="https://canalogistix.s3.us-east-2.amazonaws.com/Logo/CanaLogistiX_Logo_BG.png" alt="CanaLogistiX Logo" class="h-10 w-10 rounded-full object-cover"/>
+                <span class="ml-2 text-lg font-semibold text-slate-100">CanaLogistiX</span>
+            </div>
+            
+            <nav class="flex-1 p-4 space-y-2 text-sm overflow-y-auto">
+                <a href="/driverDashboard/" class="nav-item flex items-center px-6 py-3 text-slate-300 hover:bg-slate-700 hover:text-emerald-400 transition-colors rounded-lg">
+                    <svg class="w-5 h-5 mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 7v10a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2H5a2 2 0 00-2-2z"/>
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 5a2 2 0 012-2h4a2 2 0 012 2v4H8V5z"/>
+                    </svg>
+                    Dashboard
+                </a>
+                <a href="/driverAcceptedDeliveries/" class="nav-item flex items-center px-6 py-3 text-slate-300 hover:bg-slate-700 hover:text-emerald-400 transition-colors rounded-lg">
+                    <svg class="w-5 h-5 mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 8l6 6 10-10"/>
+                    </svg>
+                    Accepted Deliveries
+                </a>
+                <a href="/driverFinances/" class="nav-item flex items-center px-6 py-3 text-slate-300 hover:bg-slate-700 hover:text-emerald-400 transition-colors rounded-lg">
+                    <svg class="w-5 h-5 mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1"/>
+                    </svg>
+                    Finances
+                </a>
+                <a href="/contactAdmin/" class="nav-item flex items-center px-6 py-3 text-slate-300 hover:bg-slate-700 hover:text-emerald-400 transition-colors rounded-lg">
+                    <svg class="w-5 h-5 mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 10h.01M12 10h.01M16 10h.01M21 12c0 4.418-4.03 8-9 8s-9-3.582-9-8 4.03-8 9-8 9 3.582 9 8zM12 14v-4m0 4h.01"/>
+                    </svg>
+                    Contact Admin
+                </a>
+                <a href="/driverIdentity/" class="nav-item flex items-center px-6 py-3 text-slate-300 hover:bg-slate-700 hover:text-emerald-400 transition-colors rounded-lg">
+                    <svg class="w-5 h-5 mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 6H5a2 2 0 00-2 2v9a2 2 0 002 2h14a2 2 0 002-2V8a2 2 0 00-2-2h-5m-4 0V5a2 2 0 114 0v1m-4 0a2 2 0 104 0m-5 8a2 2 0 100-4 2 2 0 000 4zm0 0c1.306 0 2.417.835 2.83 2M9 14a3.001 3.001 0 00-2.83 2M15 11h3m-3 4h2"/>
+                    </svg>
+                    My Identity
+                </a>
+
+                <!-- CC Points (Active) -->
+                <a href="/driverCCPoints/" class="nav-item active flex items-center px-6 py-3 text-white bg-slate-700 rounded-lg">
+                    <svg class="w-5 h-5 mr-3 text-emerald-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/>
+                    </svg>
+                    CC Points
+                </a>
+
+                <a href="javascript:void(0);" onclick="handleLogout()" class="nav-item flex items-center px-6 py-3 text-slate-300 hover:bg-slate-700 hover:text-red-400 transition-colors mt-8 rounded-lg">
+                    <svg class="w-5 h-5 mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1"/>
+                    </svg>
+                    Logout
+                </a>
+            </nav>
+
+            <!-- Profile -->
+            <div class="p-4 border-t border-slate-700">
+                <div class="flex items-center">
+                    <div id="profileInitialSidebar" class="flex-shrink-0 w-9 h-9 bg-gradient-to-r from-emerald-600 to-emerald-500 rounded-full flex items-center justify-center text-sm font-semibold text-white">D</div>
+                    <div class="ml-3">
+                        <p id="driverNameSidebar" class="text-sm font-medium text-slate-100">Driver</p>
+                        <p id="driverEmailSidebar" class="text-xs text-slate-400">Loading...</p>
+                    </div>
+                </div>
+            </div>
+        </aside>
+
+        <div id="sidebarOverlay" class="hidden lg:hidden fixed inset-0 bg-black/50 z-30"></div>
+
+        <!-- Main Content -->
+        <main class="flex-1 flex flex-col overflow-y-auto">
+            <!-- Header with CC Points Display -->
+            <header class="bg-slate-800 border-b border-slate-700 px-4 sm:px-6 py-4">
+                <div class="flex items-center justify-between gap-4">
+                    <button id="menuToggle" class="lg:hidden text-slate-300 p-2 flex-shrink-0 hover:text-emerald-400 transition-colors">
+                        <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16"/>
+                        </svg>
+                    </button>
+                    <div class="flex-1 min-w-0">
+                        <h1 class="text-xl sm:text-2xl font-bold text-slate-100">CC Points</h1>
+                        <p class="text-sm text-slate-400 hidden sm:block">Your rewards & achievements</p>
+                    </div>
+                    <div class="flex items-center gap-3 bg-gradient-to-r from-emerald-600 to-emerald-500 text-white px-4 sm:px-6 py-2 sm:py-3 rounded-xl shadow-lg">
+                        <svg class="w-5 h-5 sm:w-6 sm:h-6 animate-pulse-slow" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/>
+                        </svg>
+                        <div>
+                            <p class="text-xs sm:text-sm opacity-90">Your CC Points</p>
+                            <p class="text-xl sm:text-2xl font-bold" id="headerCCPoints">0</p>
+                        </div>
+                    </div>
+                </div>
+            </header>
+
+            <!-- CC Points Stats Section -->
+            <section class="p-4 sm:p-6">
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-4 lg:gap-6 mb-8">
+                    <!-- Total CC Points Card -->
+                    <div class="bg-gradient-to-br from-emerald-600 to-emerald-500 p-6 sm:p-8 rounded-2xl shadow-xl text-white transform hover:scale-105 transition-all duration-300">
+                        <div class="flex items-center justify-between mb-4">
+                            <div>
+                                <p class="text-sm sm:text-base opacity-90">Total CC Points</p>
+                                <p class="text-4xl sm:text-5xl font-bold mt-2" id="totalCCPoints">0</p>
+                            </div>
+                            <div class="p-4 bg-white/20 rounded-2xl backdrop-blur-sm">
+                                <svg class="w-10 h-10 sm:w-12 sm:h-12" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/>
+                                </svg>
+                            </div>
+                        </div>
+                        <div class="flex items-center gap-2 text-sm">
+                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6"/>
+                            </svg>
+                            <span>Earn 50 points per delivery</span>
+                        </div>
+                    </div>
+
+                    <!-- Delivered Orders Card -->
+                    <div class="bg-slate-800 border border-slate-700 p-6 sm:p-8 rounded-2xl shadow-lg transform hover:scale-105 transition-all duration-300">
+                        <div class="flex items-center justify-between mb-4">
+                            <div>
+                                <p class="text-sm sm:text-base text-slate-400">Completed Deliveries</p>
+                                <p class="text-4xl sm:text-5xl font-bold text-slate-100 mt-2" id="deliveredOrders">0</p>
+                            </div>
+                            <div class="p-4 bg-emerald-500/20 rounded-2xl">
+                                <svg class="w-10 h-10 sm:w-12 sm:h-12 text-emerald-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/>
+                                </svg>
+                            </div>
+                        </div>
+                        <div class="flex items-center gap-2 text-sm text-slate-400">
+                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/>
+                            </svg>
+                            <span>Successfully delivered orders</span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Coming Soon Section -->
+                <div class="relative bg-slate-800 border border-slate-700 rounded-2xl shadow-lg overflow-hidden" style="min-height: 500px;">
+                    <!-- Blur Background -->
+                    <div class="absolute inset-0 bg-gradient-to-br from-slate-700 via-slate-800 to-emerald-900/20 opacity-50"></div>
+                    <div class="absolute inset-0 backdrop-blur-sm"></div>
+                    
+                    <!-- Coming Soon Content -->
+                    <div class="relative z-10 flex flex-col items-center justify-center h-full py-16 px-4">
+                        <div class="text-center animate-fade-in">
+                            <!-- Icon -->
+                            <div class="mb-6 flex justify-center">
+                                <div class="p-6 bg-gradient-to-br from-emerald-600 to-emerald-500 rounded-full shadow-2xl animate-pulse-slow">
+                                    <svg class="w-16 h-16 sm:w-20 sm:h-20 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6V4m0 2a2 2 0 100 4m0-4a2 2 0 110 4m-6 8a2 2 0 100-4m0 4a2 2 0 110-4m0 4v2m0-6V4m6 6v10m6-2a2 2 0 100-4m0 4a2 2 0 110-4m0 4v2m0-6V4"/>
+                                    </svg>
+                                </div>
+                            </div>
+                            
+                            <!-- Text -->
+                            <h2 class="text-3xl sm:text-4xl lg:text-5xl font-bold text-slate-100 mb-4">
+                                Coming Soon
+                            </h2>
+                            <p class="text-base sm:text-lg text-slate-300 mb-6 max-w-md mx-auto">
+                                We're working on exciting new features for CC Points. Stay tuned!
+                            </p>
+                            
+                            <!-- Features Preview -->
+                            <div class="grid grid-cols-1 sm:grid-cols-3 gap-4 max-w-3xl mx-auto mt-12">
+                                <div class="bg-slate-700/60 backdrop-blur-sm p-6 rounded-xl border border-slate-600 shadow-sm">
+                                    <div class="p-3 bg-emerald-500/20 rounded-lg w-fit mx-auto mb-3">
+                                        <svg class="w-6 h-6 text-emerald-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v13m0-13V6a2 2 0 112 2h-2zm0 0V5.5A2.5 2.5 0 109.5 8H12zm-7 4h14M5 12a2 2 0 110-4h14a2 2 0 110 4M5 12v7a2 2 0 002 2h10a2 2 0 002-2v-7"/>
+                                        </svg>
+                                    </div>
+                                    <h3 class="font-semibold text-slate-100 mb-1">Redeem Rewards</h3>
+                                    <p class="text-sm text-slate-400">Convert points into exclusive benefits</p>
+                                </div>
+                                
+                                <div class="bg-slate-700/60 backdrop-blur-sm p-6 rounded-xl border border-slate-600 shadow-sm">
+                                    <div class="p-3 bg-emerald-500/20 rounded-lg w-fit mx-auto mb-3">
+                                        <svg class="w-6 h-6 text-emerald-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"/>
+                                        </svg>
+                                    </div>
+                                    <h3 class="font-semibold text-slate-100 mb-1">Points History</h3>
+                                    <p class="text-sm text-slate-400">Track your earning journey</p>
+                                </div>
+                                
+                                <div class="bg-slate-700/60 backdrop-blur-sm p-6 rounded-xl border border-slate-600 shadow-sm">
+                                    <div class="p-3 bg-emerald-500/20 rounded-lg w-fit mx-auto mb-3">
+                                        <svg class="w-6 h-6 text-emerald-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 3v4M3 5h4M6 17v4m-2-2h4m5-16l2.286 6.857L21 12l-5.714 2.143L13 21l-2.286-6.857L5 12l5.714-2.143L13 3z"/>
+                                        </svg>
+                                    </div>
+                                    <h3 class="font-semibold text-slate-100 mb-1">Bonus Challenges</h3>
+                                    <p class="text-sm text-slate-400">Earn extra points with milestones</p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </section>
+        </main>
+    </div>
+
+    <script>
+        // Get cookie value by name
+        function getCookie(name) {
+            const value = `; ${document.cookie}`;
+            const parts = value.split(`; ${name}=`);
+            if (parts.length === 2) return parts.pop().split(';').shift();
+            return null;
+        }
+
+        // Load CC Points data
+        async function loadCCPoints() {
+            try {
+                const driverId = getCookie("driverId");
+                if (!driverId) {
+                    console.error("Driver ID not found in cookies");
+                    return;
+                }
+
+                const response = await fetch(`/api/driver/${driverId}/cc-points/`);
+                if (!response.ok) {
+                    throw new Error("Failed to fetch CC points");
+                }
+
+                const data = await response.json();
+                
+                if (data.success) {
+                    // Update all CC points displays
+                    const ccPoints = data.cc_points;
+                    const deliveredOrders = data.delivered_orders;
+                    
+                    document.getElementById('headerCCPoints').textContent = ccPoints;
+                    document.getElementById('totalCCPoints').textContent = ccPoints;
+                    document.getElementById('deliveredOrders').textContent = deliveredOrders;
+                } else {
+                    console.error("Failed to load CC points:", data.error);
+                }
+
+            } catch (error) {
+                console.error("Error loading CC points:", error);
+            }
+        }
+
+        // Load driver details
+        async function loadDriverDetails() {
+            try {
+                const driverId = getCookie("driverId");
+                if (!driverId) {
+                    console.error("Driver ID not found in cookies");
+                    return;
+                }
+
+                const response = await fetch(`/api/driver/details/?driverId=${driverId}`);
+                if (!response.ok) {
+                    throw new Error("Failed to fetch driver details");
+                }
+
+                const data = await response.json();
+                
+                if (data.name && data.email) {
+                    document.getElementById('driverNameSidebar').textContent = data.name;
+                    document.getElementById('driverEmailSidebar').textContent = data.email;
+                    
+                    if (data.name) {
+                        document.getElementById('profileInitialSidebar').textContent = data.name.charAt(0).toUpperCase();
+                    }
+                }
+
+            } catch (error) {
+                console.error("Error loading driver details:", error);
+            }
+        }
+
+        // Logout function
+        function handleLogout() {
+            document.cookie = "driverId=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/;";
+            window.location.href = "/driverLogin/";
+        }
+
+        // Initialize on page load
+        document.addEventListener("DOMContentLoaded", function() {
+            loadCCPoints();
+            loadDriverDetails();
+
+            // Mobile menu toggle
+            const menuToggle = document.getElementById('menuToggle');
+            const sidebar = document.getElementById('sidebar');
+            const sidebarOverlay = document.getElementById('sidebarOverlay');
+
+            if (menuToggle) {
+                menuToggle.addEventListener('click', () => {
+                    sidebar.classList.toggle('-translate-x-full');
+                    sidebarOverlay.classList.toggle('hidden');
+                });
+            }
+
+            if (sidebarOverlay) {
+                sidebarOverlay.addEventListener('click', () => {
+                    sidebar.classList.add('-translate-x-full');
+                    sidebarOverlay.classList.add('hidden');
+                });
+            }
+        });
+    </script>
+</body>
+</html>

@@ -5,6 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
   <title>Pharmacy Registration - CanaLogistiX</title>
   <link rel="icon" href="https://canalogistix.s3.us-east-2.amazonaws.com/Logo/CanaLogistiX_Logo_BG.png">
+  <script src="https://maps.googleapis.com/maps/api/js?key={{ GOOGLE_MAPS_API_KEY }}&libraries=places"></script>
   <script src="https://cdn.tailwindcss.com"></script>
 </head>
 <body class="min-h-screen bg-gradient-to-br from-teal-50 to-cyan-100 flex items-center justify-center p-4">
@@ -85,8 +86,9 @@
 
         <div>
           <label class="block text-sm font-medium text-gray-700">Store Address</label>
-          <textarea id="reg-address" rows="2" placeholder="123 Main St, Suite 100"
-                    class="w-full px-4 py-3 border border-gray-200 rounded-lg focus:ring-2 focus:ring-teal-500 focus:border-transparent bg-gray-50 focus:bg-white"></textarea>
+          <input id="reg-address" type="text" placeholder="Start typing your address..."
+                 class="w-full px-4 py-3 border border-gray-200 rounded-lg focus:ring-2 focus:ring-teal-500 focus:border-transparent bg-gray-50 focus:bg-white"/>
+          <p class="text-xs text-gray-500 mt-1">Start typing and select from Google suggestions</p>
         </div>
 
         <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -151,11 +153,11 @@
     </div>
 
     <!-- Footer -->
-        <div class="text-center mt-8">
-        <p class="text-sm text-gray-500">
-            © <span id="current-year"></span> CanaLogistiX - Cana Group of Companies. All rights reserved.
-        </p>
-        </div>
+    <div class="text-center mt-8">
+      <p class="text-sm text-gray-500">
+        © <span id="current-year"></span> CanaLogistiX - Cana Group of Companies. All rights reserved.
+      </p>
+    </div>
   </div>
 
   <!-- Modal -->
@@ -184,6 +186,7 @@
     let otpToken = null;
     let resendCountdown = RESEND_SECONDS;
     let timerId = null;
+    let autocomplete = null;
 
     // ---------- Elements ----------
     const stepEmail     = document.getElementById('step-email');
@@ -217,6 +220,65 @@
     const modalContent  = document.getElementById('modalContent');
     const closeModalBtn = document.getElementById('closeModalBtn');
 
+    // ---------- Google Places Autocomplete ----------
+    function initAutocomplete() {
+      if (autocomplete) return; // Already initialized
+      
+      autocomplete = new google.maps.places.Autocomplete(addrInput, {
+        types: ['address'],
+        componentRestrictions: { country: ['ca', 'us'] }
+      });
+
+      autocomplete.addListener('place_changed', () => {
+        const place = autocomplete.getPlace();
+        
+        if (!place.geometry) {
+          console.log("No details available for input: '" + place.name + "'");
+          return;
+        }
+
+        // Clear existing values
+        addrInput.value = '';
+        cityInput.value = '';
+        provInput.value = '';
+        postalInput.value = '';
+        countryInput.value = '';
+
+        // Extract address components
+        let streetNumber = '';
+        let route = '';
+        
+        for (const component of place.address_components) {
+          const componentType = component.types[0];
+
+          switch (componentType) {
+            case 'street_number':
+              streetNumber = component.long_name;
+              break;
+            case 'route':
+              route = component.long_name;
+              break;
+            case 'locality':
+              cityInput.value = component.long_name;
+              break;
+            case 'administrative_area_level_1':
+              provInput.value = component.short_name;
+              break;
+            case 'postal_code':
+              postalInput.value = component.long_name;
+              break;
+            case 'country':
+              countryInput.value = component.long_name;
+              break;
+          }
+        }
+
+        // Combine street number and route for full address
+        const fullAddress = [streetNumber, route].filter(Boolean).join(' ');
+        addrInput.value = fullAddress;
+      });
+    }
+
     // ---------- Helpers ----------
     function setLoading(button, isLoading, textWhenIdle) {
       if (isLoading) {
@@ -233,6 +295,11 @@
     function show(section) {
       [stepEmail, stepOtp, stepRegister].forEach(s => s.classList.add('hidden'));
       section.classList.remove('hidden');
+      
+      // Initialize autocomplete when registration form is shown
+      if (section === stepRegister) {
+        setTimeout(initAutocomplete, 100);
+      }
     }
 
     function isValidEmail(email) {
@@ -240,9 +307,8 @@
     }
 
     function normalizeEmail(email) {
-    return email.trim().toLowerCase();
+      return email.trim().toLowerCase();
     }
-
 
     function showModal(status, title, message) {
       const iconSuccess = `
@@ -312,7 +378,6 @@
         return showModal('fail', 'Invalid Email', 'Please enter a valid email address.');
       }
       const email = normalizeEmail(rawEmail);
-
 
       setLoading(btnSendOtp, true, 'Send OTP');
       try {
@@ -394,7 +459,6 @@
     });
 
     btnRegister.addEventListener('click', async () => {
-      // client-side checks
       if (!otpToken) return showModal('fail', 'Not Verified', 'Please verify your email with the OTP first.');
       const name = nameInput.value.trim();
       const phone = phoneInput.value.trim();

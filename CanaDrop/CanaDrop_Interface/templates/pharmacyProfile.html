@@ -5,6 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Pharmacy Dashboard - My Profile</title>
     <link rel="icon" href="https://canalogistix.s3.us-east-2.amazonaws.com/Logo/CanaLogistiX_Logo_BG.png">
+    <script src="https://maps.googleapis.com/maps/api/js?key={{ GOOGLE_MAPS_API_KEY }}&libraries=places"></script>
     <script src="https://cdn.tailwindcss.com"></script>
     <script>
         tailwind.config = {
@@ -247,7 +248,8 @@
                                     Store Address
                                     <span class="text-red-500">*</span>
                                 </label>
-                                <textarea id="storeAddress" disabled rows="2" class="w-full border border-gray-300 rounded-lg p-3 text-sm focus:ring-2 focus:ring-teal-500 focus:border-transparent transition-all disabled:bg-gray-50 disabled:text-gray-500" placeholder="Enter store address"></textarea>
+                                <input type="text" id="storeAddress" disabled class="w-full border border-gray-300 rounded-lg p-3 text-sm focus:ring-2 focus:ring-teal-500 focus:border-transparent transition-all disabled:bg-gray-50 disabled:text-gray-500" placeholder="Start typing your address...">
+                                <p class="text-xs text-gray-500 mt-1">Start typing and select from Google suggestions (when editing)</p>
                             </div>
 
                             <!-- City, Province -->
@@ -269,22 +271,7 @@
                                         Province
                                         <span class="text-red-500">*</span>
                                     </label>
-                                    <select id="province" disabled class="w-full border border-gray-300 rounded-lg p-3 text-sm focus:ring-2 focus:ring-teal-500 focus:border-transparent transition-all disabled:bg-gray-50 disabled:text-gray-500">
-                                        <option value="">Select province</option>
-                                        <option value="AB">Alberta (AB)</option>
-                                        <option value="BC">British Columbia (BC)</option>
-                                        <option value="MB">Manitoba (MB)</option>
-                                        <option value="NB">New Brunswick (NB)</option>
-                                        <option value="NL">Newfoundland and Labrador (NL)</option>
-                                        <option value="NS">Nova Scotia (NS)</option>
-                                        <option value="ON">Ontario (ON)</option>
-                                        <option value="PE">Prince Edward Island (PE)</option>
-                                        <option value="QC">Quebec (QC)</option>
-                                        <option value="SK">Saskatchewan (SK)</option>
-                                        <option value="NT">Northwest Territories (NT)</option>
-                                        <option value="NU">Nunavut (NU)</option>
-                                        <option value="YT">Yukon (YT)</option>
-                                    </select>
+                                    <input type="text" id="province" disabled class="w-full border border-gray-300 rounded-lg p-3 text-sm focus:ring-2 focus:ring-teal-500 focus:border-transparent transition-all disabled:bg-gray-50 disabled:text-gray-500" placeholder="Province/State">
                                 </div>
                             </div>
 
@@ -549,6 +536,70 @@ function renderStoreTimings(formattedTimings, rawTimings, editable = false) {
     }
 }
 
+// Google Places Autocomplete
+let autocomplete = null;
+
+function initAutocomplete() {
+    const addressInput = document.getElementById('storeAddress');
+    
+    if (!addressInput || autocomplete) return; // Already initialized or input not found
+    
+    autocomplete = new google.maps.places.Autocomplete(addressInput, {
+        types: ['address'],
+        componentRestrictions: { country: ['ca', 'us'] }
+    });
+
+    autocomplete.addListener('place_changed', () => {
+        const place = autocomplete.getPlace();
+        
+        if (!place.geometry) {
+            console.log("No details available for input: '" + place.name + "'");
+            return;
+        }
+
+        // Clear existing values
+        addressInput.value = '';
+        document.getElementById('city').value = '';
+        document.getElementById('province').value = '';
+        document.getElementById('postalCode').value = '';
+        document.getElementById('country').value = '';
+
+        // Extract address components
+        let streetNumber = '';
+        let route = '';
+        
+        for (const component of place.address_components) {
+            const componentType = component.types[0];
+
+            switch (componentType) {
+                case 'street_number':
+                    streetNumber = component.long_name;
+                    break;
+                case 'route':
+                    route = component.long_name;
+                    break;
+                case 'locality':
+                    document.getElementById('city').value = component.long_name;
+                    break;
+                case 'administrative_area_level_1':
+                    document.getElementById('province').value = component.short_name;
+                    break;
+                case 'postal_code':
+                    document.getElementById('postalCode').value = component.long_name;
+                    break;
+                case 'country':
+                    document.getElementById('country').value = component.long_name;
+                    break;
+            }
+        }
+
+        // Combine street number and route for full address
+        const fullAddress = [streetNumber, route].filter(Boolean).join(' ');
+        addressInput.value = fullAddress;
+    });
+}
+
+
 
 
 // Load pharmacy profile details
@@ -703,6 +754,7 @@ function closeNotification() {
     }
 }
 
+// Update the enableEditMode function to initialize autocomplete
 function enableEditMode() {
     isEditMode = true;
 
@@ -715,6 +767,9 @@ function enableEditMode() {
 
     document.getElementById('actionButtons').classList.remove('hidden');
     document.getElementById('editBtn').classList.add('hidden');
+    
+    // Initialize Google Autocomplete when entering edit mode
+    setTimeout(initAutocomplete, 100);
 }
 
 

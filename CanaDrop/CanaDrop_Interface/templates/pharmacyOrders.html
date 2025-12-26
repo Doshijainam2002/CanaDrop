@@ -652,10 +652,9 @@ function changePage(offset) {
 
 
 
-// Render detailed order information
+// Replace your entire renderOrderDetails function with this updated version
+
 function renderOrderDetails(order) {
-    
-    
     const timelineHtml = order.timeline ? order.timeline.map(entry => `
         <div class="flex items-center">
             <div class="w-2 h-2 bg-green-500 rounded-full mr-3"></div>
@@ -675,48 +674,267 @@ function renderOrderDetails(order) {
     const handoverCountText = hasHandoverImage ? `${order.images.handover.length} Image${order.images.handover.length > 1 ? 's' : ''}` : 'No Image';
     const handoverCountColor = hasHandoverImage ? 'text-green-600' : 'text-red-500';
 
-    // Check if photo replacement should be disabled (when status is picked_up or later stages)
     const canReplacePhoto = !['picked_up', 'delivered', 'cancelled'].includes(order.status);
-    
 
     return `
         <div class="grid grid-cols-1 lg:grid-cols-2 gap-8">
-            <!-- Left Column: Order Details + Timeline -->
+            <!-- Left Column: Order Details + Delivery Partner + Timeline -->
             <div class="space-y-6">
                 <!-- Order Information -->
-                    <div class="bg-white rounded-lg p-4 shadow-sm">
+                <div class="bg-white rounded-lg p-4 shadow-sm">
                     <h4 class="text-sm font-semibold text-gray-900 mb-3">Order Information</h4>
 
                     <div class="space-y-3">
                         <div>
-                        <label class="text-xs font-medium text-gray-500">Pickup Address</label>
-                        <p class="text-sm text-gray-900">${order.pickup_address}</p>
+                            <label class="text-xs font-medium text-gray-500">Pickup Address</label>
+                            <p class="text-sm text-gray-900">${order.pickup_address}</p>
                         </div>
 
                         <div>
-                        <label class="text-xs font-medium text-gray-500">Drop Address</label>
-                        <p class="text-sm text-gray-900">${order.drop_address}</p>
+                            <label class="text-xs font-medium text-gray-500">Drop Address</label>
+                            <p class="text-sm text-gray-900">${order.drop_address}</p>
                         </div>
 
-                        <!-- ✅ ADDED: Customer Phone -->
-                        <div>
-                        <label class="text-xs font-medium text-gray-500">Customer Phone</label>
-                        <p class="text-sm text-gray-900">${order.customer_phone || '0000000000'}</p>
+                        <!-- Customer Phone & Alternate Contact (Side by Side) -->
+                        <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                            <div>
+                                <label class="text-xs font-medium text-gray-500">Customer Phone</label>
+                                <p class="text-sm text-gray-900">${order.customer_phone || 'N/A'}</p>
+                            </div>
+                            <div>
+                                <label class="text-xs font-medium text-gray-500">Alternate Contact</label>
+                                <p class="text-sm text-gray-900">${order.alternate_contact || 'N/A'}</p>
+                            </div>
                         </div>
 
                         <div class="grid grid-cols-2 gap-3">
-                        <div>
-                            <label class="text-xs font-medium text-gray-500">Drop City</label>
-                            <p class="text-sm text-gray-900">${order.drop_city}</p>
+                            <div>
+                                <label class="text-xs font-medium text-gray-500">Drop City</label>
+                                <p class="text-sm text-gray-900">${order.drop_city}</p>
+                            </div>
+                            <div>
+                                <label class="text-xs font-medium text-gray-500">Pickup Day</label>
+                                <p class="text-sm text-gray-900">${formatDate(order.pickup_day)}</p>
+                            </div>
                         </div>
-                        <div>
-                            <label class="text-xs font-medium text-gray-500">Pickup Day</label>
-                            <p class="text-sm text-gray-900">${formatDate(order.pickup_day)}</p>
-                        </div>
-                        </div>
-                    </div>
-                    </div>
 
+                        <!-- Compliance Requirements -->
+                        <div class="pt-3 border-t border-gray-100">
+                            <label class="text-xs font-medium text-gray-500 mb-2 block">Delivery Requirements</label>
+                            <div class="grid grid-cols-2 gap-2">
+                                <div class="flex items-center space-x-2">
+                                    ${order.signature_required ? 
+                                        '<svg class="w-4 h-4 text-green-600" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd"/></svg>' :
+                                        '<svg class="w-4 h-4 text-gray-400" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clip-rule="evenodd"/></svg>'
+                                    }
+                                    <span class="text-xs ${order.signature_required ? 'text-gray-900' : 'text-gray-500'}">Signature Required</span>
+                                </div>
+                                <div class="flex items-center space-x-2">
+                                    ${order.id_verification_required ? 
+                                        '<svg class="w-4 h-4 text-green-600" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd"/></svg>' :
+                                        '<svg class="w-4 h-4 text-gray-400" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clip-rule="evenodd"/></svg>'
+                                    }
+                                    <span class="text-xs ${order.id_verification_required ? 'text-gray-900' : 'text-gray-500'}">ID Verification</span>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Delivery Notes -->
+                        ${order.delivery_notes ? `
+                            <div class="pt-3 border-t border-gray-100">
+                                <label class="text-xs font-medium text-gray-500">Delivery Notes</label>
+                                <p class="text-sm text-gray-900 mt-1 p-2 bg-yellow-50 border border-yellow-200 rounded">${order.delivery_notes}</p>
+                            </div>
+                        ` : ''}
+
+                        <!-- Signed Acknowledgement -->
+                        ${order.signature_required && order.signature_ack_url ? `
+                            <div class="pt-3 border-t border-gray-100">
+                                <label class="text-xs font-medium text-gray-500 mb-2 block">Customer Signature Acknowledgement</label>
+                                <a href="${order.signature_ack_url}" 
+                                target="_blank" 
+                                rel="noopener noreferrer"
+                                class="inline-flex items-center space-x-2 px-4 py-2 bg-gradient-to-r from-teal-600 to-cyan-600 hover:from-teal-700 hover:to-cyan-700 text-white text-sm font-medium rounded-lg transition-all duration-200 shadow-sm hover:shadow-md">
+                                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/>
+                                    </svg>
+                                    <span>View Signed Acknowledgement</span>
+                                    <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14"/>
+                                    </svg>
+                                </a>
+                                <p class="text-xs text-gray-500 mt-2">
+                                    <svg class="w-3 h-3 inline mr-1" fill="currentColor" viewBox="0 0 20 20">
+                                        <path fill-rule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z" clip-rule="evenodd"/>
+                                    </svg>
+                                    Customer has signed to acknowledge receipt of medicines in proper condition
+                                </p>
+                            </div>
+                        ` : order.signature_required ? `
+                            <div class="pt-3 border-t border-gray-100">
+                                <label class="text-xs font-medium text-gray-500 mb-2 block">Customer Signature Acknowledgement</label>
+                                <div class="flex items-center space-x-2 px-4 py-2 bg-yellow-50 border border-yellow-200 rounded-lg">
+                                    <svg class="w-4 h-4 text-yellow-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"/>
+                                    </svg>
+                                    <span class="text-sm text-yellow-700">Awaiting customer signature upon delivery</span>
+                                </div>
+                            </div>
+                        ` : ''}
+
+                        <!-- Customer ID Verification Status -->
+                        ${order.id_verification_required ? `
+                            <div class="pt-3 border-t border-gray-100">
+                                <label class="text-xs font-medium text-gray-500 mb-2 block">Customer ID Verification</label>
+                                ${order.id_verified ? `
+                                    <div class="flex items-center space-x-2 px-4 py-2 bg-green-50 border border-green-200 rounded-lg">
+                                        <svg class="w-5 h-5 text-green-600" fill="currentColor" viewBox="0 0 20 20">
+                                            <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd"/>
+                                        </svg>
+                                        <div class="flex-1">
+                                            <span class="text-sm font-medium text-green-700">Completed</span>
+                                            <p class="text-xs text-green-600 mt-0.5">Driver verified customer ID successfully</p>
+                                        </div>
+                                    </div>
+                                ` : `
+                                    <div class="flex items-center space-x-2 px-4 py-2 bg-yellow-50 border border-yellow-200 rounded-lg">
+                                        <svg class="w-5 h-5 text-yellow-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"/>
+                                        </svg>
+                                        <div class="flex-1">
+                                            <span class="text-sm font-medium text-yellow-700">Not Completed</span>
+                                            <p class="text-xs text-yellow-600 mt-0.5">Awaiting driver to verify customer ID</p>
+                                        </div>
+                                    </div>
+                                `}
+                            </div>
+                        ` : ''}
+                    </div>
+                </div>
+
+
+                <!-- Delivery Partner Section -->
+                ${order.driver ? `
+                    <div class="bg-white rounded-lg p-4 shadow-sm border-l-4 border-teal-500">
+                        <h4 class="text-sm font-semibold text-gray-900 mb-3">Delivery Partner</h4>
+                        
+                        <!-- Security Warning -->
+                        <div class="bg-red-50 border border-red-200 rounded-lg p-3 mb-4">
+                            <div class="flex items-start space-x-2">
+                                <svg class="w-5 h-5 text-red-600 flex-shrink-0 mt-0.5" fill="currentColor" viewBox="0 0 20 20">
+                                    <path fill-rule="evenodd" d="M8.257 3.099c.765-1.36 2.722-1.36 3.486 0l5.58 9.92c.75 1.334-.213 2.98-1.742 2.98H4.42c-1.53 0-2.493-1.646-1.743-2.98l5.58-9.92zM11 13a1 1 0 11-2 0 1 1 0 012 0zm-1-8a1 1 0 00-1 1v3a1 1 0 002 0V6a1 1 0 00-1-1z" clip-rule="evenodd"/>
+                                </svg>
+                                <div>
+                                    <p class="text-xs font-semibold text-red-800">Security Notice</p>
+                                    <p class="text-xs text-red-700 mt-1">Always verify driver identity and check their ID before handing out medicines. Confirm vehicle details match.</p>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Driver Details with Photo -->
+                        <div class="flex flex-col sm:flex-row gap-4">
+                            <!-- Driver Photo -->
+                            <div class="flex-shrink-0 flex justify-center sm:justify-start">
+                                <div class="relative group">
+                                    <div class="w-24 h-24 sm:w-28 sm:h-28 bg-gray-100 rounded-lg border-2 border-teal-500/30 flex items-center justify-center overflow-hidden">
+                                        ${order.driver.identity_url ? `
+                                            <img src="${order.driver.identity_url}" 
+                                                alt="${order.driver.name}" 
+                                                class="w-full h-full object-cover cursor-pointer hover:opacity-90 transition-opacity"
+                                                onclick="openImageModal('${order.driver.identity_url}', 'Driver ID - ${order.driver.name}', 'Verify this person before handover')"
+                                                onerror="this.onerror=null; this.parentElement.innerHTML='<svg class=\\'w-12 h-12 text-gray-400\\' fill=\\'currentColor\\' viewBox=\\'0 0 20 20\\'><path fill-rule=\\'evenodd\\' d=\\'M10 9a3 3 0 100-6 3 3 0 000 6zm-7 9a7 7 0 1114 0H3z\\' clip-rule=\\'evenodd\\'/></svg>';" />
+                                        ` : `
+                                            <svg class="w-12 h-12 text-gray-400" fill="currentColor" viewBox="0 0 20 20">
+                                                <path fill-rule="evenodd" d="M10 9a3 3 0 100-6 3 3 0 000 6zm-7 9a7 7 0 1114 0H3z" clip-rule="evenodd"/>
+                                            </svg>
+                                        `}
+                                    </div>
+                                    ${order.driver.identity_url ? `
+                                        <div class="absolute -bottom-1 -right-1">
+                                            <div class="px-2 py-0.5 bg-green-500 text-white text-xs font-semibold rounded-full border-2 border-white flex items-center space-x-1">
+                                                <svg class="w-3 h-3" fill="currentColor" viewBox="0 0 20 20">
+                                                    <path fill-rule="evenodd" d="M6.267 3.455a3.066 3.066 0 001.745-.723 3.066 3.066 0 013.976 0 3.066 3.066 0 001.745.723 3.066 3.066 0 012.812 2.812c.051.643.304 1.254.723 1.745a3.066 3.066 0 010 3.976 3.066 3.066 0 00-.723 1.745 3.066 3.066 0 01-2.812 2.812 3.066 3.066 0 00-1.745.723 3.066 3.066 0 01-3.976 0 3.066 3.066 0 00-1.745-.723 3.066 3.066 0 01-2.812-2.812 3.066 3.066 0 00-.723-1.745 3.066 3.066 0 010-3.976 3.066 3.066 0 00.723-1.745 3.066 3.066 0 012.812-2.812zm7.44 5.252a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd"/>
+                                                </svg>
+                                                <span>ID</span>
+                                            </div>
+                                        </div>
+                                    ` : ''}
+                                </div>
+                            </div>
+
+                            <!-- Driver Info -->
+                            <div class="flex-1 space-y-3">
+                                <div class="grid grid-cols-2 gap-3">
+                                    <div>
+                                        <label class="text-xs font-medium text-gray-500">Driver ID</label>
+                                        <p class="text-sm font-mono font-semibold text-gray-900">#${order.driver.id}</p>
+                                    </div>
+                                    <div>
+                                        <label class="text-xs font-medium text-gray-500">Status</label>
+                                        <p class="text-sm">
+                                            <span class="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium ${order.driver.active ? 'bg-green-100 text-green-800' : 'bg-gray-100 text-gray-800'}">
+                                                ${order.driver.active ? 'Active' : 'Inactive'}
+                                            </span>
+                                        </p>
+                                    </div>
+                                </div>
+
+                                <div>
+                                    <label class="text-xs font-medium text-gray-500">Driver Name</label>
+                                    <p class="text-sm text-gray-900 font-medium">${order.driver.name}</p>
+                                </div>
+
+                                <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                                    <div>
+                                        <label class="text-xs font-medium text-gray-500">Phone Number</label>
+                                        <p class="text-sm text-gray-900">
+                                            <a href="tel:${order.driver.phone_number}" class="text-teal-600 hover:text-teal-700">
+                                                ${order.driver.phone_number}
+                                            </a>
+                                        </p>
+                                    </div>
+                                    <div>
+                                        <label class="text-xs font-medium text-gray-500">Vehicle Number</label>
+                                        <p class="text-sm text-gray-900 font-mono">${order.driver.vehicle_number || 'N/A'}</p>
+                                    </div>
+                                </div>
+
+                                <div>
+                                    <label class="text-xs font-medium text-gray-500">Email</label>
+                                    <p class="text-sm text-gray-900 break-all">
+                                        <a href="mailto:${order.driver.email}" class="text-teal-600 hover:text-teal-700">
+                                            ${order.driver.email}
+                                        </a>
+                                    </p>
+                                </div>
+
+                                ${order.driver.identity_url ? `
+                                    <div class="pt-2 border-t border-gray-100">
+                                        <button onclick="openImageModal('${order.driver.identity_url}', 'Driver ID - ${order.driver.name}', 'Verify this person before handover')"
+                                                class="text-xs text-teal-600 hover:text-teal-700 font-medium flex items-center space-x-1">
+                                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/>
+                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"/>
+                                            </svg>
+                                            <span>View Full ID Photo</span>
+                                        </button>
+                                    </div>
+                                ` : ''}
+                            </div>
+                        </div>
+                    </div>
+                ` : `
+                    <div class="bg-white rounded-lg p-4 shadow-sm border-l-4 border-gray-300">
+                        <h4 class="text-sm font-semibold text-gray-900 mb-3">Delivery Partner</h4>
+                        <div class="bg-gray-50 rounded-lg p-4 text-center">
+                            <svg class="w-12 h-12 mx-auto text-gray-400 mb-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"/>
+                            </svg>
+                            <p class="text-sm text-gray-500">No driver assigned yet</p>
+                            <p class="text-xs text-gray-400 mt-1">Driver will be assigned once order is accepted</p>
+                        </div>
+                    </div>
+                `}
 
                 <!-- Timeline -->
                 <div class="bg-white rounded-lg p-4 shadow-sm">
@@ -772,9 +990,6 @@ function renderOrderDetails(order) {
                                 ${hasHandoverImage ? handoverImagesHtml : '<span class="text-sm text-gray-400">No handover image</span>'}
                             </div>
                         </div>
-
-
-                        </div>
                         
                         <!-- Driver Pickup Images -->
                         <div>
@@ -803,6 +1018,7 @@ function renderOrderDetails(order) {
         </div>
     `;
 }
+
 
 function renderImages(images, stage) {
     if (!images || images.length === 0) return '';

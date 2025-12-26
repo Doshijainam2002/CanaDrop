@@ -3,8 +3,9 @@
 <head>
   <meta charset="UTF-8"/>
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-  <title>Delivery Partner Registration - CanaLogistiXrop</title>
+  <title>Delivery Partner Registration - CanaLogistiX</title>
   <link rel="icon" href="https://canalogistix.s3.us-east-2.amazonaws.com/Logo/CanaLogistiX_Logo_BG.png">
+  <script src="https://maps.googleapis.com/maps/api/js?key={{ GOOGLE_MAPS_API_KEY }}&libraries=places"></script>
   <script src="https://cdn.tailwindcss.com"></script>
 </head>
 <body class="min-h-screen bg-gradient-to-br from-slate-900 to-gray-900 flex items-center justify-center p-4">
@@ -82,6 +83,39 @@
           </div>
 
           <div>
+            <label class="block text-sm font-medium text-slate-200">Home Address</label>
+            <input id="reg-address" type="text" placeholder="Start typing your address..."
+                   class="w-full px-4 py-3 border border-slate-600 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-transparent bg-slate-700 focus:bg-slate-600 text-slate-100 placeholder-slate-400"/>
+            <p class="text-xs text-slate-500 mt-1">Start typing and select from Google suggestions</p>
+          </div>
+
+          <div class="grid grid-cols-2 gap-4">
+            <div>
+              <label class="block text-sm font-medium text-slate-200">City</label>
+              <input id="reg-city" type="text" placeholder="Toronto"
+                     class="w-full px-4 py-3 border border-slate-600 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-transparent bg-slate-700 focus:bg-slate-600 text-slate-100 placeholder-slate-400"/>
+            </div>
+            <div>
+              <label class="block text-sm font-medium text-slate-200">Province</label>
+              <input id="reg-province" type="text" placeholder="ON"
+                     class="w-full px-4 py-3 border border-slate-600 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-transparent bg-slate-700 focus:bg-slate-600 text-slate-100 placeholder-slate-400"/>
+            </div>
+          </div>
+
+          <div class="grid grid-cols-2 gap-4">
+            <div>
+              <label class="block text-sm font-medium text-slate-200">Postal Code</label>
+              <input id="reg-postal" type="text" placeholder="M5V 2T6"
+                     class="w-full px-4 py-3 border border-slate-600 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-transparent bg-slate-700 focus:bg-slate-600 text-slate-100 placeholder-slate-400"/>
+            </div>
+            <div>
+              <label class="block text-sm font-medium text-slate-200">Country</label>
+              <input id="reg-country" type="text" placeholder="Canada"
+                     class="w-full px-4 py-3 border border-slate-600 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-transparent bg-slate-700 focus:bg-slate-600 text-slate-100 placeholder-slate-400"/>
+            </div>
+          </div>
+
+          <div>
             <label class="block text-sm font-medium text-slate-200">Vehicle Number <span class="text-red-400">*</span></label>
             <input id="reg-vehicle" type="text" placeholder="ABC-1234"
                    class="w-full px-4 py-3 border border-slate-600 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-transparent bg-slate-700 focus:bg-slate-600 text-slate-100 placeholder-slate-400"/>
@@ -125,11 +159,11 @@
     </div>
 
     <!-- Footer -->
-        <div class="text-center mt-8">
-        <p class="text-sm text-slate-500">
-            © <span id="current-year"></span> CanaLogistiX - Cana Group of Companies. All rights reserved.
-        </p>
-        </div>
+    <div class="text-center mt-8">
+      <p class="text-sm text-slate-500">
+        © <span id="current-year"></span> CanaLogistiX - Cana Group of Companies. All rights reserved.
+      </p>
+    </div>
   </div>
 
   <!-- Modal -->
@@ -158,6 +192,7 @@
     let otpToken = null;
     let resendCountdown = RESEND_SECONDS;
     let timerId = null;
+    let autocomplete = null;
 
     // -------- Elements --------
     const stepEmail   = document.getElementById('step-email');
@@ -170,6 +205,11 @@
 
     const nameInput   = document.getElementById('reg-name');
     const phoneInput  = document.getElementById('reg-phone');
+    const addrInput   = document.getElementById('reg-address');
+    const cityInput   = document.getElementById('reg-city');
+    const provInput   = document.getElementById('reg-province');
+    const postalInput = document.getElementById('reg-postal');
+    const countryInput= document.getElementById('reg-country');
     const vehicleInput= document.getElementById('reg-vehicle');
     const emailRO     = document.getElementById('reg-email-readonly');
     const pass1       = document.getElementById('reg-pass1');
@@ -186,6 +226,65 @@
     const modalContent = document.getElementById('modalContent');
     const closeModalBtn= document.getElementById('closeModalBtn');
 
+    // -------- Google Places Autocomplete --------
+    function initAutocomplete() {
+      if (autocomplete) return; // Already initialized
+      
+      autocomplete = new google.maps.places.Autocomplete(addrInput, {
+        types: ['address'],
+        componentRestrictions: { country: ['ca', 'us'] }
+      });
+
+      autocomplete.addListener('place_changed', () => {
+        const place = autocomplete.getPlace();
+        
+        if (!place.geometry) {
+          console.log("No details available for input: '" + place.name + "'");
+          return;
+        }
+
+        // Clear existing values
+        addrInput.value = '';
+        cityInput.value = '';
+        provInput.value = '';
+        postalInput.value = '';
+        countryInput.value = '';
+
+        // Extract address components
+        let streetNumber = '';
+        let route = '';
+        
+        for (const component of place.address_components) {
+          const componentType = component.types[0];
+
+          switch (componentType) {
+            case 'street_number':
+              streetNumber = component.long_name;
+              break;
+            case 'route':
+              route = component.long_name;
+              break;
+            case 'locality':
+              cityInput.value = component.long_name;
+              break;
+            case 'administrative_area_level_1':
+              provInput.value = component.short_name;
+              break;
+            case 'postal_code':
+              postalInput.value = component.long_name;
+              break;
+            case 'country':
+              countryInput.value = component.long_name;
+              break;
+          }
+        }
+
+        // Combine street number and route for full address
+        const fullAddress = [streetNumber, route].filter(Boolean).join(' ');
+        addrInput.value = fullAddress;
+      });
+    }
+
     // -------- Helpers --------
     function setLoading(button, isLoading, idleText) {
       if (isLoading) {
@@ -198,11 +297,19 @@
         button.textContent = idleText;
       }
     }
+
     function isValidEmail(v){ return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(v); }
+
     function show(section){
       [stepEmail, stepOtp, stepRegister].forEach(s => s.classList.add('hidden'));
       section.classList.remove('hidden');
+      
+      // Initialize autocomplete when registration form is shown
+      if (section === stepRegister) {
+        setTimeout(initAutocomplete, 100);
+      }
     }
+
     function showModal(status, title, message, redirect=true){
       const iconSuccess = `
         <svg class="h-16 w-16 text-green-500 mx-auto mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -226,6 +333,7 @@
         if (redirect) window.location.href = REDIRECT_URL;
       };
     }
+
     closeModalBtn.addEventListener('click', () => {
       modal.classList.add('hidden');
     });
@@ -255,13 +363,10 @@
     btnSendOtp.addEventListener('click', async () => {
       const rawEmail = emailInput.value.trim();
 
-      // Validate email format
-      const isValidEmail = (email) => /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email.toLowerCase());
       if (!rawEmail || !isValidEmail(rawEmail)) {
         return showModal('fail', 'Invalid Email', 'Please enter a valid email address.', false);
       }
 
-      // Normalize email (trim + lowercase)
       const email = rawEmail.toLowerCase();
 
       setLoading(btnSendOtp, true, 'Send OTP');
@@ -273,7 +378,7 @@
         });
         const data = await res.json();
         if (data.success) {
-          currentEmail = email; // store normalized email
+          currentEmail = email;
           otpEmailLbl.textContent = currentEmail;
           show(stepOtp);
           startResendTimer();
@@ -287,7 +392,6 @@
         setLoading(btnSendOtp, false, 'Send OTP');
       }
     });
-
 
     btnResendOtp.addEventListener('click', async () => {
       if (!currentEmail) return;
@@ -311,14 +415,12 @@
       }
     });
 
-
     btnVerifyOtp.addEventListener('click', async () => {
       const otp = otpInput.value.trim();
       if (otp.length < 4) {
         return showModal('fail', 'Invalid OTP', 'Please enter the code sent to your email.', false);
       }
 
-      // Normalize again just in case
       const email = currentEmail.toLowerCase();
 
       setLoading(btnVerifyOtp, true, 'Verify OTP');
@@ -345,11 +447,15 @@
       }
     });
 
-
     btnRegister.addEventListener('click', async () => {
       const payload = {
         name: nameInput.value.trim(),
         phone_number: phoneInput.value.trim(),
+        address: addrInput.value.trim(),
+        city: cityInput.value.trim(),
+        province: provInput.value.trim(),
+        postal_code: postalInput.value.trim(),
+        country: countryInput.value.trim(),
         email: currentEmail,
         password: pass1.value.trim(),
         vehicle_number: vehicleInput.value.trim(),
@@ -360,10 +466,16 @@
       const missing = [];
       if (!payload.name) missing.push('name');
       if (!payload.phone_number) missing.push('phone_number');
+      if (!payload.address) missing.push('address');
+      if (!payload.city) missing.push('city');
+      if (!payload.province) missing.push('province');
+      if (!payload.postal_code) missing.push('postal_code');
+      if (!payload.country) missing.push('country');
       if (!payload.vehicle_number) missing.push('vehicle_number');
       if (!payload.email) missing.push('email');
       if (!payload.password) missing.push('password');
       if (!payload.otpToken) missing.push('otpToken');
+
       if (missing.length){
         return showModal('fail','Missing Fields',`Please fill: ${missing.join(', ')}`, false);
       }

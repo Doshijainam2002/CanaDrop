@@ -3,6 +3,8 @@ from django.contrib.auth.hashers import make_password, check_password
 from django.utils import timezone
 from django.db import models
 from django.contrib.auth.hashers import make_password, check_password
+from django.conf import settings
+from datetime import datetime
 
 
 
@@ -72,16 +74,19 @@ class Pharmacy(models.Model):
     business_hours = models.JSONField(default=default_business_hours)
 
     def save(self, *args, **kwargs):
-        if self.password and not self.password.startswith('pbkdf2_'):
+        if self.password and not self.password.startswith("pbkdf2_"):
             self.password = make_password(self.password)
         super().save(*args, **kwargs)
 
-    def is_open_now(self, tz="America/Toronto"):
-        from datetime import datetime
-        import pytz
+    def is_open_now(self):
+        """
+        Uses UTC internally (timezone.now()) and converts to settings.USER_TIMEZONE
+        (America/Toronto) for business-hours comparison.
+        """
+        # UTC -> User timezone
+        now_local = timezone.localtime(timezone.now(), settings.USER_TIMEZONE)
 
-        now = datetime.now(pytz.timezone(tz))
-        day = now.strftime("%a")
+        day = now_local.strftime("%a")  # "Mon", "Tue", ...
         today = self.business_hours.get(day)
 
         if not today or today == "closed":
@@ -90,14 +95,13 @@ class Pharmacy(models.Model):
         open_time = datetime.strptime(today["open"], "%H:%M").time()
         close_time = datetime.strptime(today["close"], "%H:%M").time()
 
-        return open_time <= now.time() <= close_time
+        return open_time <= now_local.time() <= close_time
 
     def __str__(self):
         return self.name
 
     class Meta:
-        db_table = 'canadrop_interface_pharmacy'
-
+        db_table = "canadrop_interface_pharmacy"
 
 
 class Driver(models.Model):
@@ -110,6 +114,7 @@ class Driver(models.Model):
 
     # NEW
     active = models.BooleanField(default=True, db_index=True)
+    identity_url = models.URLField(blank=True, null=True)
 
     def save(self, *args, **kwargs):
         if not self.password.startswith('pbkdf2_'):
@@ -155,10 +160,18 @@ class DeliveryOrder(models.Model):
     pickup_day = models.DateField()
     drop_address = models.TextField()
     drop_city = models.CharField(max_length=100)
+    signature_required = models.BooleanField(default=False)
+    id_verification_required = models.BooleanField(default=False)
+    alternate_contact = models.CharField(max_length=20, blank=True, null=True)
+    delivery_notes = models.TextField(blank=True, null=True)
     status = models.CharField(max_length=20, choices=STATUS_CHOICES, default='pending')
     rate = models.DecimalField(max_digits=8, decimal_places=2, default=0)  # Filled from DeliveryLocationRate
     customer_name = models.CharField(max_length=150, default="John Doe")
     customer_phone = models.CharField(max_length=10, default="0000000000")
+    signature_ack_url = models.URLField(null=True, blank=True)
+    id_verified = models.BooleanField(default=False)
+    is_delivered = models.BooleanField(default=False)
+    delivered_at = models.DateTimeField(null=True, blank=True)
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
 
@@ -210,9 +223,9 @@ class Invoice(models.Model):
     def __str__(self):
         return f"Invoice {self.id} for {self.pharmacy.name}"
 
-    # Optional: auto-update status if past due
     def save(self, *args, **kwargs):
-        if self.status != 'paid' and self.due_date < timezone.now().date():
+        today_local = timezone.localtime(timezone.now(), settings.USER_TIMEZONE).date()
+        if self.status != 'paid' and self.due_date < today_local:
             self.status = 'past_due'
         super().save(*args, **kwargs)
 
@@ -457,6 +470,43 @@ class PharmacyTrialOnboarding(models.Model):
     def __str__(self):
         return f"{self.pharmacy_name} - Trial"
 
+
+
+class CCPointsAccount(models.Model):
+    # One of these will be set (never both)
+    pharmacy = models.OneToOneField(
+        "Pharmacy",
+        on_delete=models.CASCADE,
+        null=True,
+        blank=True,
+        related_name="cc_points"
+    )
+    driver = models.OneToOneField(
+        "Driver",
+        on_delete=models.CASCADE,
+        null=True,
+        blank=True,
+        related_name="cc_points"
+    )
+
+    points_balance = models.IntegerField(default=0)
+
+    class Meta:
+        db_table = "canadrop_interface_ccpointsaccount"
+        constraints = [
+            models.CheckConstraint(
+                check=(
+                    models.Q(pharmacy__isnull=False, driver__isnull=True) |
+                    models.Q(pharmacy__isnull=True, driver__isnull=False)
+                ),
+                name="ccpoints_single_entity_only"
+            )
+        ]
+
+    def __str__(self):
+        if self.pharmacy_id:
+            return f"CC Points – Pharmacy ID {self.pharmacy_id}"
+        return f"CC Points – Driver ID {self.driver_id}"
 
 
 

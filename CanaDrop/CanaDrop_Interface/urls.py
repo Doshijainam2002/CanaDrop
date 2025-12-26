@@ -46,6 +46,12 @@ urlpatterns = [
     path('driverRegister/', views.driverRegisterView, name="driverRegisterPage"),
     path('api/driver/register/', views.register_driver, name='register_driver'),
     path("api/driver/optimize-route/", views.optimize_route_api, name="optimize_route_api"),
+    path('driverIdentity/', views.driverIdentityView, name='DriverIdentityPage'),
+    path("api/driver/upload-identity-image/", views.upload_driver_identity_image, name="upload-driver-identity-image"),
+    path('api/upload-signature-acknowledgement/', views.upload_signature_acknowledgement, name='upload-signature-acknowledgement'),
+    path('api/verify-customer-id/', views.verify_customer_id, name='verify-customer-id'),
+    path('driverCCPoints/', views.driverCCPointsView, name='DriverCCPointsPage'), 
+    path("api/driver/<int:driver_id>/cc-points/", views.get_driver_cc_points, name="driver_cc_points"),
 
     path('contactAdmin/', views.contactAdminView, name='contactAdminPage'), 
     path('api/contact-admin/', views.contact_admin_api, name='contact_admin_api'),

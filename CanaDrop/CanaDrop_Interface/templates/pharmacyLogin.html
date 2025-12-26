@@ -133,6 +133,57 @@
             return email.trim().toLowerCase();
         }
 
+        // function handleLogin() {
+        //     const rawEmail = document.getElementById('email').value;
+        //     const password = document.getElementById('password').value.trim();
+
+        //     // Basic presence check
+        //     if (!rawEmail || !password) {
+        //         showModal('fail');
+        //         return;
+        //     }
+
+        //     // Validate & normalize email
+        //     if (!isValidEmail(rawEmail)) {
+        //         showModal('fail');
+        //         return;
+        //     }
+        //     const email = normalizeEmail(rawEmail);
+
+        //     fetch('/api/pharmacy/login/', {
+        //         method: 'POST',
+        //         headers: { 'Content-Type': 'application/json' },
+        //         body: JSON.stringify({ email, password })
+        //     })
+        //     .then(response => response.json())
+        //     .then(data => {
+        //         if (data.success) {
+        //             const oneDay = 24 * 60 * 60;
+
+        //             // ✅ Store pharmacyId (identifier)
+        //             document.cookie = `pharmacyId=${data.id};path=/;max-age=${oneDay}`;
+
+        //             // ✅ Store JWT token (authentication)
+        //             document.cookie = `authToken=${data.token};path=/;max-age=${oneDay};Secure;SameSite=Lax`;
+
+        //             // ✅ Store token expiry (for FE auto-logout logic)
+        //             document.cookie = `tokenExpiresAt=${encodeURIComponent(data.expiresAt)};path=/;max-age=${oneDay}`;
+
+        //             showModal('success');
+        //             setTimeout(() => {
+        //                 closeModal();
+        //                 window.location.href = '/pharmacyDashboard/';
+        //             }, 3000);
+        //         } else {
+        //             showModal('fail');
+        //         }
+        //     })
+        //     .catch(err => {
+        //         console.error('Login error:', err);
+        //         showModal('fail');
+        //     });
+        // }
+
 
         function handleLogin() {
             const rawEmail = document.getElementById('email').value;

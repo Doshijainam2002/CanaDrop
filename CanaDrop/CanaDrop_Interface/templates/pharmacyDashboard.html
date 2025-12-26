@@ -6,6 +6,7 @@
     <title>Pharmacy Dashboard - Overview</title>
     <link rel="icon" href="https://canalogistix.s3.us-east-2.amazonaws.com/Logo/CanaLogistiX_Logo_BG.png">
     <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://maps.googleapis.com/maps/api/js?key={{ GOOGLE_MAPS_API_KEY }}&libraries=places"></script>
     <script>
         tailwind.config = {
             theme: {
@@ -202,6 +203,7 @@
                 <option value="pending">Pending</option>
                 <option value="accepted">Accepted</option>
                 <option value="picked_up">Picked Up</option>
+                <option value="inTransit">In Transit</option>
                 <option value="delivered">Delivered</option>
                 <option value="cancelled">Cancelled</option>
             </select>
@@ -282,7 +284,13 @@
 
       <div>
         <label class="block text-sm font-medium text-gray-700 mb-2">Pickup Address</label>
-        <textarea id="pickupAddress" class="w-full border border-gray-300 rounded-lg p-3 text-sm focus:ring-2 focus:ring-teal-500 focus:border-transparent transition-all" rows="2" placeholder="Street Address, Postal Code"></textarea>
+        <!-- <textarea id="pickupAddress" class="w-full border border-gray-300 rounded-lg p-3 text-sm focus:ring-2 focus:ring-teal-500 focus:border-transparent transition-all" rows="2" placeholder="Street Address, Postal Code"></textarea> -->
+         <input
+        id="pickupAddress"
+        type="text"
+        class="w-full border border-gray-300 rounded-lg p-3 text-sm focus:ring-2 focus:ring-teal-500 focus:border-transparent transition-all"
+        placeholder="Street address, postal code"
+        />
       </div>
 
       <div class="grid grid-cols-2 gap-4">
@@ -317,7 +325,14 @@
 
       <div>
         <label class="block text-sm font-medium text-gray-700 mb-2">Drop Address</label>
-        <textarea id="dropAddress" class="w-full border border-gray-300 rounded-lg p-3 text-sm focus:ring-2 focus:ring-teal-500 focus:border-transparent transition-all" rows="2" placeholder="Street Address, Postal Code"></textarea>
+        <!-- <textarea id="dropAddress" class="w-full border border-gray-300 rounded-lg p-3 text-sm focus:ring-2 focus:ring-teal-500 focus:border-transparent transition-all" rows="2" placeholder="Street Address, Postal Code"></textarea> -->
+         <input
+        id="dropAddress"
+        type="text"
+        class="w-full border border-gray-300 rounded-lg p-3 text-sm focus:ring-2 focus:ring-teal-500 focus:border-transparent transition-all"
+        placeholder="Street address, postal code"
+        />
+
       </div>
 
       <div>
@@ -331,6 +346,57 @@
           Calculate Rate
         </button>
       </div>
+
+      <!-- Compliance Fields Section -->
+        <div class="border-t border-gray-200 pt-4 mt-4">
+        <h4 class="text-sm font-semibold text-gray-900 mb-3">Delivery Requirements (Optional)</h4>
+        
+        <!-- Checkboxes Row -->
+        <div class="grid grid-cols-2 gap-4 mb-4">
+            <label class="flex items-center space-x-2 cursor-pointer">
+            <input type="checkbox" id="signatureRequired" 
+                    class="w-4 h-4 text-teal-600 border-gray-300 rounded focus:ring-teal-500">
+            <span class="text-sm text-gray-700">Signature Required</span>
+            </label>
+            
+            <label class="flex items-center space-x-2 cursor-pointer">
+            <input type="checkbox" id="idVerificationRequired" 
+                    class="w-4 h-4 text-teal-600 border-gray-300 rounded focus:ring-teal-500">
+            <span class="text-sm text-gray-700">ID Verification</span>
+            </label>
+        </div>
+
+        <!-- Alternate Contact -->
+        <div class="mb-4">
+            <label class="block text-sm font-medium text-gray-700 mb-2">
+            Alternate Contact Number
+            </label>
+            <input
+            id="alternateContact"
+            type="tel"
+            inputmode="numeric"
+            pattern="[0-9]{10}"
+            maxlength="10"
+            class="w-full border border-gray-300 rounded-lg p-3 text-sm focus:ring-2 focus:ring-teal-500 focus:border-transparent transition-all"
+            placeholder="10-digit alternate contact (optional)"
+            >
+            <p class="text-xs text-gray-500 mt-1">Backup contact if customer is unavailable</p>
+        </div>
+
+        <!-- Delivery Notes -->
+        <div>
+            <label class="block text-sm font-medium text-gray-700 mb-2">
+            Delivery Notes
+            </label>
+            <textarea
+            id="deliveryNotes"
+            rows="3"
+            class="w-full border border-gray-300 rounded-lg p-3 text-sm focus:ring-2 focus:ring-teal-500 focus:border-transparent transition-all"
+            placeholder="Special instructions, gate codes, buzzer numbers, etc."
+            ></textarea>
+            <p class="text-xs text-gray-500 mt-1">Maximum 500 characters</p>
+        </div>
+        </div>
 
       <div class="flex space-x-3 pt-6">
         <button onclick="createOrder()" class="flex-1 bg-gradient-to-r from-teal-600 to-cyan-600 text-white py-3 rounded-lg font-medium hover:from-teal-700 hover:to-cyan-700 transition-all duration-200 shadow-lg hover:shadow-xl transform hover:scale-105">
@@ -539,7 +605,6 @@ function filterOrders(status) {
     renderFilteredOrders(filteredOrders);
 }
 
-// Show create modal with preloaded pharmacy data
 async function showCreateModal() {
     const pharmacyId = getCookie('pharmacyId');
     
@@ -553,13 +618,23 @@ async function showCreateModal() {
         const data = await response.json();
         
         if (data.success) {
+            // Populate pharmacy address fields
             document.getElementById('pickupAddress').value = data.pharmacy.store_address;
             document.getElementById('pickupCity').value = data.pharmacy.city;
             
+            // Clear customer fields
+            document.getElementById('customerName').value = '';
+            document.getElementById('customerPhone').value = '';
             document.getElementById('dropAddress').value = '';
             document.getElementById('dropCity').value = '';
             document.getElementById('pickupDay').value = '';
             document.getElementById('rate').value = '';
+            
+            // Clear compliance fields
+            document.getElementById('signatureRequired').checked = false;
+            document.getElementById('idVerificationRequired').checked = false;
+            document.getElementById('alternateContact').value = '';
+            document.getElementById('deliveryNotes').value = '';
             
             document.getElementById('createModal').classList.remove('hidden');
         } else {
@@ -625,6 +700,7 @@ function checkAddressFields() {
     const dropCity = document.getElementById('dropCity').value;
     const calculateBtn = document.getElementById('calculateRateBtn');
     
+    // Show button if all address fields are filled
     if (pickupAddress && pickupCity && dropAddress && dropCity) {
         calculateBtn.classList.remove('hidden');
     } else {
@@ -633,7 +709,6 @@ function checkAddressFields() {
     }
 }
 
-// Create delivery order
 async function createOrder() {
     const pharmacyId = getCookie('pharmacyId');
     if (!pharmacyId) {
@@ -641,8 +716,9 @@ async function createOrder() {
         return;
     }
 
+    // Get all form values
     const customerName = document.getElementById('customerName').value.trim();
-    const customerPhone = document.getElementById('customerPhone').value.trim(); // ✅ added
+    const customerPhone = document.getElementById('customerPhone').value.trim();
     const pickupAddress = document.getElementById('pickupAddress').value.trim();
     const pickupCity = document.getElementById('pickupCity').value;
     const pickupDay = document.getElementById('pickupDay').value;
@@ -650,7 +726,13 @@ async function createOrder() {
     const dropCity = document.getElementById('dropCity').value;
     const rate = document.getElementById('rate').value;
 
-    // 🔹 Validation (phone required + 10 digits)
+    // Get compliance fields
+    const signatureRequired = document.getElementById('signatureRequired').checked;
+    const idVerificationRequired = document.getElementById('idVerificationRequired').checked;
+    const alternateContact = document.getElementById('alternateContact').value.trim();
+    const deliveryNotes = document.getElementById('deliveryNotes').value.trim();
+
+    // Validation for required fields
     if (
         !customerName ||
         !customerPhone ||
@@ -664,26 +746,51 @@ async function createOrder() {
         rate === 'Calculating...'
     ) {
         showNotification(
-            'Please fill all fields (Customer Name, 10-digit Phone) and calculate rate',
+            'Please fill all required fields (Customer Name, 10-digit Phone) and calculate rate',
             'warning'
         );
         return;
     }
 
+    // Validate alternate contact if provided
+    if (alternateContact && alternateContact.length !== 10) {
+        showNotification('Alternate contact must be exactly 10 digits', 'warning');
+        return;
+    }
+
+    // Validate delivery notes length
+    if (deliveryNotes && deliveryNotes.length > 500) {
+        showNotification('Delivery notes must be 500 characters or less', 'warning');
+        return;
+    }
+
     try {
+        // Build request payload
+        const payload = {
+            pharmacyId: parseInt(pharmacyId),
+            pickupAddress,
+            pickupCity,
+            pickupDay,
+            dropAddress,
+            dropCity,
+            customerName,
+            customerPhone,
+            signatureRequired,
+            idVerificationRequired
+        };
+
+        // Add optional fields only if they have values
+        if (alternateContact) {
+            payload.alternateContact = alternateContact;
+        }
+        if (deliveryNotes) {
+            payload.deliveryNotes = deliveryNotes;
+        }
+
         const response = await fetch('/api/createDeliveryOrder/', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({
-                pharmacyId: parseInt(pharmacyId),
-                pickupAddress,
-                pickupCity,
-                pickupDay,
-                dropAddress,
-                dropCity,
-                customerName,          
-                customerPhone         
-            })
+            body: JSON.stringify(payload)
         });
 
         const data = await response.json();
@@ -850,9 +957,62 @@ async function loadPharmacyDetails() {
     }
 }
 
+// Replace your initAddressAutocomplete function with this updated version
+function initAddressAutocomplete() {
+    if (!window.google || !google.maps || !google.maps.places) {
+        console.error("Google Maps Places API not loaded");
+        return;
+    }
+
+    const options = {
+        types: ["address"],
+        componentRestrictions: { country: "ca" } // Canada only
+    };
+
+    const pickupInput = document.getElementById("pickupAddress");
+    const dropInput = document.getElementById("dropAddress");
+
+    if (pickupInput) {
+        const pickupAutocomplete = new google.maps.places.Autocomplete(pickupInput, options);
+        
+        pickupAutocomplete.addListener("place_changed", () => {
+            const place = pickupAutocomplete.getPlace();
+            if (place?.formatted_address) {
+                pickupInput.value = place.formatted_address;
+            }
+            // Important: Call checkAddressFields after autocomplete
+            checkAddressFields();
+        });
+
+        // Also check on manual input
+        pickupInput.addEventListener('input', checkAddressFields);
+        pickupInput.addEventListener('blur', checkAddressFields);
+    }
+
+    if (dropInput) {
+        const dropAutocomplete = new google.maps.places.Autocomplete(dropInput, options);
+        
+        dropAutocomplete.addListener("place_changed", () => {
+            const place = dropAutocomplete.getPlace();
+            if (place?.formatted_address) {
+                dropInput.value = place.formatted_address;
+            }
+            // Important: Call checkAddressFields after autocomplete
+            checkAddressFields();
+        });
+
+        // Also check on manual input
+        dropInput.addEventListener('input', checkAddressFields);
+        dropInput.addEventListener('blur', checkAddressFields);
+    }
+}
+
 document.addEventListener("DOMContentLoaded", function() {
     loadOrders();
     loadPharmacyDetails();
+    
+    // Initialize autocomplete after DOM is loaded
+    initAddressAutocomplete();
 
     // Mobile menu toggle
     const menuToggle = document.getElementById('menuToggle');
@@ -873,18 +1033,13 @@ document.addEventListener("DOMContentLoaded", function() {
         });
     }
 
+    // Add event listeners for city dropdowns only (address fields handled in initAddressAutocomplete)
+    const cityFields = ['pickupCity', 'dropCity'];
     
-    // Add event listeners to show/hide calculate button based on field completion
-    const addressFields = ['pickupAddress', 'pickupCity', 'dropAddress', 'dropCity'];
-    
-    addressFields.forEach(fieldId => {
+    cityFields.forEach(fieldId => {
         const field = document.getElementById(fieldId);
         if (field) {
-            if (field.tagName === 'SELECT') {
-                field.addEventListener('change', checkAddressFields);
-            } else {
-                field.addEventListener('input', checkAddressFields);
-            }
+            field.addEventListener('change', checkAddressFields);
         }
     });
     

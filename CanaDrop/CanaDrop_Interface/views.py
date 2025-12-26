@@ -12,6 +12,9 @@ from decimal import Decimal, InvalidOperation
 from io import BytesIO
 from itertools import chain
 from random import sample
+import mimetypes
+import base64
+import time
 
 # Third-Party Libraries
 import googlemaps
@@ -29,6 +32,7 @@ from reportlab.lib.units import inch
 from reportlab.platypus import (
     SimpleDocTemplate, Paragraph, Spacer, Table, TableStyle, Image
 )
+from PIL import Image as PILImage
 
 # Django Core
 from django.conf import settings
@@ -116,10 +120,23 @@ def pharmacyLoginView(request):
     return render(request, 'pharmacyLogin.html')
 
 def pharmacyRegisterView(request):
-    return render(request, 'pharmacyRegister.html')
+    return render(
+        request,
+        "pharmacyRegister.html",
+        {
+            "GOOGLE_MAPS_API_KEY": settings.GOOGLE_MAPS_API_KEY
+        }
+    )
+
 
 def pharmacyDashboardView(request):
-    return render(request, 'pharmacyDashboard.html')
+    return render(
+        request,
+        "pharmacyDashboard.html",
+        {
+            "GOOGLE_MAPS_API_KEY": settings.GOOGLE_MAPS_API_KEY
+        }
+    )
 
 def pharmacyForgotPasswordView(request):
     return render(request, 'pharmacyForgotPassword.html')
@@ -146,7 +163,13 @@ def driverForgotPasswordView(request):
     return render(request, 'driverForgotPassword.html')
 
 def driverRegisterView(request):
-    return render(request, 'driverRegister.html')
+    return render(
+        request,
+        "driverRegister.html",
+        {
+            "GOOGLE_MAPS_API_KEY": settings.GOOGLE_MAPS_API_KEY
+        }
+    )
 
 def contactAdminView(request):
     return render(request, 'contactAdmin.html')
@@ -156,7 +179,13 @@ def landingView(request):
 
 
 def pharmacyProfileView(request):
-    return render(request, 'pharmacyProfile.html')
+    return render(
+        request,
+        "pharmacyProfile.html",
+        {
+            "GOOGLE_MAPS_API_KEY": settings.GOOGLE_MAPS_API_KEY
+        }
+    )
 
 def adminLoginView(request):
     return render(request, 'adminLogin.html')
@@ -188,6 +217,12 @@ def pharmacyTrialOnboarding(request):
 def pharmacyCCPointsView(request):
     return render(request, 'pharmacyCCPoints.html')
 
+def driverIdentityView(request):
+    return render(request, 'driverIdentity.html')
+
+def driverCCPointsView(request):
+    return render(request, 'driverCCPoints.html')
+
 
 
 @csrf_exempt
@@ -210,7 +245,6 @@ def pharmacy_login_api(request):
     except Pharmacy.DoesNotExist:
         return JsonResponse({"success": False, "message": "Invalid credentials"}, status=401)
 
-    # ✅ THIS IS THE KEY FIX
     if check_password(password, pharmacy.password):
         return JsonResponse({
             "success": True,
@@ -218,6 +252,52 @@ def pharmacy_login_api(request):
         })
     else:
         return JsonResponse({"success": False, "message": "Invalid credentials"}, status=401)
+
+# @csrf_exempt
+# def pharmacy_login_api(request):
+#     if request.method != "POST":
+#         return JsonResponse({"success": False, "message": "Only POST method allowed"}, status=405)
+
+#     try:
+#         data = json.loads(request.body)
+#         email = data.get("email")
+#         password = data.get("password")
+#     except Exception:
+#         return JsonResponse({"success": False, "message": "Invalid JSON"}, status=400)
+
+#     if not email or not password:
+#         return JsonResponse({"success": False, "message": "Email and password required"}, status=400)
+
+#     try:
+#         pharmacy = Pharmacy.objects.get(email=email)
+#     except Pharmacy.DoesNotExist:
+#         return JsonResponse({"success": False, "message": "Invalid credentials"}, status=401)
+
+#     if check_password(password, pharmacy.password):
+#         issued_at = timezone.now()  # UTC
+#         expires_at = issued_at + timedelta(hours=settings.JWT_EXPIRY_HOURS)
+
+#         payload = {
+#             "pharmacy_id": pharmacy.id,
+#             "email": pharmacy.email,
+#             "iat": int(issued_at.timestamp()),
+#             "exp": int(expires_at.timestamp()),
+#         }
+
+#         token = jwt.encode(
+#             payload,
+#             settings.JWT_SECRET_KEY,
+#             algorithm=settings.JWT_ALGORITHM
+#         )
+
+#         return JsonResponse({
+#             "success": True,
+#             "id": pharmacy.id,
+#             "token": token,
+#             "expiresAt": timezone.localtime(expires_at, settings.USER_TIMEZONE).isoformat(),
+#         })
+
+#     return JsonResponse({"success": False, "message": "Invalid credentials"}, status=401)
 
 
 
@@ -336,59 +416,97 @@ def create_delivery_order(request):
     if request.method == "POST":
         try:
             data = json.loads(request.body)
-            # print(f"Request data: {data}")
 
+            # -----------------------------
+            # Required fields
+            # -----------------------------
             pharmacy_id = data.get('pharmacyId')
             pickup_address = data.get('pickupAddress')
             pickup_city = data.get('pickupCity')
             pickup_day = data.get('pickupDay')
             drop_address = data.get('dropAddress')
             drop_city = data.get('dropCity')
-            customer_name = data.get('customerName')
-            customer_phone = data.get('customerPhone')  # ✅ added
 
-            # Validate required fields
+            # Optional existing fields
+            customer_name = data.get('customerName')
+            customer_phone = data.get('customerPhone')
+
+            # Optional NEW fields
+            signature_required = data.get('signatureRequired')
+            id_verification_required = data.get('idVerificationRequired')
+            alternate_contact = data.get('alternateContact')
+            delivery_notes = data.get('deliveryNotes')
+
+            # -----------------------------
+            # Validation
+            # -----------------------------
             if not all([pharmacy_id, pickup_address, pickup_city, pickup_day, drop_address, drop_city]):
-                return JsonResponse({"success": False, "error": "Missing required fields"}, status=400)
+                return JsonResponse(
+                    {"success": False, "error": "Missing required fields"},
+                    status=400
+                )
 
             pharmacy = Pharmacy.objects.get(id=pharmacy_id)
 
-            # Calculate distance
+            # -----------------------------
+            # Distance calculation
+            # -----------------------------
             distance_km, error = get_distance_km(
                 pickup_address, pickup_city, drop_address, drop_city
             )
             if error:
                 return JsonResponse({"success": False, "error": error}, status=400)
 
-            # Determine rate
+            # -----------------------------
+            # Rate calculation
+            # -----------------------------
             rate_entry = DeliveryDistanceRate.objects.filter(
                 min_distance_km__lte=distance_km
             ).order_by('min_distance_km').last()
+
             rate = rate_entry.rate if rate_entry else 0
 
-            # Create order
-            create_kwargs = dict(
-                pharmacy=pharmacy,
-                pickup_address=pickup_address,
-                pickup_city=pickup_city,
-                pickup_day=parse_date(pickup_day),
-                drop_address=drop_address,
-                drop_city=drop_city,
-                status='pending',
-                rate=rate
-            )
+            # -----------------------------
+            # Create kwargs (lean + safe)
+            # -----------------------------
+            create_kwargs = {
+                "pharmacy": pharmacy,
+                "pickup_address": pickup_address,
+                "pickup_city": pickup_city,
+                "pickup_day": parse_date(pickup_day),
+                "drop_address": drop_address,
+                "drop_city": drop_city,
+                "status": "pending",
+                "rate": rate,
+            }
 
             if customer_name:
                 create_kwargs["customer_name"] = customer_name
 
-            if customer_phone:  # ✅ added
+            if customer_phone:
                 create_kwargs["customer_phone"] = customer_phone
 
-            order = DeliveryOrder.objects.create(**create_kwargs)
+            # -----------------------------
+            # Optional compliance fields
+            # -----------------------------
+            if signature_required is not None:
+                create_kwargs["signature_required"] = bool(signature_required)
 
-            transaction.commit()
+            if id_verification_required is not None:
+                create_kwargs["id_verification_required"] = bool(id_verification_required)
 
-            if DeliveryOrder.objects.filter(id=order.id).exists():
+            if alternate_contact:
+                create_kwargs["alternate_contact"] = alternate_contact
+
+            if delivery_notes:
+                create_kwargs["delivery_notes"] = delivery_notes
+
+            # -----------------------------
+            # Create order
+            # -----------------------------
+            with transaction.atomic():
+                order = DeliveryOrder.objects.create(**create_kwargs)
+
                 tracking_result = create_order_tracking_entry(
                     order_id=order.id,
                     step='pending',
@@ -396,46 +514,45 @@ def create_delivery_order(request):
                     note='Order created and pending driver acceptance'
                 )
 
-                if tracking_result["success"]:
-                    return JsonResponse({
-                        "success": True,
-                        "orderId": order.id,
-                        "distance_km": distance_km,
-                        "rate": str(rate),
-                        "status": order.status,
-                        "customerName": order.customer_name,
-                        "customerPhone": order.customer_phone,  # ✅ added
-                        "tracking_id": tracking_result["tracking_id"],
-                        "message": "Order and tracking created successfully"
-                    })
-                else:
-                    return JsonResponse({
-                        "success": True,
-                        "orderId": order.id,
-                        "distance_km": distance_km,
-                        "rate": str(rate),
-                        "status": order.status,
-                        "customerName": order.customer_name,
-                        "customerPhone": order.customer_phone,  # ✅ added
-                        "tracking_created": False,
-                        "tracking_error": tracking_result["error"],
-                        "message": "Order created successfully but tracking entry failed"
-                    })
-            else:
-                return JsonResponse({
-                    "success": False,
-                    "error": "Order creation failed - not saved to database"
-                }, status=500)
+            # -----------------------------
+            # Response
+            # -----------------------------
+            response_data = {
+                "success": True,
+                "orderId": order.id,
+                "distance_km": distance_km,
+                "rate": str(rate),
+                "status": order.status,
+                "customerName": order.customer_name,
+                "customerPhone": order.customer_phone,
+                "signatureRequired": order.signature_required,
+                "idVerificationRequired": order.id_verification_required,
+                "alternateContact": order.alternate_contact,
+                "deliveryNotes": order.delivery_notes,
+                "tracking_id": tracking_result.get("tracking_id"),
+                "message": "Order and tracking created successfully"
+            }
+
+            return JsonResponse(response_data, status=201)
 
         except Pharmacy.DoesNotExist:
-            return JsonResponse({"success": False, "error": "Pharmacy not found"}, status=404)
+            return JsonResponse(
+                {"success": False, "error": "Pharmacy not found"},
+                status=404
+            )
 
         except Exception as e:
             import traceback
             traceback.print_exc()
-            return JsonResponse({"success": False, "error": str(e)}, status=500)
+            return JsonResponse(
+                {"success": False, "error": str(e)},
+                status=500
+            )
 
-    return JsonResponse({"success": False, "error": "Invalid HTTP method"}, status=405)
+    return JsonResponse(
+        {"success": False, "error": "Invalid HTTP method"},
+        status=405
+    )
 
 
 
@@ -597,48 +714,63 @@ class DecimalEncoder(json.JSONEncoder):
             return float(obj)
         return super(DecimalEncoder, self).default(obj)
 
+
+
+
 @csrf_exempt
 @require_http_methods(["GET"])
 def pharmacy_orders_api(request, pharmacy_id):
     try:
         # Validate pharmacy exists
         pharmacy = get_object_or_404(Pharmacy, id=pharmacy_id)
-        
+
         # Get all orders for this pharmacy with related data
-        orders = DeliveryOrder.objects.filter(pharmacy=pharmacy).prefetch_related(
-            'tracking_entries',
-            'images'
-        ).order_by('-created_at')
-        
+        orders = (
+            DeliveryOrder.objects
+            .filter(pharmacy=pharmacy)
+            .select_related('driver')  # ✅ efficiency, no behavior change
+            .prefetch_related('tracking_entries', 'images')
+            .order_by('-created_at')
+        )
+
         orders_data = []
-        
+
         for order in orders:
-            # Get tracking entries for timeline
-            tracking_entries = list(order.tracking_entries.all().values(
-                'step', 'performed_by', 'timestamp', 'note', 'image_url'
-            ))
-            
-            # Convert timestamps to string for JSON serialization
+            # -----------------------------
+            # Tracking timeline
+            # -----------------------------
+            tracking_entries = list(
+                order.tracking_entries.all().values(
+                    'step', 'performed_by', 'timestamp', 'note', 'image_url'
+                )
+            )
+
             for entry in tracking_entries:
-                entry['timestamp'] = entry['timestamp'].strftime('%Y-%m-%d %H:%M:%S') if entry['timestamp'] else None
-            
-            # Get images by stage
+                entry['timestamp'] = (
+                    entry['timestamp'].strftime('%Y-%m-%d %H:%M:%S')
+                    if entry['timestamp'] else None
+                )
+
+            # -----------------------------
+            # Images grouped by stage
+            # -----------------------------
             images_by_stage = {
                 'handover': [],
                 'pickup': [],
                 'delivered': []
             }
-            
+
             for image in order.images.all():
                 images_by_stage[image.stage].append({
                     'image_url': image.image_url,
                     'uploaded_at': image.uploaded_at.strftime('%Y-%m-%d %H:%M:%S')
                 })
-            
-            # Count total images
-            total_images = sum(len(images) for images in images_by_stage.values())
-            
-            # Calculate progress percentage based on status
+
+            total_images = sum(len(v) for v in images_by_stage.values())
+
+            # -----------------------------
+            # Progress calculation
+            # -----------------------------
             progress_map = {
                 'pending': 25,
                 'accepted': 50,
@@ -646,7 +778,10 @@ def pharmacy_orders_api(request, pharmacy_id):
                 'delivered': 100,
                 'cancelled': 0
             }
-            
+
+            # -----------------------------
+            # Core order payload (UNCHANGED)
+            # -----------------------------
             order_data = {
                 'id': order.id,
                 'pickup_address': order.pickup_address,
@@ -657,20 +792,42 @@ def pharmacy_orders_api(request, pharmacy_id):
                 'status': order.status,
                 'rate': order.rate,
                 'customer_name': order.customer_name,
-                'customer_phone' : order.customer_phone,
+                'customer_phone': order.customer_phone,
+                'alternate_contact': order.alternate_contact,
+                'signature_required': order.signature_required,
+                'signature_ack_url' : order.signature_ack_url,
+                'id_verification_required': order.id_verification_required,
+                "id_verified" : order.id_verified,
+                'delivery_notes': order.delivery_notes,
                 'created_at': order.created_at.strftime('%Y-%m-%d %H:%M:%S'),
                 'updated_at': order.updated_at.strftime('%Y-%m-%d %H:%M:%S'),
                 'driver_id': order.driver.id if order.driver else None,
-                # Fixed: Use first_name and last_name directly from Driver model
                 'driver_name': order.driver.name if order.driver else None,
                 'progress_percentage': progress_map.get(order.status, 0),
                 'total_images': total_images,
                 'timeline': tracking_entries,
                 'images': images_by_stage
             }
-            
+
+            # -----------------------------
+            # ✅ ADD DRIVER DETAILS (ONLY IF EXISTS)
+            # -----------------------------
+            if order.driver:
+                order_data['driver'] = {
+                    'id': order.driver.id,
+                    'name': order.driver.name,
+                    'phone_number': order.driver.phone_number,
+                    'email': order.driver.email,
+                    'vehicle_number': order.driver.vehicle_number,
+                    'identity_url' : order.driver.identity_url,
+                    'active': order.driver.active
+                }
+
             orders_data.append(order_data)
-        
+
+        # -----------------------------
+        # Final response
+        # -----------------------------
         response_data = {
             'success': True,
             'pharmacy_id': pharmacy.id,
@@ -678,23 +835,20 @@ def pharmacy_orders_api(request, pharmacy_id):
             'total_orders': len(orders_data),
             'orders': orders_data
         }
-        
+
         return JsonResponse(response_data, encoder=DecimalEncoder, safe=False)
-        
+
     except Pharmacy.DoesNotExist:
-        return JsonResponse({
-            'success': False,
-            'error': 'Pharmacy not found'
-        }, status=404)
-        
+        return JsonResponse(
+            {'success': False, 'error': 'Pharmacy not found'},
+            status=404
+        )
+
     except Exception as e:
-        return JsonResponse({
-            'success': False,
-            'error': f'An error occurred: {str(e)}'
-        }, status=500)
-
-
-
+        return JsonResponse(
+            {'success': False, 'error': f'An error occurred: {str(e)}'},
+            status=500
+        )
 
 @csrf_exempt
 @require_http_methods(["POST"])
@@ -1869,12 +2023,19 @@ def get_driver_details(request):
             return JsonResponse({
                 "id": driver.id,
                 "name": driver.name,
-                "email": driver.email
+                "phone_number" : driver.phone_number,
+                "vehicle_number" : driver.vehicle_number,
+                "active" : driver.active,
+                "email": driver.email,
+                "identity_url" : driver.identity_url
             }, status=200)
         except Driver.DoesNotExist:
             return JsonResponse({"error": "Driver not found"}, status=404)
 
     return JsonResponse({"error": "Invalid request method"}, status=405)
+
+
+
 
 # @csrf_exempt
 # def driver_accepted_orders(request):
@@ -1892,27 +2053,43 @@ def get_driver_details(request):
 
 #     qs = DeliveryOrder.objects.filter(
 #         driver_id=driver_id,
-#         status__in=["accepted", "picked_up", "inTransit"]  # Include all active statuses
+#         status__in=["accepted", "picked_up", "inTransit"]
 #     ).select_related("pharmacy")
 
 #     orders = []
 #     for o in qs:
-#         # Calculate distance for each order
-#         distance_km = 0  # Default value
+#         # ----------------------------
+#         # Distance calculation
+#         # ----------------------------
+#         distance_km = 0
 #         if o.pickup_address and o.pickup_city and o.drop_address and o.drop_city:
 #             calculated_distance, error = get_distance_km(
-#                 o.pickup_address, 
-#                 o.pickup_city, 
-#                 o.drop_address, 
+#                 o.pickup_address,
+#                 o.pickup_city,
+#                 o.drop_address,
 #                 o.drop_city
 #             )
 #             if calculated_distance is not None:
 #                 distance_km = calculated_distance
-        
+
+#         # ----------------------------
+#         # Store hours for pickup day
+#         # ----------------------------
+#         store_hours_for_day = None
+#         if o.pharmacy and o.pickup_day:
+#             day_key = o.pickup_day.strftime("%a")  # Mon, Tue, Wed...
+#             store_hours_for_day = o.pharmacy.business_hours.get(day_key)
+
 #         orders.append({
 #             "id": o.id,
 #             "pharmacy_id": o.pharmacy_id,
 #             "pharmacy_name": getattr(o.pharmacy, "name", None),
+
+#             # ✅ NEW: only pickup-day hours
+#             "store_hours_for_pickup_day": store_hours_for_day,
+
+#             "customer_name": o.customer_name,
+#             "customer_phone": o.customer_phone,
 #             "driver_id": o.driver_id,
 #             "pickup_address": o.pickup_address,
 #             "pickup_city": o.pickup_city,
@@ -1921,7 +2098,7 @@ def get_driver_details(request):
 #             "drop_city": o.drop_city,
 #             "status": o.status,
 #             "rate": float(o.rate) if isinstance(o.rate, Decimal) else o.rate,
-#             "distance_km": round(distance_km, 2),  # Round to 2 decimal places
+#             "distance_km": round(distance_km, 2),
 #             "created_at": o.created_at.isoformat() if o.created_at else None,
 #             "updated_at": o.updated_at.isoformat() if o.updated_at else None,
 #         })
@@ -1950,9 +2127,7 @@ def driver_accepted_orders(request):
 
     orders = []
     for o in qs:
-        # ----------------------------
         # Distance calculation
-        # ----------------------------
         distance_km = 0
         if o.pickup_address and o.pickup_city and o.drop_address and o.drop_city:
             calculated_distance, error = get_distance_km(
@@ -1964,9 +2139,7 @@ def driver_accepted_orders(request):
             if calculated_distance is not None:
                 distance_km = calculated_distance
 
-        # ----------------------------
         # Store hours for pickup day
-        # ----------------------------
         store_hours_for_day = None
         if o.pharmacy and o.pickup_day:
             day_key = o.pickup_day.strftime("%a")  # Mon, Tue, Wed...
@@ -1976,10 +2149,7 @@ def driver_accepted_orders(request):
             "id": o.id,
             "pharmacy_id": o.pharmacy_id,
             "pharmacy_name": getattr(o.pharmacy, "name", None),
-
-            # ✅ NEW: only pickup-day hours
             "store_hours_for_pickup_day": store_hours_for_day,
-
             "customer_name": o.customer_name,
             "customer_phone": o.customer_phone,
             "driver_id": o.driver_id,
@@ -1991,6 +2161,15 @@ def driver_accepted_orders(request):
             "status": o.status,
             "rate": float(o.rate) if isinstance(o.rate, Decimal) else o.rate,
             "distance_km": round(distance_km, 2),
+            
+            # ✅ NEW FIELDS
+            "signature_required": o.signature_required,
+            "id_verification_required": o.id_verification_required,
+            "alternate_contact": o.alternate_contact,
+            "delivery_notes": o.delivery_notes,
+            "signature_ack_url": o.signature_ack_url,
+            "id_verified" : o.id_verified,
+            
             "created_at": o.created_at.isoformat() if o.created_at else None,
             "updated_at": o.updated_at.isoformat() if o.updated_at else None,
         })
@@ -2370,6 +2549,8 @@ def driver_delivery_proof(request):
 
         # step 1: update order status to delivered
         order.status = "delivered"
+        order.is_delivered = True
+        order.delivered_at = timezone.now()
         order.save()
 
         # step 2: upload image to GCP
@@ -2408,6 +2589,28 @@ def driver_delivery_proof(request):
             image_url=public_url,
             stage="delivered"
         )
+
+        try:
+            # Award 50 points to the driver
+            driver_cc_account, created = CCPointsAccount.objects.get_or_create(
+                driver=driver,
+                defaults={'points_balance': 0}
+            )
+            driver_cc_account.points_balance += int(settings.CC_POINTS_PER_ORDER)
+            driver_cc_account.save()
+
+            # Award 50 points to the pharmacy
+            pharmacy_cc_account, created = CCPointsAccount.objects.get_or_create(
+                pharmacy=pharmacy,
+                defaults={'points_balance': 0}
+            )
+            pharmacy_cc_account.points_balance += int(settings.CC_POINTS_PER_ORDER)
+            pharmacy_cc_account.save()
+
+        except Exception as e:
+            # Log the error but don't fail the delivery process
+            print(f"Error awarding CC Points: {str(e)}")
+            pass
 
         # ---- Send delivery confirmation email to pharmacy ----
         try:
@@ -2741,7 +2944,7 @@ def generate_invoice_pdf(invoice, pharmacy, orders_data, subtotal, hst_amount, t
     from reportlab.lib import colors
     from reportlab.lib.units import inch
     from reportlab.lib.styles import getSampleStyleSheet, ParagraphStyle
-    from reportlab.lib.enums import TA_CENTER, TA_RIGHT, TA_LEFT
+    from reportlab.lib.enums import TA_CENTER, TA_RIGHT, TA_LEFT, TA_JUSTIFY
     from reportlab.platypus import SimpleDocTemplate, Paragraph, Spacer, Table, TableStyle, Image
     from django.conf import settings
     from django.utils import timezone
@@ -3144,9 +3347,6 @@ def generate_invoice_pdf(invoice, pharmacy, orders_data, subtotal, hst_amount, t
     logger.info(f"Generated PDF for invoice {invoice.id}")
     return buffer
 
-
-
-
 @csrf_exempt
 def generate_weekly_invoices(request):
     pharmacy_id = request.GET.get("pharmacyId")
@@ -3174,12 +3374,26 @@ def generate_weekly_invoices(request):
     earliest = orders_qs.first().created_at.date()
     latest = orders_qs.last().created_at.date()
 
+    # Get current date/time in Toronto timezone
+    toronto_now = timezone.now().astimezone(settings.USER_TIMEZONE)
+    today = toronto_now.date()
+    
     invoices_list = []
     week_start = earliest
 
-    # Include current partial week
+    # Only process completed weeks (7 days: start and end day both included)
     while week_start <= latest:
-        week_end = min(week_start + timedelta(days=6), latest)
+        week_end = week_start + timedelta(days=6)  # 7-day week: start + 6 days = 7 total days
+        
+        # Skip this week if it hasn't completed yet
+        # Week is complete only when we're past 23:59:59 of week_end day (i.e., into the next day)
+        # Since we're comparing dates, week is complete when today > week_end
+        if week_end >= today:
+            logger.info(f"Skipping incomplete week {week_start} to {week_end} (today is {today} in America/Toronto timezone)")
+            break  # No more complete weeks after this
+        
+        # Adjust week_end to not exceed latest order date
+        week_end = min(week_end, latest)
 
         # Filter orders only in this week and delivered
         week_orders = orders_qs.filter(
@@ -3189,7 +3403,7 @@ def generate_weekly_invoices(request):
         total_orders = week_orders.count()
 
         if total_orders > 0:
-            logger.debug(f"Processing week {week_start} to {week_end} with {total_orders} orders")
+            logger.debug(f"Processing completed week {week_start} to {week_end} with {total_orders} orders")
 
             # Calculate subtotal, HST, and final total
             subtotal = sum(Decimal(str(o.rate)) for o in week_orders)
@@ -3478,6 +3692,339 @@ def generate_weekly_invoices(request):
 
     logger.info(f"Generated {len(invoices_list)} invoices for pharmacy {pharmacy.name}")
     return JsonResponse({"invoices": invoices_list})
+
+
+# @csrf_exempt
+# def generate_weekly_invoices(request):
+#     pharmacy_id = request.GET.get("pharmacyId")
+#     if not pharmacy_id:
+#         return HttpResponseBadRequest("Missing pharmacyId parameter")
+
+#     try:
+#         pharmacy_id = int(pharmacy_id)
+#     except ValueError:
+#         return HttpResponseBadRequest("pharmacyId must be an integer")
+
+#     pharmacy = get_object_or_404(Pharmacy, id=pharmacy_id)
+#     logger.info(f"Generating weekly invoices for pharmacy {pharmacy.name} (ID: {pharmacy_id})")
+
+#     # Only delivered orders for this pharmacy
+#     orders_qs = DeliveryOrder.objects.filter(
+#         pharmacy_id=pharmacy_id,
+#         status="delivered"
+#     ).order_by("created_at")
+
+#     if not orders_qs.exists():
+#         logger.info(f"No delivered orders found for pharmacy {pharmacy.name} (ID: {pharmacy_id})")
+#         return JsonResponse({"message": "No delivered orders for this pharmacy yet", "invoices": []})
+
+#     earliest = orders_qs.first().created_at.date()
+#     latest = orders_qs.last().created_at.date()
+
+#     invoices_list = []
+#     week_start = earliest
+
+#     # Include current partial week
+#     while week_start <= latest:
+#         week_end = min(week_start + timedelta(days=6), latest)
+
+#         # Filter orders only in this week and delivered
+#         week_orders = orders_qs.filter(
+#             created_at__date__gte=week_start,
+#             created_at__date__lte=week_end
+#         )
+#         total_orders = week_orders.count()
+
+#         if total_orders > 0:
+#             logger.debug(f"Processing week {week_start} to {week_end} with {total_orders} orders")
+
+#             # Calculate subtotal, HST, and final total
+#             subtotal = sum(Decimal(str(o.rate)) for o in week_orders)
+#             hst_rate = Decimal('0.13')  # 13% HST
+#             hst_amount = (subtotal * hst_rate)
+#             total_amount_with_hst = (subtotal + hst_amount)
+
+#             due_date = week_end + timedelta(days=2)  # due date 2 days after end_date
+
+#             # get or create invoice
+#             invoice, created = Invoice.objects.get_or_create(
+#                 pharmacy=pharmacy,
+#                 start_date=week_start,
+#                 end_date=week_end,
+#                 defaults={
+#                     "total_orders": total_orders,
+#                     "total_amount": total_amount_with_hst,  # Store final amount including HST
+#                     "due_date": due_date,
+#                     "status": "generated"
+#                 }
+#             )
+
+#             if created:
+#                 logger.info(f"Created new invoice {invoice.id} for pharmacy {pharmacy.name}")
+#             else:
+#                 logger.debug(f"Updated existing invoice {invoice.id} for pharmacy {pharmacy.name}")
+#                 # Keep totals up to date
+#                 invoice.total_orders = total_orders
+#                 invoice.total_amount = total_amount_with_hst
+#                 invoice.due_date = due_date
+#                 if invoice.status is None:
+#                     invoice.status = "generated"
+#                 invoice.save()
+
+#             # Build order rows for the PDF
+#             orders_data = [{
+#                 "order_id": o.id,
+#                 "pickup_address": o.pickup_address,
+#                 "pickup_city": o.pickup_city,
+#                 "drop_address": o.drop_address,
+#                 "drop_city": o.drop_city,
+#                 "pickup_day": o.pickup_day.strftime('%Y-%m-%d'),
+#                 "rate": float(o.rate),
+#                 "created_at": o.created_at.strftime('%Y-%m-%d %H:%M'),
+#                 "driver": o.driver.name if o.driver else "N/A"
+#             } for o in week_orders]
+
+#             # Determine whether we must (re)generate/upload the PDF
+#             pdf_url = invoice.pdf_url or ""
+#             needs_upload = (
+#                 not pdf_url                                         # missing
+#                 or pdf_url.startswith("/")                          # local temp path like "/temp_..."
+#                 or pdf_url.startswith("/media/")                    # local media path
+#             )
+
+#             if needs_upload:
+#                 try:
+#                     # Generate PDF buffer
+#                     pdf_buffer = generate_invoice_pdf(
+#                         invoice, pharmacy, orders_data, subtotal, hst_amount, total_amount_with_hst
+#                     )
+
+#                     # Create filename: pharmacyId_PharmacyName_StartDate_EndDate.pdf
+#                     pharmacy_name_clean = pharmacy.name.replace(' ', '_').replace('/', '_').replace('\\', '_')
+#                     start_date_str = invoice.start_date.strftime('%Y-%m-%d')
+#                     end_date_str = invoice.end_date.strftime('%Y-%m-%d')
+#                     timestamp = datetime.now().strftime('%Y%m%d_%H%M%S')
+#                     filename = f"{invoice.id}_{pharmacy.name}_{invoice.start_date}_{invoice.end_date}_{timestamp}.pdf"
+
+#                     # Require GCS upload to succeed; NO local fallback
+#                     uploaded_url = upload_pdf_to_gcp(pdf_buffer, filename)
+#                     if not uploaded_url:
+#                         logger.error(f"GCS upload returned empty URL for invoice {invoice.id}")
+#                         return JsonResponse(
+#                             {"error": f"Failed to upload invoice PDF for invoice {invoice.id}"},
+#                             status=500
+#                         )
+
+#                     invoice.pdf_url = uploaded_url
+#                     invoice.save()
+#                     pdf_url = uploaded_url
+#                     logger.info(f"Successfully generated and uploaded PDF for invoice {invoice.id}")
+
+#                 except Exception as e:
+#                     logger.exception(f"Error generating/uploading PDF for invoice {invoice.id}: {e}")
+#                     return JsonResponse(
+#                         {"error": f"Error generating/uploading PDF for invoice {invoice.id}: {str(e)}"},
+#                         status=500
+#                     )
+#             else:
+#                 logger.debug(f"Using existing PDF URL for invoice {invoice.id}")
+
+#             # Send invoice notification email to pharmacy
+#             if created and pharmacy.email:  # Only send email for newly created invoices
+#                 try:
+#                     brand_primary = settings.BRAND_COLORS['primary']
+#                     brand_primary_dark = settings.BRAND_COLORS['primary_dark']
+#                     brand_accent = settings.BRAND_COLORS['accent']
+#                     now_str = timezone.now().strftime("%b %d, %Y %H:%M %Z")
+#                     logo_url = settings.LOGO_URL
+                    
+#                     start_date_formatted = invoice.start_date.strftime("%B %d, %Y")
+#                     end_date_formatted = invoice.end_date.strftime("%B %d, %Y")
+#                     due_date_formatted = invoice.due_date.strftime("%B %d, %Y")
+
+#                     # Using .format() to avoid f-string CSS brace conflicts
+#                     invoice_html = """
+# <!doctype html>
+# <html lang="en">
+#   <head>
+#     <meta charset="utf-8">
+#     <title>Invoice Generated • CanaLogistiX</title>
+#     <meta name="viewport" content="width=device-width, initial-scale=1">
+#     <style>
+#       @media (prefers-color-scheme: dark) {{
+#         body {{ background: #0b1220 !important; color: #e5e7eb !important; }}
+#         .card {{ background: #0f172a !important; border-color: #1f2937 !important; }}
+#         .muted {{ color: #94a3b8 !important; }}
+#       }}
+#     </style>
+#   </head>
+#   <body style="margin:0;padding:0;background:#f4f7f9;">
+#     <table role="presentation" width="100%" cellspacing="0" cellpadding="0" border="0" style="background:#f4f7f9;padding:24px 12px;">
+#       <tr>
+#         <td align="center">
+#           <table role="presentation" width="100%" cellspacing="0" cellpadding="0" border="0" class="card" style="max-width:640px;background:#ffffff;border:1px solid #e5e7eb;border-radius:16px;overflow:hidden;">
+#             <tr>
+#               <td style="background:{brand_primary};padding:18px 20px;">
+#                 <table width="100%" cellspacing="0" cellpadding="0" border="0">
+#                   <tr>
+#                     <td align="left">
+#                       <img src="{logo_url}" alt="CanaLogistiX" width="64" height="64" style="display:block;border:0;outline:none;text-decoration:none;border-radius:50%;object-fit:cover;">
+#                     </td>
+#                     <td align="right" style="font:600 16px/1.2 system-ui,-apple-system,'Segoe UI',Roboto,Helvetica,Arial;color:#e6fffb;">
+#                       Invoice Generated
+#                     </td>
+#                   </tr>
+#                 </table>
+#               </td>
+#             </tr>
+            
+#             <tr>
+#               <td style="padding:28px 24px 6px;">
+#                 <h1 style="margin:0 0 10px;font:800 24px/1.25 system-ui,-apple-system,'Segoe UI',Roboto,Helvetica,Arial;color:#0f172a;">
+#                   Your weekly invoice is ready
+#                 </h1>
+#                 <p style="margin:0 0 16px;font:400 14px/1.7 system-ui,-apple-system,'Segoe UI',Roboto,Helvetica,Arial;color:#475569;">
+#                   Hello <strong>{pharmacy_name}</strong>, your invoice for the week of <strong>{start_date_formatted}</strong> to <strong>{end_date_formatted}</strong> has been generated.
+#                 </p>
+                
+#                 <div style="margin:18px 0;background:#eff6ff;border:1px solid #3b82f6;border-radius:12px;padding:14px 18px;">
+#                   <p style="margin:0;font:600 13px/1.6 system-ui,-apple-system,'Segoe UI',Roboto,Helvetica,Arial;color:#1e40af;">
+#                     📄 Invoice #{invoice_id} — Payment due by <strong>{due_date_formatted}</strong>
+#                   </p>
+#                 </div>
+                
+#                 <div style="margin:18px 0;background:#f0fdfa;border:1px solid {brand_primary};border-radius:12px;padding:16px 18px;">
+#                   <p style="margin:0 0 8px;font:700 15px/1.3 system-ui,-apple-system,'Segoe UI',Roboto,Helvetica,Arial;color:#0f172a;">
+#                     📊 Quick Summary
+#                   </p>
+#                   <p style="margin:0;font:400 13px/1.6 system-ui,-apple-system,'Segoe UI',Roboto,Helvetica,Arial;color:#334155;">
+#                     <strong>{total_orders} deliveries</strong> completed from {start_date_formatted} to {end_date_formatted}.
+#                   </p>
+#                   <p style="margin:8px 0 0;font:700 16px/1.4 system-ui,-apple-system,'Segoe UI',Roboto,Helvetica,Arial;color:{brand_primary};">
+#                     Total Amount: ${total_amount:.2f}
+#                   </p>
+#                 </div>
+                
+#                 <div style="margin:18px 0;text-align:center;">
+#                   <a href="{pdf_url}" 
+#                      style="display:inline-block;background:{brand_primary};color:#ffffff;text-decoration:none;padding:12px 32px;border-radius:8px;font:600 14px/1.5 system-ui,-apple-system,'Segoe UI',Roboto,Helvetica,Arial;margin-bottom:12px;">
+#                     📥 Download Invoice PDF
+#                   </a>
+#                 </div>
+                
+#                 <div style="margin:18px 0;background:#f8fafc;border:1px solid #e2e8f0;border-radius:12px;padding:16px 18px;text-align:center;">
+#                   <p style="margin:0 0 8px;font:600 14px/1.4 system-ui,-apple-system,'Segoe UI',Roboto,Helvetica,Arial;color:#0f172a;">
+#                     📋 View Full Invoice Details
+#                   </p>
+#                   <p style="margin:0;font:400 13px/1.6 system-ui,-apple-system,'Segoe UI',Roboto,Helvetica,Arial;color:#475569;">
+#                     For a complete breakdown of charges, payment history, and delivery details, please visit the <strong>Invoices Section</strong> in your pharmacy portal.
+#                   </p>
+#                 </div>
+                
+#                 <div style="margin:18px 0;background:#fef2f2;border-left:3px solid #ef4444;border-radius:8px;padding:14px 16px;">
+#                   <p style="margin:0;font:600 13px/1.6 system-ui,-apple-system,'Segoe UI',Roboto,Helvetica,Arial;color:#7f1d1d;">
+#                     ⚠️ Payment due by <strong>{due_date_formatted}</strong> to avoid penalties or service interruptions.
+#                   </p>
+#                 </div>
+                
+#                 <p style="margin:18px 0 0;font:400 12px/1.7 system-ui,-apple-system,'Segoe UI',Roboto,Helvetica,Arial;color:#64748b;">
+#                   Invoice generated on <strong style="color:{brand_primary_dark};">{now_str}</strong>.
+#                 </p>
+                
+#                 <hr style="border:0;border-top:1px solid #e5e7eb;margin:24px 0;">
+#                 <p class="muted" style="margin:0;font:400 12px/1.7 system-ui,-apple-system,'Segoe UI',Roboto,Helvetica,Arial;color:#6b7280;">
+#                   For payment inquiries or invoice questions, Log in to the portal and raise a Support Ticket by contacting the Admin. Our team will be happy to assist you.
+#                 </p>
+#               </td>
+#             </tr>
+            
+#             <tr>
+#               <td style="padding:0 24px 24px;">
+#                 <table width="100%" cellspacing="0" cellpadding="0" border="0" style="background:#f8fafc;border:1px dashed #e2e8f0;border-radius:12px;">
+#                   <tr>
+#                     <td style="padding:12px 16px;">
+#                       <p style="margin:0;font:400 12px/1.6 system-ui,-apple-system,'Segoe UI',Roboto,Helvetica,Arial;color:#64748b;">
+#                         Thank you for choosing CanaLogistiX for your delivery needs!
+#                       </p>
+#                     </td>
+#                   </tr>
+#                 </table>
+#               </td>
+#             </tr>
+
+#           </table>
+          
+#           <p style="margin:14px 0 0;font:400 12px/1.6 system-ui,-apple-system,'Segoe UI',Roboto,Helvetica,Arial;color:#94a3b8;">
+#             © {current_year} CanaLogistiX - Cana Group of Companies. All rights reserved.
+#           </p>
+#         </td>
+#       </tr>
+#     </table>
+#   </body>
+# </html>
+# """.format(
+#                         brand_primary=brand_primary,
+#                         brand_primary_dark=brand_primary_dark,
+#                         logo_url=logo_url,
+#                         pharmacy_name=pharmacy.name,
+#                         start_date_formatted=start_date_formatted,
+#                         end_date_formatted=end_date_formatted,
+#                         invoice_id=invoice.id,
+#                         due_date_formatted=due_date_formatted,
+#                         total_orders=total_orders,
+#                         total_amount=float(total_amount_with_hst),
+#                         pdf_url=pdf_url,
+#                         now_str=now_str,
+#                         current_year=timezone.now().year
+#                     )
+
+#                     invoice_text = (
+#                         f"Invoice Generated - CanaLogistiX\n\n"
+#                         f"Hello {pharmacy.name},\n\n"
+#                         f"Your invoice for the week of {start_date_formatted} to {end_date_formatted} has been generated.\n\n"
+#                         f"Invoice #{invoice.id}\n"
+#                         f"Total Amount: ${total_amount_with_hst:.2f}\n"
+#                         f"Payment Due: {due_date_formatted}\n\n"
+#                         f"{total_orders} deliveries completed during this period.\n\n"
+#                         f"IMPORTANT: Payment due by {due_date_formatted} to avoid penalties or service interruptions.\n\n"
+#                         f"Download your invoice: {pdf_url}\n\n"
+#                         f"For complete invoice details, payment history, and delivery breakdowns, please visit the Invoices Section in your pharmacy portal.\n\n"
+#                         f"For payment inquiries, contact billing at {settings.EMAIL_BILLING}\n"
+#                     )
+
+#                     _send_html_email_billing(
+#                         subject=f"Invoice #{invoice.id} Generated • Week of {start_date_formatted}",
+#                         to_email=pharmacy.email,
+#                         html=invoice_html,
+#                         text_fallback=invoice_text,
+#                     )
+#                     logger.info(f"Invoice notification email sent to {pharmacy.email} for invoice {invoice.id}")
+                    
+#                 except Exception as e:
+#                     logger.error(f"ERROR sending invoice email to {pharmacy.email}: {str(e)}")
+#                     import traceback
+#                     traceback.print_exc()
+#                     # Don't fail the invoice generation if email fails
+
+#             invoices_list.append({
+#                 "invoice_id": invoice.id,
+#                 "start_date": invoice.start_date.strftime('%Y-%m-%d'),
+#                 "end_date": invoice.end_date.strftime('%Y-%m-%d'),
+#                 "total_orders": invoice.total_orders,
+#                 "subtotal": float(subtotal),
+#                 "hst_amount": float(hst_amount),
+#                 "total_amount": float(invoice.total_amount),
+#                 "due_date": invoice.due_date.strftime('%Y-%m-%d'),
+#                 "status": invoice.status,
+#                 "pdf_url": pdf_url,
+#                 "orders": orders_data
+#             })
+
+#         # Move to next week window
+#         week_start += timedelta(days=7)
+
+#     logger.info(f"Generated {len(invoices_list)} invoices for pharmacy {pharmacy.name}")
+#     return JsonResponse({"invoices": invoices_list})
 
 
 
@@ -11113,24 +11660,738 @@ def pharmacy_onboarding_api(request):
 @require_http_methods(["GET"])
 def get_pharmacy_cc_points(request, pharmacy_id):
     try:
-        # Get count of delivered orders for this pharmacy
+        # 1) Delivered orders count (actual)
         delivered_orders_count = DeliveryOrder.objects.filter(
             pharmacy_id=pharmacy_id,
-            status='delivered'
+            status="delivered"
         ).count()
-        
-        # Calculate CC Points (50 points per delivered order)
-        cc_points = delivered_orders_count * (int(settings.CC_POINTS_PER_ORDER))
-        
+
+        # 2) Points from CCPointsAccount table (no multiplication)
+        points_obj = CCPointsAccount.objects.filter(pharmacy_id=pharmacy_id).first()
+        cc_points = points_obj.points_balance if points_obj else 0
+
         return JsonResponse({
-            'success': True,
-            'pharmacy_id': pharmacy_id,
-            'delivered_orders': delivered_orders_count,
-            'cc_points': cc_points
+            "success": True,
+            "pharmacy_id": pharmacy_id,
+            "delivered_orders": delivered_orders_count,
+            "cc_points": cc_points
         })
-        
+
     except Exception as e:
         return JsonResponse({
-            'success': False,
-            'error': str(e)
+            "success": False,
+            "error": str(e)
         }, status=400)
+
+
+@csrf_exempt
+@require_http_methods(["POST"])
+def upload_driver_identity_image(request):
+    """
+    Upload or replace a driver's identity/profile image to GCP
+    (UBLA-safe) and store the public URL in Driver.identity_url
+    """
+
+    try:
+        driver_id = request.POST.get("driverId")
+        image_file = request.FILES.get("image")
+
+        if not driver_id or not image_file:
+            return JsonResponse({
+                "success": False,
+                "error": "driverId and image file are required"
+            }, status=400)
+
+        driver = get_object_or_404(Driver, id=driver_id)
+
+        # ----------------------------
+        # Build safe filename
+        # ----------------------------
+        ext = os.path.splitext(image_file.name)[1] or ".jpg"
+
+        safe_name = "".join(c for c in driver.name if c.isalnum() or c in ("_", "-"))
+        safe_email = driver.email.replace("@", "_").replace(".", "_")
+
+        filename = f"{driver.id}_{safe_name}_{safe_email}{ext}"
+
+        gcp_object_path = (
+            f"{settings.GCP_DRIVER_INVOICE_FOLDER}/"
+            f"{settings.GCP_DRIVER_PROFILE_FOLDER}/"
+            f"{filename}"
+        )
+
+        # ----------------------------
+        # Initialize GCP client (same style as working API)
+        # ----------------------------
+        credentials = service_account.Credentials.from_service_account_file(
+            settings.GCP_KEY_PATH
+        )
+
+        client = storage.Client(credentials=credentials)
+        bucket = client.bucket(settings.GCP_BUCKET_NAME)
+        blob = bucket.blob(gcp_object_path)
+
+        # Reset file pointer (important for safety)
+        image_file.seek(0)
+
+        # ----------------------------
+        # Upload (overwrite if exists)
+        # ----------------------------
+        blob.upload_from_file(
+            image_file,
+            content_type=mimetypes.guess_type(filename)[0] or "image/jpeg"
+        )
+
+        # ----------------------------
+        # UBLA-safe public URL (NO ACLs)
+        # ----------------------------
+        public_url = f"https://storage.googleapis.com/{bucket.name}/{gcp_object_path}"
+
+        # ----------------------------
+        # Save URL in DB
+        # ----------------------------
+        driver.identity_url = public_url
+        driver.save(update_fields=["identity_url"])
+
+        return JsonResponse({
+            "success": True,
+            "driver_id": driver.id,
+            "identity_url": public_url,
+            "message": "Driver identity image uploaded successfully"
+        })
+
+    except Exception as e:
+        return JsonResponse({
+            "success": False,
+            "error": str(e)
+        }, status=500)
+
+
+def generate_acknowledgement_pdf(order, signature_image_path):
+    """
+    Generate professional acknowledgement receipt PDF with customer signature
+    """
+    buffer = BytesIO()
+    
+    # Create PDF document
+    doc = SimpleDocTemplate(
+        buffer,
+        pagesize=letter,
+        rightMargin=50,
+        leftMargin=50,
+        topMargin=50,
+        bottomMargin=60
+    )
+    
+    story = []
+    styles = getSampleStyleSheet()
+    
+    # ==================== CUSTOM STYLES ====================
+    
+    # Modern color palette
+    PRIMARY_COLOR = colors.HexColor('#0F172A')      # Deep slate
+    ACCENT_COLOR = colors.HexColor('#10B981')       # Success green
+    LIGHT_BG = colors.HexColor('#F8FAFC')           # Light background
+    BORDER_GRAY = colors.HexColor('#E2E8F0')        # Border gray
+    TEXT_DARK = colors.HexColor('#1E293B')          # Dark text
+    TEXT_GRAY = colors.HexColor('#64748B')          # Gray text
+    
+    # Title style
+    title_style = ParagraphStyle(
+        'Title',
+        parent=styles['Heading1'],
+        fontSize=28,
+        textColor=PRIMARY_COLOR,
+        fontName='Helvetica-Bold',
+        alignment=TA_CENTER,
+        spaceAfter=10,
+        leading=32
+    )
+    
+    # Subtitle style
+    subtitle_style = ParagraphStyle(
+        'Subtitle',
+        parent=styles['Normal'],
+        fontSize=12,
+        textColor=ACCENT_COLOR,
+        fontName='Helvetica-Bold',
+        alignment=TA_CENTER,
+        spaceAfter=30
+    )
+    
+    # Section header
+    section_header_style = ParagraphStyle(
+        'SectionHeader',
+        parent=styles['Heading2'],
+        fontSize=13,
+        textColor=PRIMARY_COLOR,
+        fontName='Helvetica-Bold',
+        spaceAfter=10,
+        spaceBefore=20,
+        leading=16
+    )
+    
+    # Body text
+    body_style = ParagraphStyle(
+        'BodyText',
+        parent=styles['Normal'],
+        fontSize=10,
+        textColor=TEXT_DARK,
+        fontName='Helvetica',
+        leading=14,
+        spaceAfter=8
+    )
+    
+    # Small text
+    small_text_style = ParagraphStyle(
+        'SmallText',
+        parent=styles['Normal'],
+        fontSize=9,
+        textColor=TEXT_GRAY,
+        fontName='Helvetica',
+        leading=12
+    )
+    
+    # Footer style
+    footer_style = ParagraphStyle(
+        'FooterStyle',
+        parent=styles['Normal'],
+        fontSize=8,
+        textColor=TEXT_GRAY,
+        fontName='Helvetica-Oblique',
+        alignment=TA_CENTER,
+        leading=11
+    )
+    
+    # ==================== HEADER WITH LOGO ====================
+    
+    try:
+        logo_path = settings.LOGO_PATH
+        if os.path.exists(logo_path):
+            logo = Image(logo_path, width=2*inch, height=1.4*inch)
+            logo.hAlign = 'CENTER'
+            story.append(logo)
+            story.append(Spacer(1, 15))
+        else:
+            raise FileNotFoundError
+    except Exception as e:
+        logger.warning(f"Logo not found, using text fallback: {e}")
+        logo_text = Paragraph(
+            '<b><font size="18" color="#10B981">Cana</font><font size="18" color="#0F172A">LogistiX</font></b>',
+            ParagraphStyle('LogoText', parent=styles['Normal'], alignment=TA_CENTER)
+        )
+        story.append(logo_text)
+        story.append(Spacer(1, 10))
+    
+    # Company info
+    company_info = '''
+    <para alignment="center">
+    <font size="9" color="#64748B">CanaLogistiX Delivery Services<br/>
+    Cana Group of Companies | Operating Name of CANABELLE INC.<br/>
+    BN: 758568562 | help.canalogistix@gmail.com</font>
+    </para>
+    '''
+    story.append(Paragraph(company_info, small_text_style))
+    story.append(Spacer(1, 25))
+    
+    # ==================== TITLE SECTION ====================
+    
+    story.append(Paragraph("DELIVERY ACKNOWLEDGEMENT", title_style))
+    story.append(Paragraph("Medicine Received in Proper Condition", subtitle_style))
+    
+    # Horizontal divider
+    line_table = Table([['']], colWidths=[6.5*inch])
+    line_table.setStyle(TableStyle([
+        ('LINEBELOW', (0, 0), (-1, -1), 2, ACCENT_COLOR),
+        ('TOPPADDING', (0, 0), (-1, -1), 0),
+        ('BOTTOMPADDING', (0, 0), (-1, -1), 0),
+    ]))
+    story.append(line_table)
+    story.append(Spacer(1, 25))
+    
+    # ==================== ACKNOWLEDGEMENT STATEMENT ====================
+    
+    current_date = timezone.now().strftime("%B %d, %Y at %I:%M %p")
+    
+    acknowledgement_text = f'''
+    <para alignment="justify">
+    <font size="10" color="#1E293B">
+    I, <b>{order.customer_name}</b>, hereby acknowledge that I have received the pharmaceutical 
+    delivery from <b>{order.pharmacy.name}</b> on <b>{current_date}</b>. 
+    I confirm that all medicines have been received in <b>proper condition</b>, with intact packaging, 
+    correct labeling, and no visible damage or tampering. The delivery was completed by 
+    <b>CanaLogistiX Delivery Services</b> in accordance with pharmaceutical handling protocols.
+    </font>
+    </para>
+    '''
+    story.append(Paragraph(acknowledgement_text, body_style))
+    story.append(Spacer(1, 25))
+    
+    # ==================== ORDER DETAILS ====================
+    
+    story.append(Paragraph("Order Information", section_header_style))
+    
+    order_details_data = [
+        ['Order ID:', f"#{order.id}"],
+        ['Order Date:', order.pickup_day.strftime("%B %d, %Y")],
+        ['Delivery Date:', order.delivered_at.strftime("%B %d, %Y at %I:%M %p") if order.delivered_at else current_date],
+        ['Delivery Status:', 'Delivered Successfully'],
+    ]
+    
+    order_table = Table(order_details_data, colWidths=[2*inch, 4.5*inch])
+    order_table.setStyle(TableStyle([
+        ('BACKGROUND', (0, 0), (-1, -1), LIGHT_BG),
+        ('TEXTCOLOR', (0, 0), (0, -1), TEXT_GRAY),
+        ('TEXTCOLOR', (1, 0), (1, -1), TEXT_DARK),
+        ('FONTNAME', (0, 0), (0, -1), 'Helvetica-Bold'),
+        ('FONTNAME', (1, 0), (1, -1), 'Helvetica'),
+        ('FONTSIZE', (0, 0), (-1, -1), 10),
+        ('LEFTPADDING', (0, 0), (-1, -1), 12),
+        ('RIGHTPADDING', (0, 0), (-1, -1), 12),
+        ('TOPPADDING', (0, 0), (-1, -1), 8),
+        ('BOTTOMPADDING', (0, 0), (-1, -1), 8),
+        ('GRID', (0, 0), (-1, -1), 0.5, BORDER_GRAY),
+        ('VALIGN', (0, 0), (-1, -1), 'MIDDLE'),
+    ]))
+    
+    story.append(order_table)
+    story.append(Spacer(1, 20))
+    
+    # ==================== PARTY INFORMATION ====================
+    
+    story.append(Paragraph("Party Information", section_header_style))
+    
+    # Customer, Pharmacy, Driver info side by side
+    customer_info = f'''
+    <font size="8" color="#64748B"><b>CUSTOMER</b></font><br/>
+    <font size="10" color="#0F172A"><b>{order.customer_name}</b></font><br/>
+    <font size="9" color="#64748B">Phone: {order.customer_phone}<br/>
+    Delivery Address:<br/>
+    {order.drop_address}<br/>
+    {order.drop_city}</font>
+    '''
+    
+    pharmacy_info = f'''
+    <font size="8" color="#64748B"><b>PHARMACY</b></font><br/>
+    <font size="10" color="#0F172A"><b>{order.pharmacy.name}</b></font><br/>
+    <font size="9" color="#64748B">
+    {order.pharmacy.store_address}<br/>
+    {order.pharmacy.city}, {order.pharmacy.province}<br/>
+    Phone: {order.pharmacy.phone_number}<br/>
+    Email: {order.pharmacy.email}</font>
+    '''
+    
+    driver_name = order.driver.name if order.driver else "N/A"
+    driver_phone = order.driver.phone_number if order.driver else "N/A"
+    driver_vehicle = order.driver.vehicle_number if (order.driver and order.driver.vehicle_number) else "N/A"
+    
+    driver_info = f'''
+    <font size="8" color="#64748B"><b>DELIVERY PARTNER</b></font><br/>
+    <font size="10" color="#0F172A"><b>{driver_name}</b></font><br/>
+    <font size="9" color="#64748B">
+    Phone: {driver_phone}<br/>
+    Vehicle: {driver_vehicle}<br/>
+    Service: CanaLogistiX<br/>
+    Delivery Services</font>
+    '''
+    
+    party_info_data = [
+        [Paragraph(customer_info, body_style), 
+         Paragraph(pharmacy_info, body_style),
+         Paragraph(driver_info, body_style)]
+    ]
+    
+    party_table = Table(party_info_data, colWidths=[2.16*inch, 2.17*inch, 2.17*inch])
+    party_table.setStyle(TableStyle([
+        ('BACKGROUND', (0, 0), (-1, -1), LIGHT_BG),
+        ('BOX', (0, 0), (-1, -1), 1, BORDER_GRAY),
+        ('INNERGRID', (0, 0), (-1, -1), 1, BORDER_GRAY),
+        ('VALIGN', (0, 0), (-1, -1), 'TOP'),
+        ('LEFTPADDING', (0, 0), (-1, -1), 12),
+        ('RIGHTPADDING', (0, 0), (-1, -1), 12),
+        ('TOPPADDING', (0, 0), (-1, -1), 12),
+        ('BOTTOMPADDING', (0, 0), (-1, -1), 12),
+    ]))
+    
+    story.append(party_table)
+    story.append(Spacer(1, 25))
+    
+    # ==================== DELIVERY VERIFICATION ====================
+    
+    story.append(Paragraph("Delivery Verification", section_header_style))
+    
+    verification_items = [
+        "✓ All medicines received in original sealed packaging",
+        "✓ No visible damage, tampering, or temperature abuse",
+        "✓ Labels are intact and readable with correct patient information",
+        "✓ Delivery completed within required timeframe",
+        "✓ All items listed on the prescription/order were delivered"
+    ]
+    
+    for item in verification_items:
+        item_para = Paragraph(f'<font size="9" color="#1E293B">{item}</font>', body_style)
+        story.append(item_para)
+    
+    story.append(Spacer(1, 25))
+    
+    # ==================== CUSTOMER SIGNATURE ====================
+    
+    story.append(Paragraph("Customer Signature", section_header_style))
+    
+    # Add signature image
+    try:
+        signature_img = Image(signature_image_path, width=3*inch, height=1.2*inch)
+        signature_img.hAlign = 'LEFT'
+        
+        signature_data = [
+            [signature_img, ''],
+            ['', ''],
+            [f'Signed by: {order.customer_name}', f'Date: {current_date}'],
+        ]
+        
+        signature_table = Table(signature_data, colWidths=[3.5*inch, 3*inch])
+        signature_table.setStyle(TableStyle([
+            ('BACKGROUND', (0, 0), (0, 0), LIGHT_BG),
+            ('BOX', (0, 0), (0, 0), 1, BORDER_GRAY),
+            ('LINEABOVE', (0, 2), (0, 2), 1, TEXT_GRAY),
+            ('FONTNAME', (0, 2), (-1, 2), 'Helvetica'),
+            ('FONTSIZE', (0, 2), (-1, 2), 9),
+            ('TEXTCOLOR', (0, 2), (-1, 2), TEXT_GRAY),
+            ('LEFTPADDING', (0, 0), (-1, -1), 10),
+            ('RIGHTPADDING', (0, 0), (-1, -1), 10),
+            ('TOPPADDING', (0, 0), (0, 0), 10),
+            ('BOTTOMPADDING', (0, 0), (0, 0), 10),
+            ('TOPPADDING', (0, 2), (-1, 2), 8),
+            ('VALIGN', (0, 0), (-1, -1), 'TOP'),
+        ]))
+        
+        story.append(signature_table)
+    except Exception as e:
+        logger.error(f"Error adding signature image: {e}")
+        story.append(Paragraph('<font color="#DC2626">Error: Signature image could not be added</font>', body_style))
+    
+    story.append(Spacer(1, 30))
+    
+    # ==================== IMPORTANT NOTICE ====================
+    
+    story.append(Paragraph("Important Notice", section_header_style))
+    
+    notice_text = '''
+    <para alignment="justify">
+    <font size="9" color="#64748B">
+    This acknowledgement serves as proof of delivery and confirmation that all medicines were 
+    received in acceptable condition. Any issues with the delivered medicines should be reported 
+    immediately to the pharmacy and CanaLogistiX. By signing this document, the customer confirms 
+    receipt and assumes responsibility for the proper storage and use of the delivered pharmaceutical products.
+    </font>
+    </para>
+    '''
+    story.append(Paragraph(notice_text, small_text_style))
+    story.append(Spacer(1, 40))
+    
+    # ==================== FOOTER ====================
+    
+    footer_text = f'''
+    <i>This acknowledgement was automatically generated by CanaLogistiX delivery system.<br/>
+    Document ID: ACK-{order.id:06d} | Generated: {current_date}<br/>
+    For questions or concerns, contact: help.canalogistix@gmail.com<br/>
+    © {timezone.now().year} CanaLogistiX - Cana Group of Companies. All rights reserved.</i>
+    '''
+    
+    story.append(Paragraph(footer_text, footer_style))
+    
+    # Build PDF
+    doc.build(story)
+    logger.info(f"Generated acknowledgement PDF for order {order.id}")
+    
+    return buffer
+
+
+@csrf_exempt
+@require_http_methods(["POST"])
+def upload_signature_acknowledgement(request):
+    """
+    API endpoint to generate and upload customer signature acknowledgement PDF
+    
+    Expected POST parameters:
+    - orderId: The delivery order ID
+    - signature: Base64 encoded signature image blob
+    
+    Returns:
+    - JSON response with success status and public URL of uploaded PDF
+    """
+    try:
+        # Get parameters
+        order_id = request.POST.get('orderId')
+        signature_base64 = request.POST.get('signature')
+        
+        if not order_id or not signature_base64:
+            return JsonResponse({
+                'success': False,
+                'error': 'orderId and signature are required'
+            }, status=400)
+        
+        # Get order with related pharmacy and driver
+        order = get_object_or_404(
+            DeliveryOrder.objects.select_related('pharmacy', 'driver'),
+            id=order_id
+        )
+        
+        # Validate order status
+        if order.status != 'inTransit':
+            return JsonResponse({
+                'success': False,
+                'error': 'Order must be in transit status to generate acknowledgement'
+            }, status=400)
+        
+        # Decode base64 signature image
+        try:
+            # Log what we received for debugging
+            logger.info(f"Received signature data length: {len(signature_base64)}")
+            logger.info(f"Signature starts with: {signature_base64[:50]}")
+            
+            # Remove data URL prefix if present (e.g., "data:image/png;base64,")
+            if 'base64,' in signature_base64:
+                signature_base64 = signature_base64.split('base64,')[1]
+                logger.info(f"After removing prefix, length: {len(signature_base64)}")
+            
+            # Clean up the base64 string - remove whitespace and newlines
+            signature_base64 = ''.join(signature_base64.split())
+            
+            # Add padding if needed (base64 strings must be divisible by 4)
+            padding_needed = len(signature_base64) % 4
+            if padding_needed:
+                signature_base64 += '=' * (4 - padding_needed)
+                logger.info(f"Added {4 - padding_needed} padding characters")
+            
+            # Decode base64
+            try:
+                signature_data = base64.b64decode(signature_base64, validate=True)
+                logger.info(f"Successfully decoded {len(signature_data)} bytes")
+            except Exception as decode_error:
+                logger.error(f"Base64 decode error: {decode_error}")
+                logger.error(f"Base64 string length: {len(signature_base64)}")
+                logger.error(f"First 100 chars: {signature_base64[:100]}")
+                logger.error(f"Last 100 chars: {signature_base64[-100:]}")
+                return JsonResponse({
+                    'success': False,
+                    'error': f'Invalid base64 signature data: {str(decode_error)}'
+                }, status=400)
+            
+            # Validate we got image data
+            if len(signature_data) < 100:  # Arbitrary minimum size
+                return JsonResponse({
+                    'success': False,
+                    'error': 'Signature data too small, please sign again'
+                }, status=400)
+            
+            # Save signature temporarily
+            temp_signature_path = f'/tmp/signature_{order_id}_{int(time.time())}.png'
+            
+            try:
+                # Open image from bytes first to validate it
+                img = PILImage.open(BytesIO(signature_data))
+                
+                # Convert RGBA to RGB with white background (if needed)
+                if img.mode in ('RGBA', 'LA'):
+                    background = PILImage.new('RGB', img.size, (255, 255, 255))
+                    if img.mode == 'RGBA':
+                        background.paste(img, mask=img.split()[3])  # Use alpha channel as mask
+                    else:
+                        background.paste(img, mask=img.split()[1])
+                    img = background
+                elif img.mode != 'RGB':
+                    img = img.convert('RGB')
+                
+                # Save the processed image
+                img.save(temp_signature_path, 'PNG')
+                logger.info(f"Successfully saved signature image: {temp_signature_path}")
+                
+            except Exception as img_error:
+                logger.error(f"Invalid signature image: {img_error}")
+                logger.error(f"Image data starts with: {signature_data[:20]}")
+                if os.path.exists(temp_signature_path):
+                    os.remove(temp_signature_path)
+                return JsonResponse({
+                    'success': False,
+                    'error': f'Invalid signature image format: {str(img_error)}'
+                }, status=400)
+            
+        except Exception as e:
+            logger.error(f"Error processing signature: {e}")
+            return JsonResponse({
+                'success': False,
+                'error': f'Failed to process signature: {str(e)}'
+            }, status=400)
+        
+        # Generate PDF
+        try:
+            pdf_buffer = generate_acknowledgement_pdf(order, temp_signature_path)
+            pdf_buffer.seek(0)
+        except Exception as e:
+            logger.error(f"Error generating PDF: {e}")
+            # Clean up temp file
+            if os.path.exists(temp_signature_path):
+                os.remove(temp_signature_path)
+            return JsonResponse({
+                'success': False,
+                'error': f'Failed to generate acknowledgement PDF: {str(e)}'
+            }, status=500)
+        
+        # Upload to GCP
+        try:
+            # Initialize GCP client
+            credentials = service_account.Credentials.from_service_account_file(
+                settings.GCP_KEY_PATH
+            )
+            client = storage.Client(credentials=credentials)
+            bucket = client.bucket(settings.GCP_BUCKET_NAME)
+            
+            # Build file path
+            filename = f"order_{order.id}_pharmacy_{order.pharmacy.id}_{int(time.time())}.pdf"
+            gcp_path = (
+                f"{settings.GCP_INVOICE_FOLDER}/"
+                f"{settings.GCP_CUSTOMER_PHARMACY_SIGNED_ACKNOWLEDGEMENTS}/"
+                f"{filename}"
+            )
+            
+            # Upload PDF
+            blob = bucket.blob(gcp_path)
+            blob.upload_from_file(
+                pdf_buffer,
+                content_type='application/pdf'
+            )
+            
+            # Generate public URL
+            public_url = f"https://storage.googleapis.com/{bucket.name}/{gcp_path}"
+            
+            # Save URL to database
+            order.signature_ack_url = public_url
+            order.save(update_fields=['signature_ack_url'])
+            
+            logger.info(f"Successfully uploaded acknowledgement PDF for order {order.id}")
+            
+            # Clean up temp signature file
+            if os.path.exists(temp_signature_path):
+                os.remove(temp_signature_path)
+            
+            return JsonResponse({
+                'success': True,
+                'order_id': order.id,
+                'acknowledgement_url': public_url,
+                'message': 'Acknowledgement PDF generated and uploaded successfully'
+            })
+            
+        except Exception as e:
+            logger.error(f"Error uploading to GCP: {e}")
+            # Clean up temp file
+            if os.path.exists(temp_signature_path):
+                os.remove(temp_signature_path)
+            return JsonResponse({
+                'success': False,
+                'error': f'Failed to upload PDF to cloud storage: {str(e)}'
+            }, status=500)
+        
+    except Exception as e:
+        logger.error(f"Unexpected error in upload_signature_acknowledgement: {e}")
+        return JsonResponse({
+            'success': False,
+            'error': f'An unexpected error occurred: {str(e)}'
+        }, status=500)
+
+    
+@csrf_exempt
+@require_http_methods(["POST"])
+def verify_customer_id(request):
+    """
+    API endpoint to mark ID verification as completed for an order
+
+    Expected POST parameters:
+    - orderId: The delivery order ID
+    - driverId: The driver performing verification
+    - verified: Boolean indicating verification status (ignored; we always set True)
+
+    Returns:
+    - JSON response with success status
+    """
+    try:
+        order_id = request.POST.get('orderId')
+        driver_id = request.POST.get('driverId')
+        _ = request.POST.get('verified')  # keep input structure, but ignored
+
+        if not order_id or not driver_id:
+            return JsonResponse({
+                'success': False,
+                'error': 'orderId and driverId are required'
+            }, status=400)
+
+        # Get order and validate driver
+        order = get_object_or_404(DeliveryOrder, id=order_id)
+
+        if str(order.driver_id) != str(driver_id):
+            return JsonResponse({
+                'success': False,
+                'error': 'Driver is not assigned to this order'
+            }, status=403)
+
+        # Validate order status - ID verification should happen during delivery
+        if order.status not in ['inTransit', 'delivered']:
+            return JsonResponse({
+                'success': False,
+                'error': 'ID verification can only be done during transit or delivery'
+            }, status=400)
+
+        # ✅ MAIN LOGIC: always set id_verified = True
+        if not order.id_verified:
+            order.id_verified = True
+            order.save(update_fields=['id_verified', 'updated_at'])
+
+        logger.info(f"ID verification set TRUE for order {order_id} by driver {driver_id}")
+
+        return JsonResponse({
+            'success': True,
+            'order_id': order.id,
+            'message': 'ID verification recorded successfully'
+        })
+
+    except Exception as e:
+        logger.error(f"Unexpected error in verify_customer_id: {e}")
+        return JsonResponse({
+            'success': False,
+            'error': f'An unexpected error occurred: {str(e)}'
+        }, status=500)
+
+
+@csrf_exempt
+@require_http_methods(["GET"])
+def get_driver_cc_points(request, driver_id):
+    try:
+        # (Optional but recommended) Validate driver exists
+        if not Driver.objects.filter(id=driver_id).exists():
+            return JsonResponse({
+                "success": False,
+                "error": "Driver not found"
+            }, status=404)
+
+        # 1) Delivered orders count (ONLY by status)
+        delivered_orders_count = DeliveryOrder.objects.filter(
+            driver_id=driver_id,
+            status="delivered"
+        ).count()
+
+        # 2) Points from CCPointsAccount table (no multiplication)
+        points_obj = CCPointsAccount.objects.filter(driver_id=driver_id).first()
+        cc_points = points_obj.points_balance if points_obj else 0
+
+        return JsonResponse({
+            "success": True,
+            "driver_id": driver_id,
+            "delivered_orders": delivered_orders_count,
+            "cc_points": cc_points
+        })
+
+    except Exception as e:
+        return JsonResponse({
+            "success": False,
+            "error": str(e)
+        }, status=500)
