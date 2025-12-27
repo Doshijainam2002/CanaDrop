@@ -11,6 +11,11 @@ import os
 
 from django.core.wsgi import get_wsgi_application
 
-os.environ.setdefault('DJANGO_SETTINGS_MODULE', 'CanaDrop.settings')
+# os.environ.setdefault('DJANGO_SETTINGS_MODULE', 'CanaDrop.settings')
+os.environ.setdefault(
+    "DJANGO_SETTINGS_MODULE",
+    f"CanaDrop.settings.{os.getenv('DJANGO_ENV', 'prod')}"
+)
+
 
 application = get_wsgi_application()

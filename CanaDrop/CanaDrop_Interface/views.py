@@ -33,6 +33,7 @@ from reportlab.platypus import (
     SimpleDocTemplate, Paragraph, Spacer, Table, TableStyle, Image
 )
 from PIL import Image as PILImage
+import jwt
 
 # Django Core
 from django.conf import settings
@@ -53,7 +54,7 @@ from django.http import (
 from django.shortcuts import get_object_or_404, render
 from django.utils import timezone
 from django.utils.dateparse import parse_date
-from django.views.decorators.csrf import csrf_exempt
+from django.views.decorators.csrf import csrf_exempt, csrf_protect, ensure_csrf_cookie
 from django.views.decorators.http import require_GET, require_POST, require_http_methods
 from django.utils.timezone import now
 from django.template.loader import render_to_string
@@ -116,6 +117,7 @@ def _send_html_email_billing(subject: str, to_email: str, html: str, text_fallba
 
 
 #Page Logins
+@ensure_csrf_cookie
 def pharmacyLoginView(request):
     return render(request, 'pharmacyLogin.html')
 
@@ -225,34 +227,6 @@ def driverCCPointsView(request):
 
 
 
-@csrf_exempt
-def pharmacy_login_api(request):
-    if request.method != "POST":
-        return JsonResponse({"success": False, "message": "Only POST method allowed"}, status=405)
-
-    try:
-        data = json.loads(request.body)
-        email = data.get("email")
-        password = data.get("password")
-    except Exception:
-        return JsonResponse({"success": False, "message": "Invalid JSON"}, status=400)
-
-    if not email or not password:
-        return JsonResponse({"success": False, "message": "Email and password required"}, status=400)
-
-    try:
-        pharmacy = Pharmacy.objects.get(email=email)
-    except Pharmacy.DoesNotExist:
-        return JsonResponse({"success": False, "message": "Invalid credentials"}, status=401)
-
-    if check_password(password, pharmacy.password):
-        return JsonResponse({
-            "success": True,
-            "id": pharmacy.id
-        })
-    else:
-        return JsonResponse({"success": False, "message": "Invalid credentials"}, status=401)
-
 # @csrf_exempt
 # def pharmacy_login_api(request):
 #     if request.method != "POST":
@@ -274,30 +248,94 @@ def pharmacy_login_api(request):
 #         return JsonResponse({"success": False, "message": "Invalid credentials"}, status=401)
 
 #     if check_password(password, pharmacy.password):
-#         issued_at = timezone.now()  # UTC
-#         expires_at = issued_at + timedelta(hours=settings.JWT_EXPIRY_HOURS)
-
-#         payload = {
-#             "pharmacy_id": pharmacy.id,
-#             "email": pharmacy.email,
-#             "iat": int(issued_at.timestamp()),
-#             "exp": int(expires_at.timestamp()),
-#         }
-
-#         token = jwt.encode(
-#             payload,
-#             settings.JWT_SECRET_KEY,
-#             algorithm=settings.JWT_ALGORITHM
-#         )
-
 #         return JsonResponse({
 #             "success": True,
-#             "id": pharmacy.id,
-#             "token": token,
-#             "expiresAt": timezone.localtime(expires_at, settings.USER_TIMEZONE).isoformat(),
+#             "id": pharmacy.id
 #         })
+#     else:
+#         return JsonResponse({"success": False, "message": "Invalid credentials"}, status=401)
 
-#     return JsonResponse({"success": False, "message": "Invalid credentials"}, status=401)
+
+
+@require_POST
+@csrf_protect
+def pharmacy_login_api(request):
+    """
+    Authenticates a pharmacy and sets JWT in an HttpOnly secure cookie.
+    """
+
+    # 1️⃣ Parse request body
+    try:
+        data = json.loads(request.body)
+        email = data.get("email")
+        password = data.get("password")
+    except Exception:
+        return JsonResponse(
+            {"success": False, "message": "Invalid JSON"},
+            status=400
+        )
+
+    if not email or not password:
+        return JsonResponse(
+            {"success": False, "message": "Email and password required"},
+            status=400
+        )
+
+    # 2️⃣ Fetch pharmacy
+    try:
+        pharmacy = Pharmacy.objects.get(email=email)
+    except Pharmacy.DoesNotExist:
+        return JsonResponse(
+            {"success": False, "message": "Invalid credentials"},
+            status=401
+        )
+
+    # 3️⃣ Verify password
+    if not check_password(password, pharmacy.password):
+        return JsonResponse(
+            {"success": False, "message": "Invalid credentials"},
+            status=401
+        )
+
+    # 4️⃣ Create JWT payload
+    issued_at = timezone.now()  # UTC
+    expires_at = issued_at + timedelta(hours=settings.JWT_EXPIRY_HOURS)
+
+    payload = {
+        "pharmacy_id": pharmacy.id,
+        "email": pharmacy.email,
+        "iat": int(issued_at.timestamp()),
+        "exp": int(expires_at.timestamp()),
+    }
+
+    token = jwt.encode(
+        payload,
+        settings.JWT_SECRET_KEY,
+        algorithm=settings.JWT_ALGORITHM
+    )
+
+    # 5️⃣ Build response (NO token in JSON)
+    response = JsonResponse({
+        "success": True,
+        "id": pharmacy.id,
+        "expiresAt": timezone.localtime(
+            expires_at,
+            settings.USER_TIMEZONE
+        ).isoformat(),
+    })
+
+    # 6️⃣ Set secure HttpOnly cookie
+    response.set_cookie(
+        key="authToken",
+        value=token,
+        max_age=settings.JWT_EXPIRY_HOURS * 60 * 60,
+        httponly=True,                 # 🔐 JS cannot read
+        secure=settings.SECURE_SSL_REDIRECT,  # 🔐 HTTPS only
+        samesite="Lax",                # 🛡 CSRF protection
+        path="/",
+    )
+
+    return response
 
 
 

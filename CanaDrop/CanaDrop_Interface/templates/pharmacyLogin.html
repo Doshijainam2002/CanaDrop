@@ -107,6 +107,14 @@
     <script>
         let showPassword = false;
 
+        function getCSRFToken() {
+            return document.cookie
+                .split('; ')
+                .find(row => row.startsWith('csrftoken='))
+                ?.split('=')[1];
+        }
+
+
         function togglePassword() {
             const passwordInput = document.getElementById('password');
             const eyeIcon = document.getElementById('eyeIcon');
@@ -133,19 +141,77 @@
             return email.trim().toLowerCase();
         }
 
+        function handleLogin() {
+            const rawEmail = document.getElementById('email').value;
+            const password = document.getElementById('password').value.trim();
+
+            // 1️⃣ Basic presence check
+            if (!rawEmail || !password) {
+                showModal('fail');
+                return;
+            }
+
+            // 2️⃣ Validate & normalize email
+            if (!isValidEmail(rawEmail)) {
+                showModal('fail');
+                return;
+            }
+            const email = normalizeEmail(rawEmail);
+
+            // 3️⃣ Send login request (cookies handled by browser)
+            fetch('/api/pharmacy/login/', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-CSRFToken': getCSRFToken(),   // 🔐 REQUIRED
+                },
+                credentials: 'include',            // 🔐 IMPORTANT
+                body: JSON.stringify({ email, password }),
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (!data.success) {
+                    showModal('fail');
+                    return;
+                }
+
+                // 4️⃣ Store ONLY non-sensitive identifiers
+                const oneDay = 24 * 60 * 60;
+
+                document.cookie = `pharmacyId=${data.id};path=/;max-age=${oneDay};SameSite=Lax`;
+
+                document.cookie = `tokenExpiresAt=${encodeURIComponent(
+                    data.expiresAt
+                )};path=/;max-age=${oneDay};SameSite=Lax`;
+
+                // 5️⃣ UI success flow
+                showModal('success');
+                setTimeout(() => {
+                    closeModal();
+                    window.location.href = '/pharmacyDashboard/';
+                }, 3000);
+            })
+            .catch(err => {
+                console.error('Login error:', err);
+                showModal('fail');
+            });
+        }
+
+
+
         // function handleLogin() {
         //     const rawEmail = document.getElementById('email').value;
         //     const password = document.getElementById('password').value.trim();
 
         //     // Basic presence check
         //     if (!rawEmail || !password) {
-        //         showModal('fail');
+        //         showModal('fail');  // keep your existing modal UX
         //         return;
         //     }
 
         //     // Validate & normalize email
         //     if (!isValidEmail(rawEmail)) {
-        //         showModal('fail');
+        //         showModal('fail');  // invalid format
         //         return;
         //     }
         //     const email = normalizeEmail(rawEmail);
@@ -153,22 +219,13 @@
         //     fetch('/api/pharmacy/login/', {
         //         method: 'POST',
         //         headers: { 'Content-Type': 'application/json' },
+        //         // Use the normalized, lowercase email here
         //         body: JSON.stringify({ email, password })
         //     })
         //     .then(response => response.json())
         //     .then(data => {
         //         if (data.success) {
-        //             const oneDay = 24 * 60 * 60;
-
-        //             // ✅ Store pharmacyId (identifier)
-        //             document.cookie = `pharmacyId=${data.id};path=/;max-age=${oneDay}`;
-
-        //             // ✅ Store JWT token (authentication)
-        //             document.cookie = `authToken=${data.token};path=/;max-age=${oneDay};Secure;SameSite=Lax`;
-
-        //             // ✅ Store token expiry (for FE auto-logout logic)
-        //             document.cookie = `tokenExpiresAt=${encodeURIComponent(data.expiresAt)};path=/;max-age=${oneDay}`;
-
+        //             document.cookie = `pharmacyId=${data.id};path=/;max-age=${24*60*60}`;
         //             showModal('success');
         //             setTimeout(() => {
         //                 closeModal();
@@ -183,49 +240,6 @@
         //         showModal('fail');
         //     });
         // }
-
-
-        function handleLogin() {
-            const rawEmail = document.getElementById('email').value;
-            const password = document.getElementById('password').value.trim();
-
-            // Basic presence check
-            if (!rawEmail || !password) {
-                showModal('fail');  // keep your existing modal UX
-                return;
-            }
-
-            // Validate & normalize email
-            if (!isValidEmail(rawEmail)) {
-                showModal('fail');  // invalid format
-                return;
-            }
-            const email = normalizeEmail(rawEmail);
-
-            fetch('/api/pharmacy/login/', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                // Use the normalized, lowercase email here
-                body: JSON.stringify({ email, password })
-            })
-            .then(response => response.json())
-            .then(data => {
-                if (data.success) {
-                    document.cookie = `pharmacyId=${data.id};path=/;max-age=${24*60*60}`;
-                    showModal('success');
-                    setTimeout(() => {
-                        closeModal();
-                        window.location.href = '/pharmacyDashboard/';
-                    }, 3000);
-                } else {
-                    showModal('fail');
-                }
-            })
-            .catch(err => {
-                console.error('Login error:', err);
-                showModal('fail');
-            });
-        }
 
 
         function showModal(status) {
