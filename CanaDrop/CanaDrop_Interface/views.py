@@ -15,6 +15,7 @@ from random import sample
 import mimetypes
 import base64
 import time
+from .auth import *
 
 # Third-Party Libraries
 import googlemaps
@@ -67,7 +68,9 @@ from .models import *
 # Add this for better error logging
 logger = logging.getLogger(__name__)
 
-#Helper Functions for Email
+# ----------------------------
+# Helper Functions for Email
+# ----------------------------
 def _send_html_email_help_desk(subject: str, to_email: str, html: str, text_fallback: str = " "):
     from_email = settings.EMAIL_HELP_DESK
     connection = get_connection(
@@ -116,7 +119,9 @@ def _send_html_email_billing(subject: str, to_email: str, html: str, text_fallba
     msg.send(fail_silently=False)
 
 
-#Page Logins
+# ----------------------------
+# Pharmacy Page Logins
+# ----------------------------
 @ensure_csrf_cookie
 def pharmacyLoginView(request):
     return render(request, 'pharmacyLogin.html')
@@ -130,7 +135,7 @@ def pharmacyRegisterView(request):
         }
     )
 
-
+@pharmacy_auth_required
 def pharmacyDashboardView(request):
     return render(
         request,
@@ -143,12 +148,35 @@ def pharmacyDashboardView(request):
 def pharmacyForgotPasswordView(request):
     return render(request, 'pharmacyForgotPassword.html')
 
+@pharmacy_auth_required
 def pharmacyOrdersView(request):
     return render(request, 'pharmacyOrders.html')
 
+@pharmacy_auth_required
 def pharmacyInvoicesView(request):
     return render(request, 'pharmacyInvoices.html')
 
+@pharmacy_auth_required
+def pharmacyCCPointsView(request):
+    return render(request, 'pharmacyCCPoints.html')
+
+@pharmacy_auth_required
+def pharmacyProfileView(request):
+    return render(
+        request,
+        "pharmacyProfile.html",
+        {
+            "GOOGLE_MAPS_API_KEY": settings.GOOGLE_MAPS_API_KEY
+        }
+    )
+
+def pharmacyTrialOnboarding(request):
+    return render(request, 'pharmacyTrial.html')
+
+
+# ----------------------------
+# Driver Page Logins
+# ----------------------------
 def driverLoginView(request):
     return render(request, 'driverLogin.html')
 
@@ -173,21 +201,15 @@ def driverRegisterView(request):
         }
     )
 
-def contactAdminView(request):
-    return render(request, 'contactAdmin.html')
+def driverIdentityView(request):
+    return render(request, 'driverIdentity.html')
 
-def landingView(request):
-    return render(request, 'landingPage.html')
+def driverCCPointsView(request):
+    return render(request, 'driverCCPoints.html')
 
-
-def pharmacyProfileView(request):
-    return render(
-        request,
-        "pharmacyProfile.html",
-        {
-            "GOOGLE_MAPS_API_KEY": settings.GOOGLE_MAPS_API_KEY
-        }
-    )
+# ----------------------------
+# Admin Page Logins
+# ----------------------------
 
 def adminLoginView(request):
     return render(request, 'adminLogin.html')
@@ -213,48 +235,14 @@ def adminSupportView(request):
 def adminDriversView(request):
     return render(request, 'adminDrivers.html')
 
-def pharmacyTrialOnboarding(request):
-    return render(request, 'pharmacyTrial.html')
+# ----------------------------
+# General Page Logins
+# ----------------------------
+def contactAdminView(request):
+    return render(request, 'contactAdmin.html')
 
-def pharmacyCCPointsView(request):
-    return render(request, 'pharmacyCCPoints.html')
-
-def driverIdentityView(request):
-    return render(request, 'driverIdentity.html')
-
-def driverCCPointsView(request):
-    return render(request, 'driverCCPoints.html')
-
-
-
-# @csrf_exempt
-# def pharmacy_login_api(request):
-#     if request.method != "POST":
-#         return JsonResponse({"success": False, "message": "Only POST method allowed"}, status=405)
-
-#     try:
-#         data = json.loads(request.body)
-#         email = data.get("email")
-#         password = data.get("password")
-#     except Exception:
-#         return JsonResponse({"success": False, "message": "Invalid JSON"}, status=400)
-
-#     if not email or not password:
-#         return JsonResponse({"success": False, "message": "Email and password required"}, status=400)
-
-#     try:
-#         pharmacy = Pharmacy.objects.get(email=email)
-#     except Pharmacy.DoesNotExist:
-#         return JsonResponse({"success": False, "message": "Invalid credentials"}, status=401)
-
-#     if check_password(password, pharmacy.password):
-#         return JsonResponse({
-#             "success": True,
-#             "id": pharmacy.id
-#         })
-#     else:
-#         return JsonResponse({"success": False, "message": "Invalid credentials"}, status=401)
-
+def landingView(request):
+    return render(request, 'landingPage.html')
 
 
 @require_POST
@@ -343,30 +331,59 @@ def validate_address_city(address, city):
     """
     Validate that the address belongs to the provided city using Google Geocoding API.
     Returns True if valid, False otherwise.
+
+    Prod upgrades:
+    - Uses structured address_components (not string contains)
+    - Works for any country
+    - Adds timeout
+    - Supports common "city-like" component types: locality, postal_town, admin_area_level_2
     """
     try:
         url = "https://maps.googleapis.com/maps/api/geocode/json"
         params = {
             "address": f"{address}, {city}",
-            "key": settings.GOOGLE_MAPS_API_KEY
+            "key": settings.GOOGLE_MAPS_API_KEY,
         }
-        response = requests.get(url, params=params).json()
-        if response['status'] != 'OK':
+
+        r = requests.get(url, params=params, timeout=5)
+        data = r.json()
+
+        if data.get("status") != "OK" or not data.get("results"):
             return False
-        # Check if the city exists in the formatted address
-        formatted_address = response['results'][0]['formatted_address']
-        return city.lower() in formatted_address.lower()
-    except Exception as e:
-        # print("Address validation failed:", e)
+
+        # Google’s best match
+        result = data["results"][0]
+        components = result.get("address_components", [])
+
+        city_input = city.strip().lower()
+
+        # Different countries represent “city” differently.
+        city_types = {"locality", "postal_town", "administrative_area_level_2"}
+
+        for comp in components:
+            types = set(comp.get("types", []))
+            if types.intersection(city_types):
+                long_name = comp.get("long_name", "").strip().lower()
+                short_name = comp.get("short_name", "").strip().lower()
+
+                if city_input == long_name or city_input == short_name:
+                    return True
+
+        # Fallback (less strict): sometimes city isn't in components the way we expect
+        formatted = result.get("formatted_address", "").lower()
+        return city_input in formatted
+
+    except requests.Timeout:
+        return False
+    except Exception:
         return False
 
 
 def get_distance_km(pickup_address, pickup_city, drop_address, drop_city):
     """
-    Calculate the distance in kilometers between pickup and drop locations
-    using Google Maps Distance Matrix API.
+    Calculate distance in km between pickup and drop using Google Distance Matrix.
+    Returns (distance_km, error_message).
     """
-    # Validate pickup and drop addresses
     if not validate_address_city(pickup_address, pickup_city):
         return None, "Pickup address does not match the city"
     if not validate_address_city(drop_address, drop_city):
@@ -374,21 +391,33 @@ def get_distance_km(pickup_address, pickup_city, drop_address, drop_city):
 
     full_pickup = f"{pickup_address}, {pickup_city}"
     full_drop = f"{drop_address}, {drop_city}"
+
     try:
         url = "https://maps.googleapis.com/maps/api/distancematrix/json"
         params = {
             "origins": full_pickup,
             "destinations": full_drop,
             "key": settings.GOOGLE_MAPS_API_KEY,
-            "units": "metric"
+            "units": "metric",
         }
-        response = requests.get(url, params=params).json()
-        distance_meters = response['rows'][0]['elements'][0]['distance']['value']
-        distance_km = distance_meters / 1000  # convert meters to km
-        return distance_km, None
-    except Exception as e:
-        # print("Distance calculation failed:", e)
+
+        data = requests.get(url, params=params, timeout=8).json()
+
+        if data.get("status") != "OK":
+            return 0, "Failed to calculate distance"
+
+        element = data["rows"][0]["elements"][0]
+        if element.get("status") != "OK":
+            return 0, "Failed to calculate distance"
+
+        distance_meters = element["distance"]["value"]
+        return distance_meters / 1000, None
+
+    except requests.Timeout:
         return 0, "Failed to calculate distance"
+    except Exception:
+        return 0, "Failed to calculate distance"
+
 
 
 
@@ -445,7 +474,6 @@ def create_order_tracking_entry(order_id, step='pending', performed_by=None, not
             "success": False,
             "error": str(e)
         }
-
 
 
 
@@ -606,7 +634,6 @@ def get_distance_km(pickup_address, pickup_city, drop_address, drop_city):
     full_pickup = f"{pickup_address}, {pickup_city}"
     full_drop = f"{drop_address}, {drop_city}"
     
-    print(f"🚗 Calculating distance from '{full_pickup}' to '{full_drop}'")
     
     try:
         url = "https://maps.googleapis.com/maps/api/distancematrix/json"
@@ -620,14 +647,12 @@ def get_distance_km(pickup_address, pickup_city, drop_address, drop_city):
         response = requests.get(url, params=params)
         data = response.json()
         
-        print(f"📊 Distance Matrix API Status: {data.get('status')}")
         
         # Check overall API response
         if data.get('status') != 'OK':
             error_msg = f"Distance Matrix API error: {data.get('status', 'UNKNOWN')}"
             if 'error_message' in data:
                 error_msg += f" - {data['error_message']}"
-            print(f"❌ {error_msg}")
             return None, error_msg
         
         # Check if we have valid response structure
@@ -638,7 +663,6 @@ def get_distance_km(pickup_address, pickup_city, drop_address, drop_city):
         element = rows[0]['elements'][0]
         element_status = element.get('status')
         
-        print(f"📍 Route Status: {element_status}")
         
         if element_status == 'OK':
             distance_meters = element.get('distance', {}).get('value')
@@ -648,7 +672,6 @@ def get_distance_km(pickup_address, pickup_city, drop_address, drop_city):
             distance_km = distance_meters / 1000
             duration_text = element.get('duration', {}).get('text', 'Unknown')
             
-            print(f"✅ Distance: {distance_km} km, Duration: {duration_text}")
             return distance_km, None
             
         elif element_status == 'NOT_FOUND':
@@ -666,53 +689,89 @@ def get_distance_km(pickup_address, pickup_city, drop_address, drop_city):
             
     except KeyError as e:
         error_msg = f"Unexpected response format from Google Maps API: missing {e}"
-        print(f"❌ {error_msg}")
         return None, error_msg
     except Exception as e:
         error_msg = f"Distance calculation failed: {str(e)}"
-        print(f"❌ {error_msg}")
         import traceback
         traceback.print_exc()
         return None, error_msg
 
 
-@csrf_exempt
+@require_GET
+@csrf_protect
+@pharmacy_auth_required
 def get_delivery_rate(request):
-    if request.method == "GET":
-        try:
-            pickup_address = request.GET.get('pickupAddress')
-            pickup_city = request.GET.get('pickupCity')
-            drop_address = request.GET.get('dropAddress')
-            drop_city = request.GET.get('dropCity')
+    """
+    Returns delivery distance (km) and rate for a pickup & drop address.
 
-            # Validate required fields
-            if not all([pickup_address, pickup_city, drop_address, drop_city]):
-                return JsonResponse({"success": False, "error": "Missing required fields"}, status=400)
+    Auth:
+    - Requires valid HttpOnly JWT cookie (pharmacy)
+    - CSRF protected
 
-            # Get distance directly - no separate address validation
-            distance_km, error = get_distance_km(pickup_address, pickup_city, drop_address, drop_city)
-            if error:
-                return JsonResponse({"success": False, "error": error}, status=400)
+    Input (unchanged):
+    - pickupAddress
+    - pickupCity
+    - dropAddress
+    - dropCity
 
-            # Determine rate from DeliveryDistanceRate model
-            rate_entry = DeliveryDistanceRate.objects.filter(
-                min_distance_km__lte=distance_km
-            ).order_by('min_distance_km').last()
-            rate = rate_entry.rate if rate_entry else 0
+    Output (unchanged):
+    - success
+    - distance_km
+    - rate
+    """
+    try:
+        pickup_address = request.GET.get("pickupAddress")
+        pickup_city = request.GET.get("pickupCity")
+        drop_address = request.GET.get("dropAddress")
+        drop_city = request.GET.get("dropCity")
 
-            return JsonResponse({
-                "success": True,
-                "distance_km": distance_km,
-                "rate": float(rate)  # Ensure it's a number, not Decimal
-            })
+        # 1️⃣ Validate required fields
+        if not all([pickup_address, pickup_city, drop_address, drop_city]):
+            return JsonResponse(
+                {"success": False, "error": "Missing required fields"},
+                status=400
+            )
 
-        except Exception as e:
-            print(f"❌ Exception in get_delivery_rate: {str(e)}")
-            import traceback
-            traceback.print_exc()
-            return JsonResponse({"success": False, "error": f"Server error: {str(e)}"}, status=500)
+        # 2️⃣ Distance calculation (internally validates addresses)
+        distance_km, error = get_distance_km(
+            pickup_address,
+            pickup_city,
+            drop_address,
+            drop_city
+        )
 
-    return JsonResponse({"success": False, "error": "Invalid HTTP method"}, status=405)
+        if error:
+            return JsonResponse(
+                {"success": False, "error": error},
+                status=400
+            )
+
+        # 3️⃣ Resolve rate slab
+        rate_entry = (
+            DeliveryDistanceRate.objects
+            .filter(min_distance_km__lte=distance_km)
+            .order_by("min_distance_km")
+            .last()
+        )
+
+        rate = float(rate_entry.rate) if rate_entry else 0.0
+
+        # 4️⃣ Success response (unchanged)
+        return JsonResponse({
+            "success": True,
+            "distance_km": round(distance_km, 2),
+            "rate": rate
+        })
+
+    except Exception:
+        # ❗ Log internally only (avoid leaking stacktrace to client)
+        import traceback
+        traceback.print_exc()
+
+        return JsonResponse(
+            {"success": False, "error": "Server error"},
+            status=500
+        )
 
 
 

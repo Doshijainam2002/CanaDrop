@@ -462,6 +462,14 @@ document.getElementById("pickupDay").setAttribute("min", today);
 // Global variables
 let allOrders = [];
 
+function getCSRFToken() {
+    return document.cookie
+        .split('; ')
+        .find(row => row.startsWith('csrftoken='))
+        ?.split('=')[1];
+}
+
+
 // Get cookie value by name
 function getCookie(name) {
     const value = `; ${document.cookie}`;
@@ -646,7 +654,52 @@ async function showCreateModal() {
     }
 }
 
-// Calculate and display rate when button is clicked
+// // Calculate and display rate when button is clicked
+// async function calculateRate() {
+//     const pickupAddress = document.getElementById('pickupAddress').value.trim();
+//     const pickupCity = document.getElementById('pickupCity').value;
+//     const dropAddress = document.getElementById('dropAddress').value.trim();
+//     const dropCity = document.getElementById('dropCity').value;
+//     const rateInput = document.getElementById('rate');
+//     const calculateBtn = document.getElementById('calculateRateBtn');
+    
+//     if (!pickupAddress || !pickupCity || !dropAddress || !dropCity) {
+//         showNotification('Please fill all address fields', 'warning');
+//         return;
+//     }
+    
+//     try {
+//         rateInput.value = 'Calculating...';
+//         calculateBtn.disabled = true;
+//         calculateBtn.innerHTML = '<span class="animate-spin inline-block w-4 h-4 border-2 border-white border-t-transparent rounded-full mr-2"></span>Calculating...';
+        
+//         const params = new URLSearchParams({
+//             pickupAddress,
+//             pickupCity,
+//             dropAddress,
+//             dropCity
+//         });
+        
+//         const response = await fetch(`/api/get-delivery-rate/?${params}`);
+//         const data = await response.json();
+        
+//         if (data.success) {
+//             rateInput.value = data.rate;
+//             showNotification(`Rate calculated: ${data.rate}`, 'success');
+//         } else {
+//             rateInput.value = '';
+//             showNotification(data.error || 'Failed to calculate rate', 'error');
+//         }
+//     } catch (error) {
+//         console.error('Error calculating rate:', error);
+//         rateInput.value = '';
+//         showNotification('Error calculating rate', 'error');
+//     } finally {
+//         calculateBtn.disabled = false;
+//         calculateBtn.innerHTML = 'Calculate Rate';
+//     }
+// }
+
 async function calculateRate() {
     const pickupAddress = document.getElementById('pickupAddress').value.trim();
     const pickupCity = document.getElementById('pickupCity').value;
@@ -654,27 +707,44 @@ async function calculateRate() {
     const dropCity = document.getElementById('dropCity').value;
     const rateInput = document.getElementById('rate');
     const calculateBtn = document.getElementById('calculateRateBtn');
-    
+
     if (!pickupAddress || !pickupCity || !dropAddress || !dropCity) {
         showNotification('Please fill all address fields', 'warning');
         return;
     }
-    
+
     try {
         rateInput.value = 'Calculating...';
         calculateBtn.disabled = true;
-        calculateBtn.innerHTML = '<span class="animate-spin inline-block w-4 h-4 border-2 border-white border-t-transparent rounded-full mr-2"></span>Calculating...';
-        
+        calculateBtn.innerHTML =
+            '<span class="animate-spin inline-block w-4 h-4 border-2 border-white border-t-transparent rounded-full mr-2"></span>Calculating...';
+
         const params = new URLSearchParams({
             pickupAddress,
             pickupCity,
             dropAddress,
             dropCity
         });
-        
-        const response = await fetch(`/api/get-delivery-rate/?${params}`);
+
+        const response = await fetch(`/api/get-delivery-rate/?${params}`, {
+            method: 'GET',
+            credentials: 'include',              // 🔐 SEND JWT COOKIE
+            headers: {
+                'X-CSRFToken': getCSRFToken(),   // 🔐 CSRF PROTECTION
+            }
+        });
+
+        // 🔐 Session expired → redirect to login
+        if (response.status === 401) {
+            showNotification('Session expired. Please login again.', 'warning');
+            setTimeout(() => {
+                window.location.href = '/pharmacyLogin/';
+            }, 1500);
+            return;
+        }
+
         const data = await response.json();
-        
+
         if (data.success) {
             rateInput.value = data.rate;
             showNotification(`Rate calculated: ${data.rate}`, 'success');
@@ -682,6 +752,7 @@ async function calculateRate() {
             rateInput.value = '';
             showNotification(data.error || 'Failed to calculate rate', 'error');
         }
+
     } catch (error) {
         console.error('Error calculating rate:', error);
         rateInput.value = '';
@@ -691,6 +762,7 @@ async function calculateRate() {
         calculateBtn.innerHTML = 'Calculate Rate';
     }
 }
+
 
 // Check if all address fields are filled to show/hide calculate button
 function checkAddressFields() {
