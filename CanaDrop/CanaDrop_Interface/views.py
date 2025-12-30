@@ -3533,7 +3533,7 @@ def generate_invoice_pdf(invoice, pharmacy, orders_data, subtotal, hst_amount, t
 
     <b>3. Company Cheque</b><br/>
     Cheques should be made payable to:<br/>
-    <b>{CORPORATION_NAME}</b><br/><br/>
+    <b>{settings.CORPORATION_NAME}</b><br/><br/>
     Please include the invoice number on the cheque memo line.<br/>
     Mailing address for cheque payments will be available in the Pharmacy Portal under the Invoices section.<br/><br/>
 
@@ -3579,7 +3579,7 @@ def generate_invoice_pdf(invoice, pharmacy, orders_data, subtotal, hst_amount, t
     
     story.append(Paragraph("Questions or Concerns?", section_header_style))
     
-    support_text = '''
+    support_text = f'''
     Our billing and support team is available to assist with any questions about this invoice or your delivery services. We're committed to providing exceptional service and transparent billing.<br/><br/>
     <b>Email:</b> {settings.EMAIL_HELP_DESK}<br/>
     <b>Phone:</b> Available through pharmacy portal<br/>
