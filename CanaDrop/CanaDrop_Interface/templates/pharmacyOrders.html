@@ -258,17 +258,12 @@
     return Intl.DateTimeFormat().resolvedOptions().timeZone;
   }
 
-  function normalizeUtc(isoLike) {
-    if (!isoLike) return null;
-    let s = String(isoLike).trim();
-    // already tz-tagged
-    if (/[zZ]$/.test(s) || /[+\-]\d{2}:\d{2}$/.test(s)) return s;
-    // space -> T
-    if (/^\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2}(\.\d+)?$/.test(s)) s = s.replace(' ', 'T');
-    // plain datetime without tz -> append Z (treat as UTC)
-    if (/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}(\.\d+)?$/.test(s)) s = s + 'Z';
-    return s;
-  }
+  function getCSRFToken() {
+    return document.cookie
+        .split('; ')
+        .find(row => row.startsWith('csrftoken='))
+        ?.split('=')[1];
+}
 
   // Robust date-only formatter: if a datetime slips in, we strip time part first
   function formatPlainDate(s, locale = undefined) {
@@ -293,15 +288,6 @@
       timeZone: 'UTC'
     }).format(dt);
   }
-
-  function formatUtcToLocal(utcString, opts = { dateStyle: 'medium', timeStyle: 'short', hour12: true }) {
-    const norm = normalizeUtc(utcString);
-    if (!norm) return 'N/A';
-    const d = new Date(norm);
-    if (isNaN(d)) return 'N/A';
-    return new Intl.DateTimeFormat(undefined, { timeZone: userTimeZone(), ...opts }).format(d);
-  }
-
 
 // Global variables
 let currentPharmacyId = null;
@@ -377,45 +363,41 @@ navLinks.forEach(link => {
 });
 });
 
+
+
 // Load pharmacy orders from API
 async function loadPharmacyOrders() {
     try {
-        
         showLoading(true);
-        
+
         const apiUrl = `/api/pharmacy/${currentPharmacyId}/orders/`;
-        
-        
+
         const response = await fetch(apiUrl, {
             method: 'GET',
+            credentials: 'include',               // 🔐 SEND JWT / AUTH COOKIES
             headers: {
                 'Content-Type': 'application/json',
+                'X-CSRFToken': getCSRFToken(),    // 🔐 CSRF PROTECTION
             }
         });
-        
 
-        
         if (!response.ok) {
             const errorText = await response.text();
             console.error('Response error text:', errorText);
             throw new Error(`HTTP error! status: ${response.status}`);
         }
-        
+
         const data = await response.json();
-       
-        
+
         if (data.success) {
-            ordersData = data.orders;
-            
             ordersData = data.orders;
             filteredOrders = [...ordersData];
             renderPaginatedOrders();
-
         } else {
             console.error('API returned success=false:', data.error);
             throw new Error(data.error || 'Failed to load orders');
         }
-        
+
     } catch (error) {
         console.error('Error loading orders:', error);
         console.error('Error stack:', error.stack);
@@ -424,6 +406,7 @@ async function loadPharmacyOrders() {
         showLoading(false);
     }
 }
+
 
 // Helper function to get status badge (add this before renderOrders function)
 function getStatusBadge(status) {
@@ -1098,9 +1081,10 @@ function triggerFileUpload(orderNumber) {
     }
 }
 
+
 // Handle image upload for pharmacy handover
 async function handleImageUpload(event, orderNumber, driverId) {
-  
+    console.log("📤 Starting upload process...");
     
     const file = event.target.files[0];
     if (!file || !file.type.startsWith('image/')) {
@@ -1109,7 +1093,7 @@ async function handleImageUpload(event, orderNumber, driverId) {
         return;
     }
 
-  
+    console.log(`File selected: ${file.name}, Size: ${file.size} bytes, Type: ${file.type}`);
 
     try {
         showLoading(true, 'Uploading image...');
@@ -1119,21 +1103,25 @@ async function handleImageUpload(event, orderNumber, driverId) {
         formData.append('order_number', orderNumber);
         formData.append('pharmacy_id', currentPharmacyId);
         formData.append('pharmacy_name', currentPharmacyName);
+        formData.append('csrfmiddlewaretoken', getCSRFToken());  // 🔐 CSRF token in body
         
         // Add driver_id if available
         if (driverId && driverId !== 'null' && driverId !== '') {
-            
+            console.log(`Driver ID included: ${driverId}`);
             formData.append('driver_id', driverId);
+        } else {
+            console.log('No driver ID provided');
         }
         
-       
+        console.log('📦 Sending request to /api/upload-handover-image/');
         
         const response = await fetch('/api/upload-handover-image/', {
             method: 'POST',
-            body: formData
+            credentials: 'include',  // 🔐 Send authentication cookies
+            body: formData  // ✅ No headers - FormData sets Content-Type automatically
         });
         
-        
+        console.log(`📥 Response received: ${response.status} ${response.statusText}`);
         
         if (!response.ok) {
             const errorText = await response.text();
@@ -1142,10 +1130,10 @@ async function handleImageUpload(event, orderNumber, driverId) {
         }
         
         const data = await response.json();
-        
+        console.log('✅ Response data:', data);
         
         if (data.success) {
-           
+            console.log('✅ Upload successful!');
             showSuccess('Handover image uploaded successfully!');
             // Reload orders to reflect changes
             await loadPharmacyOrders();
@@ -1155,7 +1143,7 @@ async function handleImageUpload(event, orderNumber, driverId) {
         }
         
     } catch (error) {
-        console.error('Error uploading image:', error);
+        console.error('❌ Error uploading image:', error);
         console.error('Error stack:', error.stack);
         showError('Failed to upload image: ' + error.message);
     } finally {
@@ -1215,12 +1203,23 @@ async function refreshOrders() {
 }
 
   // Keep these wrappers and use them consistently
-  function formatDate(dateOnly) {
+function formatDate(dateOnly) {
     return formatPlainDate(dateOnly);
-  }
-  function formatDateTime(utcString) {
-    return formatUtcToLocal(utcString, { dateStyle: 'medium', timeStyle: 'short', hour12: true });
-  }
+}
+
+function formatDateTime(localDatetimeString) {
+    if (!localDatetimeString) return 'N/A';
+    
+    // Parse as-is without timezone conversion (it's already local)
+    const dt = new Date(localDatetimeString);
+    if (isNaN(dt)) return 'N/A';
+    
+    return new Intl.DateTimeFormat(undefined, {
+        dateStyle: 'medium',
+        timeStyle: 'short',
+        hour12: true
+    }).format(dt);
+}
 
 function capitalizeFirst(str) {
     if (!str) return '';

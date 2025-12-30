@@ -254,6 +254,14 @@ function formatStoreHours(hours) {
     return '(Hours N/A)';
 }
 
+function getCSRFToken() {
+    return document.cookie
+        .split('; ')
+        .find(row => row.startsWith('csrftoken='))
+        ?.split('=')[1];
+}
+
+
 
 function showNotification(message, type = 'info') {
     const notification = document.createElement('div');
@@ -337,17 +345,19 @@ function getStatusInfo(status) {
     return statusMap[status] || statusMap['accepted'];
 }
 
-async function loadDeliveries() {
-    const driverId = getCookie('driverId');
-    if (!driverId) {
-        showNotification('Driver ID not found', 'error');
-        return;
-    }
 
+async function loadDeliveries() {
     try {
-        const response = await fetch(`/api/driver-orders/?driverId=${driverId}`);
+        const response = await fetch('/api/driver-orders/', {
+            method: 'GET',
+            credentials: 'include', // 🔐 send authToken + csrftoken cookies
+            headers: {
+                'X-CSRFToken': getCSRFToken()
+            }
+        });
+
         const data = await response.json();
-        
+
         if (response.ok) {
             deliveries = data.orders.map(order => ({
                 id: order.id,
@@ -355,8 +365,8 @@ async function loadDeliveries() {
                 store_hours: order.store_hours_for_pickup_day,
                 customer_name: order.customer_name,
                 customer_phone: order.customer_phone,
-                alternate_contact: order.alternate_contact || null,  // ADD THIS
-                delivery_notes: order.delivery_notes || null,        // ADD THIS
+                alternate_contact: order.alternate_contact || null,
+                delivery_notes: order.delivery_notes || null,
                 pickup_address: order.pickup_address,
                 pickup_city: order.pickup_city,
                 dropoff_address: order.drop_address,
@@ -373,7 +383,6 @@ async function loadDeliveries() {
             }));
 
             renderDeliveries();
-            
         } else {
             showNotification('Failed to load deliveries', 'error');
         }
@@ -1032,43 +1041,95 @@ function uploadPhoto(orderId, type) {
     input.click();
 }
 
-async function submitPhoto(orderId, type, file) {
-    const driverId = getCookie('driverId');
-    const delivery = deliveries.find(d => d.id == orderId);
+// async function submitPhoto(orderId, type, file) {
+//     const driverId = getCookie('driverId');
+//     const delivery = deliveries.find(d => d.id == orderId);
     
-    if (!driverId || !delivery) {
+//     if (!driverId || !delivery) {
+//         showNotification('Error: Missing data', 'error');
+//         return;
+//     }
+
+//     const formData = new FormData();
+//     formData.append('driverId', driverId);
+//     formData.append('orderId', orderId);
+//     formData.append('pharmacyId', delivery.pharmacy_id);
+//     formData.append('image', file);
+
+//     const endpoint = type === 'pickup' ? '/api/driver-pickup-proof/' : '/api/driver-delivery-proof/';
+    
+//     try {
+//         const response = await fetch(endpoint, {
+//             method: 'POST',
+//             body: formData
+//         });
+
+//         const data = await response.json();
+        
+//         if (response.ok) {
+//             showNotification(data.message, 'success');
+//             await loadDeliveries();
+//             closeModal();
+//         } else {
+//             showNotification('Failed to upload photo', 'error');
+//         }
+//     } catch (error) {
+//         console.error('Error uploading photo:', error);
+//         showNotification('Error uploading photo', 'error');
+//     }
+// }
+
+
+async function submitPhoto(orderId, type, file) {
+    const delivery = deliveries.find(d => d.id == orderId);
+
+    if (!delivery || !file) {
         showNotification('Error: Missing data', 'error');
         return;
     }
 
     const formData = new FormData();
-    formData.append('driverId', driverId);
+    // ⚠️ driverId is NO LONGER trusted by BE, but keeping it does not break anything
+    // If you want, you can safely remove this later
+    const driverId = getCookie('driverId');
+    if (driverId) {
+        formData.append('driverId', driverId);
+    }
+
     formData.append('orderId', orderId);
     formData.append('pharmacyId', delivery.pharmacy_id);
     formData.append('image', file);
 
-    const endpoint = type === 'pickup' ? '/api/driver-pickup-proof/' : '/api/driver-delivery-proof/';
-    
+    const endpoint =
+        type === 'pickup'
+            ? '/api/driver-pickup-proof/'
+            : '/api/driver-delivery-proof/';
+
     try {
         const response = await fetch(endpoint, {
             method: 'POST',
+            credentials: 'include', // ✅ send auth cookies (JWT)
+            headers: {
+                'X-CSRFToken': getCSRFToken(), // ✅ CSRF protection
+            },
             body: formData
         });
 
         const data = await response.json();
-        
-        if (response.ok) {
-            showNotification(data.message, 'success');
+
+        if (response.ok && data.success) {
+            showNotification(data.message || 'Photo uploaded successfully', 'success');
             await loadDeliveries();
             closeModal();
         } else {
-            showNotification('Failed to upload photo', 'error');
+            showNotification(data.error || 'Failed to upload photo', 'error');
         }
     } catch (error) {
         console.error('Error uploading photo:', error);
         showNotification('Error uploading photo', 'error');
     }
 }
+
 
 function navigate(address) {
     const encodedAddress = encodeURIComponent(address);
@@ -1226,63 +1287,126 @@ function clearSignature(orderId) {
     showNotification('Signature cleared', 'info');
 }
 
+// async function submitSignature(orderId) {
+//     const canvasData = signatureCanvases[orderId];
+//     if (!canvasData) {
+//         showNotification('Signature canvas not found', 'error');
+//         return;
+//     }
+    
+//     const { canvas } = canvasData;
+    
+//     // Check if canvas is empty
+//     const ctx = canvas.getContext('2d');
+//     const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
+//     const isEmpty = !imageData.data.some(channel => channel !== 0);
+    
+//     if (isEmpty) {
+//         showNotification('Please provide a signature first', 'error');
+//         return;
+//     }
+    
+//     try {
+//         showNotification('Uploading signature...', 'info');
+        
+//         // Convert canvas directly to base64 (this is more reliable than blob)
+//         const base64data = canvas.toDataURL('image/png');
+        
+//         // Log for debugging (remove after testing)
+//         console.log('Base64 data length:', base64data.length);
+//         console.log('Base64 starts with:', base64data.substring(0, 50));
+        
+//         // Prepare form data
+//         const formData = new FormData();
+//         formData.append('orderId', orderId);
+//         formData.append('signature', base64data);
+        
+//         const response = await fetch('/api/upload-signature-acknowledgement/', {
+//             method: 'POST',
+//             headers: {
+//                 'X-CSRFToken': getCookie('csrftoken')
+//             },
+//             body: formData
+//         });
+        
+//         const data = await response.json();
+        
+//         if (response.ok && data.success) {
+//             showNotification('Signature saved successfully!', 'success');
+            
+//             // Update the delivery in local array
+//             const delivery = deliveries.find(d => d.id == orderId);
+//             if (delivery) {
+//                 delivery.signature_ack_url = data.acknowledgement_url;
+//             }
+            
+//             // Reload deliveries to refresh UI
+//             await loadDeliveries();
+            
+//             // Close and reopen modal to show updated state
+//             closeModal();
+//             setTimeout(() => viewDelivery(orderId), 300);
+//         } else {
+//             console.error('Server error:', data);
+//             showNotification(data.error || 'Failed to save signature', 'error');
+//         }
+//     } catch (error) {
+//         console.error('Error submitting signature:', error);
+//         showNotification('Error submitting signature', 'error');
+//     }
+// }
+
+
 async function submitSignature(orderId) {
     const canvasData = signatureCanvases[orderId];
     if (!canvasData) {
         showNotification('Signature canvas not found', 'error');
         return;
     }
-    
+
     const { canvas } = canvasData;
-    
+
     // Check if canvas is empty
     const ctx = canvas.getContext('2d');
     const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
     const isEmpty = !imageData.data.some(channel => channel !== 0);
-    
+
     if (isEmpty) {
         showNotification('Please provide a signature first', 'error');
         return;
     }
-    
+
     try {
         showNotification('Uploading signature...', 'info');
-        
-        // Convert canvas directly to base64 (this is more reliable than blob)
+
+        // Convert canvas to base64
         const base64data = canvas.toDataURL('image/png');
-        
-        // Log for debugging (remove after testing)
-        console.log('Base64 data length:', base64data.length);
-        console.log('Base64 starts with:', base64data.substring(0, 50));
-        
-        // Prepare form data
+
         const formData = new FormData();
         formData.append('orderId', orderId);
         formData.append('signature', base64data);
-        
+
         const response = await fetch('/api/upload-signature-acknowledgement/', {
             method: 'POST',
+            credentials: 'include', // 🔐 REQUIRED for JWT cookie
             headers: {
-                'X-CSRFToken': getCookie('csrftoken')
+                'X-CSRFToken': getCSRFToken() // ✅ use your helper
             },
             body: formData
         });
-        
+
         const data = await response.json();
-        
+
         if (response.ok && data.success) {
             showNotification('Signature saved successfully!', 'success');
-            
-            // Update the delivery in local array
+
             const delivery = deliveries.find(d => d.id == orderId);
             if (delivery) {
                 delivery.signature_ack_url = data.acknowledgement_url;
             }
-            
-            // Reload deliveries to refresh UI
+
             await loadDeliveries();
-            
-            // Close and reopen modal to show updated state
+
             closeModal();
             setTimeout(() => viewDelivery(orderId), 300);
         } else {
@@ -1294,6 +1418,9 @@ async function submitSignature(orderId) {
         showNotification('Error submitting signature', 'error');
     }
 }
+
+
+
 
 async function verifyCustomerId(orderId) {
     const driverId = getCookie('driverId');

@@ -200,6 +200,21 @@ JWT_SECRET_KEY = os.getenv("JWT_SECRET_KEY")
 if not JWT_SECRET_KEY:
     raise RuntimeError("Missing JWT_SECRET_KEY in .env")
 
+
+# -------------------------------------------------
+# LOGO URL's
+# -------------------------------------------------
+LOGO_PATH = os.path.join(BASE_DIR, "Logo", "Website_Logo_No_Background.png")
+LOGO_URL = "https://canalogistix.s3.us-east-2.amazonaws.com/Logo/CanaLogistiX_Logo_BG.png"
+
+# -------------------------------------------------
+# BUSINESS INFORMATION
+# -------------------------------------------------
+COMPANY_OPERATING_NAME = os.getenv("COMPANY_OPERATING_NAME")
+COMPANY_SUB_GROUP_NAME = os.getenv("COMPANY_SUB_GROUP_NAME")
+CORPORATION_NAME = os.getenv("CORPORATION_NAME")
+COMPANY_BUSINESS_NUMBER = os.getenv("COMPANY_BUSINESS_NUMBER")
+
 # -------------------------------------------------
 # LOGGING
 # -------------------------------------------------

@@ -108,6 +108,14 @@
     <script>
         let showPassword = false;
 
+        function getCSRFToken() {
+            return document.cookie
+                .split('; ')
+                .find(row => row.startsWith('csrftoken='))
+                ?.split('=')[1];
+        }
+
+
         function togglePassword() {
             const passwordInput = document.getElementById('password');
             const eyeIcon = document.getElementById('eyeIcon');
@@ -133,88 +141,141 @@
         }
 
 
-        function handleLogin() {
+        // function handleLogin() {
+        //     const rawEmail = document.getElementById('email').value.trim();
+        //     const password = document.getElementById('password').value.trim();
+
+        //     // Basic presence checks
+        //     if (!rawEmail || !password) {
+        //         // Use your modal/toast instead of alert
+        //         showModal('fail'); // optionally extend modal to show a custom message
+        //         return;
+        //     }
+
+        //     // Email format validation
+        //     const isValidEmail = (email) => /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email.toLowerCase());
+        //     if (!isValidEmail(rawEmail)) {
+        //         showModal('fail'); // optionally pass a message if your modal supports it
+        //         return;
+        //     }
+
+        //     // Normalize email (trim + lowercase)
+        //     const email = rawEmail.toLowerCase();
+
+        //     fetch('/api/driver/login/', {
+        //         method: 'POST',
+        //         headers: { 'Content-Type': 'application/json' },
+        //         body: JSON.stringify({ email, password })
+        //     })
+        //     .then(response => response.json())
+        //     .then(data => {
+        //         if (data.success) {
+        //             // Save driverId in cookies (expires in 1 day)
+        //             document.cookie = `driverId=${data.id};path=/;max-age=${24*60*60}`;
+
+        //             // Show success modal
+        //             showModal('success');
+
+        //             // Close modal and redirect after 3 seconds
+        //             setTimeout(() => {
+        //                 closeModal();
+        //                 window.location.href = '/driverDashboard/';
+        //             }, 3000);
+        //         } else {
+        //             showModal('fail');
+        //         }
+        //     })
+        //     .catch(err => {
+        //         console.error('Login error:', err);
+        //         showModal('fail');
+        //     });
+        // }
+
+        async function handleLogin() {
             const rawEmail = document.getElementById('email').value.trim();
             const password = document.getElementById('password').value.trim();
 
             // Basic presence checks
             if (!rawEmail || !password) {
-                // Use your modal/toast instead of alert
-                showModal('fail'); // optionally extend modal to show a custom message
+                showModal('fail', 'Please enter both email and password');
                 return;
             }
 
             // Email format validation
-            const isValidEmail = (email) => /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email.toLowerCase());
             if (!isValidEmail(rawEmail)) {
-                showModal('fail'); // optionally pass a message if your modal supports it
+                showModal('fail', 'Please enter a valid email address');
                 return;
             }
 
             // Normalize email (trim + lowercase)
-            const email = rawEmail.toLowerCase();
+            const email = normalizeEmail(rawEmail);
 
-            fetch('/api/driver/login/', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ email, password })
-            })
-            .then(response => response.json())
-            .then(data => {
+            try {
+                const response = await fetch('/api/driver/login/', {
+                    method: 'POST',
+                    credentials: 'include',  // 🔐 Required for JWT cookie
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'X-CSRFToken': getCSRFToken()  // 🔐 CSRF protection
+                    },
+                    body: JSON.stringify({ email, password })
+                });
+
+                const data = await response.json();
+
                 if (data.success) {
-                    // Save driverId in cookies (expires in 1 day)
+                    // ✅ Save driverId in cookies (expires in 1 day)
                     document.cookie = `driverId=${data.id};path=/;max-age=${24*60*60}`;
 
                     // Show success modal
                     showModal('success');
 
-                    // Close modal and redirect after 3 seconds
+                    // Close modal and redirect after 2 seconds
                     setTimeout(() => {
                         closeModal();
                         window.location.href = '/driverDashboard/';
-                    }, 3000);
+                    }, 2000);
                 } else {
-                    showModal('fail');
+                    showModal('fail', data.message || 'Invalid email or password');
                 }
-            })
-            .catch(err => {
+            } catch (err) {
                 console.error('Login error:', err);
-                showModal('fail');
-            });
-        }
-
-
-        function showModal(status) {
-            const modal = document.getElementById('modal');
-            const modalContent = document.getElementById('modalContent');
-
-            if (status === 'success') {
-                modalContent.innerHTML = `
-                    <svg class="h-16 w-16 text-green-500 mx-auto mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/>
-                    </svg>
-                    <h3 class="text-xl font-bold text-slate-100 mb-2">Login Successful!</h3>
-                    <p class="text-slate-300 mb-4">Welcome back to CanaLogistiX</p>
-                    <button onclick="closeModal()" class="bg-emerald-600 text-white px-6 py-2 rounded-lg hover:bg-emerald-700 transition-colors">
-                        Continue
-                    </button>
-                `;
-            } else {
-                modalContent.innerHTML = `
-                    <svg class="h-16 w-16 text-red-500 mx-auto mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 14l2-2m0 0l2-2m-2 2l-2-2m2 2l2 2m7-2a9 9 0 11-18 0 9 9 0 0118 0z"/>
-                    </svg>
-                    <h3 class="text-xl font-bold text-slate-100 mb-2">Login Failed</h3>
-                    <p class="text-slate-300 mb-4">Invalid email or password. Please try again.</p>
-                    <button onclick="closeModal()" class="bg-red-600 text-white px-6 py-2 rounded-lg hover:bg-red-700 transition-colors">
-                        Try Again
-                    </button>
-                `;
+                showModal('fail', 'Connection error. Please try again.');
             }
-
-            modal.classList.remove('hidden');
         }
 
+    
+
+    function showModal(status, customMessage = null) {
+        const modal = document.getElementById('modal');
+        const modalContent = document.getElementById('modalContent');
+
+        if (status === 'success') {
+            modalContent.innerHTML = `
+                <svg class="h-16 w-16 text-green-500 mx-auto mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/>
+                </svg>
+                <h3 class="text-xl font-bold text-slate-100 mb-2">Login Successful!</h3>
+                <p class="text-slate-300 mb-4">${customMessage || 'Welcome back to CanaLogistiX'}</p>
+                <button onclick="closeModal()" class="bg-emerald-600 text-white px-6 py-2 rounded-lg hover:bg-emerald-700 transition-colors">
+                    Continue
+                </button>
+            `;
+        } else {
+            modalContent.innerHTML = `
+                <svg class="h-16 w-16 text-red-500 mx-auto mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 14l2-2m0 0l2-2m-2 2l-2-2m2 2l2 2m7-2a9 9 0 11-18 0 9 9 0 0118 0z"/>
+                </svg>
+                <h3 class="text-xl font-bold text-slate-100 mb-2">Login Failed</h3>
+                <p class="text-slate-300 mb-4">${customMessage || 'Invalid email or password. Please try again.'}</p>
+                <button onclick="closeModal()" class="bg-red-600 text-white px-6 py-2 rounded-lg hover:bg-red-700 transition-colors">
+                    Try Again
+                </button>
+            `;
+        }
+
+        modal.classList.remove('hidden');
+    }
         function closeModal() {
             document.getElementById('modal').classList.add('hidden');
         }

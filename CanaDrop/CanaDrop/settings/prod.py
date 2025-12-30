@@ -176,6 +176,14 @@ GCP_PROOF_FOLDER = "Proof"
 LOGO_PATH = os.path.join(BASE_DIR, "Logo", "Website_Logo_No_Background.png")
 LOGO_URL = "https://canalogistix.s3.us-east-2.amazonaws.com/Logo/CanaLogistiX_Logo_BG.png"
 
+# ----------------------------
+# BUSINESS INFORMATION
+# ----------------------------
+COMPANY_OPERATING_NAME = secrets.get("COMPANY_OPERATING_NAME")
+COMPANY_SUB_GROUP_NAME = secrets.get("COMPANY_SUB_GROUP_NAME")
+CORPORATION_NAME = secrets.get("CORPORATION_NAME")
+COMPANY_BUSINESS_NUMBER = secrets.get("COMPANY_BUSINESS_NUMBER")
+
 BRAND_COLORS = {
     'primary': '#0d9488',
     'primary_dark': '#0f766e',
