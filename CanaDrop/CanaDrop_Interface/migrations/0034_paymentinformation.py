@@ -14,19 +14,39 @@ class Migration(migrations.Migration):
             name='PaymentInformation',
             fields=[
                 ('id', models.BigAutoField(auto_created=True, primary_key=True, serialize=False, verbose_name='ID')),
-                ('payment_type', models.CharField(choices=[('eft', 'Electronic Funds Transfer (EFT)'), ('cheque', 'Cheque'), ('interac', 'Interac e-Transfer'), ('wire', 'Wire Transfer'), ('other', 'Other')], help_text='Type of payment method', max_length=50)),
-                ('label', models.CharField(help_text="Display name (e.g. 'Primary EFT Account')", max_length=255)),
+                ('payment_type', models.CharField(
+                    choices=[
+                        ('eft', 'Electronic Funds Transfer (EFT)'),
+                        ('cheque', 'Cheque'),
+                        ('interac', 'Interac e-Transfer'),
+                        ('wire', 'Wire Transfer'),
+                        ('other', 'Other')
+                    ],
+                    help_text='Type of payment method',
+                    max_length=50
+                )),
+                ('label', models.CharField(
+                    help_text="Display name (e.g. 'Primary EFT Account')",
+                    max_length=255
+                )),
                 ('data', models.JSONField(help_text='JSON payload containing payment details')),
-                ('is_active', models.BooleanField(default=True, help_text='Only one active record per payment_type should exist')),
+                ('is_active', models.BooleanField(
+                    default=True,
+                    help_text='Only one active record per payment_type should exist'
+                )),
                 ('created_at', models.DateTimeField(auto_now_add=True)),
                 ('updated_at', models.DateTimeField(auto_now=True)),
-                ('updated_by', models.CharField(blank=True, help_text='Admin user who last updated this', max_length=255, null=True)),
+                ('updated_by', models.CharField(
+                    blank=True,
+                    help_text='Admin user who last updated this',
+                    max_length=255,
+                    null=True
+                )),
             ],
             options={
                 'verbose_name': 'Payment Information',
                 'verbose_name_plural': 'Payment Information',
                 'ordering': ['payment_type', '-is_active', '-updated_at'],
-                'constraints': [models.UniqueConstraint(check=models.Q(('is_active', True)), fields=('payment_type',), name='unique_active_payment_type')],
             },
         ),
     ]
