@@ -216,6 +216,12 @@ CORPORATION_NAME = os.getenv("CORPORATION_NAME")
 COMPANY_BUSINESS_NUMBER = os.getenv("COMPANY_BUSINESS_NUMBER")
 
 # -------------------------------------------------
+# PROVINCIAL TAX INFORMATION
+# -------------------------------------------------
+ONTARIO_HST_RATE = "0.13"
+ONTARIO_HST_PERCENT = "13"
+
+# -------------------------------------------------
 # LOGGING
 # -------------------------------------------------
 LOGGING = {

@@ -1311,7 +1311,7 @@ def upload_handover_image_api(request):
 <html lang="en">
   <head>
     <meta charset="utf-8">
-    <title>Package Handover Confirmation • CanaLogistiX</title>
+    <title>Package Handover Confirmation • {settings.COMPANY_OPERATING_NAME}</title>
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <style>
       @media (prefers-color-scheme: dark) {{
@@ -1336,7 +1336,7 @@ def upload_handover_image_api(request):
                   <tr>
                     <td align="left">
                       <img src="{logo_url}"
-                           alt="CanaLogistiX"
+                           alt="{settings.COMPANY_OPERATING_NAME}"
                            width="64"
                            height="64"
                            style="display:block;border:0;outline:none;text-decoration:none;border-radius:50%;object-fit:cover;">
@@ -1496,7 +1496,7 @@ def upload_handover_image_api(request):
                   <tr>
                     <td style="padding:12px 16px;">
                       <p style="margin:0;font:400 12px/1.6 system-ui,-apple-system,'Segoe UI',Roboto,Helvetica,Arial;color:#64748b;">
-                        Thank you for being a valued Delivery Partner with CanaLogistiX!
+                        Thank you for being a valued Delivery Partner with {settings.COMPANY_OPERATING_NAME}!
                       </p>
                     </td>
                   </tr>
@@ -1507,7 +1507,7 @@ def upload_handover_image_api(request):
           </table>
 
           <p style="margin:14px 0 0;font:400 12px/1.6 system-ui,-apple-system,'Segoe UI',Roboto,Helvetica,Arial;color:#94a3b8;">
-            © {timezone.now().year} CanaLogistiX - Cana Group of Companies. All rights reserved.
+            © {timezone.now().year} {settings.COMPANY_OPERATING_NAME} - {settings.COMPANY_SUB_GROUP_NAME}. All rights reserved.
           </p>
         </td>
       </tr>
@@ -1516,7 +1516,7 @@ def upload_handover_image_api(request):
 </html>
 """
                 text = (
-                    f"Package Handover Confirmation - CanaLogistiX\n\n"
+                    f"Package Handover Confirmation - {settings.COMPANY_OPERATING_NAME}\n\n"
                     f"Hello {driver.name},\n\n"
                     f"The pharmacy {pharmacy.name} has confirmed handover of order #{order.id} to you. "
                     f"The package is now ready for delivery to the customer.\n\n"
@@ -1797,7 +1797,7 @@ def assign_driver(request):
 <html lang="en">
   <head>
     <meta charset="utf-8">
-    <title>Order Accepted • CanaLogistiX</title>
+    <title>Order Accepted • {settings.COMPANY_OPERATING_NAME}</title>
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <style>
       @media (prefers-color-scheme: dark) {{
@@ -1822,7 +1822,7 @@ def assign_driver(request):
                 <tr>
                     <td align="left">
                     <img src="{logo_url}"
-                        alt="CanaLogistiX"
+                        alt="{settings.COMPANY_OPERATING_NAME}"
                         width="64"
                         height="64"
                         style="display:block;border:0;outline:none;text-decoration:none;border-radius:50%;object-fit:cover;">
@@ -1953,7 +1953,7 @@ def assign_driver(request):
                   <tr>
                     <td style="padding:12px 16px;">
                       <p style="margin:0;font:400 12px/1.6 system-ui,-apple-system,'Segoe UI',Roboto,Helvetica,Arial;color:#64748b;">
-                        Drive safe and thank you for being part of the CanaLogistiX team!
+                        Drive safe and thank you for being part of the {settings.COMPANY_OPERATING_NAME} team!
                       </p>
                     </td>
                   </tr>
@@ -1964,7 +1964,7 @@ def assign_driver(request):
           </table>
 
           <p style="margin:14px 0 0;font:400 12px/1.6 system-ui,-apple-system,'Segoe UI',Roboto,Helvetica,Arial;color:#94a3b8;">
-            © {timezone.now().year} CanaLogistiX - Cana Group of Companies. All rights reserved.
+            © {timezone.now().year} {settings.COMPANY_OPERATING_NAME} - {settings.COMPANY_SUB_GROUP_NAME}. All rights reserved.
           </p>
         </td>
       </tr>
@@ -1973,7 +1973,7 @@ def assign_driver(request):
 </html>
 """
                 text = (
-                    f"Order Accepted - CanaLogistiX\n\n"
+                    f"Order Accepted - {settings.COMPANY_OPERATING_NAME}\n\n"
                     f"Hi {driver.name},\n\n"
                     f"You've successfully accepted delivery order #{order.id}.\n\n"
                     f"ORDER DETAILS:\n"
@@ -1995,7 +1995,7 @@ def assign_driver(request):
                 )
 
                 _send_html_email_operations(
-                    subject=f"Order #{order.id} Accepted • CanaLogistiX Delivery",
+                    subject=f"Order #{order.id} Accepted • {settings.COMPANY_OPERATING_NAME}",
                     to_email=driver.email,
                     html=html,
                     text_fallback=text,
@@ -2024,7 +2024,7 @@ def assign_driver(request):
             <html lang="en">
             <head>
                 <meta charset="utf-8">
-                <title>Delivery Partner Assigned • CanaLogistiX</title>
+                <title>Delivery Partner Assigned • {settings.COMPANY_OPERATING_NAME}</title>
                 <meta name="viewport" content="width=device-width, initial-scale=1">
                 <style>
                 @media (prefers-color-scheme: dark) {{
@@ -2044,7 +2044,7 @@ def assign_driver(request):
                             <table width="100%" cellspacing="0" cellpadding="0" border="0">
                             <tr>
                                 <td align="left">
-                                <img src="{logo_url}" alt="CanaLogistiX" width="64" height="64" style="display:block;border:0;outline:none;text-decoration:none;border-radius:50%;object-fit:cover;">
+                                <img src="{logo_url}" alt="{settings.COMPANY_OPERATING_NAME}" width="64" height="64" style="display:block;border:0;outline:none;text-decoration:none;border-radius:50%;object-fit:cover;">
                                 </td>
                                 <td align="right" style="font:600 16px/1.2 system-ui,-apple-system,'Segoe UI',Roboto,Helvetica,Arial;color:#e6fffb;">
                                 Delivery Partner Assigned
@@ -2196,7 +2196,7 @@ def assign_driver(request):
                             <tr>
                                 <td style="padding:12px 16px;">
                                 <p style="margin:0;font:400 12px/1.6 system-ui,-apple-system,'Segoe UI',Roboto,Helvetica,Arial;color:#64748b;">
-                                    Thank you for trusting CanaLogistiX with your deliveries!
+                                    Thank you for trusting {settings.COMPANY_OPERATING_NAME} with your deliveries!
                                 </p>
                                 </td>
                             </tr>
@@ -2207,7 +2207,7 @@ def assign_driver(request):
                     </table>
                     
                     <p style="margin:14px 0 0;font:400 12px/1.6 system-ui,-apple-system,'Segoe UI',Roboto,Helvetica,Arial;color:#94a3b8;">
-                        © {timezone.now().year} CanaLogistiX - Cana Group of Companies. All rights reserved.
+                        © {timezone.now().year} {settings.COMPANY_OPERATING_NAME} - {settings.COMPANY_SUB_GROUP_NAME}. All rights reserved.
                     </p>
                     </td>
                 </tr>
@@ -2216,7 +2216,7 @@ def assign_driver(request):
             </html>
             """
                 pharmacy_text = (
-                    f"Delivery Partner Assigned - CanaLogistiX\n\n"
+                    f"Delivery Partner Assigned - {settings.COMPANY_OPERATING_NAME}\n\n"
                     f"Hello {order.pharmacy.name},\n\n"
                     f"Your delivery order #{order.id} has been accepted by a delivery partner.\n\n"
                     f"ORDER DETAILS:\n"
@@ -2241,7 +2241,7 @@ def assign_driver(request):
                 )
 
                 _send_html_email_operations(
-                    subject=f"Delivery Partner Assigned to Order #{order.id} • CanaLogistiX",
+                    subject=f"Delivery Partner Assigned to Order #{order.id} • {settings.COMPANY_OPERATING_NAME}",
                     to_email=order.pharmacy.email,
                     html=pharmacy_html,
                     text_fallback=pharmacy_text,
@@ -2474,7 +2474,7 @@ def driver_pickup_proof(request):
 <html lang="en">
   <head>
     <meta charset="utf-8">
-    <title>Order Picked Up • CanaLogistiX</title>
+    <title>Order Picked Up • {settings.COMPANY_OPERATING_NAME}</title>
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <style>
       @media (prefers-color-scheme: dark) {{
@@ -2499,7 +2499,7 @@ def driver_pickup_proof(request):
                 <tr>
                     <td align="left">
                     <img src="{logo_url}"
-                        alt="CanaLogistiX"
+                        alt="{settings.COMPANY_OPERATING_NAME}"
                         width="64"
                         height="64"
                         style="display:block;border:0;outline:none;text-decoration:none;border-radius:50%;object-fit:cover;">
@@ -2682,7 +2682,7 @@ def driver_pickup_proof(request):
                   <tr>
                     <td style="padding:12px 16px;">
                       <p style="margin:0;font:400 12px/1.6 system-ui,-apple-system,'Segoe UI',Roboto,Helvetica,Arial;color:#64748b;">
-                        Thank you for trusting CanaLogistiX with your deliveries!
+                        Thank you for trusting {settings.COMPANY_OPERATING_NAME} with your deliveries!
                       </p>
                     </td>
                   </tr>
@@ -2693,7 +2693,7 @@ def driver_pickup_proof(request):
           </table>
 
           <p style="margin:14px 0 0;font:400 12px/1.6 system-ui,-apple-system,'Segoe UI',Roboto,Helvetica,Arial;color:#94a3b8;">
-            © {timezone.now().year} CanaLogistiX - Cana Group of Companies. All rights reserved.
+            © {timezone.now().year} {settings.COMPANY_OPERATING_NAME} - {settings.COMPANY_SUB_GROUP_NAME}. All rights reserved.
           </p>
         </td>
       </tr>
@@ -2702,7 +2702,7 @@ def driver_pickup_proof(request):
 </html>
 """
             text = (
-                f"Order Picked Up - CanaLogistiX\n\n"
+                f"Order Picked Up - {settings.COMPANY_OPERATING_NAME}\n\n"
                 f"Hello {pharmacy.name},\n\n"
                 f"Your delivery order #{order.id} has been picked up by the driver and is now in transit.\n\n"
                 f"ORDER INFORMATION:\n"
@@ -2856,7 +2856,7 @@ def driver_delivery_proof(request):
 <html lang="en">
   <head>
     <meta charset="utf-8">
-    <title>Order Delivered • CanaLogistiX</title>
+    <title>Order Delivered • {settings.COMPANY_OPERATING_NAME}</title>
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <style>
       @media (prefers-color-scheme: dark) {{
@@ -2881,7 +2881,7 @@ def driver_delivery_proof(request):
                 <tr>
                     <td align="left">
                     <img src="{logo_url}"
-                        alt="CanaLogistiX"
+                        alt="{settings.COMPANY_OPERATING_NAME}"
                         width="64"
                         height="64"
                         style="display:block;border:0;outline:none;text-decoration:none;border-radius:50%;object-fit:cover;">
@@ -3053,7 +3053,7 @@ def driver_delivery_proof(request):
 
                 <div style="margin:20px 0;background:#dcfce7;border:1px solid #86efac;border-radius:12px;padding:14px 18px;">
                   <p style="margin:0;font:600 13px/1.6 system-ui,-apple-system,'Segoe UI',Roboto,Helvetica,Arial;color:#166534;">
-                    🎉 <strong>Delivery Complete!</strong> Thank you for using CanaLogistiX for your delivery needs.
+                    🎉 <strong>Delivery Complete!</strong> Thank you for using {settings.COMPANY_OPERATING_NAME} for your delivery needs.
                   </p>
                 </div>
 
@@ -3070,7 +3070,7 @@ def driver_delivery_proof(request):
                   <tr>
                     <td style="padding:12px 16px;">
                       <p style="margin:0;font:400 12px/1.6 system-ui,-apple-system,'Segoe UI',Roboto,Helvetica,Arial;color:#64748b;">
-                        Thank you for trusting CanaLogistiX with your deliveries!
+                        Thank you for trusting {settings.COMPANY_OPERATING_NAME} with your deliveries!
                       </p>
                     </td>
                   </tr>
@@ -3081,7 +3081,7 @@ def driver_delivery_proof(request):
           </table>
 
           <p style="margin:14px 0 0;font:400 12px/1.6 system-ui,-apple-system,'Segoe UI',Roboto,Helvetica,Arial;color:#94a3b8;">
-            © {timezone.now().year} CanaLogistiX - Cana Group of Companies. All rights reserved.
+            © {timezone.now().year} {settings.COMPANY_OPERATING_NAME} - {settings.COMPANY_SUB_GROUP_NAME}. All rights reserved.
           </p>
         </td>
       </tr>
@@ -3090,7 +3090,7 @@ def driver_delivery_proof(request):
 </html>
 """
             text = (
-                f"Order Delivered - CanaLogistiX\n\n"
+                f"Order Delivered - {settings.COMPANY_OPERATING_NAME}\n\n"
                 f"Hello {pharmacy.name},\n\n"
                 f"Your delivery order #{order.id} has been successfully delivered to the customer.\n\n"
                 f"ORDER INFORMATION:\n"
@@ -3466,7 +3466,7 @@ def generate_invoice_pdf(invoice, pharmacy, orders_data, subtotal, hst_amount, t
     summary_data = [
         ['', ''],
         ['Subtotal (Delivery Services)', f"${subtotal:.2f}"],
-        ['HST (13%)', f"${hst_amount:.2f}"],
+        [f'HST ({settings.ONTARIO_HST_PERCENT}%)', f"${hst_amount:.2f}"],
         ['', ''],
     ]
     
@@ -3517,7 +3517,7 @@ def generate_invoice_pdf(invoice, pharmacy, orders_data, subtotal, hst_amount, t
     terms_text = f'''
     <b>Payment Due Date:</b> Payment is due within 2 business days of invoice issue date. The due date for this invoice is <b>{due_date_formatted}</b>.<br/><br/>
     
-    <b>Service Suspension:</b> Accounts with payments overdue by more than 5 business days may be subject to temporary suspension of delivery services until all outstanding balances are settled. CanaLogistiX reserves the right to suspend service without prior notice for non-payment.<br/><br/>
+    <b>Service Suspension:</b> Accounts with payments overdue by more than 5 business days may be subject to temporary suspension of delivery services until all outstanding balances are settled. {settings.COMPANY_OPERATING_NAME} reserves the right to suspend service without prior notice for non-payment.<br/><br/>
     
     <b>Payment Methods</b><br/><br/>
 
@@ -3541,7 +3541,7 @@ def generate_invoice_pdf(invoice, pharmacy, orders_data, subtotal, hst_amount, t
     
     <b>Service Description:</b> This invoice covers delivery services provided during the billing period. All deliveries were completed by trained, licensed drivers following strict chain-of-custody protocols.<br/><br/>
     
-    <b>Tax Information:</b> All amounts include applicable HST (13%) as required by Ontario tax regulations. CanaLogistiX HST Registration Number available upon request.<br/><br/>
+    <b>Tax Information:</b> All amounts include applicable HST ({settings.ONTARIO_HST_PERCENT}) as required by Provincial tax regulations. {settings.COMPANY_OPERATING_NAME} HST Registration Number available upon request.<br/><br/>
     
     <b>Dispute Resolution:</b>  
     Any billing disputes must be submitted <b>through the Pharmacy Portal</b> by raising a support ticket 
@@ -3585,7 +3585,7 @@ def generate_invoice_pdf(invoice, pharmacy, orders_data, subtotal, hst_amount, t
     <b>Phone:</b> Available through pharmacy portal<br/>
     <b>Support Hours:</b> Monday - Friday, 9:00 AM - 6:00 PM EST<br/>
     <b>Response Time:</b> Within 24 - 48 business hours for billing inquiries<br/><br/>
-    <b>For Billing Disputes:</b> All billing disputes must be submitted by raising a support ticket through the CanaLogistiX Pharmacy Portal prior to the invoice due date. Please include the invoice number and any relevant supporting documentation when submitting your ticket.
+    <b>For Billing Disputes:</b> All billing disputes must be submitted by raising a support ticket through the {settings.COMPANY_OPERATING_NAME} Pharmacy Portal prior to the invoice due date. Please include the invoice number and any relevant supporting documentation when submitting your ticket.
     '''
     
     story.append(Paragraph(support_text, body_style))
@@ -3594,7 +3594,7 @@ def generate_invoice_pdf(invoice, pharmacy, orders_data, subtotal, hst_amount, t
     # ==================== FOOTER ====================
     
     footer_text = f'''
-    <i>This invoice was automatically generated by CanaLogistiX billing system on {current_date}.<br/>
+    <i>This invoice was automatically generated by {settings.COMPANY_OPERATING_NAME} billing system on {current_date}.<br/>
     Invoice Reference: {invoice_number} | Payment Due: {due_date_formatted}<br/>
     Thank you for choosing {settings.COMPANY_OPERATING_NAME} for your delivery needs!<br/>
     An Operating Name of {settings.CORPORATION_NAME}.<br/>
@@ -3608,353 +3608,6 @@ def generate_invoice_pdf(invoice, pharmacy, orders_data, subtotal, hst_amount, t
     
     logger.info(f"Generated PDF for invoice {invoice.id}")
     return buffer
-
-@csrf_exempt
-def generate_weekly_invoices(request):
-    pharmacy_id = request.GET.get("pharmacyId")
-    if not pharmacy_id:
-        return HttpResponseBadRequest("Missing pharmacyId parameter")
-
-    try:
-        pharmacy_id = int(pharmacy_id)
-    except ValueError:
-        return HttpResponseBadRequest("pharmacyId must be an integer")
-
-    pharmacy = get_object_or_404(Pharmacy, id=pharmacy_id)
-    logger.info(f"Generating weekly invoices for pharmacy {pharmacy.name} (ID: {pharmacy_id})")
-
-    # Only delivered orders for this pharmacy
-    orders_qs = DeliveryOrder.objects.filter(
-        pharmacy_id=pharmacy_id,
-        status="delivered"
-    ).order_by("created_at")
-
-    if not orders_qs.exists():
-        logger.info(f"No delivered orders found for pharmacy {pharmacy.name} (ID: {pharmacy_id})")
-        return JsonResponse({"message": "No delivered orders for this pharmacy yet", "invoices": []})
-
-    earliest = orders_qs.first().created_at.date()
-    latest = orders_qs.last().created_at.date()
-
-    # Get current date/time in Toronto timezone
-    toronto_now = timezone.now().astimezone(settings.USER_TIMEZONE)
-    today = toronto_now.date()
-    
-    invoices_list = []
-    week_start = earliest
-
-    # Only process completed weeks (7 days: start and end day both included)
-    while week_start <= latest:
-        week_end = week_start + timedelta(days=6)  # 7-day week: start + 6 days = 7 total days
-        
-        # Skip this week if it hasn't completed yet
-        # Week is complete only when we're past 23:59:59 of week_end day (i.e., into the next day)
-        # Since we're comparing dates, week is complete when today > week_end
-        if week_end >= today:
-            logger.info(f"Skipping incomplete week {week_start} to {week_end} (today is {today} in America/Toronto timezone)")
-            break  # No more complete weeks after this
-        
-        # Adjust week_end to not exceed latest order date
-        week_end = min(week_end, latest)
-
-        # Filter orders only in this week and delivered
-        week_orders = orders_qs.filter(
-            created_at__date__gte=week_start,
-            created_at__date__lte=week_end
-        )
-        total_orders = week_orders.count()
-
-        if total_orders > 0:
-            logger.debug(f"Processing completed week {week_start} to {week_end} with {total_orders} orders")
-
-            # Calculate subtotal, HST, and final total
-            subtotal = sum(Decimal(str(o.rate)) for o in week_orders)
-            hst_rate = Decimal('0.13')  # 13% HST
-            hst_amount = (subtotal * hst_rate)
-            total_amount_with_hst = (subtotal + hst_amount)
-
-            due_date = week_end + timedelta(days=2)  # due date 2 days after end_date
-
-            # get or create invoice
-            invoice, created = Invoice.objects.get_or_create(
-                pharmacy=pharmacy,
-                start_date=week_start,
-                end_date=week_end,
-                defaults={
-                    "total_orders": total_orders,
-                    "total_amount": total_amount_with_hst,  # Store final amount including HST
-                    "due_date": due_date,
-                    "status": "generated"
-                }
-            )
-
-            if created:
-                logger.info(f"Created new invoice {invoice.id} for pharmacy {pharmacy.name}")
-            else:
-                logger.debug(f"Updated existing invoice {invoice.id} for pharmacy {pharmacy.name}")
-                # Keep totals up to date
-                invoice.total_orders = total_orders
-                invoice.total_amount = total_amount_with_hst
-                invoice.due_date = due_date
-                if invoice.status is None:
-                    invoice.status = "generated"
-                invoice.save()
-
-            # Build order rows for the PDF
-            orders_data = [{
-                "order_id": o.id,
-                "pickup_address": o.pickup_address,
-                "pickup_city": o.pickup_city,
-                "drop_address": o.drop_address,
-                "drop_city": o.drop_city,
-                "pickup_day": o.pickup_day.strftime('%Y-%m-%d'),
-                "rate": float(o.rate),
-                "created_at": o.created_at.strftime('%Y-%m-%d %H:%M'),
-                "driver": o.driver.name if o.driver else "N/A"
-            } for o in week_orders]
-
-            # Determine whether we must (re)generate/upload the PDF
-            pdf_url = invoice.pdf_url or ""
-            needs_upload = (
-                not pdf_url                                         # missing
-                or pdf_url.startswith("/")                          # local temp path like "/temp_..."
-                or pdf_url.startswith("/media/")                    # local media path
-            )
-
-            if needs_upload:
-                try:
-                    # Generate PDF buffer
-                    pdf_buffer = generate_invoice_pdf(
-                        invoice, pharmacy, orders_data, subtotal, hst_amount, total_amount_with_hst
-                    )
-
-                    # Create filename: pharmacyId_PharmacyName_StartDate_EndDate.pdf
-                    pharmacy_name_clean = pharmacy.name.replace(' ', '_').replace('/', '_').replace('\\', '_')
-                    start_date_str = invoice.start_date.strftime('%Y-%m-%d')
-                    end_date_str = invoice.end_date.strftime('%Y-%m-%d')
-                    timestamp = datetime.now().strftime('%Y%m%d_%H%M%S')
-                    filename = f"{invoice.id}_{pharmacy.name}_{invoice.start_date}_{invoice.end_date}_{timestamp}.pdf"
-
-                    # Require GCS upload to succeed; NO local fallback
-                    uploaded_url = upload_pdf_to_gcp(pdf_buffer, filename)
-                    if not uploaded_url:
-                        logger.error(f"GCS upload returned empty URL for invoice {invoice.id}")
-                        return JsonResponse(
-                            {"error": f"Failed to upload invoice PDF for invoice {invoice.id}"},
-                            status=500
-                        )
-
-                    invoice.pdf_url = uploaded_url
-                    invoice.save()
-                    pdf_url = uploaded_url
-                    logger.info(f"Successfully generated and uploaded PDF for invoice {invoice.id}")
-
-                except Exception as e:
-                    logger.exception(f"Error generating/uploading PDF for invoice {invoice.id}: {e}")
-                    return JsonResponse(
-                        {"error": f"Error generating/uploading PDF for invoice {invoice.id}: {str(e)}"},
-                        status=500
-                    )
-            else:
-                logger.debug(f"Using existing PDF URL for invoice {invoice.id}")
-
-            # Send invoice notification email to pharmacy
-            if created and pharmacy.email:  # Only send email for newly created invoices
-                try:
-                    brand_primary = settings.BRAND_COLORS['primary']
-                    brand_primary_dark = settings.BRAND_COLORS['primary_dark']
-                    brand_accent = settings.BRAND_COLORS['accent']
-                    now_str = timezone.now().strftime("%b %d, %Y %H:%M %Z")
-                    logo_url = settings.LOGO_URL
-                    
-                    start_date_formatted = invoice.start_date.strftime("%B %d, %Y")
-                    end_date_formatted = invoice.end_date.strftime("%B %d, %Y")
-                    due_date_formatted = invoice.due_date.strftime("%B %d, %Y")
-
-                    # Using .format() to avoid f-string CSS brace conflicts
-                    invoice_html = """
-<!doctype html>
-<html lang="en">
-  <head>
-    <meta charset="utf-8">
-    <title>Invoice Generated • CanaLogistiX</title>
-    <meta name="viewport" content="width=device-width, initial-scale=1">
-    <style>
-      @media (prefers-color-scheme: dark) {{
-        body {{ background: #0b1220 !important; color: #e5e7eb !important; }}
-        .card {{ background: #0f172a !important; border-color: #1f2937 !important; }}
-        .muted {{ color: #94a3b8 !important; }}
-      }}
-    </style>
-  </head>
-  <body style="margin:0;padding:0;background:#f4f7f9;">
-    <table role="presentation" width="100%" cellspacing="0" cellpadding="0" border="0" style="background:#f4f7f9;padding:24px 12px;">
-      <tr>
-        <td align="center">
-          <table role="presentation" width="100%" cellspacing="0" cellpadding="0" border="0" class="card" style="max-width:640px;background:#ffffff;border:1px solid #e5e7eb;border-radius:16px;overflow:hidden;">
-            <tr>
-              <td style="background:{brand_primary};padding:18px 20px;">
-                <table width="100%" cellspacing="0" cellpadding="0" border="0">
-                  <tr>
-                    <td align="left">
-                      <img src="{logo_url}" alt="CanaLogistiX" width="64" height="64" style="display:block;border:0;outline:none;text-decoration:none;border-radius:50%;object-fit:cover;">
-                    </td>
-                    <td align="right" style="font:600 16px/1.2 system-ui,-apple-system,'Segoe UI',Roboto,Helvetica,Arial;color:#e6fffb;">
-                      Invoice Generated
-                    </td>
-                  </tr>
-                </table>
-              </td>
-            </tr>
-            
-            <tr>
-              <td style="padding:28px 24px 6px;">
-                <h1 style="margin:0 0 10px;font:800 24px/1.25 system-ui,-apple-system,'Segoe UI',Roboto,Helvetica,Arial;color:#0f172a;">
-                  Your weekly invoice is ready
-                </h1>
-                <p style="margin:0 0 16px;font:400 14px/1.7 system-ui,-apple-system,'Segoe UI',Roboto,Helvetica,Arial;color:#475569;">
-                  Hello <strong>{pharmacy_name}</strong>, your invoice for the week of <strong>{start_date_formatted}</strong> to <strong>{end_date_formatted}</strong> has been generated.
-                </p>
-                
-                <div style="margin:18px 0;background:#eff6ff;border:1px solid #3b82f6;border-radius:12px;padding:14px 18px;">
-                  <p style="margin:0;font:600 13px/1.6 system-ui,-apple-system,'Segoe UI',Roboto,Helvetica,Arial;color:#1e40af;">
-                    📄 Invoice #{invoice_id} — Payment due by <strong>{due_date_formatted}</strong>
-                  </p>
-                </div>
-                
-                <div style="margin:18px 0;background:#f0fdfa;border:1px solid {brand_primary};border-radius:12px;padding:16px 18px;">
-                  <p style="margin:0 0 8px;font:700 15px/1.3 system-ui,-apple-system,'Segoe UI',Roboto,Helvetica,Arial;color:#0f172a;">
-                    📊 Quick Summary
-                  </p>
-                  <p style="margin:0;font:400 13px/1.6 system-ui,-apple-system,'Segoe UI',Roboto,Helvetica,Arial;color:#334155;">
-                    <strong>{total_orders} deliveries</strong> completed from {start_date_formatted} to {end_date_formatted}.
-                  </p>
-                  <p style="margin:8px 0 0;font:700 16px/1.4 system-ui,-apple-system,'Segoe UI',Roboto,Helvetica,Arial;color:{brand_primary};">
-                    Total Amount: ${total_amount:.2f}
-                  </p>
-                </div>
-                
-                <div style="margin:18px 0;text-align:center;">
-                  <a href="{pdf_url}" 
-                     style="display:inline-block;background:{brand_primary};color:#ffffff;text-decoration:none;padding:12px 32px;border-radius:8px;font:600 14px/1.5 system-ui,-apple-system,'Segoe UI',Roboto,Helvetica,Arial;margin-bottom:12px;">
-                    📥 Download Invoice PDF
-                  </a>
-                </div>
-                
-                <div style="margin:18px 0;background:#f8fafc;border:1px solid #e2e8f0;border-radius:12px;padding:16px 18px;text-align:center;">
-                  <p style="margin:0 0 8px;font:600 14px/1.4 system-ui,-apple-system,'Segoe UI',Roboto,Helvetica,Arial;color:#0f172a;">
-                    📋 View Full Invoice Details
-                  </p>
-                  <p style="margin:0;font:400 13px/1.6 system-ui,-apple-system,'Segoe UI',Roboto,Helvetica,Arial;color:#475569;">
-                    For a complete breakdown of charges, payment history, and delivery details, please visit the <strong>Invoices Section</strong> in your pharmacy portal.
-                  </p>
-                </div>
-                
-                <div style="margin:18px 0;background:#fef2f2;border-left:3px solid #ef4444;border-radius:8px;padding:14px 16px;">
-                  <p style="margin:0;font:600 13px/1.6 system-ui,-apple-system,'Segoe UI',Roboto,Helvetica,Arial;color:#7f1d1d;">
-                    ⚠️ Payment due by <strong>{due_date_formatted}</strong> to avoid penalties or service interruptions.
-                  </p>
-                </div>
-                
-                <p style="margin:18px 0 0;font:400 12px/1.7 system-ui,-apple-system,'Segoe UI',Roboto,Helvetica,Arial;color:#64748b;">
-                  Invoice generated on <strong style="color:{brand_primary_dark};">{now_str}</strong>.
-                </p>
-                
-                <hr style="border:0;border-top:1px solid #e5e7eb;margin:24px 0;">
-                <p class="muted" style="margin:0;font:400 12px/1.7 system-ui,-apple-system,'Segoe UI',Roboto,Helvetica,Arial;color:#6b7280;">
-                  For payment inquiries or invoice questions, Log in to the portal and raise a Support Ticket by contacting the Admin. Our team will be happy to assist you.
-                </p>
-              </td>
-            </tr>
-            
-            <tr>
-              <td style="padding:0 24px 24px;">
-                <table width="100%" cellspacing="0" cellpadding="0" border="0" style="background:#f8fafc;border:1px dashed #e2e8f0;border-radius:12px;">
-                  <tr>
-                    <td style="padding:12px 16px;">
-                      <p style="margin:0;font:400 12px/1.6 system-ui,-apple-system,'Segoe UI',Roboto,Helvetica,Arial;color:#64748b;">
-                        Thank you for choosing CanaLogistiX for your delivery needs!
-                      </p>
-                    </td>
-                  </tr>
-                </table>
-              </td>
-            </tr>
-
-          </table>
-          
-          <p style="margin:14px 0 0;font:400 12px/1.6 system-ui,-apple-system,'Segoe UI',Roboto,Helvetica,Arial;color:#94a3b8;">
-            © {current_year} CanaLogistiX - Cana Group of Companies. All rights reserved.
-          </p>
-        </td>
-      </tr>
-    </table>
-  </body>
-</html>
-""".format(
-                        brand_primary=brand_primary,
-                        brand_primary_dark=brand_primary_dark,
-                        logo_url=logo_url,
-                        pharmacy_name=pharmacy.name,
-                        start_date_formatted=start_date_formatted,
-                        end_date_formatted=end_date_formatted,
-                        invoice_id=invoice.id,
-                        due_date_formatted=due_date_formatted,
-                        total_orders=total_orders,
-                        total_amount=float(total_amount_with_hst),
-                        pdf_url=pdf_url,
-                        now_str=now_str,
-                        current_year=timezone.now().year
-                    )
-
-                    invoice_text = (
-                        f"Invoice Generated - CanaLogistiX\n\n"
-                        f"Hello {pharmacy.name},\n\n"
-                        f"Your invoice for the week of {start_date_formatted} to {end_date_formatted} has been generated.\n\n"
-                        f"Invoice #{invoice.id}\n"
-                        f"Total Amount: ${total_amount_with_hst:.2f}\n"
-                        f"Payment Due: {due_date_formatted}\n\n"
-                        f"{total_orders} deliveries completed during this period.\n\n"
-                        f"IMPORTANT: Payment due by {due_date_formatted} to avoid penalties or service interruptions.\n\n"
-                        f"Download your invoice: {pdf_url}\n\n"
-                        f"For complete invoice details, payment history, and delivery breakdowns, please visit the Invoices Section in your pharmacy portal.\n\n"
-                        f"For payment inquiries, contact billing at {settings.EMAIL_BILLING}\n"
-                    )
-
-                    _send_html_email_billing(
-                        subject=f"Invoice #{invoice.id} Generated • Week of {start_date_formatted}",
-                        to_email=pharmacy.email,
-                        html=invoice_html,
-                        text_fallback=invoice_text,
-                    )
-                    logger.info(f"Invoice notification email sent to {pharmacy.email} for invoice {invoice.id}")
-                    
-                except Exception as e:
-                    logger.error(f"ERROR sending invoice email to {pharmacy.email}: {str(e)}")
-                    import traceback
-                    traceback.print_exc()
-                    # Don't fail the invoice generation if email fails
-
-            invoices_list.append({
-                "invoice_id": invoice.id,
-                "start_date": invoice.start_date.strftime('%Y-%m-%d'),
-                "end_date": invoice.end_date.strftime('%Y-%m-%d'),
-                "total_orders": invoice.total_orders,
-                "subtotal": float(subtotal),
-                "hst_amount": float(hst_amount),
-                "total_amount": float(invoice.total_amount),
-                "due_date": invoice.due_date.strftime('%Y-%m-%d'),
-                "status": invoice.status,
-                "pdf_url": pdf_url,
-                "orders": orders_data
-            })
-
-        # Move to next week window
-        week_start += timedelta(days=7)
-
-    logger.info(f"Generated {len(invoices_list)} invoices for pharmacy {pharmacy.name}")
-    return JsonResponse({"invoices": invoices_list})
-
 
 # @csrf_exempt
 # def generate_weekly_invoices(request):
@@ -3983,12 +3636,26 @@ def generate_weekly_invoices(request):
 #     earliest = orders_qs.first().created_at.date()
 #     latest = orders_qs.last().created_at.date()
 
+#     # Get current date/time in Toronto timezone
+#     toronto_now = timezone.now().astimezone(settings.USER_TIMEZONE)
+#     today = toronto_now.date()
+    
 #     invoices_list = []
 #     week_start = earliest
 
-#     # Include current partial week
+#     # Only process completed weeks (7 days: start and end day both included)
 #     while week_start <= latest:
-#         week_end = min(week_start + timedelta(days=6), latest)
+#         week_end = week_start + timedelta(days=6)  # 7-day week: start + 6 days = 7 total days
+        
+#         # Skip this week if it hasn't completed yet
+#         # Week is complete only when we're past 23:59:59 of week_end day (i.e., into the next day)
+#         # Since we're comparing dates, week is complete when today > week_end
+#         if week_end >= today:
+#             logger.info(f"Skipping incomplete week {week_start} to {week_end} (today is {today} in America/Toronto timezone)")
+#             break  # No more complete weeks after this
+        
+#         # Adjust week_end to not exceed latest order date
+#         week_end = min(week_end, latest)
 
 #         # Filter orders only in this week and delivered
 #         week_orders = orders_qs.filter(
@@ -3998,7 +3665,7 @@ def generate_weekly_invoices(request):
 #         total_orders = week_orders.count()
 
 #         if total_orders > 0:
-#             logger.debug(f"Processing week {week_start} to {week_end} with {total_orders} orders")
+#             logger.debug(f"Processing completed week {week_start} to {week_end} with {total_orders} orders")
 
 #             # Calculate subtotal, HST, and final total
 #             subtotal = sum(Decimal(str(o.rate)) for o in week_orders)
@@ -4289,6 +3956,449 @@ def generate_weekly_invoices(request):
 #     return JsonResponse({"invoices": invoices_list})
 
 
+@csrf_protect
+@require_http_methods(["GET"])
+@pharmacy_auth_required
+def generate_weekly_invoices(request):
+    """
+    Generate weekly invoices for authenticated pharmacy based on delivered orders.
+    
+    Invoice Generation Logic:
+    - Uses delivered_at field (stored as UTC in DB) for billing calculations
+    - Processes complete 7-day weeks only (both start and end days inclusive)
+    - Generates invoices ONLY after the week has fully completed in USER_TIMEZONE
+    - Creates invoices ONLY for weeks that have at least one delivered order
+    - All response data and PDF timestamps converted to USER_TIMEZONE for display
+    - Idempotent: get_or_create prevents duplicate invoices for the same week
+    - Due date: 2 days after the invoice generation date (today)
+    
+    Example Scenario:
+    - Week 1 (5 orders) → Invoice created ✅
+    - Week 2 (0 orders) → No invoice (skipped)
+    - Week 3 (0 orders) → No invoice (skipped)
+    - Week 4 (3 orders) → Invoice created ✅
+    """
+    pharmacy = request.pharmacy
+    logger.info(f"Generating weekly invoices for pharmacy {pharmacy.name} (ID: {pharmacy.id})")
+
+    # Fetch only delivered orders with delivered_at timestamp (UTC in DB)
+    orders_qs = DeliveryOrder.objects.filter(
+        pharmacy=pharmacy,
+        status="delivered",
+        delivered_at__isnull=False
+    ).order_by("delivered_at")
+
+    if not orders_qs.exists():
+        logger.info(f"No delivered orders found for pharmacy {pharmacy.name} (ID: {pharmacy.id})")
+        return JsonResponse({
+            "success": True,
+            "message": "No delivered orders for this pharmacy yet",
+            "invoices": []
+        })
+
+    # Get earliest and latest delivery dates converted to USER_TIMEZONE
+    earliest_utc = orders_qs.first().delivered_at
+    latest_utc = orders_qs.last().delivered_at
+    
+    earliest_local = timezone.localtime(earliest_utc, settings.USER_TIMEZONE).date()
+    latest_local = timezone.localtime(latest_utc, settings.USER_TIMEZONE).date()
+
+    # Get current date in USER_TIMEZONE (America/Toronto)
+    now_local = timezone.localtime(timezone.now(), settings.USER_TIMEZONE)
+    today_local = now_local.date()
+    
+    invoices_list = []
+    week_start = earliest_local
+
+    # Process all complete 7-day weeks
+    while week_start <= latest_local:
+        week_end = week_start + timedelta(days=6)  # 7-day week inclusive (start + 6 = 7 days)
+        
+        # Skip incomplete weeks - week must be fully completed
+        # Week is complete only when current date is AFTER week_end (today > week_end)
+        if week_end >= today_local:
+            logger.info(
+                f"Skipping incomplete week {week_start} to {week_end} "
+                f"(today is {today_local} in {settings.USER_TIMEZONE})"
+            )
+            break  # No more complete weeks
+        
+        # Don't process weeks beyond latest delivery date
+        if week_start > latest_local:
+            break
+        
+        # Adjust week_end to not exceed latest delivery date
+        week_end = min(week_end, latest_local)
+
+        # Convert week boundaries from USER_TIMEZONE to UTC for DB queries
+        # Start of day in local timezone → UTC
+        week_start_utc = timezone.make_aware(
+            datetime.combine(week_start, datetime.min.time()),
+            settings.USER_TIMEZONE
+        ).astimezone(timezone.utc)
+        
+        # End of day in local timezone → UTC (23:59:59.999999)
+        week_end_utc = timezone.make_aware(
+            datetime.combine(week_end, datetime.max.time()),
+            settings.USER_TIMEZONE
+        ).astimezone(timezone.utc)
+
+        # Filter orders delivered within this week (using UTC timestamps in DB)
+        week_orders = orders_qs.filter(
+            delivered_at__gte=week_start_utc,
+            delivered_at__lte=week_end_utc
+        )
+        
+        total_orders = week_orders.count()
+
+        # Only create invoice if there are orders in this week
+        if total_orders > 0:
+            logger.debug(
+                f"Processing completed week {week_start} to {week_end} "
+                f"with {total_orders} delivered orders"
+            )
+
+            # Calculate subtotal, HST (13%), and final total with proper decimal precision
+            subtotal = sum(Decimal(str(o.rate)) for o in week_orders)
+            hst_rate = Decimal(settings.ONTARIO_HST_RATE)  
+            hst_amount = (subtotal * hst_rate).quantize(Decimal('0.01'))
+            total_amount_with_hst = (subtotal + hst_amount).quantize(Decimal('0.01'))
+
+            # Due date: 2 days after invoice generation (today in USER_TIMEZONE)
+            due_date = today_local + timedelta(days=2)
+
+            # Idempotent invoice creation - prevents duplicates
+            invoice, created = Invoice.objects.get_or_create(
+                pharmacy=pharmacy,
+                start_date=week_start,
+                end_date=week_end,
+                defaults={
+                    "total_orders": total_orders,
+                    "total_amount": total_amount_with_hst,
+                    "due_date": due_date,
+                    "status": "generated"
+                }
+            )
+
+            if created:
+                logger.info(
+                    f"Created new invoice {invoice.id} for pharmacy {pharmacy.name} "
+                    f"(Week: {week_start} to {week_end})"
+                )
+            else:
+                logger.debug(f"Invoice {invoice.id} already exists for pharmacy {pharmacy.name}")
+                # Update totals if they changed (edge case - shouldn't happen normally)
+                if (invoice.total_orders != total_orders or 
+                    invoice.total_amount != total_amount_with_hst):
+                    invoice.total_orders = total_orders
+                    invoice.total_amount = total_amount_with_hst
+                    invoice.due_date = due_date
+                    if invoice.status is None:
+                        invoice.status = "generated"
+                    invoice.save()
+                    logger.info(f"Updated invoice {invoice.id} totals")
+
+            # Build order data for response/PDF (all times converted to USER_TIMEZONE)
+            orders_data = []
+            for o in week_orders:
+                # Convert delivered_at from UTC to USER_TIMEZONE for display
+                delivered_at_local = timezone.localtime(o.delivered_at, settings.USER_TIMEZONE)
+                orders_data.append({
+                    "order_id": o.id,
+                    "pickup_address": o.pickup_address,
+                    "pickup_city": o.pickup_city,
+                    "drop_address": o.drop_address,
+                    "drop_city": o.drop_city,
+                    "pickup_day": o.pickup_day.strftime('%Y-%m-%d'),
+                    "delivered_at": delivered_at_local.strftime('%Y-%m-%d %H:%M'),
+                    "rate": float(o.rate),
+                    "driver": o.driver.name if o.driver else "N/A"
+                })
+
+            # Check if PDF needs generation/upload
+            pdf_url = invoice.pdf_url or ""
+            needs_upload = (
+                not pdf_url                      # missing
+                or pdf_url.startswith("/")       # local temp path
+                or pdf_url.startswith("/media/") # local media path
+            )
+
+            if needs_upload:
+                try:
+                    # Generate PDF buffer
+                    pdf_buffer = generate_invoice_pdf(
+                        invoice, pharmacy, orders_data, subtotal, hst_amount, total_amount_with_hst
+                    )
+
+                    # Create timestamped filename with cleaned pharmacy name
+                    pharmacy_name_clean = (
+                        pharmacy.name.replace(' ', '_')
+                                    .replace('/', '_')
+                                    .replace('\\', '_')
+                    )
+                    timestamp = now_local.strftime('%Y%m%d_%H%M%S')
+                    filename = (
+                        f"{invoice.id}_{pharmacy_name_clean}_"
+                        f"{week_start}_{week_end}_{timestamp}.pdf"
+                    )
+
+                    # Upload to GCP - must succeed (no local fallback)
+                    uploaded_url = upload_pdf_to_gcp(pdf_buffer, filename)
+                    if not uploaded_url:
+                        logger.error(f"GCS upload returned empty URL for invoice {invoice.id}")
+                        return JsonResponse(
+                            {
+                                "success": False,
+                                "error": f"Failed to upload invoice PDF for invoice {invoice.id}"
+                            },
+                            status=500
+                        )
+
+                    invoice.pdf_url = uploaded_url
+                    invoice.save()
+                    pdf_url = uploaded_url
+                    logger.info(f"Successfully generated and uploaded PDF for invoice {invoice.id}")
+
+                except Exception as e:
+                    logger.exception(f"Error generating/uploading PDF for invoice {invoice.id}: {e}")
+                    return JsonResponse(
+                        {
+                            "success": False,
+                            "error": f"Error generating/uploading PDF for invoice {invoice.id}: {str(e)}"
+                        },
+                        status=500
+                    )
+            else:
+                logger.debug(f"Using existing PDF URL for invoice {invoice.id}")
+
+            # Send email notification for newly created invoices
+            if created and pharmacy.email:
+                try:
+                    # Get brand colors and settings
+                    brand_primary = settings.BRAND_COLORS['primary']
+                    brand_primary_dark = settings.BRAND_COLORS['primary_dark']
+                    brand_accent = settings.BRAND_COLORS['accent']
+                    now_str = now_local.strftime("%b %d, %Y %H:%M %Z")
+                    logo_url = settings.LOGO_URL
+                    
+                    # Format dates for email display
+                    start_date_formatted = week_start.strftime("%B %d, %Y")
+                    end_date_formatted = week_end.strftime("%B %d, %Y")
+                    due_date_formatted = due_date.strftime("%B %d, %Y")
+
+                    # Get Business Information
+                    company_name = settings.COMPANY_OPERATING_NAME
+                    company_subgroup_name = settings.COMPANY_SUB_GROUP_NAME
+                  
+
+                    # Build HTML email using .format() to avoid f-string CSS brace conflicts
+                    invoice_html = """
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <title>Invoice Generated • {company_name}</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <style>
+      @media (prefers-color-scheme: dark) {{
+        body {{ background: #0b1220 !important; color: #e5e7eb !important; }}
+        .card {{ background: #0f172a !important; border-color: #1f2937 !important; }}
+        .muted {{ color: #94a3b8 !important; }}
+      }}
+    </style>
+  </head>
+  <body style="margin:0;padding:0;background:#f4f7f9;">
+    <table role="presentation" width="100%" cellspacing="0" cellpadding="0" border="0" style="background:#f4f7f9;padding:24px 12px;">
+      <tr>
+        <td align="center">
+          <table role="presentation" width="100%" cellspacing="0" cellpadding="0" border="0" class="card" style="max-width:640px;background:#ffffff;border:1px solid #e5e7eb;border-radius:16px;overflow:hidden;">
+            <tr>
+              <td style="background:{brand_primary};padding:18px 20px;">
+                <table width="100%" cellspacing="0" cellpadding="0" border="0">
+                  <tr>
+                    <td align="left">
+                      <img src="{logo_url}" alt="{company_name}" width="64" height="64" style="display:block;border:0;outline:none;text-decoration:none;border-radius:50%;object-fit:cover;">
+                    </td>
+                    <td align="right" style="font:600 16px/1.2 system-ui,-apple-system,'Segoe UI',Roboto,Helvetica,Arial;color:#e6fffb;">
+                      Invoice Generated
+                    </td>
+                  </tr>
+                </table>
+              </td>
+            </tr>
+            
+            <tr>
+              <td style="padding:28px 24px 6px;">
+                <h1 style="margin:0 0 10px;font:800 24px/1.25 system-ui,-apple-system,'Segoe UI',Roboto,Helvetica,Arial;color:#0f172a;">
+                  Your weekly invoice is ready
+                </h1>
+                <p style="margin:0 0 16px;font:400 14px/1.7 system-ui,-apple-system,'Segoe UI',Roboto,Helvetica,Arial;color:#475569;">
+                  Hello <strong>{pharmacy_name}</strong>, your invoice for the week of <strong>{start_date_formatted}</strong> to <strong>{end_date_formatted}</strong> has been generated.
+                </p>
+                
+                <div style="margin:18px 0;background:#eff6ff;border:1px solid #3b82f6;border-radius:12px;padding:14px 18px;">
+                  <p style="margin:0;font:600 13px/1.6 system-ui,-apple-system,'Segoe UI',Roboto,Helvetica,Arial;color:#1e40af;">
+                    📄 Invoice #{invoice_id} — Payment due by <strong>{due_date_formatted}</strong>
+                  </p>
+                </div>
+                
+                <div style="margin:18px 0;background:#f0fdfa;border:1px solid {brand_primary};border-radius:12px;padding:16px 18px;">
+                  <p style="margin:0 0 8px;font:700 15px/1.3 system-ui,-apple-system,'Segoe UI',Roboto,Helvetica,Arial;color:#0f172a;">
+                    📊 Quick Summary
+                  </p>
+                  <p style="margin:0;font:400 13px/1.6 system-ui,-apple-system,'Segoe UI',Roboto,Helvetica,Arial;color:#334155;">
+                    <strong>{total_orders} deliveries</strong> completed from {start_date_formatted} to {end_date_formatted}.
+                  </p>
+                  <p style="margin:8px 0 0;font:700 16px/1.4 system-ui,-apple-system,'Segoe UI',Roboto,Helvetica,Arial;color:{brand_primary};">
+                    Total Amount: ${total_amount:.2f}
+                  </p>
+                </div>
+                
+                <div style="margin:18px 0;text-align:center;">
+                  <a href="{pdf_url}" 
+                     style="display:inline-block;background:{brand_primary};color:#ffffff;text-decoration:none;padding:12px 32px;border-radius:8px;font:600 14px/1.5 system-ui,-apple-system,'Segoe UI',Roboto,Helvetica,Arial;margin-bottom:12px;">
+                    📥 Download Invoice PDF
+                  </a>
+                </div>
+                
+                <div style="margin:18px 0;background:#f8fafc;border:1px solid #e2e8f0;border-radius:12px;padding:16px 18px;text-align:center;">
+                  <p style="margin:0 0 8px;font:600 14px/1.4 system-ui,-apple-system,'Segoe UI',Roboto,Helvetica,Arial;color:#0f172a;">
+                    📋 View Full Invoice Details
+                  </p>
+                  <p style="margin:0;font:400 13px/1.6 system-ui,-apple-system,'Segoe UI',Roboto,Helvetica,Arial;color:#475569;">
+                    For a complete breakdown of charges, payment history, and delivery details, please visit the <strong>Invoices Section</strong> in your pharmacy portal.
+                  </p>
+                </div>
+                
+                <div style="margin:18px 0;background:#fef2f2;border-left:3px solid #ef4444;border-radius:8px;padding:14px 16px;">
+                  <p style="margin:0;font:600 13px/1.6 system-ui,-apple-system,'Segoe UI',Roboto,Helvetica,Arial;color:#7f1d1d;">
+                    ⚠️ Payment due by <strong>{due_date_formatted}</strong> to avoid penalties or service interruptions.
+                  </p>
+                </div>
+                
+                <p style="margin:18px 0 0;font:400 12px/1.7 system-ui,-apple-system,'Segoe UI',Roboto,Helvetica,Arial;color:#64748b;">
+                  Invoice generated on <strong style="color:{brand_primary_dark};">{now_str}</strong>.
+                </p>
+                
+                <hr style="border:0;border-top:1px solid #e5e7eb;margin:24px 0;">
+                <p class="muted" style="margin:0;font:400 12px/1.7 system-ui,-apple-system,'Segoe UI',Roboto,Helvetica,Arial;color:#6b7280;">
+                  For payment inquiries or invoice questions, Log in to the portal and raise a Support Ticket by contacting the Admin. Our team will be happy to assist you.
+                </p>
+              </td>
+            </tr>
+            
+            <tr>
+              <td style="padding:0 24px 24px;">
+                <table width="100%" cellspacing="0" cellpadding="0" border="0" style="background:#f8fafc;border:1px dashed #e2e8f0;border-radius:12px;">
+                  <tr>
+                    <td style="padding:12px 16px;">
+                      <p style="margin:0;font:400 12px/1.6 system-ui,-apple-system,'Segoe UI',Roboto,Helvetica,Arial;color:#64748b;">
+                        Thank you for choosing {company_name} for your delivery needs!
+                      </p>
+                    </td>
+                  </tr>
+                </table>
+              </td>
+            </tr>
+
+          </table>
+          
+          <p style="margin:14px 0 0;font:400 12px/1.6 system-ui,-apple-system,'Segoe UI',Roboto,Helvetica,Arial;color:#94a3b8;">
+            © {current_year} {company_name} - {company_subgroup_name}. All rights reserved.
+          </p>
+        </td>
+      </tr>
+    </table>
+  </body>
+</html>
+""".format(
+                        brand_primary=brand_primary,
+                        brand_primary_dark=brand_primary_dark,
+                        logo_url=logo_url,
+                        pharmacy_name=pharmacy.name,
+                        start_date_formatted=start_date_formatted,
+                        end_date_formatted=end_date_formatted,
+                        invoice_id=invoice.id,
+                        due_date_formatted=due_date_formatted,
+                        total_orders=total_orders,
+                        total_amount=float(total_amount_with_hst),
+                        pdf_url=pdf_url,
+                        now_str=now_str,
+                        current_year=now_local.year
+                    )
+
+                    # Plain text fallback email
+                    invoice_text = (
+                        f"Invoice Generated - {settings.COMPANY_OPERATING_NAME}\n\n"
+                        f"Hello {pharmacy.name},\n\n"
+                        f"Your invoice for the week of {start_date_formatted} to {end_date_formatted} has been generated.\n\n"
+                        f"Invoice #{invoice.id}\n"
+                        f"Total Amount: ${total_amount_with_hst:.2f}\n"
+                        f"Payment Due: {due_date_formatted}\n\n"
+                        f"{total_orders} deliveries completed during this period.\n\n"
+                        f"IMPORTANT: Payment due by {due_date_formatted} to avoid penalties or service interruptions.\n\n"
+                        f"Download your invoice: {pdf_url}\n\n"
+                        f"For complete invoice details, payment history, and delivery breakdowns, please visit the Invoices Section in your pharmacy portal.\n\n"
+                        f"For payment inquiries, contact billing at {settings.EMAIL_BILLING}\n\n"
+                        f"Invoice generated on {now_str}.\n"
+                    )
+
+                    # Send email
+                    _send_html_email_billing(
+                        subject=f"Invoice #{invoice.id} Generated • Week of {start_date_formatted}",
+                        to_email=pharmacy.email,
+                        html=invoice_html,
+                        text_fallback=invoice_text,
+                    )
+                    logger.info(
+                        f"Invoice notification email sent to {pharmacy.email} "
+                        f"for invoice {invoice.id}"
+                    )
+                    
+                except Exception as e:
+                    logger.error(f"ERROR sending invoice email to {pharmacy.email}: {str(e)}")
+                    import traceback
+                    traceback.print_exc()
+                    # Don't fail invoice generation if email fails
+
+            # Add to response list (all dates/times in USER_TIMEZONE)
+            invoices_list.append({
+                "invoice_id": invoice.id,
+                "start_date": week_start.strftime('%Y-%m-%d'),
+                "end_date": week_end.strftime('%Y-%m-%d'),
+                "total_orders": invoice.total_orders,
+                "subtotal": float(subtotal),
+                "hst_rate": float(hst_rate),
+                "hst_amount": float(hst_amount),
+                "total_amount": float(invoice.total_amount),
+                "due_date": invoice.due_date.strftime('%Y-%m-%d'),
+                "status": invoice.status,
+                "pdf_url": pdf_url,
+                "created_at": timezone.localtime(
+                    invoice.created_at,
+                    settings.USER_TIMEZONE
+                ).strftime('%Y-%m-%d %H:%M:%S'),
+                "orders": orders_data
+            })
+        else:
+            logger.debug(
+                f"Skipping week {week_start} to {week_end} - no delivered orders"
+            )
+
+        # Move to next 7-day week window
+        week_start += timedelta(days=7)
+
+    logger.info(
+        f"Generated/retrieved {len(invoices_list)} invoices for pharmacy {pharmacy.name}"
+    )
+    
+    return JsonResponse({
+        "success": True,
+        "invoices": invoices_list,
+        "timezone": str(settings.USER_TIMEZONE),
+        "current_date": today_local.strftime('%Y-%m-%d')
+    })
+
 
 # Set Stripe API key
 stripe.api_key = settings.STRIPE_SECRET_KEY
@@ -4488,7 +4598,7 @@ def stripe_webhook(request):
 <html lang="en">
   <head>
     <meta charset="utf-8">
-    <title>Payment Confirmation • CanaLogistiX</title>
+    <title>Payment Confirmation • {settings.COMPANY_OPERATING_NAME}</title>
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <style>
       @media (prefers-color-scheme: dark) {{
@@ -4501,7 +4611,7 @@ def stripe_webhook(request):
   </head>
   <body style="margin:0;padding:0;background:#f4f7f9;">
     <div style="display:none;visibility:hidden;opacity:0;height:0;width:0;overflow:hidden;">
-      Payment confirmed — thank you for your payment to CanaLogistiX.
+      Payment confirmed — thank you for your payment to {settings.COMPANY_OPERATING_NAME}.
     </div>
 
     <table role="presentation" width="100%" cellspacing="0" cellpadding="0" border="0" style="background:#f4f7f9;padding:24px 12px;">
@@ -4514,7 +4624,7 @@ def stripe_webhook(request):
                   <tr>
                     <td align="left">
                       <img src="{logo_url}"
-                           alt="CanaLogistiX"
+                           alt="{settings.COMPANY_OPERATING_NAME}"
                            width="64"
                            height="64"
                            style="display:block;border:0;outline:none;text-decoration:none;border-radius:50%;object-fit:cover;">
@@ -4623,7 +4733,7 @@ def stripe_webhook(request):
                   <tr>
                     <td style="padding:12px 16px;">
                       <p style="margin:0;font:400 12px/1.6 system-ui,-apple-system,'Segoe UI',Roboto,Helvetica,Arial;color:#64748b;">
-                        Thank you for your continued partnership with CanaLogistiX.
+                        Thank you for your continued partnership with {settings.COMPANY_OPERATING_NAME}.
                       </p>
                     </td>
                   </tr>
@@ -4634,7 +4744,7 @@ def stripe_webhook(request):
           </table>
 
           <p style="margin:14px 0 0;font:400 12px/1.6 system-ui,-apple-system,'Segoe UI',Roboto,Helvetica,Arial;color:#94a3b8;">
-            © {timezone.now().year} CanaLogistiX - Cana Group of Companies. All rights reserved.
+            © {timezone.now().year} {settings.COMPANY_OPERATING_NAME} - {settings.COMPANY_SUB_GROUP_NAME}. All rights reserved.
           </p>
         </td>
       </tr>
@@ -4643,7 +4753,7 @@ def stripe_webhook(request):
 </html>
 """
                     text = (
-                        "Payment Confirmation - CanaLogistiX\n\n"
+                        f"Payment Confirmation - {settings.COMPANY_OPERATING_NAME}\n\n"
                         f"Thank you for your payment, {pharmacy.name}.\n\n"
                         "INVOICE DETAILS:\n"
                         f"Invoice Number: #{invoice.id}\n"
@@ -4969,11 +5079,11 @@ def _generate_invoice_pdf(driver, week_data, orders):
         logo = logo_text
     
     company_info_text = f'''
-    <b><font color="#0F172A" size="11">CanaLogistiX Delivery Services</font></b><br/>
-    <font color="#64748B" size="9">Cana Group of Companies<br/>
-    Operating Name of CANABELLE INC.<br/>
-    BN: 758568562<br/>
-    help.canalogistix@gmail.com<br/>
+    <b><font color="#0F172A" size="11">{settings.COMPANY_OPERATING_NAME}</font></b><br/>
+    <font color="#64748B" size="9">{settings.COMPANY_SUB_GROUP_NAME}<br/>
+    Operating Name of {settings.CORPORATION_NAME}<br/>
+    BN: {settings.CORPORATION_BUSINESS_NUMBER}<br/>
+    {settings.EMAIL_HELP_DESK}<br/>
     Ontario, Canada</font>
     '''
     
@@ -5183,7 +5293,7 @@ def _generate_invoice_pdf(driver, week_data, orders):
     terms_text = f'''
     <b>Payment Schedule:</b> Weekly payments are processed every Monday for completed deliveries from the previous week (Monday to Sunday).<br/><br/>
     
-    <b>Commission Structure:</b> CanaLogistiX retains {commission_percentage}% of gross delivery fees to cover platform operations, insurance coverage, customer support services, and technology infrastructure.<br/><br/>
+    <b>Commission Structure:</b> {settings.COMPANY_OPERATING_NAME} retains {commission_percentage}% of gross delivery fees to cover platform operations, insurance coverage, customer support services, and technology infrastructure.<br/><br/>
     
     <b>Payment Method:</b> Funds are transferred via direct deposit to your registered bank account within 2-3 business days of processing.<br/><br/>
     
@@ -5196,12 +5306,14 @@ def _generate_invoice_pdf(driver, week_data, orders):
     story.append(Spacer(1, 30))
     
     # ==================== SUPPORT INFORMATION ====================
+
+    email_help_desk = settings.EMAIL_HELP_DESK
     
     story.append(Paragraph("Questions or Concerns?", section_header_style))
     
     support_text = '''
     Our support team is here to help with any questions about this invoice or your deliveries. Log in to the portal and raise a Support Ticket by contacting the Admin.<br/><br/>
-    <b>Email:</b> help.canalogistix@gmail.com<br/>
+    <b>Email:</b> {email_help_desk} <br/>
     <b>Support Hours:</b> Monday - Friday, 9:00 AM - 6:00 PM EST<br/>
     <b>Response Time:</b> Within 24 business hours
     '''
@@ -5212,9 +5324,9 @@ def _generate_invoice_pdf(driver, week_data, orders):
     # ==================== FOOTER ====================
     
     footer_text = f'''
-    <i>This invoice was automatically generated by CanaLogistiX payment processing system on {current_date}.<br/>
+    <i>This invoice was automatically generated by {settings.COMPANY_OPERATING_NAME} payment processing system on {current_date}.<br/>
     Invoice Reference: {invoice_number} | Confidential Financial Document<br/>
-    © {timezone.now().year} CanaLogistiX - Cana Group of Companies. All rights reserved.</i>
+    © {timezone.now().year} {settings.COMPANY_OPERATING_NAME} - {settings.COMPANY_SUB_GROUP_NAME}. All rights reserved.</i>
     '''
     
     story.append(Paragraph(footer_text, footer_style))
@@ -5375,13 +5487,16 @@ def driver_invoice_weeks(request):
                         total_amount_formatted = total_amount.quantize(Decimal("0.01"))
                         payment_rate_percent = settings.PAYMENT_RATE_PERCENT
 
+                        company_name = settings.COMPANY_OPERATING_NAME
+                        company_subgroup_name = settings.COMPANY_SUB_GROUP_NAME
+
                         # Using .format() to avoid f-string CSS brace conflicts
                         driver_invoice_html = """
 <!doctype html>
 <html lang="en">
   <head>
     <meta charset="utf-8">
-    <title>Payment Statement Available • CanaLogistiX</title>
+    <title>Payment Statement Available • {company_name}</title>
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <style>
       @media (prefers-color-scheme: dark) {{
@@ -5401,7 +5516,7 @@ def driver_invoice_weeks(request):
                 <table width="100%" cellspacing="0" cellpadding="0" border="0">
                   <tr>
                     <td align="left">
-                      <img src="{logo_url}" alt="CanaLogistiX" width="64" height="64" style="display:block;border:0;outline:none;text-decoration:none;border-radius:50%;object-fit:cover;">
+                      <img src="{logo_url}" alt="{company_name}" width="64" height="64" style="display:block;border:0;outline:none;text-decoration:none;border-radius:50%;object-fit:cover;">
                     </td>
                     <td align="right" style="font:600 16px/1.2 system-ui,-apple-system,'Segoe UI',Roboto,Helvetica,Arial;color:#e6fffb;">
                       Payment Statement Ready
@@ -5543,7 +5658,7 @@ def driver_invoice_weeks(request):
                   <tr>
                     <td style="padding:12px 16px;">
                       <p style="margin:0;font:400 12px/1.6 system-ui,-apple-system,'Segoe UI',Roboto,Helvetica,Arial;color:#64748b;">
-                        Thank you for being a valued Delivery Partner with CanaLogistiX!
+                        Thank you for being a valued Delivery Partner with {company_name}!
                       </p>
                     </td>
                   </tr>
@@ -5554,7 +5669,7 @@ def driver_invoice_weeks(request):
           </table>
           
           <p style="margin:14px 0 0;font:400 12px/1.6 system-ui,-apple-system,'Segoe UI',Roboto,Helvetica,Arial;color:#94a3b8;">
-            © {current_year} CanaLogistiX - Cana Group of Companies. All rights reserved.
+            © {current_year} {company_name} - {company_subgroup_name}. All rights reserved.
           </p>
         </td>
       </tr>
@@ -5579,7 +5694,7 @@ def driver_invoice_weeks(request):
                         )
 
                         driver_invoice_text = (
-                            f"Payment Statement Available - CanaLogistiX\n\n"
+                            f"Payment Statement Available - {settings.COMPANY_OPERATING_NAME}\n\n"
                             f"Hello {driver.name},\n\n"
                             f"Your payment statement for the week of {start_date_formatted} to {end_date_formatted} is now available.\n\n"
                             f"PAYMENT SUMMARY:\n"
@@ -5755,7 +5870,7 @@ def contact_admin_api(request):
 <html lang="en">
   <head>
     <meta charset="utf-8">
-    <title>Support Query Received • CanaLogistiX</title>
+    <title>Support Query Received • {settings.COMPANY_OPERATING_NAME}</title>
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <style>
       @media (prefers-color-scheme: dark) {{
@@ -5780,7 +5895,7 @@ def contact_admin_api(request):
                 <tr>
                     <td align="left">
                     <img src="{logo_url}"
-                        alt="CanaLogistiX"
+                        alt="{settings.COMPANY_OPERATING_NAME}"
                         width="64"
                         height="64"
                         style="display:block;border:0;outline:none;text-decoration:none;border-radius:50%;object-fit:cover;">
@@ -5800,7 +5915,7 @@ def contact_admin_api(request):
                   Hi {user_name or "there"}, we've received your message 
                 </h1>
                 <p style="margin:0 0 16px;font:400 14px/1.7 system-ui,-apple-system,'Segoe UI',Roboto,Helvetica,Arial;color:#475569;">
-                  Thank you for reaching out to <strong>CanaLogistiX</strong>. Your support query has been successfully 
+                  Thank you for reaching out to <strong>{settings.COMPANY_OPERATING_NAME}</strong>. Your support query has been successfully 
                   submitted and our team will review it shortly. We typically respond within 24-48 hours.
                 </p>
 
@@ -5853,7 +5968,7 @@ def contact_admin_api(request):
           </table>
 
           <p style="margin:14px 0 0;font:400 12px/1.6 system-ui,-apple-system,'Segoe UI',Roboto,Helvetica,Arial;color:#94a3b8;">
-            © {timezone.now().year} CanaLogistiX - Cana Group of Companies. All rights reserved.
+            © {timezone.now().year} {settings.COMPANY_OPERATING_NAME} - {settings.COMPANY_SUB_GROUP_NAME}. All rights reserved.
           </p>
         </td>
       </tr>
@@ -5862,7 +5977,7 @@ def contact_admin_api(request):
 </html>
 """
                 text = (
-                    "Support Query Received - CanaLogistiX\n\n"
+                    f"Support Query Received - {settings.COMPANY_OPERATING_NAME}\n\n"
                     f"Hi {user_name or 'there'},\n\n"
                     "Thank you for reaching out. Your support query has been successfully submitted.\n\n"
                     f"Ticket ID: #{contact.id}\n"
@@ -5902,7 +6017,7 @@ def contact_admin_api(request):
 <html lang="en">
   <head>
     <meta charset="utf-8">
-    <title>New Support Ticket • CanaLogistiX</title>
+    <title>New Support Ticket • {settings.COMPANY_OPERATING_NAME}</title>
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <style>
       @media (prefers-color-scheme: dark) {{
@@ -5923,7 +6038,7 @@ def contact_admin_api(request):
                   <tr>
                     <td align="left">
                       <img src="{logo_url}"
-                           alt="CanaLogistiX"
+                           alt="{settings.COMPANY_OPERATING_NAME}"
                            width="64"
                            height="64"
                            style="display:block;border:0;outline:none;text-decoration:none;border-radius:50%;object-fit:cover;">
@@ -5942,7 +6057,7 @@ def contact_admin_api(request):
                   New Support Ticket Raised
                 </h1>
                 <p style="margin:0 0 20px;font:400 14px/1.7 system-ui,-apple-system,'Segoe UI',Roboto,Helvetica,Arial;color:#475569;">
-                  A <strong>{user_type}</strong> has raised a support ticket on the CanaLogistiX platform.
+                  A <strong>{user_type}</strong> has raised a support ticket on the {settings.COMPANY_OPERATING_NAME} platform.
                 </p>
 
                 <div style="margin:18px 0;background:#fff7ed;border:1px solid #fb923c;border-radius:12px;padding:14px 18px;">
@@ -6003,7 +6118,7 @@ def contact_admin_api(request):
 
                 <hr style="border:0;border-top:1px solid #e5e7eb;margin:24px 0;">
                 <p style="margin:0;font:400 12px/1.7 system-ui,-apple-system,'Segoe UI',Roboto,Helvetica,Arial;color:#64748b;">
-                  This is an automated notification from the CanaLogistiX support system. Please review and respond to this ticket at your earliest convenience.
+                  This is an automated notification from the {settings.COMPANY_OPERATING_NAME} support system. Please review and respond to this ticket at your earliest convenience.
                 </p>
               </td>
             </tr>
@@ -6011,7 +6126,7 @@ def contact_admin_api(request):
           </table>
 
           <p style="margin:14px 0 0;font:400 12px/1.6 system-ui,-apple-system,'Segoe UI',Roboto,Helvetica,Arial;color:#94a3b8;">
-            © {timezone.now().year} CanaLogistiX - Cana Group of Companies. All rights reserved.
+            © {timezone.now().year} {settings.COMPANY_OPERATING_NAME} - {settings.COMPANY_SUB_GROUP_NAME}. All rights reserved.
           </p>
         </td>
       </tr>
@@ -6020,7 +6135,7 @@ def contact_admin_api(request):
 </html>
 """
             office_text = (
-                "New Support Ticket on CanaLogistiX\n\n"
+                f"New Support Ticket on {settings.COMPANY_OPERATING_NAME}\n\n"
                 f"A {user_type} has raised a support ticket.\n\n"
                 f"Ticket ID: #{contact.id}\n"
                 f"User Type: {user_type}\n"
@@ -6114,7 +6229,7 @@ def send_otp(request: HttpRequest):
 <html lang="en">
   <head>
     <meta charset="utf-8">
-    <title>CanaLogistiX Verification Code</title>
+    <title>{settings.COMPANY_OPERATING_NAME} Verification Code</title>
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <style>
       @media (prefers-color-scheme: dark) {{
@@ -6127,7 +6242,7 @@ def send_otp(request: HttpRequest):
   <body style="margin:0;padding:0;background:#f4f7f9;">
     <!-- Preheader (hidden, improves inbox preview) -->
     <div style="display:none;visibility:hidden;opacity:0;height:0;width:0;overflow:hidden;">
-      Your CanaLogistiX verification code. Expires in {OTP_TTL_SECONDS//60} minute(s).
+      Your {settings.COMPANY_OPERATING_NAME} verification code. Expires in {OTP_TTL_SECONDS//60} minute(s).
     </div>
 
     <table role="presentation" width="100%" cellspacing="0" cellpadding="0" border="0" style="background:#f4f7f9;padding:24px 12px;">
@@ -6142,7 +6257,7 @@ def send_otp(request: HttpRequest):
                     <tr>
                         <td align="left" style="vertical-align:middle;">
                         <img src="https://canalogistix.s3.us-east-2.amazonaws.com/Logo/CanaLogistiX_Logo_NOBG.png"
-                            alt="CanaLogistiX"
+                            alt="{settings.COMPANY_OPERATING_NAME}"
                             width="64"
                             height="64"
                             style="display:block;border:0;outline:none;text-decoration:none;border-radius:50%;object-fit:cover;">
@@ -6160,7 +6275,7 @@ def send_otp(request: HttpRequest):
             <tr>
               <td style="padding:28px 24px 8px 24px;">
                 <h1 style="margin:0 0 10px 0;font:700 22px/1.25 system-ui,-apple-system,'Segoe UI',Roboto,Helvetica,Arial;color:#0f172a;">
-                  Your CanaLogistiX verification code
+                  Your {settings.COMPANY_OPERATING_NAME} verification code
                 </h1>
                 <p style="margin:0 0 18px 0;font:400 14px/1.6 system-ui,-apple-system,'Segoe UI',Roboto,Helvetica,Arial;color:#475569;">
                   Use the code below to continue. For your security, don’t share it with anyone.
@@ -6210,7 +6325,7 @@ def send_otp(request: HttpRequest):
 
           <!-- Brand footer -->
           <p style="margin:14px 0 0 0;font:400 12px/1.6 system-ui,-apple-system,'Segoe UI',Roboto,Helvetica,Arial;color:#94a3b8;">
-            © {datetime.utcnow().year} CanaLogistiX - Cana Group of Companies. All rights reserved.
+            © {datetime.utcnow().year} {settings.COMPANY_OPERATING_NAME} - {settings.COMPANY_SUB_GROUP_NAME}. All rights reserved.
           </p>
         </td>
       </tr>
@@ -6219,8 +6334,8 @@ def send_otp(request: HttpRequest):
 </html>
 """
 
-    subject = f"Your CanaLogistiX code • Expires in {OTP_TTL_SECONDS // 60} min"
-    text = f"Your CanaLogistiX verification code is: {otp}\nThis code expires in {OTP_TTL_SECONDS//60} minute(s).\nIf you didn’t request it, you can ignore this message."
+    subject = f"Your {settings.COMPANY_OPERATING_NAME} code • Expires in {OTP_TTL_SECONDS // 60} min"
+    text = f"Your {settings.COMPANY_OPERATING_NAME} verification code is: {otp}\nThis code expires in {OTP_TTL_SECONDS//60} minute(s).\nIf you didn’t request it, you can ignore this message."
 
     try:
         _send_html_email_help_desk(subject, email, html, text)
@@ -6317,7 +6432,7 @@ def change_password(request: HttpRequest):
 <html lang="en">
   <head>
     <meta charset="utf-8">
-    <title>Password Changed Successfully • CanaLogistiX</title>
+    <title>Password Changed Successfully • {settings.COMPANY_OPERATING_NAME}</title>
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <style>
       @media (prefers-color-scheme: dark) {{
@@ -6331,7 +6446,7 @@ def change_password(request: HttpRequest):
   <body style="margin:0;padding:0;background:#f4f7f9;">
     <!-- Preheader (hidden) -->
     <div style="display:none;visibility:hidden;opacity:0;height:0;width:0;overflow:hidden;">
-      Your CanaLogistiX password was changed on {changed_at}.
+      Your {settings.COMPANY_OPERATING_NAME} password was changed on {changed_at}.
     </div>
 
     <table role="presentation" width="100%" cellspacing="0" cellpadding="0" border="0" style="background:#f4f7f9;padding:24px 12px;">
@@ -6346,7 +6461,7 @@ def change_password(request: HttpRequest):
                     <tr>
                         <td align="left" style="vertical-align:middle;">
                         <img src="{logo_url}"
-                            alt="CanaLogistiX"
+                            alt="{settings.COMPANY_OPERATING_NAME}"
                             width="64" height="64"
                             style="display:block;border:0;outline:none;text-decoration:none;border-radius:50%;object-fit:cover;">
                         </td>
@@ -6366,7 +6481,7 @@ def change_password(request: HttpRequest):
                   Password Changed Successfully
                 </h1>
                 <p style="margin:0 0 16px 0;font:400 14px/1.6 system-ui,-apple-system,'Segoe UI',Roboto,Helvetica,Arial;color:#475569;">
-                  Your CanaLogistiX account password was changed on
+                  Your {settings.COMPANY_OPERATING_NAME} account password was changed on
                   <strong style="color:{brand_primary_dark}">{changed_at}</strong>.
                 </p>
 
@@ -6409,7 +6524,7 @@ def change_password(request: HttpRequest):
 
           <!-- Brand footer -->
           <p style="margin:14px 0 0 0;font:400 12px/1.6 system-ui,-apple-system,'Segoe UI',Roboto,Helvetica,Arial;color:#94a3b8;">
-            © {timezone.now().year} CanaLogistiX - Cana Group of Companies. All rights reserved.
+            © {timezone.now().year} {settings.COMPANY_OPERATING_NAME} - {settings.COMPANY_SUB_GROUP_NAME}. All rights reserved.
           </p>
         </td>
       </tr>
@@ -6418,14 +6533,14 @@ def change_password(request: HttpRequest):
 </html>
 """
         text = (
-            "CanaLogistiX — Password Changed Successfully\n\n"
+            f"{settings.COMPANY_OPERATING_NAME} — Password Changed Successfully\n\n"
             f"Timestamp: {changed_at}\n\n"
             "If you did not make this change, please reset your password immediately:\n"
             f"{reset_link}\n"
         )
 
         _send_html_email_help_desk(
-            subject="Your CanaLogistiX password was changed",
+            subject=f"Your {settings.COMPANY_OPERATING_NAME} password was changed",
             to_email=email,
             html=html,
             text_fallback=text,
@@ -6498,13 +6613,13 @@ def change_password_driver(request: HttpRequest):
 <html lang="en">
   <head>
     <meta charset="utf-8">
-    <title>Password Changed • CanaLogistiX Driver</title>
+    <title>Password Changed • {settings.COMPANY_OPERATING_NAME} Driver</title>
     <meta name="viewport" content="width=device-width, initial-scale=1">
   </head>
   <body style="margin:0;padding:0;background:{bg_dark};">
     <!-- Preheader (hidden) -->
     <div style="display:none;visibility:hidden;opacity:0;height:0;width:0;overflow:hidden;">
-      Your CanaLogistiX driver password was changed on {changed_at}.
+      Your {settings.COMPANY_OPERATING_NAME} driver password was changed on {changed_at}.
     </div>
 
     <table role="presentation" width="100%" cellspacing="0" cellpadding="0" border="0" style="background:{bg_dark};padding:24px 12px;">
@@ -6519,7 +6634,7 @@ def change_password_driver(request: HttpRequest):
                 <tr>
                     <td align="left" style="vertical-align:middle;">
                     <img src="{logo_url}"
-                        alt="CanaLogistiX"
+                        alt="{settings.COMPANY_OPERATING_NAME}"
                         width="64"
                         height="64"
                         style="display:block;border:0;outline:none;text-decoration:none;border-radius:50%;object-fit:cover;">
@@ -6540,7 +6655,7 @@ def change_password_driver(request: HttpRequest):
                   Password Changed Successfully
                 </h1>
                 <p style="margin:0 0 16px 0;font:400 14px/1.6 system-ui,-apple-system,'Segoe UI',Roboto,Helvetica,Arial;color:{text_muted};">
-                  Your CanaLogistiX <strong style="color:{text_light};">driver</strong> account password was changed on
+                  Your {settings.COMPANY_OPERATING_NAME} <strong style="color:{text_light};">driver</strong> account password was changed on
                   <strong style="color:{brand_primary};">{changed_at}</strong>.
                 </p>
 
@@ -6582,7 +6697,7 @@ def change_password_driver(request: HttpRequest):
 
           <!-- Brand footer -->
           <p style="margin:14px 0 0 0;font:400 12px/1.6 system-ui,-apple-system,'Segoe UI',Roboto,Helvetica,Arial;color:{text_muted};">
-            © {timezone.now().year} CanaLogistiX - Cana Group of Companies. All rights reserved.
+            © {timezone.now().year} {settings.COMPANY_OPERATING_NAME} - {settings.COMPANY_SUB_GROUP_NAME}. All rights reserved.
           </p>
         </td>
       </tr>
@@ -6591,13 +6706,13 @@ def change_password_driver(request: HttpRequest):
 </html>
 """
         text = (
-            "CanaLogistiX — Driver Password Changed Successfully\n\n"
+            f"{settings.COMPANY_OPERATING_NAME} — Driver Password Changed Successfully\n\n"
             f"Timestamp: {changed_at}\n\n"
             "If you did not make this change, please reset your password immediately."
         )
 
         _send_html_email_help_desk(
-            subject="Your CanaLogistiX driver password was changed",
+            subject=f"Your {settings.COMPANY_OPERATING_NAME} driver password was changed",
             to_email=email,
             html=html,
             text_fallback=text,
@@ -6712,7 +6827,7 @@ def register_pharmacy(request: HttpRequest):
 <html lang="en">
   <head>
     <meta charset="utf-8">
-    <title>Welcome to CanaLogistiX • Pharmacy Registration</title>
+    <title>Welcome to {settings.COMPANY_OPERATING_NAME} • Pharmacy Registration</title>
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <style>
       @media (prefers-color-scheme: dark) {{
@@ -6724,7 +6839,7 @@ def register_pharmacy(request: HttpRequest):
   </head>
   <body style="margin:0;padding:0;background:#f4f7f9;">
     <div style="display:none;visibility:hidden;opacity:0;height:0;width:0;overflow:hidden;">
-      Registration confirmed — welcome to CanaLogistiX and the Cana Family by CGC.
+      Registration confirmed — welcome to {settings.COMPANY_OPERATING_NAME} and the Cana Family by {settings.COMPANY_SUB_GROUP_NAME}.
     </div>
 
     <table role="presentation" width="100%" cellspacing="0" cellpadding="0" border="0" style="background:#f4f7f9;padding:24px 12px;">
@@ -6737,13 +6852,13 @@ def register_pharmacy(request: HttpRequest):
                 <tr>
                     <td align="left">
                     <img src="{logo_url}"
-                        alt="CanaLogistiX"
+                        alt="{settings.COMPANY_OPERATING_NAME}"
                         width="64"
                         height="64"
                         style="display:block;border:0;outline:none;text-decoration:none;border-radius:50%;object-fit:cover;">
                     </td>
                     <td align="right" style="font:600 16px/1.2 system-ui,-apple-system,'Segoe UI',Roboto,Helvetica,Arial;color:#e6fffb;">
-                    Welcome to CanaLogistiX
+                    Welcome to {settings.COMPANY_OPERATING_NAME}
                     </td>
                 </tr>
                 </table>
@@ -6757,7 +6872,7 @@ def register_pharmacy(request: HttpRequest):
                   Hi {name or "there"}, your pharmacy is all set 🎉
                 </h1>
                 <p style="margin:0 0 16px;font:400 14px/1.7 system-ui,-apple-system,'Segoe UI',Roboto,Helvetica,Arial;color:#475569;">
-                  Thanks for registering with <strong>CanaLogistiX</strong> and joining the <strong>Cana Family by CGC</strong>.
+                  Thanks for registering with <strong>{settings.COMPANY_OPERATING_NAME}</strong> and joining the <strong>Cana Family by {settings.COMPANY_SUB_GROUP_NAME}</strong>.
                   We’re excited to help your team coordinate secure, trackable, and timely deliveries with a dashboard
                   designed for pharmacies.
                 </p>
@@ -6798,7 +6913,7 @@ def register_pharmacy(request: HttpRequest):
           </table>
 
           <p style="margin:14px 0 0;font:400 12px/1.6 system-ui,-apple-system,'Segoe UI',Roboto,Helvetica,Arial;color:#94a3b8;">
-            © {timezone.now().year} CanaLogistiX - Cana Group of Companies. All rights reserved.
+            © {timezone.now().year} {settings.COMPANY_OPERATING_NAME} - {settings.COMPANY_SUB_GROUP_NAME}. All rights reserved.
           </p>
         </td>
       </tr>
@@ -6807,7 +6922,7 @@ def register_pharmacy(request: HttpRequest):
 </html>
 """
         text = (
-            "Welcome to CanaLogistiX and the Cana Family by CGC!\n\n"
+            f"Welcome to {settings.COMPANY_OPERATING_NAME} and the Cana Family by {settings.COMPANY_SUB_GROUP_NAME}!\n\n"
             f"Hi {name or 'there'}, your pharmacy registration is confirmed.\n"
             "• Live order tracking with photo proof\n"
             "• Weekly invoices and transparent earnings\n"
@@ -6816,7 +6931,7 @@ def register_pharmacy(request: HttpRequest):
         )
 
         _send_html_email_help_desk(
-            subject="Welcome to CanaLogistiX • Pharmacy Registration Confirmed",
+            subject=f"Welcome to {settings.COMPANY_OPERATING_NAME} • Pharmacy Registration Confirmed",
             to_email=email,
             html=html,
             text_fallback=text,
@@ -6836,7 +6951,7 @@ def register_pharmacy(request: HttpRequest):
 <html lang="en">
   <head>
     <meta charset="utf-8">
-    <title>New Pharmacy Registration • CanaLogistiX</title>
+    <title>New Pharmacy Registration • {settings.COMPANY_OPERATING_NAME}</title>
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <style>
       @media (prefers-color-scheme: dark) {{
@@ -6857,7 +6972,7 @@ def register_pharmacy(request: HttpRequest):
                   <tr>
                     <td align="left">
                       <img src="{logo_url}"
-                           alt="CanaLogistiX"
+                           alt="{settings.COMPANY_OPERATING_NAME}"
                            width="64"
                            height="64"
                            style="display:block;border:0;outline:none;text-decoration:none;border-radius:50%;object-fit:cover;">
@@ -6876,7 +6991,7 @@ def register_pharmacy(request: HttpRequest):
                   New Pharmacy Registration
                 </h1>
                 <p style="margin:0 0 20px;font:400 14px/1.7 system-ui,-apple-system,'Segoe UI',Roboto,Helvetica,Arial;color:#475569;">
-                  A new pharmacy has successfully registered on the CanaLogistiX platform.
+                  A new pharmacy has successfully registered on the {settings.COMPANY_OPERATING_NAME} platform.
                 </p>
 
                 <div style="margin:18px 0;background:#f8fafc;border:1px solid #e2e8f0;border-radius:12px;padding:0;overflow:hidden;">
@@ -6932,7 +7047,7 @@ def register_pharmacy(request: HttpRequest):
 
                 <hr style="border:0;border-top:1px solid #e5e7eb;margin:24px 0;">
                 <p style="margin:0;font:400 12px/1.7 system-ui,-apple-system,'Segoe UI',Roboto,Helvetica,Arial;color:#64748b;">
-                  This is an automated notification from the CanaLogistiX registration system.
+                  This is an automated notification from the {settings.COMPANY_OPERATING_NAME} registration system.
                 </p>
               </td>
             </tr>
@@ -6940,7 +7055,7 @@ def register_pharmacy(request: HttpRequest):
           </table>
 
           <p style="margin:14px 0 0;font:400 12px/1.6 system-ui,-apple-system,'Segoe UI',Roboto,Helvetica,Arial;color:#94a3b8;">
-            © {timezone.now().year} CanaLogistiX - Cana Group of Companies. All rights reserved.
+            © {timezone.now().year} {settings.COMPANY_OPERATING_NAME} - {settings.COMPANY_SUB_GROUP_NAME}. All rights reserved.
           </p>
         </td>
       </tr>
@@ -6949,7 +7064,7 @@ def register_pharmacy(request: HttpRequest):
 </html>
 """
         office_text = (
-            "New Pharmacy Registration on CanaLogistiX\n\n"
+            f"New Pharmacy Registration on {settings.COMPANY_OPERATING_NAME}\n\n"
             f"Pharmacy Name: {name}\n"
             f"Email: {email}\n"
             f"Phone: {phone_number}\n"
@@ -7060,12 +7175,12 @@ def register_driver(request: HttpRequest):
 <html lang="en">
   <head>
     <meta charset="utf-8">
-    <title>Welcome to CanaLogistiX • Driver Registration</title>
+    <title>Welcome to {settings.COMPANY_OPERATING_NAME} • Driver Registration</title>
     <meta name="viewport" content="width=device-width, initial-scale=1">
   </head>
   <body style="margin:0;padding:0;background:{bg_dark};">
     <div style="display:none;visibility:hidden;opacity:0;height:0;width:0;overflow:hidden;">
-      Registration confirmed — welcome to CanaLogistiX and the Cana Family by CGC.
+      Registration confirmed — welcome to {settings.COMPANY_OPERATING_NAME} and the Cana Family by {settings.COMPANY_SUB_GROUP_NAME}.
     </div>
 
     <table role="presentation" width="100%" cellspacing="0" cellpadding="0" border="0" style="background:{bg_dark};padding:24px 12px;">
@@ -7078,13 +7193,13 @@ def register_driver(request: HttpRequest):
                 <tr>
                     <td align="left">
                     <img src="{logo_url}"
-                        alt="CanaLogistiX"
+                        alt="{settings.COMPANY_OPERATING_NAME}"
                         width="64"
                         height="64"
                         style="display:block;border:0;outline:none;text-decoration:none;border-radius:50%;object-fit:cover;">
                     </td>
                     <td align="right" style="font:600 16px/1.2 system-ui,-apple-system,'Segoe UI',Roboto,Helvetica,Arial;color:#e6fffb;">
-                    Welcome to CanaLogistiX
+                    Welcome to {settings.COMPANY_OPERATING_NAME}
                     </td>
                 </tr>
                 </table>
@@ -7098,7 +7213,7 @@ def register_driver(request: HttpRequest):
                   Hey {name or "driver"}, you're in!
                 </h1>
                 <p style="margin:0 0 16px;font:400 14px/1.7 system-ui,-apple-system,'Segoe UI',Roboto,Helvetica,Arial;color:{text_muted};">
-                  Welcome to <strong style="color:{text_light};">CanaLogistiX</strong> and the <strong style="color:{text_light};">Cana Family by CGC</strong>.
+                  Welcome to <strong style="color:{text_light};">{settings.COMPANY_OPERATING_NAME}</strong> and the <strong style="color:{text_light};">Cana Family by {settings.COMPANY_SUB_GROUP_NAME}</strong>.
                   You now have access to a streamlined delivery experience with clear routes, photo-verified steps, and
                   weekly earnings summaries.
                 </p>
@@ -7125,7 +7240,7 @@ def register_driver(request: HttpRequest):
           </table>
 
           <p style="margin:14px 0 0;font:400 12px/1.6 system-ui,-apple-system,'Segoe UI',Roboto,Helvetica,Arial;color:{text_muted};">
-            © {timezone.now().year} CanaLogistiX - Cana Group of Companies. All rights reserved.
+            © {timezone.now().year} {settings.COMPANY_OPERATING_NAME} - {settings.COMPANY_SUB_GROUP_NAME}. All rights reserved.
           </p>
         </td>
       </tr>
@@ -7134,7 +7249,7 @@ def register_driver(request: HttpRequest):
 </html>
 """
         text = (
-            "Welcome to CanaLogistiX and the Cana Family by CGC!\n\n"
+            f"Welcome to {settings.COMPANY_OPERATING_NAME} and the Cana Family by {settings.COMPANY_SUB_GROUP_NAME}!\n\n"
             f"Hey {name or 'driver'}, your driver registration is confirmed.\n"
             "• Photo-verified delivery steps\n"
             "• Clear delivery details and navigation\n"
@@ -7143,7 +7258,7 @@ def register_driver(request: HttpRequest):
         )
 
         _send_html_email_help_desk(
-            subject="Welcome to CanaLogistiX • Delivery Partner Registration Confirmed",
+            subject=f"Welcome to {settings.COMPANY_OPERATING_NAME} • Delivery Partner Registration Confirmed",
             to_email=email,
             html=html,
             text_fallback=text,
@@ -7163,7 +7278,7 @@ def register_driver(request: HttpRequest):
 <html lang="en">
   <head>
     <meta charset="utf-8">
-    <title>New Delivery Partner Registration • CanaLogistiX</title>
+    <title>New Delivery Partner Registration • {settings.COMPANY_OPERATING_NAME}</title>
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <style>
       @media (prefers-color-scheme: dark) {{
@@ -7184,7 +7299,7 @@ def register_driver(request: HttpRequest):
                   <tr>
                     <td align="left">
                       <img src="{logo_url}"
-                           alt="CanaLogistiX"
+                           alt="{settings.COMPANY_OPERATING_NAME}"
                            width="64"
                            height="64"
                            style="display:block;border:0;outline:none;text-decoration:none;border-radius:50%;object-fit:cover;">
@@ -7203,7 +7318,7 @@ def register_driver(request: HttpRequest):
                   New Delivery Partner Registration
                 </h1>
                 <p style="margin:0 0 20px;font:400 14px/1.7 system-ui,-apple-system,'Segoe UI',Roboto,Helvetica,Arial;color:#475569;">
-                  A new delivery partner has successfully registered on the CanaLogistiX platform.
+                  A new delivery partner has successfully registered on the {settings.COMPANY_OPERATING_NAME} platform.
                 </p>
 
                 <div style="margin:18px 0;background:#f8fafc;border:1px solid #e2e8f0;border-radius:12px;padding:0;overflow:hidden;">
@@ -7243,7 +7358,7 @@ def register_driver(request: HttpRequest):
 
                 <hr style="border:0;border-top:1px solid #e5e7eb;margin:24px 0;">
                 <p style="margin:0;font:400 12px/1.7 system-ui,-apple-system,'Segoe UI',Roboto,Helvetica,Arial;color:#64748b;">
-                  This is an automated notification from the CanaLogistiX registration system.
+                  This is an automated notification from the {settings.COMPANY_OPERATING_NAME} registration system.
                 </p>
               </td>
             </tr>
@@ -7251,7 +7366,7 @@ def register_driver(request: HttpRequest):
           </table>
 
           <p style="margin:14px 0 0;font:400 12px/1.6 system-ui,-apple-system,'Segoe UI',Roboto,Helvetica,Arial;color:#94a3b8;">
-            © {timezone.now().year} CanaLogistiX - Cana Group of Companies. All rights reserved.
+            © {timezone.now().year} {settings.COMPANY_OPERATING_NAME} - {settings.COMPANY_SUB_GROUP_NAME}. All rights reserved.
           </p>
         </td>
       </tr>
@@ -7260,7 +7375,7 @@ def register_driver(request: HttpRequest):
 </html>
 """
         office_text = (
-            "New Driver Registration on CanaLogistiX\n\n"
+            f"New Driver Registration on {settings.COMPANY_OPERATING_NAME}\n\n"
             f"Driver Name: {name}\n"
             f"Email: {email}\n"
             f"Phone: {phone_number}\n"
@@ -7403,7 +7518,7 @@ def _send_password_change_email(email):
 <html lang="en">
   <head>
     <meta charset="utf-8">
-    <title>Password Changed Successfully • CanaLogistiX</title>
+    <title>Password Changed Successfully • {settings.COMPANY_OPERATING_NAME}</title>
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <style>
       @media (prefers-color-scheme: dark) {{
@@ -7416,7 +7531,7 @@ def _send_password_change_email(email):
   <body style="margin:0;padding:0;background:#f4f7f9;">
     <!-- Hidden preheader -->
     <div style="display:none;visibility:hidden;opacity:0;height:0;width:0;overflow:hidden;">
-      Your CanaLogistiX password was changed on {changed_at}.
+      Your {settings.COMPANY_OPERATING_NAME} password was changed on {changed_at}.
     </div>
 
     <table role="presentation" width="100%" cellspacing="0" cellpadding="0" border="0" style="background:#f4f7f9;padding:24px 12px;">
@@ -7430,7 +7545,7 @@ def _send_password_change_email(email):
                 <tr>
                     <td align="left" style="vertical-align:middle;">
                     <img src="{logo_url}"
-                        alt="CanaLogistiX"
+                        alt="{settings.COMPANY_OPERATING_NAME}"
                         width="40"
                         height="40"
                         style="display:block;border:0;outline:none;text-decoration:none;border-radius:50%;object-fit:cover;">
@@ -7450,7 +7565,7 @@ def _send_password_change_email(email):
                   Password Changed Successfully
                 </h1>
                 <p style="margin:0 0 16px 0;font:400 14px/1.6 system-ui,-apple-system,'Segoe UI',Roboto,Helvetica,Arial;color:#475569;">
-                  Your CanaLogistiX account password was changed on
+                  Your {settings.COMPANY_OPERATING_NAME} account password was changed on
                   <strong style="color:{brand_primary_dark}">{changed_at}</strong>.
                 </p>
 
@@ -7491,7 +7606,7 @@ def _send_password_change_email(email):
           </table>
 
           <p style="margin:14px 0 0 0;font:400 12px/1.6 system-ui,-apple-system,'Segoe UI',Roboto,Helvetica,Arial;color:#94a3b8;">
-            © {timezone.now().year} CanaLogistiX - Cana Group of Companies. All rights reserved.
+            © {timezone.now().year} {settings.COMPANY_OPERATING_NAME} - {settings.COMPANY_SUB_GROUP_NAME}. All rights reserved.
           </p>
         </td>
       </tr>
@@ -7501,13 +7616,13 @@ def _send_password_change_email(email):
 """
 
     text_content = (
-        f"CanaLogistiX — Password Changed Successfully\n\n"
+        f"{settings.COMPANY_OPERATING_NAME} — Password Changed Successfully\n\n"
         f"Your password was changed on {changed_at}.\n\n"
         "If you did not perform this change, please reset your password immediately.\n\n"
-        "CanaLogistiX Support\n"
+        f"{settings.COMPANY_OPERATING_NAME} Support\n"
     )
 
-    subject = "Your CanaLogistiX Password Was Changed Successfully"
+    subject = f"Your {settings.COMPANY_OPERATING_NAME} Password Was Changed Successfully"
     from_email = settings.DEFAULT_FROM_EMAIL
     msg = EmailMultiAlternatives(subject, text_content, from_email, [email])
     msg.attach_alternative(html_content, "text/html")
@@ -8263,7 +8378,7 @@ def recent_activity_feed(request):
         )
         pharmacy_feed = [{
             "type": "New Pharmacy",
-            "title": f"{p.name} joined CanaLogistiX",
+            "title": f"{p.name} joined {settings.COMPANY_OPERATING_NAME}",
             "description": f"Located in {p.city}, {p.province}",
             "timestamp": p.created_at,
         } for p in pharmacies]
@@ -9029,7 +9144,7 @@ def cancel_order(request, order_id: int):
 <html lang="en">
   <head>
     <meta charset="utf-8">
-    <title>Order Cancelled • CanaLogistiX</title>
+    <title>Order Cancelled • {settings.COMPANY_OPERATING_NAME}</title>
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <style>
       @media (prefers-color-scheme: dark) {{
@@ -9049,7 +9164,7 @@ def cancel_order(request, order_id: int):
                 <table width="100%" cellspacing="0" cellpadding="0" border="0">
                   <tr>
                     <td align="left">
-                      <img src="{logo_url}" alt="CanaLogistiX" width="64" height="64" style="display:block;border:0;outline:none;text-decoration:none;border-radius:50%;object-fit:cover;">
+                      <img src="{logo_url}" alt="{settings.COMPANY_OPERATING_NAME}" width="64" height="64" style="display:block;border:0;outline:none;text-decoration:none;border-radius:50%;object-fit:cover;">
                     </td>
                     <td align="right" style="font:600 16px/1.2 system-ui,-apple-system,'Segoe UI',Roboto,Helvetica,Arial;color:#ffffff;">
                       Order Cancelled
@@ -9164,7 +9279,7 @@ def cancel_order(request, order_id: int):
                   <tr>
                     <td style="padding:12px 16px;">
                       <p style="margin:0;font:400 12px/1.6 system-ui,-apple-system,'Segoe UI',Roboto,Helvetica,Arial;color:#64748b;">
-                        Thank you for using CanaLogistiX.
+                        Thank you for using {settings.COMPANY_OPERATING_NAME}.
                       </p>
                     </td>
                   </tr>
@@ -9175,7 +9290,7 @@ def cancel_order(request, order_id: int):
           </table>
           
           <p style="margin:14px 0 0;font:400 12px/1.6 system-ui,-apple-system,'Segoe UI',Roboto,Helvetica,Arial;color:#94a3b8;">
-            © {timezone.now().year} CanaLogistiX - Cana Group of Companies. All rights reserved.
+            © {timezone.now().year} {settings.COMPANY_OPERATING_NAME} - {settings.COMPANY_SUB_GROUP_NAME}. All rights reserved.
           </p>
         </td>
       </tr>
@@ -9184,7 +9299,7 @@ def cancel_order(request, order_id: int):
 </html>
 """
             pharmacy_text = (
-                f"Order Cancelled - CanaLogistiX\n\n"
+                f"Order Cancelled - {settings.COMPANY_OPERATING_NAME}\n\n"
                 f"Hello {order.pharmacy.name},\n\n"
                 f"Delivery order #{order.id} has been cancelled through the admin dashboard.\n\n"
                 f"ORDER DETAILS:\n"
@@ -9202,7 +9317,7 @@ def cancel_order(request, order_id: int):
             )
 
             _send_html_email_operations(
-                subject=f"Order #{order.id} Cancelled • CanaLogistiX",
+                subject=f"Order #{order.id} Cancelled • {settings.COMPANY_OPERATING_NAME}",
                 to_email=order.pharmacy.email,
                 html=pharmacy_html,
                 text_fallback=pharmacy_text,
@@ -9229,7 +9344,7 @@ def cancel_order(request, order_id: int):
 <html lang="en">
   <head>
     <meta charset="utf-8">
-    <title>Order Cancelled • CanaLogistiX</title>
+    <title>Order Cancelled • {settings.COMPANY_OPERATING_NAME}</title>
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <style>
       @media (prefers-color-scheme: dark) {{
@@ -9249,7 +9364,7 @@ def cancel_order(request, order_id: int):
                 <table width="100%" cellspacing="0" cellpadding="0" border="0">
                   <tr>
                     <td align="left">
-                      <img src="{logo_url}" alt="CanaLogistiX" width="64" height="64" style="display:block;border:0;outline:none;text-decoration:none;border-radius:50%;object-fit:cover;">
+                      <img src="{logo_url}" alt="{settings.COMPANY_OPERATING_NAME}" width="64" height="64" style="display:block;border:0;outline:none;text-decoration:none;border-radius:50%;object-fit:cover;">
                     </td>
                     <td align="right" style="font:600 16px/1.2 system-ui,-apple-system,'Segoe UI',Roboto,Helvetica,Arial;color:#ffffff;">
                       Order Cancelled
@@ -9381,7 +9496,7 @@ def cancel_order(request, order_id: int):
                   <tr>
                     <td style="padding:12px 16px;">
                       <p style="margin:0;font:400 12px/1.6 system-ui,-apple-system,'Segoe UI',Roboto,Helvetica,Arial;color:#64748b;">
-                        Thank you for being part of the CanaLogistiX team.
+                        Thank you for being part of the {settings.COMPANY_OPERATING_NAME} team.
                       </p>
                     </td>
                   </tr>
@@ -9392,7 +9507,7 @@ def cancel_order(request, order_id: int):
           </table>
           
           <p style="margin:14px 0 0;font:400 12px/1.6 system-ui,-apple-system,'Segoe UI',Roboto,Helvetica,Arial;color:#94a3b8;">
-            © {timezone.now().year} CanaLogistiX - Cana Group of Companies. All rights reserved.
+            © {timezone.now().year} {settings.COMPANY_OPERATING_NAME} - {settings.COMPANY_SUB_GROUP_NAME}. All rights reserved.
           </p>
         </td>
       </tr>
@@ -9401,7 +9516,7 @@ def cancel_order(request, order_id: int):
 </html>
 """
             driver_text = (
-                f"Order Cancelled - CanaLogistiX\n\n"
+                f"Order Cancelled - {settings.COMPANY_OPERATING_NAME}\n\n"
                 f"Hello {order.driver.name},\n\n"
                 f"The delivery order #{order.id} that was assigned to you has been cancelled. No delivery is needed.\n\n"
                 f"ORDER DETAILS:\n"
@@ -9424,7 +9539,7 @@ def cancel_order(request, order_id: int):
             )
 
             _send_html_email_operations(
-                subject=f"Order #{order.id} Cancelled • CanaLogistiX",
+                subject=f"Order #{order.id} Cancelled • {settings.COMPANY_OPERATING_NAME}",
                 to_email=order.driver.email,
                 html=driver_html,
                 text_fallback=driver_text,
@@ -10972,7 +11087,7 @@ def update_ticket_status(request, ticket_id):
 <html lang="en">
   <head>
     <meta charset="utf-8">
-    <title>Ticket Status Updated • CanaLogistiX</title>
+    <title>Ticket Status Updated • {settings.COMPANY_OPERATING_NAME}</title>
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <style>
       @media (prefers-color-scheme: dark) {{
@@ -10997,7 +11112,7 @@ def update_ticket_status(request, ticket_id):
                   <tr>
                     <td align="left">
                       <img src="{logo_url}"
-                           alt="CanaLogistiX"
+                           alt="{settings.COMPANY_OPERATING_NAME}"
                            width="64"
                            height="64"
                            style="display:block;border:0;outline:none;text-decoration:none;border-radius:50%;object-fit:cover;">
@@ -11069,7 +11184,7 @@ def update_ticket_status(request, ticket_id):
           </table>
 
           <p style="margin:14px 0 0;font:400 12px/1.6 system-ui,-apple-system,'Segoe UI',Roboto,Helvetica,Arial;color:#94a3b8;">
-            © {timezone.now().year} CanaLogistiX - Cana Group of Companies. All rights reserved.
+            © {timezone.now().year} {settings.COMPANY_OPERATING_NAME} - {settings.COMPANY_SUB_GROUP_NAME}. All rights reserved.
           </p>
         </td>
       </tr>
@@ -11078,7 +11193,7 @@ def update_ticket_status(request, ticket_id):
 </html>
 """
             text = (
-                "Ticket Status Updated - CanaLogistiX\n\n"
+                f"Ticket Status Updated - {settings.COMPANY_OPERATING_NAME}\n\n"
                 f"Hi {user_name},\n\n"
                 f"Your support ticket #{ticket.id} status has been updated.\n\n"
                 f"Ticket ID: #{ticket.id}\n"
@@ -11199,7 +11314,7 @@ def add_admin_response(request, ticket_id):
 <html lang="en">
   <head>
     <meta charset="utf-8">
-    <title>Admin Response • CanaLogistiX</title>
+    <title>Admin Response • {settings.COMPANY_OPERATING_NAME}</title>
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <style>
       @media (prefers-color-scheme: dark) {{
@@ -11224,7 +11339,7 @@ def add_admin_response(request, ticket_id):
                   <tr>
                     <td align="left">
                       <img src="{logo_url}"
-                           alt="CanaLogistiX"
+                           alt="{settings.COMPANY_OPERATING_NAME}"
                            width="64"
                            height="64"
                            style="display:block;border:0;outline:none;text-decoration:none;border-radius:50%;object-fit:cover;">
@@ -11300,7 +11415,7 @@ def add_admin_response(request, ticket_id):
                   <tr>
                     <td style="padding:12px 16px;">
                       <p style="margin:0;font:400 12px/1.6 system-ui,-apple-system,'Segoe UI',Roboto,Helvetica,Arial;color:#64748b;">
-                        Thank you for contacting CanaLogistiX support. We're here to help!
+                        Thank you for contacting {settings.COMPANY_OPERATING_NAME} support. We're here to help!
                       </p>
                     </td>
                   </tr>
@@ -11311,7 +11426,7 @@ def add_admin_response(request, ticket_id):
           </table>
 
           <p style="margin:14px 0 0;font:400 12px/1.6 system-ui,-apple-system,'Segoe UI',Roboto,Helvetica,Arial;color:#94a3b8;">
-            © {timezone.now().year} CanaLogistiX - Cana Group of Companies. All rights reserved.
+            © {timezone.now().year} {settings.COMPANY_OPERATING_NAME} - {settings.COMPANY_SUB_GROUP_NAME}. All rights reserved.
           </p>
         </td>
       </tr>
@@ -11320,7 +11435,7 @@ def add_admin_response(request, ticket_id):
 </html>
 """
             text = (
-                "Admin Response Received - CanaLogistiX\n\n"
+                f"Admin Response Received - {settings.COMPANY_OPERATING_NAME}\n\n"
                 f"Hi {user_name},\n\n"
                 f"Our admin team has responded to your support ticket #{ticket.id}.\n\n"
                 f"Ticket ID: #{ticket.id}\n"
@@ -11528,7 +11643,7 @@ def pharmacy_onboarding_api(request):
 <html lang="en">
   <head>
     <meta charset="utf-8">
-    <title>Welcome to CanaLogistiX Trial Program</title>
+    <title>Welcome to {settings.COMPANY_OPERATING_NAME} Trial Program</title>
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <style>
       @media (prefers-color-scheme: dark) {{
@@ -11541,7 +11656,7 @@ def pharmacy_onboarding_api(request):
   </head>
   <body style="margin:0;padding:0;background:#f4f7f9;">
     <div style="display:none;visibility:hidden;opacity:0;height:0;width:0;overflow:hidden;">
-      Welcome to CanaLogistiX Trial Program — Start your pharmacy delivery journey with us.
+      Welcome to {settings.COMPANY_OPERATING_NAME} Trial Program — Start your pharmacy delivery journey with us.
     </div>
 
     <table role="presentation" width="100%" cellspacing="0" cellpadding="0" border="0" style="background:#f4f7f9;padding:24px 12px;">
@@ -11554,7 +11669,7 @@ def pharmacy_onboarding_api(request):
                   <tr>
                     <td align="left">
                       <img src="{logo_url}"
-                           alt="CanaLogistiX"
+                           alt="{settings.COMPANY_OPERATING_NAME}"
                            width="64"
                            height="64"
                            style="display:block;border:0;outline:none;text-decoration:none;border-radius:50%;object-fit:cover;">
@@ -11570,7 +11685,7 @@ def pharmacy_onboarding_api(request):
             <tr>
               <td style="padding:28px 24px 6px;">
                 <h1 style="margin:0 0 10px;font:800 26px/1.25 system-ui,-apple-system,'Segoe UI',Roboto,Helvetica,Arial;color:#0f172a;">
-                  Welcome to CanaLogistiX! 🎉
+                  Welcome to {settings.COMPANY_OPERATING_NAME}! 🎉
                 </h1>
                 <p style="margin:0 0 16px;font:400 15px/1.7 system-ui,-apple-system,'Segoe UI',Roboto,Helvetica,Arial;color:#475569;">
                   Hi <strong>{data['contact_name']}</strong>,
@@ -11729,7 +11844,7 @@ def pharmacy_onboarding_api(request):
                     ℹ️ Portal Access
                   </p>
                   <p style="margin:0;font:400 13px/1.7 system-ui,-apple-system,'Segoe UI',Roboto,Helvetica,Arial;color:#475569;">
-                    You'll receive separate login credentials for the CanaLogistiX portal before your trial start date. The portal allows you to manage orders, track deliveries in real-time and access support.
+                    You'll receive separate login credentials for the {settings.COMPANY_OPERATING_NAME} portal before your trial start date. The portal allows you to manage orders, track deliveries in real-time and access support.
                   </p>
                 </div>
 
@@ -11836,7 +11951,7 @@ def pharmacy_onboarding_api(request):
                         🚀 Ready to Transform Your Delivery Operations?
                       </p>
                       <p style="margin:0;font:400 13px/1.6 system-ui,-apple-system,'Segoe UI',Roboto,Helvetica,Arial;color:#15803d;">
-                        We're excited to partner with you and show you how CanaLogistiX can streamline your pharmacy deliveries!
+                        We're excited to partner with you and show you how {settings.COMPANY_OPERATING_NAME} can streamline your pharmacy deliveries!
                       </p>
                     </td>
                   </tr>
@@ -11847,7 +11962,7 @@ def pharmacy_onboarding_api(request):
           </table>
 
           <p style="margin:14px 0 0;font:400 12px/1.6 system-ui,-apple-system,'Segoe UI',Roboto,Helvetica,Arial;color:#94a3b8;">
-            © {timezone.now().year} CanaLogistiX - Cana Group of Companies. All rights reserved.
+            © {timezone.now().year} {settings.COMPANY_OPERATING_NAME} - {settings.COMPANY_SUB_GROUP_NAME}. All rights reserved.
           </p>
         </td>
       </tr>
@@ -11857,7 +11972,7 @@ def pharmacy_onboarding_api(request):
 """
 
         text = (
-            "Welcome to CanaLogistiX Trial Program!\n\n"
+            f"Welcome to {settings.COMPANY_OPERATING_NAME} Trial Program!\n\n"
             f"Hi {data['contact_name']},\n\n"
             f"Thank you for registering {data['pharmacy_name']} for our Trial Program!\n\n"
             "TRIAL PERIOD DETAILS:\n"
@@ -11891,7 +12006,7 @@ def pharmacy_onboarding_api(request):
         )
 
         _send_html_email_admin_office(
-            subject=f"Welcome to CanaLogistiX Trial Program • {data['pharmacy_name']}",
+            subject=f"Welcome to {settings.COMPANY_OPERATING_NAME} Trial Program • {data['pharmacy_name']}",
             to_email=data['pharmacy_email'],
             html=html,
             text_fallback=text,
@@ -12145,12 +12260,19 @@ def generate_acknowledgement_pdf(order, signature_image_path):
         story.append(logo_text)
         story.append(Spacer(1, 10))
     
+    company_name = settings.COMPANY_OPERATING_NAME
+    company_subgroup_name = settings.COMPANY_SUB_GROUP_NAME
+    corporation_name = settings.CORPORATION_NAME
+    corporation_business_number = settings.CORPORATION_BUSINESS_NUMBER
+
+    email_help_desk = settings.EMAIL_HELP_DESK
+    
     # Company info
     company_info = '''
     <para alignment="center">
-    <font size="9" color="#64748B">CanaLogistiX Delivery Services<br/>
-    Cana Group of Companies | Operating Name of CANABELLE INC.<br/>
-    BN: 758568562 | help.canalogistix@gmail.com</font>
+    <font size="9" color="#64748B">{company_name} Delivery Services<br/>
+    {company_subgroup_name} | Operating Name of {corporation_name}<br/>
+    BN: {corporation_business_number} | {email_help_desk}</font>
     </para>
     '''
     story.append(Paragraph(company_info, small_text_style))
@@ -12183,7 +12305,7 @@ def generate_acknowledgement_pdf(order, signature_image_path):
     delivery from <b>{order.pharmacy.name}</b> on <b>{current_date}</b>. 
     I confirm that all medicines have been received in <b>proper condition</b>, with intact packaging, 
     correct labeling, and no visible damage or tampering. The delivery was completed by 
-    <b>CanaLogistiX Delivery Services</b> in accordance with pharmaceutical handling protocols.
+    <b>{settings.COMPANY_OPERATING_NAME} Delivery Services</b> in accordance with pharmaceutical handling protocols.
     </font>
     </para>
     '''
@@ -12261,8 +12383,8 @@ def generate_acknowledgement_pdf(order, signature_image_path):
     <font size="9" color="#64748B">
     Phone: {driver_phone}<br/>
     Vehicle: {driver_vehicle}<br/>
-    Service: CanaLogistiX<br/>
-    Delivery Services</font>
+    Service: {settings.COMPANY_OPERATING_NAME}<br/>
+    </font>
     '''
     
     party_info_data = [
@@ -12345,13 +12467,15 @@ def generate_acknowledgement_pdf(order, signature_image_path):
     # ==================== IMPORTANT NOTICE ====================
     
     story.append(Paragraph("Important Notice", section_header_style))
+
+    
     
     notice_text = '''
     <para alignment="justify">
     <font size="9" color="#64748B">
     This acknowledgement serves as proof of delivery and confirmation that all medicines were 
     received in acceptable condition. Any issues with the delivered medicines should be reported 
-    immediately to the pharmacy and CanaLogistiX. By signing this document, the customer confirms 
+    immediately to the pharmacy and {company_name}. By signing this document, the customer confirms 
     receipt and assumes responsibility for the proper storage and use of the delivered pharmaceutical products.
     </font>
     </para>
@@ -12362,10 +12486,10 @@ def generate_acknowledgement_pdf(order, signature_image_path):
     # ==================== FOOTER ====================
     
     footer_text = f'''
-    <i>This acknowledgement was automatically generated by CanaLogistiX delivery system.<br/>
+    <i>This acknowledgement was automatically generated by {settings.COMPANY_OPERATING_NAME} delivery system.<br/>
     Document ID: ACK-{order.id:06d} | Generated: {current_date}<br/>
-    For questions or concerns, contact: help.canalogistix@gmail.com<br/>
-    © {timezone.localtime(timezone.now(), settings.USER_TIMEZONE).year} CanaLogistiX - Cana Group of Companies. All rights reserved.</i>
+    For questions or concerns, contact: {settings.EMAIL_HELP_DESK}<br/>
+    © {timezone.localtime(timezone.now(), settings.USER_TIMEZONE).year} {settings.COMPANY_OPERATING_NAME} - {settings.COMPANY_SUB_GROUP_NAME}. All rights reserved.</i>
     '''
     
     story.append(Paragraph(footer_text, footer_style))

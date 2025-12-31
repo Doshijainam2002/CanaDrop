@@ -165,7 +165,20 @@
                         <p class="text-sm text-gray-500 hidden sm:block">Manage your invoices and payments</p>
                     </div>
                     <div class="flex items-center space-x-2 md:space-x-4">
-                        <!-- You can add refresh button here if needed -->
+                        <button onclick="openEFTModal()" class="flex items-center px-3 py-1.5 text-sm font-medium text-teal-700 bg-teal-50 border border-teal-200 rounded-lg hover:bg-teal-100 transition-colors">
+                            <svg class="w-4 h-4 mr-1.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 10h18M7 15h1m4 0h1m-7 4h12a3 3 0 003-3V8a3 3 0 00-3-3H6a3 3 0 00-3 3v8a3 3 0 003 3z"/>
+                            </svg>
+                            <span class="hidden sm:inline">EFT Details</span>
+                            <span class="sm:hidden">EFT</span>
+                        </button>
+                        <button onclick="openChequeModal()" class="flex items-center px-3 py-1.5 text-sm font-medium text-cyan-700 bg-cyan-50 border border-cyan-200 rounded-lg hover:bg-cyan-100 transition-colors">
+                            <svg class="w-4 h-4 mr-1.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/>
+                            </svg>
+                            <span class="hidden sm:inline">Cheque Details</span>
+                            <span class="sm:hidden">Cheque</span>
+                        </button>
                     </div>
                 </div>
             </header>
@@ -411,6 +424,213 @@
         </div>
     </div>
 
+    <!-- EFT Details Modal -->
+<div id="eftModal" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50 hidden">
+    <div class="bg-white rounded-2xl p-4 sm:p-6 max-w-lg w-full mx-4 animate-slide-up max-h-[90vh] overflow-y-auto custom-scrollbar">
+        <div class="flex justify-between items-center mb-6">
+            <div class="flex items-center">
+                <div class="p-2 bg-teal-100 rounded-lg mr-3">
+                    <svg class="w-6 h-6 text-teal-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 10h18M7 15h1m4 0h1m-7 4h12a3 3 0 003-3V8a3 3 0 00-3-3H6a3 3 0 00-3 3v8a3 3 0 003 3z"/>
+                    </svg>
+                </div>
+                <h3 class="text-xl font-semibold text-gray-900">EFT Payment Details</h3>
+            </div>
+            <button onclick="closeEFTModal()" class="text-gray-400 hover:text-gray-600 transition-colors">
+                <svg class="h-6 w-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
+                </svg>
+            </button>
+        </div>
+        
+        <div class="space-y-4">
+            <!-- Bank Information -->
+            <div class="bg-gradient-to-r from-teal-50 to-cyan-50 p-4 rounded-lg border border-teal-100">
+                <h4 class="text-sm font-semibold text-gray-700 mb-3 flex items-center">
+                    <svg class="w-4 h-4 mr-2 text-teal-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4"/>
+                    </svg>
+                    Bank Information
+                </h4>
+                <div class="space-y-3">
+                    <div>
+                        <label class="block text-xs text-gray-600 mb-1">Account Name</label>
+                        <div class="flex items-center justify-between bg-white p-2.5 rounded border border-teal-200">
+                            <p id="eftAccountName" class="text-sm font-medium text-gray-900">CanaLogistiX Inc.</p>
+                            <button onclick="copyToClipboard('eftAccountName')" class="text-teal-600 hover:text-teal-700 transition-colors" title="Copy">
+                                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z"/>
+                                </svg>
+                            </button>
+                        </div>
+                    </div>
+                    
+                    <div>
+                        <label class="block text-xs text-gray-600 mb-1">Account Number</label>
+                        <div class="flex items-center justify-between bg-white p-2.5 rounded border border-teal-200">
+                            <p id="eftAccountNumber" class="text-sm font-medium text-gray-900">1234567890</p>
+                            <button onclick="copyToClipboard('eftAccountNumber')" class="text-teal-600 hover:text-teal-700 transition-colors" title="Copy">
+                                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z"/>
+                                </svg>
+                            </button>
+                        </div>
+                    </div>
+                    
+                    <div>
+                        <label class="block text-xs text-gray-600 mb-1">Institution Number</label>
+                        <div class="flex items-center justify-between bg-white p-2.5 rounded border border-teal-200">
+                            <p id="eftInstitutionNumber" class="text-sm font-medium text-gray-900">001</p>
+                            <button onclick="copyToClipboard('eftInstitutionNumber')" class="text-teal-600 hover:text-teal-700 transition-colors" title="Copy">
+                                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z"/>
+                                </svg>
+                            </button>
+                        </div>
+                    </div>
+                    
+                    <div>
+                        <label class="block text-xs text-gray-600 mb-1">Transit Number</label>
+                        <div class="flex items-center justify-between bg-white p-2.5 rounded border border-teal-200">
+                            <p id="eftTransitNumber" class="text-sm font-medium text-gray-900">12345</p>
+                            <button onclick="copyToClipboard('eftTransitNumber')" class="text-teal-600 hover:text-teal-700 transition-colors" title="Copy">
+                                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z"/>
+                                </svg>
+                            </button>
+                        </div>
+                    </div>
+                    
+                    <div>
+                        <label class="block text-xs text-gray-600 mb-1">Bank Name</label>
+                        <div class="flex items-center justify-between bg-white p-2.5 rounded border border-teal-200">
+                            <p id="eftBankName" class="text-sm font-medium text-gray-900">Royal Bank of Canada (RBC)</p>
+                            <button onclick="copyToClipboard('eftBankName')" class="text-teal-600 hover:text-teal-700 transition-colors" title="Copy">
+                                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z"/>
+                                </svg>
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Important Note -->
+            <div class="bg-yellow-50 border-l-4 border-yellow-400 p-4 rounded">
+                <div class="flex">
+                    <div class="flex-shrink-0">
+                        <svg class="h-5 w-5 text-yellow-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-1.96-1.333-2.732 0L3.732 16c-.77 1.333.192 3 1.732 3z"/>
+                        </svg>
+                    </div>
+                    <div class="ml-3">
+                        <h4 class="text-sm font-semibold text-yellow-800 mb-1">Important Reference Information</h4>
+                        <p class="text-sm text-yellow-700">
+                            Please include <strong>Invoice Number</strong> and <strong>Pharmacy Name</strong> as the reference/description when making the EFT payment. This helps us process your payment quickly.
+                        </p>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="flex justify-end pt-2">
+                <button onclick="closeEFTModal()" class="px-6 py-2 bg-gradient-to-r from-teal-600 to-cyan-600 text-white rounded-lg font-medium hover:from-teal-700 hover:to-cyan-700 transition-all duration-200 shadow-sm hover:shadow-md">
+                    Close
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Cheque Details Modal -->
+<div id="chequeModal" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50 hidden">
+    <div class="bg-white rounded-2xl p-4 sm:p-6 max-w-lg w-full mx-4 animate-slide-up max-h-[90vh] overflow-y-auto custom-scrollbar">
+        <div class="flex justify-between items-center mb-6">
+            <div class="flex items-center">
+                <div class="p-2 bg-cyan-100 rounded-lg mr-3">
+                    <svg class="w-6 h-6 text-cyan-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/>
+                    </svg>
+                </div>
+                <h3 class="text-xl font-semibold text-gray-900">Cheque Payment Details</h3>
+            </div>
+            <button onclick="closeChequeModal()" class="text-gray-400 hover:text-gray-600 transition-colors">
+                <svg class="h-6 w-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
+                </svg>
+            </button>
+        </div>
+        
+        <div class="space-y-4">
+            <!-- Payable To -->
+            <div class="bg-gradient-to-r from-cyan-50 to-blue-50 p-4 rounded-lg border border-cyan-100">
+                <h4 class="text-sm font-semibold text-gray-700 mb-3 flex items-center">
+                    <svg class="w-4 h-4 mr-2 text-cyan-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"/>
+                    </svg>
+                    Make Cheque Payable To
+                </h4>
+                <div class="flex items-center justify-between bg-white p-3 rounded border border-cyan-200">
+                    <p id="chequePayableTo" class="text-base font-semibold text-gray-900">CanaLogistiX Inc.</p>
+                    <button onclick="copyToClipboard('chequePayableTo')" class="text-cyan-600 hover:text-cyan-700 transition-colors" title="Copy">
+                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z"/>
+                        </svg>
+                    </button>
+                </div>
+            </div>
+            
+            <!-- Mailing Address -->
+            <div class="bg-gradient-to-r from-cyan-50 to-blue-50 p-4 rounded-lg border border-cyan-100">
+                <h4 class="text-sm font-semibold text-gray-700 mb-3 flex items-center">
+                    <svg class="w-4 h-4 mr-2 text-cyan-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z"/>
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 11a3 3 0 11-6 0 3 3 0 016 0z"/>
+                    </svg>
+                    Mail Cheque To
+                </h4>
+                <div class="bg-white p-3 rounded border border-cyan-200">
+                    <div id="chequeMailingAddress" class="text-sm text-gray-900 space-y-1">
+                        <p class="font-semibold">CanaLogistiX Inc.</p>
+                        <p>123 Pharmacy Lane</p>
+                        <p>Suite 456</p>
+                        <p>Toronto, ON M5H 2N2</p>
+                        <p>Canada</p>
+                    </div>
+                    <button onclick="copyFullAddress()" class="mt-3 text-cyan-600 hover:text-cyan-700 transition-colors text-sm font-medium flex items-center">
+                        <svg class="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z"/>
+                        </svg>
+                        Copy Full Address
+                    </button>
+                </div>
+            </div>
+            
+            <!-- Important Note -->
+            <div class="bg-yellow-50 border-l-4 border-yellow-400 p-4 rounded">
+                <div class="flex">
+                    <div class="flex-shrink-0">
+                        <svg class="h-5 w-5 text-yellow-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-1.96-1.333-2.732 0L3.732 16c-.77 1.333.192 3 1.732 3z"/>
+                        </svg>
+                    </div>
+                    <div class="ml-3">
+                        <h4 class="text-sm font-semibold text-yellow-800 mb-1">Important Memo Information</h4>
+                        <p class="text-sm text-yellow-700">
+                            Please write <strong>Invoice Number</strong> and <strong>Pharmacy Name</strong> on the cheque memo line. This helps us match your payment to the correct invoice.
+                        </p>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="flex justify-end pt-2">
+                <button onclick="closeChequeModal()" class="px-6 py-2 bg-gradient-to-r from-cyan-600 to-blue-600 text-white rounded-lg font-medium hover:from-cyan-700 hover:to-blue-700 transition-all duration-200 shadow-sm hover:shadow-md">
+                    Close
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
     <script>
 
 
@@ -493,6 +713,14 @@ let invoices = [];
 let pharmacyId = null;
 let isRefreshing = false;
 
+
+  function getCSRFToken() {
+    return document.cookie
+        .split('; ')
+        .find(row => row.startsWith('csrftoken='))
+        ?.split('=')[1];
+}
+
 // Get cookie value by name
 function getCookie(name) {
     let cookieValue = null;
@@ -509,6 +737,60 @@ function getCookie(name) {
     return cookieValue;
 }
 
+// // Fetch invoices from API
+// async function fetchInvoices() {
+//     if (isRefreshing) return; // Prevent multiple simultaneous calls
+    
+//     // Get pharmacy ID from cookies
+//     pharmacyId = getCookie('pharmacyId');
+    
+    
+//     if (!pharmacyId) {
+//         console.error('Pharmacy ID not found in cookies');
+//         alert('Pharmacy ID not found. Please log in again.');
+//         return;
+//     }
+    
+//     isRefreshing = true;
+//     try {
+//         // Show refreshing animation if refresh button exists
+//         updateRefreshButton(true);
+        
+//         const response = await fetch(`/api/generate-weekly-invoices/?pharmacyId=${pharmacyId}`);
+        
+        
+//         const data = await response.json();
+        
+        
+//         if (data.invoices) {
+//             invoices = data.invoices.map(invoice => ({
+//                 id: invoice.invoice_id,
+//                 startDate: invoice.start_date,
+//                 endDate: invoice.end_date,
+//                 totalOrders: invoice.total_orders,
+//                 subtotal: invoice.subtotal,
+//                 hstAmount: invoice.hst_amount,
+//                 totalAmount: invoice.total_amount,
+//                 dueDate: invoice.due_date,
+//                 status: invoice.status,
+//                 pdfUrl: invoice.pdf_url,
+//                 orders: invoice.orders || []
+//             }));
+//         } else if (data.message) {
+//             return;
+//         }
+        
+//         renderInvoices();
+//         updateStats();
+//     } catch (error) {
+//         console.error('Error fetching invoices:', error);
+//         alert('Failed to load invoices. Please try again.');
+//     } finally {
+//         isRefreshing = false;
+//         updateRefreshButton(false);
+//     }
+// }
+
 // Fetch invoices from API
 async function fetchInvoices() {
     if (isRefreshing) return; // Prevent multiple simultaneous calls
@@ -516,10 +798,12 @@ async function fetchInvoices() {
     // Get pharmacy ID from cookies
     pharmacyId = getCookie('pharmacyId');
     
-    
     if (!pharmacyId) {
         console.error('Pharmacy ID not found in cookies');
-        alert('Pharmacy ID not found. Please log in again.');
+        showToast('Pharmacy ID not found. Please log in again.', { type: 'error' });
+        setTimeout(() => {
+            window.location.href = '/pharmacyLogin/';
+        }, 2000);
         return;
     }
     
@@ -528,35 +812,101 @@ async function fetchInvoices() {
         // Show refreshing animation if refresh button exists
         updateRefreshButton(true);
         
-        const response = await fetch(`/api/generate-weekly-invoices/?pharmacyId=${pharmacyId}`);
+        // Get CSRF token using your existing function
+        const csrfToken = getCSRFToken();
         
+        if (!csrfToken) {
+            console.error('CSRF token not found');
+            showToast('Security token not found. Please refresh the page.', { type: 'error' });
+            isRefreshing = false;
+            updateRefreshButton(false);
+            return;
+        }
+        
+        console.log('Making request to /api/generate-weekly-invoices/');
+        const response = await fetch(`/api/generate-weekly-invoices/`, {
+            method: 'GET',
+            credentials: 'include', // Include cookies for authentication
+            headers: {
+                'X-CSRFToken': csrfToken,
+                'Content-Type': 'application/json'
+            }
+        });
+        
+        console.log('Response status:', response.status);
+        
+        if (!response.ok) {
+            if (response.status === 401) {
+                showToast('Session expired. Please log in again.', { type: 'warning' });
+                setTimeout(() => {
+                    window.location.href = '/pharmacyLogin/';
+                }, 2000);
+                return;
+            }
+            
+            // Try to get error message from response
+            let errorMessage = 'Failed to load invoices. Please try again.';
+            try {
+                const errorData = await response.json();
+                if (errorData.error) {
+                    errorMessage = errorData.error;
+                }
+            } catch (e) {
+                console.error('Error parsing error response:', e);
+            }
+            
+            throw new Error(errorMessage);
+        }
         
         const data = await response.json();
+        console.log('Response data:', data);
         
+        // Check if the response indicates success
+        if (!data.success) {
+            console.error('Invoice generation failed:', data.error || 'Unknown error');
+            showToast(data.error || 'Failed to generate invoices. Please try again.', { type: 'error' });
+            return;
+        }
         
-        if (data.invoices) {
+        if (data.invoices && data.invoices.length > 0) {
             invoices = data.invoices.map(invoice => ({
                 id: invoice.invoice_id,
                 startDate: invoice.start_date,
                 endDate: invoice.end_date,
                 totalOrders: invoice.total_orders,
                 subtotal: invoice.subtotal,
+                hstRate: invoice.hst_rate,
                 hstAmount: invoice.hst_amount,
                 totalAmount: invoice.total_amount,
                 dueDate: invoice.due_date,
                 status: invoice.status,
                 pdfUrl: invoice.pdf_url,
+                createdAt: invoice.created_at,
                 orders: invoice.orders || []
             }));
-        } else if (data.message) {
-            return;
+            
+            console.log(`Loaded ${invoices.length} invoices (Timezone: ${data.timezone})`);
+            showToast(`Successfully loaded ${invoices.length} invoice${invoices.length > 1 ? 's' : ''}`, { 
+                type: 'success',
+                duration: 2000 
+            });
+        } else {
+            // No invoices yet
+            invoices = [];
+            console.log(data.message || 'No invoices found');
+            showToast(data.message || 'No invoices found', { 
+                type: 'info',
+                duration: 3000 
+            });
         }
         
         renderInvoices();
         updateStats();
     } catch (error) {
         console.error('Error fetching invoices:', error);
-        alert('Failed to load invoices. Please try again.');
+        showToast(error.message || 'Failed to load invoices. Please try again.', { 
+            type: 'error' 
+        });
     } finally {
         isRefreshing = false;
         updateRefreshButton(false);
@@ -1108,7 +1458,71 @@ document.addEventListener('DOMContentLoaded', function() {
     if (headerControls) {
         headerControls.appendChild(refreshButton);
     }
+
+    // Close EFT modal when clicking outside
+    const eftModal = document.getElementById('eftModal');
+    if (eftModal) {
+        eftModal.addEventListener('click', function(e) {
+            if (e.target === this) closeEFTModal();
+        });
+    }
+
+    // Close Cheque modal when clicking outside
+    const chequeModal = document.getElementById('chequeModal');
+    if (chequeModal) {
+        chequeModal.addEventListener('click', function(e) {
+            if (e.target === this) closeChequeModal();
+        });
+    }
 });
+
+// EFT Modal Functions
+function openEFTModal() {
+    document.getElementById('eftModal').classList.remove('hidden');
+}
+
+function closeEFTModal() {
+    document.getElementById('eftModal').classList.add('hidden');
+}
+
+// Cheque Modal Functions
+function openChequeModal() {
+    document.getElementById('chequeModal').classList.remove('hidden');
+}
+
+function closeChequeModal() {
+    document.getElementById('chequeModal').classList.add('hidden');
+}
+
+// Copy to Clipboard Function
+function copyToClipboard(elementId) {
+    const element = document.getElementById(elementId);
+    const text = element.textContent;
+    
+    navigator.clipboard.writeText(text).then(() => {
+        showToast('Copied to clipboard!', { type: 'success', duration: 2000 });
+    }).catch(err => {
+        console.error('Failed to copy:', err);
+        showToast('Failed to copy', { type: 'error', duration: 2000 });
+    });
+}
+
+// Copy Full Address Function
+function copyFullAddress() {
+    const address = `CanaLogistiX Inc.
+123 Pharmacy Lane
+Suite 456
+Toronto, ON M5H 2N2
+Canada`;
+    
+    navigator.clipboard.writeText(address).then(() => {
+        showToast('Address copied to clipboard!', { type: 'success', duration: 2000 });
+    }).catch(err => {
+        console.error('Failed to copy:', err);
+        showToast('Failed to copy address', { type: 'error', duration: 2000 });
+    });
+}
+
     </script>
 </body>
 </html>

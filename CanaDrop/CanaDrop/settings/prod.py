@@ -104,6 +104,8 @@ TIME_ZONE = 'UTC'
 USE_I18N = True
 USE_TZ = True
 
+USER_TIMEZONE = pytz.timezone("America/Toronto")
+
 # ----------------------------
 # STATIC FILES
 # ----------------------------
@@ -195,7 +197,6 @@ BRAND_COLORS = {
     'text_muted': '#94a3b8',
 }
 
-USER_TIMEZONE = pytz.timezone("America/Toronto")
 
 DRIVER_COMMISSION_RATE = 0.40
 PAYMENT_RATE_PERCENT = int(100 - (100 * DRIVER_COMMISSION_RATE))
@@ -203,6 +204,9 @@ PAYMENT_RATE_PERCENT = int(100 - (100 * DRIVER_COMMISSION_RATE))
 SITE_URL = "https://www.canalogistix.com"
 
 CC_POINTS_PER_ORDER = 50
+
+ONTARIO_HST_RATE = "0.13"
+ONTARIO_HST_PERCENT = "13"
 
 # ----------------------------
 # JWT SETTINGS (Centralized)
