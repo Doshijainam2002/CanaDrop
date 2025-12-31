@@ -324,6 +324,97 @@ class ContactAdmin(models.Model):
         ordering = ['-created_at']
 
 
+class PaymentInformation(models.Model):
+    """
+    Generic payment information storage.
+    Each row represents one payment method or payment configuration.
+    """
+
+    PAYMENT_TYPE_CHOICES = [
+        ("eft", "Electronic Funds Transfer (EFT)"),
+        ("cheque", "Cheque"),
+        ("interac", "Interac e-Transfer"),
+        ("wire", "Wire Transfer"),
+        ("other", "Other"),
+    ]
+
+    # What this row represents
+    payment_type = models.CharField(
+        max_length=50,
+        choices=PAYMENT_TYPE_CHOICES,
+        help_text="Type of payment method"
+    )
+
+    # Human readable name
+    label = models.CharField(
+        max_length=255,
+        help_text="Display name (e.g. 'Primary EFT Account')"
+    )
+
+    # Flexible data storage
+    data = models.JSONField(
+        help_text="JSON payload containing payment details"
+    )
+
+    # Metadata
+    is_active = models.BooleanField(
+        default=True,
+        help_text="Only one active record per payment_type should exist"
+    )
+
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    updated_by = models.CharField(
+        max_length=255,
+        blank=True,
+        null=True,
+        help_text="Admin user who last updated this"
+    )
+
+    class Meta:
+        verbose_name = "Payment Information"
+        verbose_name_plural = "Payment Information"
+        ordering = ["payment_type", "-is_active", "-updated_at"]
+        constraints = [
+            models.UniqueConstraint(
+                fields=["payment_type"],
+                condition=models.Q(is_active=True),
+                name="unique_active_payment_type"
+            )
+        ]
+
+    def __str__(self):
+        return f"{self.label} ({self.payment_type}, Active: {self.is_active})"
+
+    def clean(self):
+        if not isinstance(self.data, dict):
+            raise ValidationError("data must be a JSON object")
+
+    def save(self, *args, **kwargs):
+        """
+        Ensure only one active entry per payment_type
+        """
+        if self.is_active:
+            PaymentInformation.objects.filter(
+                payment_type=self.payment_type,
+                is_active=True
+            ).exclude(pk=self.pk).update(is_active=False)
+
+        super().save(*args, **kwargs)
+
+    @classmethod
+    def get_active(cls, payment_type):
+        """
+        Get active payment info for a given type
+        """
+        return cls.objects.filter(
+            payment_type=payment_type,
+            is_active=True
+        ).first()
+
+
+
 # _________________________________________________________________________________________________________________
 # AUDIT TABLES
 # _________________________________________________________________________________________________________________
