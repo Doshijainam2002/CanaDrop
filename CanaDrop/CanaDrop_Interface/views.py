@@ -4781,24 +4781,39 @@ def _end_of_week(d: date):
 
 
 def _is_period_complete(end_date: date) -> bool:
-    """
-    Returns True only if the invoice period has fully ended
-    (after 11:59:59 PM local time on end_date).
-    """
-
-    # Current time in USER_TIMEZONE
+    from datetime import datetime, time as time_class  # ← Explicit local import
+    from django.utils import timezone
+    from django.conf import settings
+    import logging
+    
+    logger = logging.getLogger(__name__)
+    
+    # Get current time in user's local timezone
     now_local = timezone.localtime(timezone.now(), settings.USER_TIMEZONE)
-
-    # Create end-of-day safely WITHOUT datetime.time.max
-    end_of_day_naive = datetime.combine(end_date, datetime.min.time()) + timedelta(days=1) - timedelta(microseconds=1)
-
-    # Make timezone-aware in USER_TIMEZONE
+    
+    # Create end of day: end_date at 23:59:59.999999
+    # time_class.max = time(23, 59, 59, 999999)
+    end_of_day_naive = datetime.combine(end_date, time_class.max)
+    #                                             ↑
+    #                           Now explicitly using local import
+    
+    # Make it timezone-aware in user's local timezone
     end_of_day_local = timezone.make_aware(
         end_of_day_naive,
         settings.USER_TIMEZONE
     )
-
-    return now_local > end_of_day_local
+    
+    # Period is complete if current local time is AFTER end of day
+    is_complete = now_local > end_of_day_local
+    
+    # Debug logging
+    logger.debug(f"Period completion check:")
+    logger.debug(f"  End date: {end_date}")
+    logger.debug(f"  End of day (local): {end_of_day_local.strftime('%Y-%m-%d %H:%M:%S %Z')}")
+    logger.debug(f"  Current time (local): {now_local.strftime('%Y-%m-%d %H:%M:%S %Z')}")
+    logger.debug(f"  Period complete: {is_complete}")
+    
+    return is_complete
 
 def _ensure_local(dt):
     """Ensure datetime is timezone-aware, then convert to USER_TZ."""
