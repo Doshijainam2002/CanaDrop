@@ -5329,12 +5329,12 @@ def _generate_invoice_pdf(driver, week_data, orders):
         BytesIO buffer containing the PDF
     
     Notes:
-        - Dates should be passed in local timezone format (already converted by caller)
+        - Dates should be passed as ISO date strings (YYYY-MM-DD)
         - Invoice ID must be included in week_data['invoice_id']
     """
     from io import BytesIO
     from decimal import Decimal
-    from datetime import datetime
+    from datetime import datetime, date
     from reportlab.lib.pagesizes import A4
     from reportlab.lib import colors
     from reportlab.lib.units import inch
@@ -5536,28 +5536,40 @@ def _generate_invoice_pdf(driver, week_data, orders):
         # Invoice title
         story.append(Paragraph("PAYMENT INVOICE", invoice_title_style))
         
-        # Format period dates
+        # ==================== FORMAT PERIOD DATES - FIXED ====================
+        
         try:
             start_date_str = week_data['payment_period']['start_date']
             end_date_str = week_data['payment_period']['end_date']
             
-            # Parse and format dates
-            from datetime import datetime as dt
+            logger.debug(f"Raw dates - start: {start_date_str} (type: {type(start_date_str)}), end: {end_date_str} (type: {type(end_date_str)})")
+            
+            # Handle both string (ISO format YYYY-MM-DD) and date objects
             if isinstance(start_date_str, str):
-                start_date_obj = dt.fromisoformat(start_date_str.replace('Z', '+00:00'))
-                start_date_formatted = start_date_obj.strftime("%B %d, %Y")
+                # Parse ISO date string without time component
+                start_date_obj = datetime.strptime(start_date_str, "%Y-%m-%d").date()
+            elif isinstance(start_date_str, date):
+                start_date_obj = start_date_str
             else:
-                start_date_formatted = start_date_str
-                
+                raise ValueError(f"Invalid start_date type: {type(start_date_str)}")
+            
             if isinstance(end_date_str, str):
-                end_date_obj = dt.fromisoformat(end_date_str.replace('Z', '+00:00'))
-                end_date_formatted = end_date_obj.strftime("%B %d, %Y")
+                # Parse ISO date string without time component
+                end_date_obj = datetime.strptime(end_date_str, "%Y-%m-%d").date()
+            elif isinstance(end_date_str, date):
+                end_date_obj = end_date_str
             else:
-                end_date_formatted = end_date_str
+                raise ValueError(f"Invalid end_date type: {type(end_date_str)}")
+            
+            # Format for display
+            start_date_formatted = start_date_obj.strftime("%B %d, %Y")
+            end_date_formatted = end_date_obj.strftime("%B %d, %Y")
+            
+            logger.info(f"Formatted dates - start: {start_date_formatted}, end: {end_date_formatted}")
+            
         except Exception as e:
-            logger.warning(f"Error formatting period dates: {e}, using raw values")
-            start_date_formatted = week_data['payment_period']['start_date']
-            end_date_formatted = week_data['payment_period']['end_date']
+            logger.exception(f"CRITICAL: Error formatting period dates: {e}")
+            raise  # Re-raise to fail PDF generation properly
         
         story.append(Paragraph(
             f"Driver Payment Summary for Week {start_date_formatted} to {end_date_formatted}", 
@@ -5588,14 +5600,20 @@ def _generate_invoice_pdf(driver, week_data, orders):
         # Payment period card with formatted dates
         due_date_str = week_data.get('due_date', 'N/A')
         try:
-            if isinstance(due_date_str, str):
-                due_date_obj = dt.fromisoformat(due_date_str.replace('Z', '+00:00'))
+            if isinstance(due_date_str, str) and due_date_str != 'N/A':
+                # Parse ISO date string
+                due_date_obj = datetime.strptime(due_date_str, "%Y-%m-%d").date()
                 due_date_formatted = due_date_obj.strftime("%B %d, %Y")
+            elif isinstance(due_date_str, date):
+                due_date_formatted = due_date_str.strftime("%B %d, %Y")
             else:
-                due_date_formatted = due_date_str
+                due_date_formatted = str(due_date_str)
+                
+            logger.info(f"Formatted due date: {due_date_formatted}")
+            
         except Exception as e:
             logger.warning(f"Error formatting due date: {e}")
-            due_date_formatted = due_date_str
+            due_date_formatted = str(due_date_str)
         
         period_card_text = f'''
         <font color="#64748B" size="8"><b>PAYMENT PERIOD</b></font><br/>
@@ -5645,7 +5663,7 @@ def _generate_invoice_pdf(driver, week_data, orders):
             
             logger.info(f"Financial calculations - Gross: ${gross_amount}, Commission: ${commission_amount}, Net: ${net_amount}")
         except Exception as e:
-            logger.error(f"Error calculating financial details: {e}")
+            logger.exception(f"CRITICAL: Error calculating financial details: {e}")
             raise
         
         # Summary table with modern styling
@@ -5710,13 +5728,14 @@ def _generate_invoice_pdf(driver, week_data, orders):
             
             for order in orders:
                 try:
-                    # Format delivery date in local timezone
-                    if order.delivered_at:  # ← FIXED: Check delivered_at, not updated_at
+                    # Format delivery date in local timezone - USE delivered_at
+                    if order.delivered_at:
                         try:
                             delivery_date_local = timezone.localtime(order.delivered_at, settings.USER_TIMEZONE)
                             delivery_date = delivery_date_local.strftime('%m/%d/%Y')
-                        except:
-                            delivery_date = order.delivered_at.strftime('%m/%d/%Y')  # ← FIXED: Fallback to delivered_at
+                        except Exception as e:
+                            logger.warning(f"Error formatting delivered_at for order {order.id}: {e}")
+                            delivery_date = order.delivered_at.strftime('%m/%d/%Y')
                     else:
                         delivery_date = 'N/A'
                     
@@ -5831,14 +5850,14 @@ def _generate_invoice_pdf(driver, week_data, orders):
         logger.info("Building PDF document...")
         doc.build(story)
         
-        logger.info(f"=== PDF GENERATION COMPLETED FOR INVOICE {invoice_number_formatted} ===")
+        buffer_size = buffer.getbuffer().nbytes
+        logger.info(f"=== PDF GENERATION COMPLETED FOR INVOICE {invoice_number_formatted} ({buffer_size} bytes) ===")
         
         return buffer
         
     except Exception as e:
         logger.exception(f"CRITICAL ERROR generating PDF for invoice {week_data.get('invoice_id', 'N/A')}: {e}")
-        raise
-
+        raise  # Re-raise so caller knows PDF generation failed
 
 @csrf_protect
 @require_http_methods(["GET"])
