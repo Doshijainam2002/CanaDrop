@@ -3965,9 +3965,7 @@ def generate_invoice_pdf(invoice, pharmacy, orders_data, subtotal, hst_amount, t
 def generate_weekly_invoices(request):
     """
     Generate weekly invoices for authenticated pharmacy based on delivered orders.
-    
-    Returns all existing invoices AND generates new invoices for completed weeks
-    that don't have invoices yet.
+    Returns all existing invoices AND generates new invoices for completed weeks.
     """
     pharmacy = request.pharmacy
     logger.info(f"Generating weekly invoices for pharmacy {pharmacy.name} (ID: {pharmacy.id})")
@@ -3976,10 +3974,9 @@ def generate_weekly_invoices(request):
     now_local = timezone.localtime(timezone.now(), settings.USER_TIMEZONE)
     today_local = now_local.date()
     
-    logger.info(f"Current date: {today_local} in {settings.USER_TIMEZONE}")
-    logger.info(f"Current datetime: {now_local}")
+    logger.info(f"Current time: {now_local} | Today: {today_local} ({settings.USER_TIMEZONE})")
 
-    # Fetch only delivered orders with delivered_at timestamp (UTC in DB)
+    # Fetch delivered orders with delivered_at timestamp (UTC in DB)
     orders_qs = DeliveryOrder.objects.filter(
         pharmacy=pharmacy,
         status="delivered",
@@ -3994,49 +3991,44 @@ def generate_weekly_invoices(request):
             "invoices": []
         })
 
-    # Get earliest and latest delivery dates converted to USER_TIMEZONE
+    # Get earliest and latest delivery dates in USER_TIMEZONE
     earliest_utc = orders_qs.first().delivered_at
     latest_utc = orders_qs.last().delivered_at
     
     earliest_local = timezone.localtime(earliest_utc, settings.USER_TIMEZONE).date()
     latest_local = timezone.localtime(latest_utc, settings.USER_TIMEZONE).date()
     
-    logger.info(f"Earliest delivery: {earliest_local}, Latest delivery: {latest_local}")
-
-    # Calculate week start (Monday) for earliest delivery
-    # This ensures we start from the beginning of the week containing the first delivery
-    days_since_monday = earliest_local.weekday()
-    week_start = earliest_local - timedelta(days=days_since_monday)
+    logger.info(f"Earliest delivery: {earliest_local} | Latest delivery: {latest_local}")
+    logger.info(f"Total delivered orders: {orders_qs.count()}")
     
-    logger.info(f"Starting from week beginning: {week_start}")
+    # Start from earliest delivery date (not necessarily a Monday)
+    week_start = earliest_local
     
     invoices_list = []
     weeks_processed = 0
-    weeks_with_orders = 0
-    weeks_skipped_no_orders = 0
-    weeks_skipped_incomplete = 0
 
-    # Process all weeks from first delivery until we hit an incomplete week
-    while True:
+    # Process all complete 7-day weeks
+    while week_start <= latest_local:
         weeks_processed += 1
-        week_end = week_start + timedelta(days=6)  # 7-day week (Mon-Sun)
+        week_end = week_start + timedelta(days=6)  # 7-day week inclusive
         
-        logger.debug(f"\n--- Processing Week #{weeks_processed}: {week_start} to {week_end} ---")
+        logger.debug(f"\n--- Week #{weeks_processed}: {week_start} to {week_end} ---")
         
-        # Stop if we've gone past the latest delivery date
-        if week_start > latest_local:
-            logger.info(f"Week start {week_start} is beyond latest delivery {latest_local}, stopping")
-            break
-        
-        # Check if this week is complete
-        # A week is incomplete if its end date is today or in the future
+        # CRITICAL: Check if week is complete BEFORE any adjustments
+        # A week is incomplete if week_end is today or in the future
         if week_end >= today_local:
             logger.info(
-                f"Week {week_start} to {week_end} is incomplete "
-                f"(week_end {week_end} >= today {today_local}). "
-                f"Stopping here - this week is still ongoing."
+                f"Stopping: Week {week_start} to {week_end} is incomplete. "
+                f"Week ends on/after today ({today_local}). "
+                f"This week is still ongoing."
             )
-            weeks_skipped_incomplete += 1
+            break
+        
+        logger.debug(f"Week is complete (week_end {week_end} < today {today_local})")
+        
+        # Stop if we've gone past the latest delivery
+        if week_start > latest_local:
+            logger.debug(f"Stopping: week_start {week_start} > latest delivery {latest_local}")
             break
         
         # Adjust week_end if it exceeds the last delivery date
@@ -4045,7 +4037,7 @@ def generate_weekly_invoices(request):
             week_end = latest_local
             logger.debug(f"Adjusted week_end from {original_week_end} to {week_end}")
 
-        # Convert week boundaries to UTC for database queries
+        # Convert week boundaries to UTC for DB queries
         week_start_utc = timezone.make_aware(
             datetime.combine(week_start, datetime.min.time()),
             settings.USER_TIMEZONE
@@ -4063,16 +4055,13 @@ def generate_weekly_invoices(request):
         )
         
         total_orders = week_orders.count()
-        
-        logger.debug(f"Found {total_orders} orders in this week")
+        logger.debug(f"Orders in this week: {total_orders}")
 
         if total_orders == 0:
-            logger.debug(f"No orders in week {week_start} to {week_end}, skipping")
-            weeks_skipped_no_orders += 1
+            logger.debug(f"No orders, skipping to next week")
             week_start += timedelta(days=7)
             continue
         
-        weeks_with_orders += 1
         logger.info(f"Processing week {week_start} to {week_end} with {total_orders} orders")
 
         # Calculate amounts
@@ -4098,9 +4087,9 @@ def generate_weekly_invoices(request):
         )
 
         if created:
-            logger.info(f"✓ Created NEW invoice {invoice.id} for {week_start} to {week_end}")
+            logger.info(f"✓ Created NEW invoice {invoice.id}")
         else:
-            logger.info(f"✓ Retrieved EXISTING invoice {invoice.id} for {week_start} to {week_end}")
+            logger.info(f"✓ Found EXISTING invoice {invoice.id}")
             
             # Update if amounts changed
             if (invoice.total_orders != total_orders or 
@@ -4165,16 +4154,14 @@ def generate_weekly_invoices(request):
                 invoice.pdf_url = uploaded_url
                 invoice.save()
                 pdf_url = uploaded_url
-                logger.info(f"Uploaded PDF for invoice {invoice.id}")
+                logger.info(f"PDF uploaded for invoice {invoice.id}")
 
             except Exception as e:
-                logger.exception(f"Error with PDF for invoice {invoice.id}: {e}")
+                logger.exception(f"PDF error for invoice {invoice.id}: {e}")
                 return JsonResponse({
                     "success": False,
                     "error": f"PDF error for invoice {invoice.id}: {str(e)}"
                 }, status=500)
-        else:
-            logger.debug(f"Using existing PDF for invoice {invoice.id}")
 
         # Send email for new invoices
         if created and pharmacy.email:
@@ -4346,10 +4333,10 @@ def generate_weekly_invoices(request):
                     html=invoice_html,
                     text_fallback=invoice_text,
                 )
-                logger.info(f"Email sent to {pharmacy.email} for invoice {invoice.id}")
+                logger.info(f"Email sent to {pharmacy.email}")
                 
             except Exception as e:
-                logger.error(f"Email error for invoice {invoice.id}: {str(e)}")
+                logger.error(f"Email error: {str(e)}")
 
         # Add to response
         invoices_list.append({
@@ -4371,21 +4358,14 @@ def generate_weekly_invoices(request):
             "orders": orders_data
         })
         
-        logger.info(f"→ Added invoice {invoice.id} to response")
+        logger.debug(f"Added invoice {invoice.id} to response")
 
         # Move to next week
         week_start += timedelta(days=7)
 
     logger.info(
-        f"\n{'='*60}\n"
-        f"SUMMARY for {pharmacy.name}:\n"
-        f"  Total weeks processed: {weeks_processed}\n"
-        f"  Weeks with orders: {weeks_with_orders}\n"
-        f"  Weeks skipped (no orders): {weeks_skipped_no_orders}\n"
-        f"  Weeks skipped (incomplete): {weeks_skipped_incomplete}\n"
-        f"  Invoices in response: {len(invoices_list)}\n"
-        f"  Invoice IDs: {[inv['invoice_id'] for inv in invoices_list]}\n"
-        f"{'='*60}"
+        f"COMPLETE: Processed {weeks_processed} weeks, "
+        f"returning {len(invoices_list)} invoices: {[inv['invoice_id'] for inv in invoices_list]}"
     )
     
     return JsonResponse({
@@ -4395,7 +4375,6 @@ def generate_weekly_invoices(request):
         "current_date": today_local.strftime('%Y-%m-%d'),
         "total_invoices": len(invoices_list)
     })
-
 
 # Set Stripe API key
 stripe.api_key = settings.STRIPE_SECRET_KEY
