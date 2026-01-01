@@ -4010,6 +4010,11 @@ def generate_weekly_invoices(request):
     now_local = timezone.localtime(timezone.now(), settings.USER_TIMEZONE)
     today_local = now_local.date()
     
+    logger.info(
+        f"Processing invoices from {earliest_local} to {latest_local}. "
+        f"Today is {today_local} in {settings.USER_TIMEZONE}"
+    )
+    
     invoices_list = []
     week_start = earliest_local
 
@@ -4017,21 +4022,30 @@ def generate_weekly_invoices(request):
     while week_start <= latest_local:
         week_end = week_start + timedelta(days=6)  # 7-day week inclusive (start + 6 = 7 days)
         
-        # Skip incomplete weeks - week must be fully completed
-        # Week is complete only when current date is AFTER week_end (today > week_end)
+        # Check if this week is complete (current date must be AFTER week_end)
         if week_end >= today_local:
             logger.info(
-                f"Skipping incomplete week {week_start} to {week_end} "
-                f"(today is {today_local} in {settings.USER_TIMEZONE})"
+                f"Stopping at incomplete week {week_start} to {week_end} "
+                f"(today is {today_local} in {settings.USER_TIMEZONE}). "
+                f"This week is still ongoing and will be processed when complete."
             )
-            break  # No more complete weeks
+            break  # Stop processing - we've reached the incomplete current week
         
-        # Don't process weeks beyond latest delivery date
+        # Don't process weeks that start after the latest delivery date
         if week_start > latest_local:
+            logger.debug(f"Week start {week_start} is after latest delivery {latest_local}, stopping")
             break
         
         # Adjust week_end to not exceed latest delivery date
+        # This handles edge cases where last delivery is mid-week
+        original_week_end = week_end
         week_end = min(week_end, latest_local)
+        
+        if original_week_end != week_end:
+            logger.debug(
+                f"Adjusted week_end from {original_week_end} to {week_end} "
+                f"to match latest delivery date"
+            )
 
         # Convert week boundaries from USER_TIMEZONE to UTC for DB queries
         # Start of day in local timezone → UTC
@@ -4086,10 +4100,13 @@ def generate_weekly_invoices(request):
             if created:
                 logger.info(
                     f"Created new invoice {invoice.id} for pharmacy {pharmacy.name} "
-                    f"(Week: {week_start} to {week_end})"
+                    f"(Week: {week_start} to {week_end}, Orders: {total_orders})"
                 )
             else:
-                logger.debug(f"Invoice {invoice.id} already exists for pharmacy {pharmacy.name}")
+                logger.debug(
+                    f"Invoice {invoice.id} already exists for pharmacy {pharmacy.name} "
+                    f"(Week: {week_start} to {week_end})"
+                )
                 # Update totals if they changed (edge case - shouldn't happen normally)
                 if (invoice.total_orders != total_orders or 
                     invoice.total_amount != total_amount_with_hst):
@@ -4193,7 +4210,6 @@ def generate_weekly_invoices(request):
                     company_name = settings.COMPANY_OPERATING_NAME
                     company_subgroup_name = settings.COMPANY_SUB_GROUP_NAME
                   
-
                     # Build HTML email using .format() to avoid f-string CSS brace conflicts
                     invoice_html = """
 <!doctype html>
@@ -4327,6 +4343,8 @@ def generate_weekly_invoices(request):
                         total_amount=float(total_amount_with_hst),
                         pdf_url=pdf_url,
                         now_str=now_str,
+                        company_name=company_name,
+                        company_subgroup_name=company_subgroup_name,
                         current_year=now_local.year
                     )
 
@@ -4383,6 +4401,8 @@ def generate_weekly_invoices(request):
                 ).strftime('%Y-%m-%d %H:%M:%S'),
                 "orders": orders_data
             })
+            
+            logger.debug(f"Added invoice {invoice.id} to response list")
         else:
             logger.debug(
                 f"Skipping week {week_start} to {week_end} - no delivered orders"
@@ -4392,14 +4412,16 @@ def generate_weekly_invoices(request):
         week_start += timedelta(days=7)
 
     logger.info(
-        f"Generated/retrieved {len(invoices_list)} invoices for pharmacy {pharmacy.name}"
+        f"Generated/retrieved {len(invoices_list)} invoices for pharmacy {pharmacy.name}. "
+        f"Invoices returned: {[inv['invoice_id'] for inv in invoices_list]}"
     )
     
     return JsonResponse({
         "success": True,
         "invoices": invoices_list,
         "timezone": str(settings.USER_TIMEZONE),
-        "current_date": today_local.strftime('%Y-%m-%d')
+        "current_date": today_local.strftime('%Y-%m-%d'),
+        "total_invoices": len(invoices_list)
     })
 
 
