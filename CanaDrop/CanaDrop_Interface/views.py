@@ -3966,23 +3966,18 @@ def generate_weekly_invoices(request):
     """
     Generate weekly invoices for authenticated pharmacy based on delivered orders.
     
-    Invoice Generation Logic:
-    - Uses delivered_at field (stored as UTC in DB) for billing calculations
-    - Processes complete 7-day weeks only (both start and end days inclusive)
-    - Generates invoices ONLY after the week has fully completed in USER_TIMEZONE
-    - Creates invoices ONLY for weeks that have at least one delivered order
-    - All response data and PDF timestamps converted to USER_TIMEZONE for display
-    - Idempotent: get_or_create prevents duplicate invoices for the same week
-    - Due date: 2 days after the invoice generation date (today)
-    
-    Example Scenario:
-    - Week 1 (5 orders) → Invoice created ✅
-    - Week 2 (0 orders) → No invoice (skipped)
-    - Week 3 (0 orders) → No invoice (skipped)
-    - Week 4 (3 orders) → Invoice created ✅
+    Returns all existing invoices AND generates new invoices for completed weeks
+    that don't have invoices yet.
     """
     pharmacy = request.pharmacy
     logger.info(f"Generating weekly invoices for pharmacy {pharmacy.name} (ID: {pharmacy.id})")
+
+    # Get current date in USER_TIMEZONE (America/Toronto)
+    now_local = timezone.localtime(timezone.now(), settings.USER_TIMEZONE)
+    today_local = now_local.date()
+    
+    logger.info(f"Current date: {today_local} in {settings.USER_TIMEZONE}")
+    logger.info(f"Current datetime: {now_local}")
 
     # Fetch only delivered orders with delivered_at timestamp (UTC in DB)
     orders_qs = DeliveryOrder.objects.filter(
@@ -3992,7 +3987,7 @@ def generate_weekly_invoices(request):
     ).order_by("delivered_at")
 
     if not orders_qs.exists():
-        logger.info(f"No delivered orders found for pharmacy {pharmacy.name} (ID: {pharmacy.id})")
+        logger.info(f"No delivered orders found for pharmacy {pharmacy.name}")
         return JsonResponse({
             "success": True,
             "message": "No delivered orders for this pharmacy yet",
@@ -4005,213 +4000,198 @@ def generate_weekly_invoices(request):
     
     earliest_local = timezone.localtime(earliest_utc, settings.USER_TIMEZONE).date()
     latest_local = timezone.localtime(latest_utc, settings.USER_TIMEZONE).date()
-
-    # Get current date in USER_TIMEZONE (America/Toronto)
-    now_local = timezone.localtime(timezone.now(), settings.USER_TIMEZONE)
-    today_local = now_local.date()
     
-    logger.info(
-        f"Processing invoices from {earliest_local} to {latest_local}. "
-        f"Today is {today_local} in {settings.USER_TIMEZONE}"
-    )
+    logger.info(f"Earliest delivery: {earliest_local}, Latest delivery: {latest_local}")
+
+    # Calculate week start (Monday) for earliest delivery
+    # This ensures we start from the beginning of the week containing the first delivery
+    days_since_monday = earliest_local.weekday()
+    week_start = earliest_local - timedelta(days=days_since_monday)
+    
+    logger.info(f"Starting from week beginning: {week_start}")
     
     invoices_list = []
-    week_start = earliest_local
+    weeks_processed = 0
+    weeks_with_orders = 0
+    weeks_skipped_no_orders = 0
+    weeks_skipped_incomplete = 0
 
-    # Process all complete 7-day weeks
-    while week_start <= latest_local:
-        week_end = week_start + timedelta(days=6)  # 7-day week inclusive (start + 6 = 7 days)
+    # Process all weeks from first delivery until we hit an incomplete week
+    while True:
+        weeks_processed += 1
+        week_end = week_start + timedelta(days=6)  # 7-day week (Mon-Sun)
         
-        # Check if this week is complete (current date must be AFTER week_end)
-        if week_end >= today_local:
-            logger.info(
-                f"Stopping at incomplete week {week_start} to {week_end} "
-                f"(today is {today_local} in {settings.USER_TIMEZONE}). "
-                f"This week is still ongoing and will be processed when complete."
-            )
-            break  # Stop processing - we've reached the incomplete current week
+        logger.debug(f"\n--- Processing Week #{weeks_processed}: {week_start} to {week_end} ---")
         
-        # Don't process weeks that start after the latest delivery date
+        # Stop if we've gone past the latest delivery date
         if week_start > latest_local:
-            logger.debug(f"Week start {week_start} is after latest delivery {latest_local}, stopping")
+            logger.info(f"Week start {week_start} is beyond latest delivery {latest_local}, stopping")
             break
         
-        # Adjust week_end to not exceed latest delivery date
-        # This handles edge cases where last delivery is mid-week
-        original_week_end = week_end
-        week_end = min(week_end, latest_local)
-        
-        if original_week_end != week_end:
-            logger.debug(
-                f"Adjusted week_end from {original_week_end} to {week_end} "
-                f"to match latest delivery date"
+        # Check if this week is complete
+        # A week is incomplete if its end date is today or in the future
+        if week_end >= today_local:
+            logger.info(
+                f"Week {week_start} to {week_end} is incomplete "
+                f"(week_end {week_end} >= today {today_local}). "
+                f"Stopping here - this week is still ongoing."
             )
+            weeks_skipped_incomplete += 1
+            break
+        
+        # Adjust week_end if it exceeds the last delivery date
+        original_week_end = week_end
+        if week_end > latest_local:
+            week_end = latest_local
+            logger.debug(f"Adjusted week_end from {original_week_end} to {week_end}")
 
-        # Convert week boundaries from USER_TIMEZONE to UTC for DB queries
-        # Start of day in local timezone → UTC
+        # Convert week boundaries to UTC for database queries
         week_start_utc = timezone.make_aware(
             datetime.combine(week_start, datetime.min.time()),
             settings.USER_TIMEZONE
         ).astimezone(timezone.utc)
         
-        # End of day in local timezone → UTC (23:59:59.999999)
         week_end_utc = timezone.make_aware(
             datetime.combine(week_end, datetime.max.time()),
             settings.USER_TIMEZONE
         ).astimezone(timezone.utc)
 
-        # Filter orders delivered within this week (using UTC timestamps in DB)
+        # Get orders for this week
         week_orders = orders_qs.filter(
             delivered_at__gte=week_start_utc,
             delivered_at__lte=week_end_utc
         )
         
         total_orders = week_orders.count()
+        
+        logger.debug(f"Found {total_orders} orders in this week")
 
-        # Only create invoice if there are orders in this week
-        if total_orders > 0:
-            logger.debug(
-                f"Processing completed week {week_start} to {week_end} "
-                f"with {total_orders} delivered orders"
-            )
+        if total_orders == 0:
+            logger.debug(f"No orders in week {week_start} to {week_end}, skipping")
+            weeks_skipped_no_orders += 1
+            week_start += timedelta(days=7)
+            continue
+        
+        weeks_with_orders += 1
+        logger.info(f"Processing week {week_start} to {week_end} with {total_orders} orders")
 
-            # Calculate subtotal, HST (13%), and final total with proper decimal precision
-            subtotal = sum(Decimal(str(o.rate)) for o in week_orders)
-            hst_rate = Decimal(settings.ONTARIO_HST_RATE)  
-            hst_amount = (subtotal * hst_rate).quantize(Decimal('0.01'))
-            total_amount_with_hst = (subtotal + hst_amount).quantize(Decimal('0.01'))
+        # Calculate amounts
+        subtotal = sum(Decimal(str(o.rate)) for o in week_orders)
+        hst_rate = Decimal(settings.ONTARIO_HST_RATE)
+        hst_amount = (subtotal * hst_rate).quantize(Decimal('0.01'))
+        total_amount_with_hst = (subtotal + hst_amount).quantize(Decimal('0.01'))
 
-            # Due date: 2 days after invoice generation (today in USER_TIMEZONE)
-            due_date = today_local + timedelta(days=2)
+        # Due date: 2 days after today
+        due_date = today_local + timedelta(days=2)
 
-            # Idempotent invoice creation - prevents duplicates
-            invoice, created = Invoice.objects.get_or_create(
-                pharmacy=pharmacy,
-                start_date=week_start,
-                end_date=week_end,
-                defaults={
-                    "total_orders": total_orders,
-                    "total_amount": total_amount_with_hst,
-                    "due_date": due_date,
-                    "status": "generated"
-                }
-            )
+        # Get or create invoice
+        invoice, created = Invoice.objects.get_or_create(
+            pharmacy=pharmacy,
+            start_date=week_start,
+            end_date=week_end,
+            defaults={
+                "total_orders": total_orders,
+                "total_amount": total_amount_with_hst,
+                "due_date": due_date,
+                "status": "generated"
+            }
+        )
 
-            if created:
-                logger.info(
-                    f"Created new invoice {invoice.id} for pharmacy {pharmacy.name} "
-                    f"(Week: {week_start} to {week_end}, Orders: {total_orders})"
+        if created:
+            logger.info(f"✓ Created NEW invoice {invoice.id} for {week_start} to {week_end}")
+        else:
+            logger.info(f"✓ Retrieved EXISTING invoice {invoice.id} for {week_start} to {week_end}")
+            
+            # Update if amounts changed
+            if (invoice.total_orders != total_orders or 
+                invoice.total_amount != total_amount_with_hst):
+                invoice.total_orders = total_orders
+                invoice.total_amount = total_amount_with_hst
+                invoice.due_date = due_date
+                if invoice.status is None:
+                    invoice.status = "generated"
+                invoice.save()
+                logger.info(f"Updated invoice {invoice.id} with new totals")
+
+        # Build orders data
+        orders_data = []
+        for o in week_orders:
+            delivered_at_local = timezone.localtime(o.delivered_at, settings.USER_TIMEZONE)
+            orders_data.append({
+                "order_id": o.id,
+                "pickup_address": o.pickup_address,
+                "pickup_city": o.pickup_city,
+                "drop_address": o.drop_address,
+                "drop_city": o.drop_city,
+                "pickup_day": o.pickup_day.strftime('%Y-%m-%d'),
+                "delivered_at": delivered_at_local.strftime('%Y-%m-%d %H:%M'),
+                "rate": float(o.rate),
+                "driver": o.driver.name if o.driver else "N/A"
+            })
+
+        # Handle PDF
+        pdf_url = invoice.pdf_url or ""
+        needs_upload = (
+            not pdf_url
+            or pdf_url.startswith("/")
+            or pdf_url.startswith("/media/")
+        )
+
+        if needs_upload:
+            try:
+                pdf_buffer = generate_invoice_pdf(
+                    invoice, pharmacy, orders_data, subtotal, hst_amount, total_amount_with_hst
                 )
-            else:
-                logger.debug(
-                    f"Invoice {invoice.id} already exists for pharmacy {pharmacy.name} "
-                    f"(Week: {week_start} to {week_end})"
+
+                pharmacy_name_clean = (
+                    pharmacy.name.replace(' ', '_')
+                               .replace('/', '_')
+                               .replace('\\', '_')
                 )
-                # Update totals if they changed (edge case - shouldn't happen normally)
-                if (invoice.total_orders != total_orders or 
-                    invoice.total_amount != total_amount_with_hst):
-                    invoice.total_orders = total_orders
-                    invoice.total_amount = total_amount_with_hst
-                    invoice.due_date = due_date
-                    if invoice.status is None:
-                        invoice.status = "generated"
-                    invoice.save()
-                    logger.info(f"Updated invoice {invoice.id} totals")
+                timestamp = now_local.strftime('%Y%m%d_%H%M%S')
+                filename = (
+                    f"{invoice.id}_{pharmacy_name_clean}_"
+                    f"{week_start}_{week_end}_{timestamp}.pdf"
+                )
 
-            # Build order data for response/PDF (all times converted to USER_TIMEZONE)
-            orders_data = []
-            for o in week_orders:
-                # Convert delivered_at from UTC to USER_TIMEZONE for display
-                delivered_at_local = timezone.localtime(o.delivered_at, settings.USER_TIMEZONE)
-                orders_data.append({
-                    "order_id": o.id,
-                    "pickup_address": o.pickup_address,
-                    "pickup_city": o.pickup_city,
-                    "drop_address": o.drop_address,
-                    "drop_city": o.drop_city,
-                    "pickup_day": o.pickup_day.strftime('%Y-%m-%d'),
-                    "delivered_at": delivered_at_local.strftime('%Y-%m-%d %H:%M'),
-                    "rate": float(o.rate),
-                    "driver": o.driver.name if o.driver else "N/A"
-                })
+                uploaded_url = upload_pdf_to_gcp(pdf_buffer, filename)
+                if not uploaded_url:
+                    logger.error(f"GCS upload failed for invoice {invoice.id}")
+                    return JsonResponse({
+                        "success": False,
+                        "error": f"Failed to upload PDF for invoice {invoice.id}"
+                    }, status=500)
 
-            # Check if PDF needs generation/upload
-            pdf_url = invoice.pdf_url or ""
-            needs_upload = (
-                not pdf_url                      # missing
-                or pdf_url.startswith("/")       # local temp path
-                or pdf_url.startswith("/media/") # local media path
-            )
+                invoice.pdf_url = uploaded_url
+                invoice.save()
+                pdf_url = uploaded_url
+                logger.info(f"Uploaded PDF for invoice {invoice.id}")
 
-            if needs_upload:
-                try:
-                    # Generate PDF buffer
-                    pdf_buffer = generate_invoice_pdf(
-                        invoice, pharmacy, orders_data, subtotal, hst_amount, total_amount_with_hst
-                    )
+            except Exception as e:
+                logger.exception(f"Error with PDF for invoice {invoice.id}: {e}")
+                return JsonResponse({
+                    "success": False,
+                    "error": f"PDF error for invoice {invoice.id}: {str(e)}"
+                }, status=500)
+        else:
+            logger.debug(f"Using existing PDF for invoice {invoice.id}")
 
-                    # Create timestamped filename with cleaned pharmacy name
-                    pharmacy_name_clean = (
-                        pharmacy.name.replace(' ', '_')
-                                    .replace('/', '_')
-                                    .replace('\\', '_')
-                    )
-                    timestamp = now_local.strftime('%Y%m%d_%H%M%S')
-                    filename = (
-                        f"{invoice.id}_{pharmacy_name_clean}_"
-                        f"{week_start}_{week_end}_{timestamp}.pdf"
-                    )
+        # Send email for new invoices
+        if created and pharmacy.email:
+            try:
+                brand_primary = settings.BRAND_COLORS['primary']
+                brand_primary_dark = settings.BRAND_COLORS['primary_dark']
+                now_str = now_local.strftime("%b %d, %Y %H:%M %Z")
+                logo_url = settings.LOGO_URL
+                
+                start_date_formatted = week_start.strftime("%B %d, %Y")
+                end_date_formatted = week_end.strftime("%B %d, %Y")
+                due_date_formatted = due_date.strftime("%B %d, %Y")
 
-                    # Upload to GCP - must succeed (no local fallback)
-                    uploaded_url = upload_pdf_to_gcp(pdf_buffer, filename)
-                    if not uploaded_url:
-                        logger.error(f"GCS upload returned empty URL for invoice {invoice.id}")
-                        return JsonResponse(
-                            {
-                                "success": False,
-                                "error": f"Failed to upload invoice PDF for invoice {invoice.id}"
-                            },
-                            status=500
-                        )
+                company_name = settings.COMPANY_OPERATING_NAME
+                company_subgroup_name = settings.COMPANY_SUB_GROUP_NAME
 
-                    invoice.pdf_url = uploaded_url
-                    invoice.save()
-                    pdf_url = uploaded_url
-                    logger.info(f"Successfully generated and uploaded PDF for invoice {invoice.id}")
-
-                except Exception as e:
-                    logger.exception(f"Error generating/uploading PDF for invoice {invoice.id}: {e}")
-                    return JsonResponse(
-                        {
-                            "success": False,
-                            "error": f"Error generating/uploading PDF for invoice {invoice.id}: {str(e)}"
-                        },
-                        status=500
-                    )
-            else:
-                logger.debug(f"Using existing PDF URL for invoice {invoice.id}")
-
-            # Send email notification for newly created invoices
-            if created and pharmacy.email:
-                try:
-                    # Get brand colors and settings
-                    brand_primary = settings.BRAND_COLORS['primary']
-                    brand_primary_dark = settings.BRAND_COLORS['primary_dark']
-                    brand_accent = settings.BRAND_COLORS['accent']
-                    now_str = now_local.strftime("%b %d, %Y %H:%M %Z")
-                    logo_url = settings.LOGO_URL
-                    
-                    # Format dates for email display
-                    start_date_formatted = week_start.strftime("%B %d, %Y")
-                    end_date_formatted = week_end.strftime("%B %d, %Y")
-                    due_date_formatted = due_date.strftime("%B %d, %Y")
-
-                    # Get Business Information
-                    company_name = settings.COMPANY_OPERATING_NAME
-                    company_subgroup_name = settings.COMPANY_SUB_GROUP_NAME
-                  
-                    # Build HTML email using .format() to avoid f-string CSS brace conflicts
-                    invoice_html = """
+                invoice_html = """
 <!doctype html>
 <html lang="en">
   <head>
@@ -4331,89 +4311,81 @@ def generate_weekly_invoices(request):
   </body>
 </html>
 """.format(
-                        brand_primary=brand_primary,
-                        brand_primary_dark=brand_primary_dark,
-                        logo_url=logo_url,
-                        pharmacy_name=pharmacy.name,
-                        start_date_formatted=start_date_formatted,
-                        end_date_formatted=end_date_formatted,
-                        invoice_id=invoice.id,
-                        due_date_formatted=due_date_formatted,
-                        total_orders=total_orders,
-                        total_amount=float(total_amount_with_hst),
-                        pdf_url=pdf_url,
-                        now_str=now_str,
-                        company_name=company_name,
-                        company_subgroup_name=company_subgroup_name,
-                        current_year=now_local.year
-                    )
+                    brand_primary=brand_primary,
+                    brand_primary_dark=brand_primary_dark,
+                    logo_url=logo_url,
+                    pharmacy_name=pharmacy.name,
+                    start_date_formatted=start_date_formatted,
+                    end_date_formatted=end_date_formatted,
+                    invoice_id=invoice.id,
+                    due_date_formatted=due_date_formatted,
+                    total_orders=total_orders,
+                    total_amount=float(total_amount_with_hst),
+                    pdf_url=pdf_url,
+                    now_str=now_str,
+                    company_name=company_name,
+                    company_subgroup_name=company_subgroup_name,
+                    current_year=now_local.year
+                )
 
-                    # Plain text fallback email
-                    invoice_text = (
-                        f"Invoice Generated - {settings.COMPANY_OPERATING_NAME}\n\n"
-                        f"Hello {pharmacy.name},\n\n"
-                        f"Your invoice for the week of {start_date_formatted} to {end_date_formatted} has been generated.\n\n"
-                        f"Invoice #{invoice.id}\n"
-                        f"Total Amount: ${total_amount_with_hst:.2f}\n"
-                        f"Payment Due: {due_date_formatted}\n\n"
-                        f"{total_orders} deliveries completed during this period.\n\n"
-                        f"IMPORTANT: Payment due by {due_date_formatted} to avoid penalties or service interruptions.\n\n"
-                        f"Download your invoice: {pdf_url}\n\n"
-                        f"For complete invoice details, payment history, and delivery breakdowns, please visit the Invoices Section in your pharmacy portal.\n\n"
-                        f"For payment inquiries, contact billing at {settings.EMAIL_BILLING}\n\n"
-                        f"Invoice generated on {now_str}.\n"
-                    )
+                invoice_text = (
+                    f"Invoice Generated - {company_name}\n\n"
+                    f"Hello {pharmacy.name},\n\n"
+                    f"Your invoice for the week of {start_date_formatted} to {end_date_formatted} has been generated.\n\n"
+                    f"Invoice #{invoice.id}\n"
+                    f"Total Amount: ${total_amount_with_hst:.2f}\n"
+                    f"Payment Due: {due_date_formatted}\n\n"
+                    f"{total_orders} deliveries completed during this period.\n\n"
+                    f"Download your invoice: {pdf_url}\n\n"
+                    f"Invoice generated on {now_str}.\n"
+                )
 
-                    # Send email
-                    _send_html_email_billing(
-                        subject=f"Invoice #{invoice.id} Generated • Week of {start_date_formatted}",
-                        to_email=pharmacy.email,
-                        html=invoice_html,
-                        text_fallback=invoice_text,
-                    )
-                    logger.info(
-                        f"Invoice notification email sent to {pharmacy.email} "
-                        f"for invoice {invoice.id}"
-                    )
-                    
-                except Exception as e:
-                    logger.error(f"ERROR sending invoice email to {pharmacy.email}: {str(e)}")
-                    import traceback
-                    traceback.print_exc()
-                    # Don't fail invoice generation if email fails
+                _send_html_email_billing(
+                    subject=f"Invoice #{invoice.id} Generated • Week of {start_date_formatted}",
+                    to_email=pharmacy.email,
+                    html=invoice_html,
+                    text_fallback=invoice_text,
+                )
+                logger.info(f"Email sent to {pharmacy.email} for invoice {invoice.id}")
+                
+            except Exception as e:
+                logger.error(f"Email error for invoice {invoice.id}: {str(e)}")
 
-            # Add to response list (all dates/times in USER_TIMEZONE)
-            invoices_list.append({
-                "invoice_id": invoice.id,
-                "start_date": week_start.strftime('%Y-%m-%d'),
-                "end_date": week_end.strftime('%Y-%m-%d'),
-                "total_orders": invoice.total_orders,
-                "subtotal": float(subtotal),
-                "hst_rate": float(hst_rate),
-                "hst_amount": float(hst_amount),
-                "total_amount": float(invoice.total_amount),
-                "due_date": invoice.due_date.strftime('%Y-%m-%d'),
-                "status": invoice.status,
-                "pdf_url": pdf_url,
-                "created_at": timezone.localtime(
-                    invoice.created_at,
-                    settings.USER_TIMEZONE
-                ).strftime('%Y-%m-%d %H:%M:%S'),
-                "orders": orders_data
-            })
-            
-            logger.debug(f"Added invoice {invoice.id} to response list")
-        else:
-            logger.debug(
-                f"Skipping week {week_start} to {week_end} - no delivered orders"
-            )
+        # Add to response
+        invoices_list.append({
+            "invoice_id": invoice.id,
+            "start_date": week_start.strftime('%Y-%m-%d'),
+            "end_date": week_end.strftime('%Y-%m-%d'),
+            "total_orders": invoice.total_orders,
+            "subtotal": float(subtotal),
+            "hst_rate": float(hst_rate),
+            "hst_amount": float(hst_amount),
+            "total_amount": float(invoice.total_amount),
+            "due_date": invoice.due_date.strftime('%Y-%m-%d'),
+            "status": invoice.status,
+            "pdf_url": pdf_url,
+            "created_at": timezone.localtime(
+                invoice.created_at,
+                settings.USER_TIMEZONE
+            ).strftime('%Y-%m-%d %H:%M:%S'),
+            "orders": orders_data
+        })
+        
+        logger.info(f"→ Added invoice {invoice.id} to response")
 
-        # Move to next 7-day week window
+        # Move to next week
         week_start += timedelta(days=7)
 
     logger.info(
-        f"Generated/retrieved {len(invoices_list)} invoices for pharmacy {pharmacy.name}. "
-        f"Invoices returned: {[inv['invoice_id'] for inv in invoices_list]}"
+        f"\n{'='*60}\n"
+        f"SUMMARY for {pharmacy.name}:\n"
+        f"  Total weeks processed: {weeks_processed}\n"
+        f"  Weeks with orders: {weeks_with_orders}\n"
+        f"  Weeks skipped (no orders): {weeks_skipped_no_orders}\n"
+        f"  Weeks skipped (incomplete): {weeks_skipped_incomplete}\n"
+        f"  Invoices in response: {len(invoices_list)}\n"
+        f"  Invoice IDs: {[inv['invoice_id'] for inv in invoices_list]}\n"
+        f"{'='*60}"
     )
     
     return JsonResponse({
