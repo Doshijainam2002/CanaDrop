@@ -5712,7 +5712,7 @@ def _generate_invoice_pdf(driver, week_data, orders):
                     # Format delivery date in local timezone
                     if order.updated_at:
                         try:
-                            delivery_date_local = timezone.localtime(order.updated_at, settings.USER_TIMEZONE)
+                            delivery_date_local = timezone.localtime(order.delivered_at, settings.USER_TIMEZONE)
                             delivery_date = delivery_date_local.strftime('%m/%d/%Y')
                         except:
                             delivery_date = order.updated_at.strftime('%m/%d/%Y')
