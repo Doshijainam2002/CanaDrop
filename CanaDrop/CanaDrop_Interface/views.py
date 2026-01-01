@@ -4794,22 +4794,21 @@ def _end_of_week(d: date):
 #     return now > end_datetime
 
 
+
 def _is_period_complete(end_date: date) -> bool:
     """
     Returns True only if the invoice period has fully ended
     (after 11:59:59 PM local time on end_date).
     """
 
-    # Current time in USER_TIMEZONE
-    now_local = timezone.localtime(timezone.now(), settings.USER_TIMEZONE)
+    tz = settings.USER_TIMEZONE  # pytz timezone
 
-    # Create end-of-day safely WITHOUT datetime.time.max
-    end_of_day_naive = datetime.combine(end_date, datetime.min.time()) + timedelta(days=1) - timedelta(microseconds=1)
+    # Current local time
+    now_local = timezone.now().astimezone(tz)
 
-    # Make timezone-aware in USER_TIMEZONE
-    end_of_day_local = timezone.make_aware(
-        end_of_day_naive,
-        settings.USER_TIMEZONE
+    # Correct way to build end-of-day with pytz
+    end_of_day_local = tz.localize(
+        datetime.combine(end_date, time(23, 59, 59))
     )
 
     return now_local > end_of_day_local
