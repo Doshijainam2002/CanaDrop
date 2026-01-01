@@ -294,6 +294,8 @@ function parseUtcDateTime(utcLike) {
     return new Date(utcLike);
 }
 
+
+
 // Pretty print a date-only "YYYY-MM-DD" without timezone math
 function formatDatePlain(dateOnly) {
     if (!dateOnly) return 'N/A';
@@ -315,6 +317,29 @@ function getCookie(name) {
     if (parts.length === 2) return parts.pop().split(';').shift();
     return null;
 }
+
+function showInfo(message) {
+    // If you have a toast/notification system, use it
+    if (typeof showToast === 'function') {
+        showToast(message, { type: 'info' });
+    } else {
+        // Fallback to console or your existing notification system
+        console.info(message);
+        // You could also update a UI element here
+        const infoElement = document.getElementById('infoMessage');
+        if (infoElement) {
+            infoElement.textContent = message;
+            infoElement.classList.remove('hidden');
+        }
+    }
+}
+
+        function getCSRFToken() {
+            return document.cookie
+                .split('; ')
+                .find(row => row.startsWith('csrftoken='))
+                ?.split('=')[1];
+        }
 
 function showLoading() {
     document.getElementById('loadingOverlay').classList.remove('hidden');
@@ -539,45 +564,154 @@ function downloadPDF(pdfUrl) {
     }
 }
 
+// async function loadInvoiceData() {
+//     try {
+//         showLoading();
+        
+//         const driverId = getCookie("driverId");
+//         if (!driverId) {
+//             throw new Error("Driver not logged in");
+//         }
+
+//         currentDriverId = driverId;
+
+//         const response = await fetch(`/api/driver/invoices/weeks/?driverId=${driverId}`, {
+//             method: 'GET',
+//             headers: {
+//                 'Content-Type': 'application/json',
+//             },
+//         });
+
+//         if (!response.ok) {
+//             throw new Error(`HTTP error! status: ${response.status}`);
+//         }
+
+//         const data = await response.json();
+        
+
+//         if (data.message) {
+//             // No delivered orders found
+//             invoiceData = [];
+//             showError(data.message);
+//         } else {
+//             invoiceData = data.weeks || [];
+//         }
+
+//         renderSummaries();
+//         updateStats();
+        
+//     } catch (error) {
+//         console.error('Error loading invoice data:', error);
+//         showError('Failed to load invoice data. Please try again.');
+//         invoiceData = [];
+//         renderSummaries();
+//         updateStats();
+//     } finally {
+//         hideLoading();
+//     }
+// }
+
 async function loadInvoiceData() {
     try {
         showLoading();
         
+        // Get authenticated driver ID from cookies
         const driverId = getCookie("driverId");
         if (!driverId) {
-            throw new Error("Driver not logged in");
+            console.error("Driver ID not found in cookies");
+            showError("Authentication required. Please log in again.");
+            setTimeout(() => {
+                window.location.href = '/driverLogin/'; // Adjust to your driver login URL
+            }, 2000);
+            return;
         }
 
         currentDriverId = driverId;
+        console.log(`Loading invoice data for driver ID: ${driverId}`);
 
-        const response = await fetch(`/api/driver/invoices/weeks/?driverId=${driverId}`, {
+        // Get CSRF token
+        const csrfToken = getCSRFToken();
+        
+        if (!csrfToken) {
+            console.error('CSRF token not found');
+            showError('Security token not found. Please refresh the page.');
+            return;
+        }
+
+        // Make authenticated API request
+        // Note: Driver ID is in session, no need to pass as query param
+        const response = await fetch(`/api/driver/invoices/weeks/`, {
             method: 'GET',
+            credentials: 'include', // Include cookies for authentication
             headers: {
                 'Content-Type': 'application/json',
+                'X-CSRFToken': csrfToken, // Include CSRF token
             },
         });
 
+        console.log(`API response status: ${response.status}`);
+
+        // Handle authentication errors
+        if (response.status === 401) {
+            console.error('Authentication failed - session expired');
+            showError('Session expired. Please log in again.');
+            setTimeout(() => {
+                window.location.href = '/driverLogin/'; // Adjust to your driver login URL
+            }, 2000);
+            return;
+        }
+
+        // Handle other error responses
         if (!response.ok) {
-            throw new Error(`HTTP error! status: ${response.status}`);
+            let errorMessage = 'Failed to load invoice data. Please try again.';
+            try {
+                const errorData = await response.json();
+                if (errorData.error) {
+                    errorMessage = errorData.error;
+                }
+            } catch (e) {
+                console.error('Error parsing error response:', e);
+            }
+            throw new Error(errorMessage);
         }
 
+        // Parse successful response
         const data = await response.json();
-        
+        console.log('Invoice data received:', data);
 
-        if (data.message) {
-            // No delivered orders found
+        // Check if response indicates success
+        if (data.success === false) {
+            console.error('API returned success: false', data.error || data.message);
+            showError(data.error || data.message || 'Failed to load invoice data');
             invoiceData = [];
-            showError(data.message);
+        } else if (data.message) {
+            // No delivered orders found (but not an error)
+            console.info('No invoice data:', data.message);
+            invoiceData = [];
+            showInfo(data.message); // Use showInfo instead of showError for non-error messages
         } else {
+            // Success - data received
             invoiceData = data.weeks || [];
+            console.log(`Loaded ${invoiceData.length} invoice weeks`);
+            
+            // Show timezone info if available
+            if (data.timezone) {
+                console.log(`Data timezone: ${data.timezone}`);
+            }
+            
+            // Show driver info if available
+            if (data.driver_name) {
+                console.log(`Driver: ${data.driver_name}`);
+            }
         }
 
+        // Render the data
         renderSummaries();
         updateStats();
         
     } catch (error) {
         console.error('Error loading invoice data:', error);
-        showError('Failed to load invoice data. Please try again.');
+        showError(error.message || 'Failed to load invoice data. Please try again.');
         invoiceData = [];
         renderSummaries();
         updateStats();

@@ -24,6 +24,7 @@ urlpatterns = [
     path('pharmacyTrial/', views.pharmacyTrialOnboarding, name='PharmacyTrialOnboardingPage'),  
     path('pharmacyCCPoints/', views.pharmacyCCPointsView, name='PharmacyCCPointsPage'), 
     path('api/pharmacy/<int:pharmacy_id>/cc-points/', views.get_pharmacy_cc_points, name='pharmacy_cc_points'),
+    path('api/getActivePaymentMethods/', views.get_active_payment_methods, name="RetrieveActivePaymentMethods"), # Done
 
 
     path('driverLogin/', views.driverLoginView, name='DriverLoginPage'),  
@@ -37,11 +38,11 @@ urlpatterns = [
     path("api/driver-pickup-proof/", views.driver_pickup_proof, name="driver_pickup_proof"), # Done
     path("api/driver-delivery-proof/", views.driver_delivery_proof, name="driver_delivery_proof"), # Done
     path("api/generate-weekly-invoices/", views.generate_weekly_invoices, name="generate_weekly_invoices"), # Done
-    path('api/create-checkout-session/', views.create_checkout_session, name='create_checkout_session'),
-    path('webhooks/stripe/', views.stripe_webhook, name='stripe_webhook'),
-    path('api/payment-status/', views.get_payment_status, name='payment_status'),
+    path('api/create-checkout-session/', views.create_checkout_session, name='create_checkout_session'), # Done
+    path('webhooks/stripe/', views.stripe_webhook, name='stripe_webhook'), # Not Required
+    path('api/payment-status/', views.get_payment_status, name='payment_status'), # No Occurrence Found
     path('driverFinances/', views.driverFinancesView, name="DriverFinancesPage"),
-    path("api/driver/invoices/weeks/", views.driver_invoice_weeks, name="driver_invoice_weeks"),
+    path("api/driver/invoices/weeks/", views.driver_invoice_weeks, name="driver_invoice_weeks"), # Done
     path('driverForgotPassword/', views.driverForgotPasswordView, name="driverForgotPasswordPage"),
     path('driverRegister/', views.driverRegisterView, name="driverRegisterPage"),
     path('api/driver/register/', views.register_driver, name='register_driver'),
