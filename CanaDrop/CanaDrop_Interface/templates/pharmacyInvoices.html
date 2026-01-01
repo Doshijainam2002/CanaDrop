@@ -195,7 +195,7 @@
                             </div>
                             <div class="ml-4">
                                 <p class="text-sm text-gray-500">Total Invoices</p>
-                                <p class="text-2xl font-bold text-gray-900" id="totalInvoices">3</p>
+                                <p class="text-2xl font-bold text-gray-900" id="totalInvoices">Loading...</p>
                             </div>
                         </div>
                     </div>
@@ -209,7 +209,7 @@
                             </div>
                             <div class="ml-4">
                                 <p class="text-sm text-gray-500">Pending</p>
-                                <p class="text-2xl font-bold text-gray-900" id="pendingInvoices">2</p>
+                                <p class="text-2xl font-bold text-gray-900" id="pendingInvoices">Loading...</p>
                             </div>
                         </div>
                     </div>
@@ -223,7 +223,7 @@
                             </div>
                             <div class="ml-4">
                                 <p class="text-sm text-gray-500">Past Due</p>
-                                <p class="text-2xl font-bold text-gray-900" id="pastDueInvoices">1</p>
+                                <p class="text-2xl font-bold text-gray-900" id="pastDueInvoices">Loading...</p>
                             </div>
                         </div>
                     </div>
@@ -237,7 +237,7 @@
                             </div>
                             <div class="ml-4">
                                 <p class="text-sm text-gray-500">Total Outstanding</p>
-                                <p class="text-2xl font-bold text-gray-900" id="totalOutstanding">$450.00</p>
+                                <p class="text-2xl font-bold text-gray-900" id="totalOutstanding">Loading...</p>
                             </div>
                         </div>
                     </div>
@@ -627,6 +627,17 @@
     </div>
 </div>
 
+<!-- Loading Modal -->
+<div id="loadingModal" class="fixed inset-0 bg-black bg-opacity-60 flex items-center justify-center z-50">
+    <div class="bg-white rounded-2xl p-8 max-w-sm w-full mx-4 text-center">
+        <div class="flex justify-center mb-4">
+            <div class="animate-spin rounded-full h-16 w-16 border-b-4 border-t-4 border-teal-600"></div>
+        </div>
+        <h3 class="text-xl font-semibold text-gray-900 mb-2">Loading Invoices...</h3>
+        <p class="text-sm text-gray-500">Please wait while we fetch your invoice data</p>
+    </div>
+</div>
+
     <script>
 
 
@@ -733,17 +744,26 @@ function getCookie(name) {
     return cookieValue;
 }
 
-// // Fetch invoices from API
+
+// Fetch invoices from API
 // async function fetchInvoices() {
 //     if (isRefreshing) return; // Prevent multiple simultaneous calls
+
+//     // Show loading modal
+//     const loadingModal = document.getElementById('loadingModal');
+//     if (loadingModal) {
+//         loadingModal.classList.remove('hidden');
+//     }
     
 //     // Get pharmacy ID from cookies
 //     pharmacyId = getCookie('pharmacyId');
     
-    
 //     if (!pharmacyId) {
 //         console.error('Pharmacy ID not found in cookies');
-//         alert('Pharmacy ID not found. Please log in again.');
+//         showToast('Pharmacy ID not found. Please log in again.', { type: 'error' });
+//         setTimeout(() => {
+//             window.location.href = '/pharmacyLogin/';
+//         }, 2000);
 //         return;
 //     }
     
@@ -752,44 +772,121 @@ function getCookie(name) {
 //         // Show refreshing animation if refresh button exists
 //         updateRefreshButton(true);
         
-//         const response = await fetch(`/api/generate-weekly-invoices/?pharmacyId=${pharmacyId}`);
+//         // Get CSRF token using your existing function
+//         const csrfToken = getCSRFToken();
         
+//         if (!csrfToken) {
+//             console.error('CSRF token not found');
+//             showToast('Security token not found. Please refresh the page.', { type: 'error' });
+//             isRefreshing = false;
+//             updateRefreshButton(false);
+//             return;
+//         }
+        
+//         console.log('Making request to /api/generate-weekly-invoices/');
+//         const response = await fetch(`/api/generate-weekly-invoices/`, {
+//             method: 'GET',
+//             credentials: 'include', // Include cookies for authentication
+//             headers: {
+//                 'X-CSRFToken': csrfToken,
+//                 'Content-Type': 'application/json'
+//             }
+//         });
+        
+//         console.log('Response status:', response.status);
+        
+//         if (!response.ok) {
+//             if (response.status === 401) {
+//                 showToast('Session expired. Please log in again.', { type: 'warning' });
+//                 setTimeout(() => {
+//                     window.location.href = '/pharmacyLogin/';
+//                 }, 2000);
+//                 return;
+//             }
+            
+//             // Try to get error message from response
+//             let errorMessage = 'Failed to load invoices. Please try again.';
+//             try {
+//                 const errorData = await response.json();
+//                 if (errorData.error) {
+//                     errorMessage = errorData.error;
+//                 }
+//             } catch (e) {
+//                 console.error('Error parsing error response:', e);
+//             }
+            
+//             throw new Error(errorMessage);
+//         }
         
 //         const data = await response.json();
+//         console.log('Response data:', data);
         
+//         // Check if the response indicates success
+//         if (!data.success) {
+//             console.error('Invoice generation failed:', data.error || 'Unknown error');
+//             showToast(data.error || 'Failed to generate invoices. Please try again.', { type: 'error' });
+//             return;
+//         }
         
-//         if (data.invoices) {
+//         if (data.invoices && data.invoices.length > 0) {
 //             invoices = data.invoices.map(invoice => ({
 //                 id: invoice.invoice_id,
 //                 startDate: invoice.start_date,
 //                 endDate: invoice.end_date,
 //                 totalOrders: invoice.total_orders,
 //                 subtotal: invoice.subtotal,
+//                 hstRate: invoice.hst_rate,
 //                 hstAmount: invoice.hst_amount,
 //                 totalAmount: invoice.total_amount,
 //                 dueDate: invoice.due_date,
 //                 status: invoice.status,
 //                 pdfUrl: invoice.pdf_url,
+//                 createdAt: invoice.created_at,
 //                 orders: invoice.orders || []
 //             }));
-//         } else if (data.message) {
-//             return;
+            
+//             console.log(`Loaded ${invoices.length} invoices (Timezone: ${data.timezone})`);
+//             showToast(`Successfully loaded ${invoices.length} invoice${invoices.length > 1 ? 's' : ''}`, { 
+//                 type: 'success',
+//                 duration: 2000 
+//             });
+//         } else {
+//             // No invoices yet
+//             invoices = [];
+//             console.log(data.message || 'No invoices found');
+//             showToast(data.message || 'No invoices found', { 
+//                 type: 'info',
+//                 duration: 3000 
+//             });
 //         }
         
 //         renderInvoices();
 //         updateStats();
 //     } catch (error) {
 //         console.error('Error fetching invoices:', error);
-//         alert('Failed to load invoices. Please try again.');
+//         showToast(error.message || 'Failed to load invoices. Please try again.', { 
+//             type: 'error' 
+//         });
 //     } finally {
 //         isRefreshing = false;
 //         updateRefreshButton(false);
+//         // Hide loading modal
+//         const loadingModal = document.getElementById('loadingModal');
+//         if (loadingModal) {
+//             loadingModal.classList.add('hidden');
+//         }
 //     }
 // }
 
 // Fetch invoices from API
 async function fetchInvoices() {
     if (isRefreshing) return; // Prevent multiple simultaneous calls
+
+    // Show loading modal
+    const loadingModal = document.getElementById('loadingModal');
+    if (loadingModal) {
+        loadingModal.classList.remove('hidden');
+    }
     
     // Get pharmacy ID from cookies
     pharmacyId = getCookie('pharmacyId');
@@ -797,6 +894,10 @@ async function fetchInvoices() {
     if (!pharmacyId) {
         console.error('Pharmacy ID not found in cookies');
         showToast('Pharmacy ID not found. Please log in again.', { type: 'error' });
+        // Hide loading modal before redirecting
+        if (loadingModal) {
+            loadingModal.classList.add('hidden');
+        }
         setTimeout(() => {
             window.location.href = '/pharmacyLogin/';
         }, 2000);
@@ -814,9 +915,7 @@ async function fetchInvoices() {
         if (!csrfToken) {
             console.error('CSRF token not found');
             showToast('Security token not found. Please refresh the page.', { type: 'error' });
-            isRefreshing = false;
-            updateRefreshButton(false);
-            return;
+            return; // Will go to finally block
         }
         
         console.log('Making request to /api/generate-weekly-invoices/');
@@ -837,7 +936,7 @@ async function fetchInvoices() {
                 setTimeout(() => {
                     window.location.href = '/pharmacyLogin/';
                 }, 2000);
-                return;
+                return; // Will go to finally block
             }
             
             // Try to get error message from response
@@ -861,7 +960,7 @@ async function fetchInvoices() {
         if (!data.success) {
             console.error('Invoice generation failed:', data.error || 'Unknown error');
             showToast(data.error || 'Failed to generate invoices. Please try again.', { type: 'error' });
-            return;
+            return; // Will go to finally block
         }
         
         if (data.invoices && data.invoices.length > 0) {
@@ -906,8 +1005,14 @@ async function fetchInvoices() {
     } finally {
         isRefreshing = false;
         updateRefreshButton(false);
+        // Hide loading modal - THIS WILL ALWAYS RUN
+        const loadingModal = document.getElementById('loadingModal');
+        if (loadingModal) {
+            loadingModal.classList.add('hidden');
+        }
     }
 }
+
 
 // Update refresh button with animation
 function updateRefreshButton(isLoading) {
@@ -1538,7 +1643,16 @@ function logoutPharmacy() {
 }
 
 // Initialize the page
+
+// Initialize the page
 document.addEventListener('DOMContentLoaded', function() {
+    // IMPORTANT: Keep loading modal HIDDEN initially
+    // It will be shown when fetchInvoices() is called
+    const loadingModal = document.getElementById('loadingModal');
+    if (loadingModal) {
+        loadingModal.classList.add('hidden'); // Keep it hidden initially
+    }
+    
     // Fetch invoices from API on page load
     fetchInvoices();
     handlePaymentSuccess();
@@ -1635,6 +1749,104 @@ document.addEventListener('DOMContentLoaded', function() {
         });
     }
 });
+
+// document.addEventListener('DOMContentLoaded', function() {
+//     // Fetch invoices from API on page load
+//     fetchInvoices();
+//     handlePaymentSuccess();
+//     loadPaymentInformation();
+
+//     // Mobile menu toggle
+//     const menuToggle = document.getElementById('mobileMenuBtn');
+//     const sidebar = document.getElementById('sidebar');
+//     const sidebarOverlay = document.getElementById('sidebarOverlay');
+
+//     if (menuToggle) {
+//         menuToggle.addEventListener('click', () => {
+//             sidebar.classList.toggle('-translate-x-full');
+//             sidebarOverlay.classList.toggle('hidden');
+//         });
+//     }
+
+//     if (sidebarOverlay) {
+//         sidebarOverlay.addEventListener('click', () => {
+//             sidebar.classList.add('-translate-x-full');
+//             sidebarOverlay.classList.add('hidden');
+//         });
+//     }
+
+//     // Close mobile menu when clicking on nav links
+//     const navLinks = document.querySelectorAll('#sidebar nav a');
+//     navLinks.forEach(link => {
+//         link.addEventListener('click', () => {
+//             sidebar.classList.add('-translate-x-full');
+//             sidebarOverlay.classList.add('hidden');
+//         });
+//     });
+
+//     // Filter change handler
+//     const statusFilter = document.getElementById('statusFilter');
+//     if (statusFilter) {
+//         statusFilter.addEventListener('change', renderInvoices);
+//     }
+
+//     // Close modals when clicking outside
+//     const paymentModal = document.getElementById('paymentModal');
+//     if (paymentModal) {
+//         paymentModal.addEventListener('click', function(e) {
+//             if (e.target === this) closePaymentModal();
+//         });
+//     }
+
+//     // Handle payment method change
+//     const paymentMethod = document.getElementById('paymentMethod');
+//     if (paymentMethod) {
+//         paymentMethod.addEventListener('change', function() {
+//             const creditCardForm = document.getElementById('creditCardForm');
+//             if (creditCardForm) {
+//                 if (this.value === 'credit_card') {
+//                     creditCardForm.style.display = 'block';
+//                 } else {
+//                     creditCardForm.style.display = 'none';
+//                 }
+//             }
+//         });
+//     }
+
+//     // Add refresh button functionality
+//     const refreshButton = document.createElement('button');
+//     refreshButton.id = 'refreshButton';
+//     refreshButton.innerHTML = `
+//         <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+//             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"/>
+//         </svg>
+//         <span class="refresh-text">Refresh</span>
+//     `;
+//     refreshButton.className = 'flex items-center px-3 py-1 text-sm border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors';
+//     refreshButton.onclick = fetchInvoices;
+    
+//     // Add refresh button to the header
+//     const headerControls = document.querySelector('.flex.space-x-2');
+//     if (headerControls) {
+//         headerControls.appendChild(refreshButton);
+//     }
+
+//     // Close EFT modal when clicking outside
+//     const eftModal = document.getElementById('eftModal');
+//     if (eftModal) {
+//         eftModal.addEventListener('click', function(e) {
+//             if (e.target === this) closeEFTModal();
+//         });
+//     }
+
+//     // Close Cheque modal when clicking outside
+//     const chequeModal = document.getElementById('chequeModal');
+//     if (chequeModal) {
+//         chequeModal.addEventListener('click', function(e) {
+//             if (e.target === this) closeChequeModal();
+//         });
+//     }
+// });
 
 // EFT Modal Functions
 function openEFTModal() {
