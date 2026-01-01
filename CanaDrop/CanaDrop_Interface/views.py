@@ -4780,35 +4780,22 @@ def _end_of_week(d: date):
     return _start_of_week(d) + timedelta(days=6)
 
 
-# def _is_period_complete(end_date: date):
-#     """Check if the invoice period has ended (past 11:59 PM on end_date)."""
-#     # Get current time in user's timezone
-#     now = timezone.now().astimezone(USER_TZ)
-    
-#     # Create datetime for 11:59:59 PM on the end date
-#     end_datetime = USER_TZ.localize(
-#         datetime.combine(end_date, datetime.max.time())
-#     )
-    
-#     # Return True only if current time is past the end of period
-#     return now > end_datetime
-
-
-
 def _is_period_complete(end_date: date) -> bool:
     """
     Returns True only if the invoice period has fully ended
     (after 11:59:59 PM local time on end_date).
     """
 
-    tz = settings.USER_TIMEZONE  # pytz timezone
+    # Current time in USER_TIMEZONE
+    now_local = timezone.localtime(timezone.now(), settings.USER_TIMEZONE)
 
-    # Current local time
-    now_local = timezone.now().astimezone(tz)
+    # Create end-of-day safely WITHOUT datetime.time.max
+    end_of_day_naive = datetime.combine(end_date, datetime.min.time()) + timedelta(days=1) - timedelta(microseconds=1)
 
-    # Correct way to build end-of-day with pytz
-    end_of_day_local = tz.localize(
-        datetime.combine(end_date, time(23, 59, 59))
+    # Make timezone-aware in USER_TIMEZONE
+    end_of_day_local = timezone.make_aware(
+        end_of_day_naive,
+        settings.USER_TIMEZONE
     )
 
     return now_local > end_of_day_local
@@ -4841,18 +4828,6 @@ def _order_to_dict(order: DeliveryOrder):
     }
 
 
-# def _get_gcp_client():
-#     """Initialize and return GCP Storage client with service account key."""
-#     try:
-#         # Check if the key file exists
-#         if not os.path.exists(GCP_KEY_PATH):
-#             return None
-        
-#         # Initialize client with service account key
-#         client = storage.Client.from_service_account_json(GCP_KEY_PATH)
-#         return client
-#     except Exception as e:
-#         return None
 
 def _get_gcp_client():
     try:
@@ -4864,29 +4839,6 @@ def _get_gcp_client():
     except Exception:
         logger.exception("Failed to initialize GCP client")
         return None
-
-
-# def _upload_to_gcp(pdf_buffer, filename):
-#     """Upload PDF to GCP Storage and return the public URL."""
-#     try:
-#         client = _get_gcp_client()
-#         if not client:
-#             return None
-            
-#         bucket = client.bucket(GCP_BUCKET_NAME)
-#         blob_name = f"{GCP_FOLDER_NAME}/{filename}"
-#         blob = bucket.blob(blob_name)
-        
-#         pdf_buffer.seek(0)
-#         blob.upload_from_file(pdf_buffer, content_type='application/pdf')
-        
-#         # For uniform bucket-level access, construct the public URL directly
-#         public_url = f"https://storage.googleapis.com/{GCP_BUCKET_NAME}/{blob_name}"
-        
-#         return public_url
-#     except Exception as e:
-#         return None
-
 
 def _upload_to_gcp(pdf_buffer, filename):
     """Upload PDF to GCP Storage and return the public URL."""
@@ -4911,6 +4863,56 @@ def _upload_to_gcp(pdf_buffer, filename):
         logger.exception("Failed to upload invoice PDF to GCP")
         return None
 
+
+
+# def _upload_to_gcp(pdf_buffer, filename):
+#     """Upload PDF to GCP Storage and return the public URL."""
+#     try:
+#         client = _get_gcp_client()
+#         if not client:
+#             return None
+            
+#         bucket = client.bucket(GCP_BUCKET_NAME)
+#         blob_name = f"{GCP_FOLDER_NAME}/{filename}"
+#         blob = bucket.blob(blob_name)
+        
+#         pdf_buffer.seek(0)
+#         blob.upload_from_file(pdf_buffer, content_type='application/pdf')
+        
+#         # For uniform bucket-level access, construct the public URL directly
+#         public_url = f"https://storage.googleapis.com/{GCP_BUCKET_NAME}/{blob_name}"
+        
+#         return public_url
+#     except Exception as e:
+#         return None
+
+
+# def _get_gcp_client():
+#     """Initialize and return GCP Storage client with service account key."""
+#     try:
+#         # Check if the key file exists
+#         if not os.path.exists(GCP_KEY_PATH):
+#             return None
+        
+#         # Initialize client with service account key
+#         client = storage.Client.from_service_account_json(GCP_KEY_PATH)
+#         return client
+#     except Exception as e:
+#         return None
+
+
+# def _is_period_complete(end_date: date):
+#     """Check if the invoice period has ended (past 11:59 PM on end_date)."""
+#     # Get current time in user's timezone
+#     now = timezone.now().astimezone(USER_TZ)
+    
+#     # Create datetime for 11:59:59 PM on the end date
+#     end_datetime = USER_TZ.localize(
+#         datetime.combine(end_date, datetime.max.time())
+#     )
+    
+#     # Return True only if current time is past the end of period
+#     return now > end_datetime
 
 
 
@@ -5909,7 +5911,7 @@ def driver_invoice_weeks(request):
         # Convert UTC updated_at to user's local timezone for grouping
         orders_with_local_dt = []
         for o in orders_qs:
-            if not o.updated_at:
+            if not o.delivered_at:
                 logger.warning(f"Order {o.id} has no updated_at timestamp, skipping")
                 continue
             
