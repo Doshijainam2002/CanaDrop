@@ -5897,7 +5897,7 @@ def _generate_invoice_pdf(driver, week_data, orders):
         <b><font color="#0F172A" size="11">{settings.COMPANY_OPERATING_NAME}</font></b><br/>
         <font color="#64748B" size="9">{settings.COMPANY_SUB_GROUP_NAME}<br/>
         Operating Name of {settings.CORPORATION_NAME}<br/>
-        BN: {settings.CORPORATION_BUSINESS_NUMBER}<br/>
+        BN: {settings.COMPANY_BUSINESS_NUMBER}<br/>
         {settings.EMAIL_HELP_DESK}
         </font>
         '''
@@ -13855,7 +13855,7 @@ def generate_acknowledgement_pdf(order, signature_image_path):
     company_name = settings.COMPANY_OPERATING_NAME
     company_subgroup_name = settings.COMPANY_SUB_GROUP_NAME
     corporation_name = settings.CORPORATION_NAME
-    corporation_business_number = settings.CORPORATION_BUSINESS_NUMBER
+    corporation_business_number = settings.COMPANY_BUSINESS_NUMBER
 
     email_help_desk = settings.EMAIL_HELP_DESK
     
