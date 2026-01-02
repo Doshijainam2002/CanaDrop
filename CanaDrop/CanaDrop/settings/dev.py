@@ -227,19 +227,20 @@ ONTARIO_HST_PERCENT = "13"
 LOGGING = {
     "version": 1,
     "disable_existing_loggers": False,
+
     "handlers": {
         "console": {
             "class": "logging.StreamHandler",
+            "level": "DEBUG",
         },
     },
-    "loggers": {
-        "CanaDrop_Interface": {
-            "handlers": ["console"],
-            "level": "DEBUG",
-            "propagate": True,
-        },
+
+    "root": {
+        "handlers": ["console"],
+        "level": "DEBUG",
     },
 }
+
 
 
 BRAND_COLORS = {

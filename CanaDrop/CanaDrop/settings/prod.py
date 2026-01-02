@@ -217,30 +217,42 @@ JWT_SECRET_KEY = secrets.get("JWT_SECRET_KEY")
 
 
 LOGGING = {
-    'version': 1,
-    'disable_existing_loggers': False,
-    'handlers': {
-        'file': {
-            'level': 'INFO',
-            'class': 'logging.FileHandler',
-            'filename': 'invoice_generation.log',
+    "version": 1,
+    "disable_existing_loggers": False,
+
+    "handlers": {
+        "console": {
+            "class": "logging.StreamHandler",
+            "level": "INFO",
         },
-        'route_file': {  # Add this new handler
-            'level': 'INFO',
-            'class': 'logging.FileHandler',
-            'filename': 'route_optimization.log',
+        "invoice_file": {
+            "class": "logging.FileHandler",
+            "filename": "/var/log/canadrop/invoice_generation.log",
+            "level": "INFO",
+        },
+        "route_file": {
+            "class": "logging.FileHandler",
+            "filename": "/var/log/canadrop/route_optimization.log",
+            "level": "INFO",
         },
     },
-    'loggers': {
-        'CanaDrop_Interface': {
-            'handlers': ['file'],
-            'level': 'INFO',
-            'propagate': True,
+
+    "loggers": {
+        "CanaDrop_Interface": {
+            "handlers": ["console", "invoice_file"],
+            "level": "INFO",
+            "propagate": False,
         },
-        'CanaDrop_Interface.views': {  # Add this for route optimization
-            'handlers': ['route_file'],
-            'level': 'INFO',
-            'propagate': False,
+        "CanaDrop_Interface.views": {
+            "handlers": ["console", "route_file"],
+            "level": "INFO",
+            "propagate": False,
         },
+    },
+
+    "root": {
+        "handlers": ["console"],
+        "level": "INFO",
     },
 }
+
