@@ -5916,7 +5916,7 @@ def driver_invoice_weeks(request):
                             
                             if pdf_url:
                                 existing_invoice.pdf_url = pdf_url
-                                existing_invoice.save(update_fields=['pdf_url', 'updated_at'])
+                                existing_invoice.save(update_fields=['pdf_url'])
                                 invoice_status = "generated"
                                 logger.info(f"✓ PDF regenerated and uploaded successfully for invoice {invoice_id}: {pdf_url}")
                             else:
@@ -5974,7 +5974,7 @@ def driver_invoice_weeks(request):
                             
                             if pdf_url:
                                 new_invoice.pdf_url = pdf_url
-                                new_invoice.save(update_fields=['pdf_url', 'updated_at'])
+                                new_invoice.save(update_fields=['pdf_url'])
                                 invoice_status = "generated"
                                 logger.info(f"✓ PDF uploaded successfully for invoice {invoice_id}: {pdf_url}")
                             else:
