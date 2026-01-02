@@ -4781,7 +4781,16 @@ def _end_of_week(d: date):
 
 
 def _is_period_complete(end_date: date) -> bool:
-    from datetime import datetime, time as time_class  # ← Explicit local import
+    """
+    Check if a payment period has ended (after 11:59:59 PM on end_date in local timezone).
+    
+    Args:
+        end_date: The last date of the period (date object)
+    
+    Returns:
+        bool: True if current local time is after end of the end_date
+    """
+    from datetime import datetime, time
     from django.utils import timezone
     from django.conf import settings
     import logging
@@ -4792,10 +4801,7 @@ def _is_period_complete(end_date: date) -> bool:
     now_local = timezone.localtime(timezone.now(), settings.USER_TIMEZONE)
     
     # Create end of day: end_date at 23:59:59.999999
-    # time_class.max = time(23, 59, 59, 999999)
-    end_of_day_naive = datetime.combine(end_date, time_class.max)
-    #                                             ↑
-    #                           Now explicitly using local import
+    end_of_day_naive = datetime.combine(end_date, time(23, 59, 59, 999999))
     
     # Make it timezone-aware in user's local timezone
     end_of_day_local = timezone.make_aware(
@@ -4807,13 +4813,14 @@ def _is_period_complete(end_date: date) -> bool:
     is_complete = now_local > end_of_day_local
     
     # Debug logging
-    logger.debug(f"Period completion check:")
-    logger.debug(f"  End date: {end_date}")
-    logger.debug(f"  End of day (local): {end_of_day_local.strftime('%Y-%m-%d %H:%M:%S %Z')}")
-    logger.debug(f"  Current time (local): {now_local.strftime('%Y-%m-%d %H:%M:%S %Z')}")
-    logger.debug(f"  Period complete: {is_complete}")
+    logger.info(f"Period completion check:")
+    logger.info(f"  End date: {end_date}")
+    logger.info(f"  End of day (local): {end_of_day_local.strftime('%Y-%m-%d %H:%M:%S %Z')}")
+    logger.info(f"  Current time (local): {now_local.strftime('%Y-%m-%d %H:%M:%S %Z')}")
+    logger.info(f"  Period complete: {is_complete}")
     
     return is_complete
+
 
 def _ensure_local(dt):
     """Ensure datetime is timezone-aware, then convert to USER_TZ."""
@@ -5921,8 +5928,7 @@ def driver_invoice_weeks(request):
                 'error': 'Driver not found'
             }, status=404)
         
-        # Fetch delivered orders for this driver
-        # DB query uses UTC timestamps
+        # Fetch delivered orders for this driver - IMPORTANT: Use delivered_at field
         orders_qs = DeliveryOrder.objects.filter(
             status="delivered", 
             driver_id=driver_id,
@@ -5942,19 +5948,20 @@ def driver_invoice_weeks(request):
         
         logger.info(f"Found {orders_qs.count()} delivered orders for driver {driver_id}")
         
-        # Convert UTC updated_at to user's local timezone for grouping
+        # Convert UTC delivered_at to user's local timezone for grouping
         orders_with_local_dt = []
         for o in orders_qs:
             if not o.delivered_at:
-                logger.warning(f"Order {o.id} has no updated_at timestamp, skipping")
+                logger.warning(f"Order {o.id} has no delivered_at timestamp, skipping")
                 continue
             
             # Convert UTC to local timezone
             local_dt = _ensure_local(o.delivered_at)
             orders_with_local_dt.append((o, local_dt))
+            logger.debug(f"Order {o.id}: delivered_at={o.delivered_at.isoformat()} (UTC) -> {local_dt.isoformat()} (local)")
         
         if not orders_with_local_dt:
-            logger.warning(f"No orders with valid updated_at timestamps for driver {driver_id}")
+            logger.warning(f"No orders with valid delivered_at timestamps for driver {driver_id}")
             return JsonResponse({
                 'success': True,
                 'message': 'No orders with valid timestamps.',
@@ -5964,7 +5971,7 @@ def driver_invoice_weeks(request):
                 'timezone': str(settings.USER_TIMEZONE)
             })
         
-        # Determine overall earliest and latest based on local updated_at
+        # Determine overall earliest and latest based on local delivered_at
         local_datetimes = [ldt for (_, ldt) in orders_with_local_dt]
         earliest_local = min(local_datetimes)
         latest_local = max(local_datetimes)
@@ -5973,6 +5980,8 @@ def driver_invoice_weeks(request):
         overall_end_date = _end_of_week(latest_local.date())
         
         logger.info(f"Overall period: {overall_start_date} to {overall_end_date}")
+        logger.info(f"Earliest delivery (local): {earliest_local.isoformat()}")
+        logger.info(f"Latest delivery (local): {latest_local.isoformat()}")
         
         # Build week buckets
         weeks = []
@@ -5987,7 +5996,7 @@ def driver_invoice_weeks(request):
         # Prepare result weeks
         result_weeks = []
         for wstart, wend in weeks:
-            # Select orders whose local updated_at date falls inside this week
+            # Select orders whose local delivered_at date falls inside this week
             week_orders = [
                 o for (o, ldt) in orders_with_local_dt
                 if (ldt.date() >= wstart and ldt.date() <= wend)
@@ -6009,7 +6018,7 @@ def driver_invoice_weeks(request):
             
             due_date = wend + timedelta(days=7)
             
-            logger.info(f"Processing week {wstart} to {wend}: {total_orders} orders, ${total_amount}")
+            logger.info(f"Processing week {wstart} to {wend}: {total_orders} orders, ${total_amount:.2f}")
             
             # Check if DriverInvoice already exists for this period
             existing_invoice = DriverInvoice.objects.filter(
@@ -6023,19 +6032,67 @@ def driver_invoice_weeks(request):
             invoice_created = False
             invoice_id = None
             
-            # Only generate invoice if period is complete (after 11:59 PM on end date)
-            if _is_period_complete(wend):
-                logger.info(f"Period {wstart} to {wend} is complete, processing invoice")
+            # CRITICAL: Check if period is complete before generating invoice
+            period_complete = _is_period_complete(wend)
+            logger.info(f"Week {wstart} to {wend}: Period complete check = {period_complete}")
+            
+            if period_complete:
+                logger.info(f"✓ Period {wstart} to {wend} is complete, processing invoice")
                 
                 if existing_invoice:
                     # Use existing invoice
                     pdf_url = existing_invoice.pdf_url
                     invoice_status = "generated" if pdf_url else "pending"
                     invoice_id = existing_invoice.id
-                    logger.info(f"Using existing invoice ID: {invoice_id}")
+                    logger.info(f"Found existing invoice ID: {invoice_id}, PDF exists: {bool(pdf_url)}")
+                    
+                    # If invoice exists but no PDF, regenerate it
+                    if not pdf_url:
+                        logger.warning(f"Invoice {invoice_id} exists but has no PDF URL. Regenerating PDF...")
+                        try:
+                            week_data = {
+                                "invoice_id": invoice_id,
+                                "payment_period": {
+                                    "start_date": wstart.isoformat(),
+                                    "end_date": wend.isoformat()
+                                },
+                                "total_orders": total_orders,
+                                "total_amount": str(total_amount.quantize(Decimal("0.01"))),
+                                "due_date": due_date.isoformat(),
+                                "status": "generated",
+                            }
+                            
+                            # Generate PDF
+                            logger.info(f"Calling _generate_invoice_pdf for invoice {invoice_id}")
+                            pdf_buffer = _generate_invoice_pdf(driver, week_data, week_orders)
+                            
+                            # Create filename
+                            timestamp = datetime.now().strftime('%Y%m%d_%H%M%S')
+                            safe_driver_name = driver.name.replace(' ', '_').replace('/', '_')
+                            filename = f"{driver.id}_{safe_driver_name}_{wstart.isoformat()}_{wend.isoformat()}_INV{invoice_id}_{timestamp}.pdf"
+                            
+                            logger.info(f"Uploading regenerated PDF to GCP: {filename}")
+                            
+                            # Upload to GCP
+                            pdf_url = _upload_to_gcp(pdf_buffer, filename)
+                            
+                            if pdf_url:
+                                existing_invoice.pdf_url = pdf_url
+                                existing_invoice.save(update_fields=['pdf_url', 'updated_at'])
+                                invoice_status = "generated"
+                                logger.info(f"✓ PDF regenerated and uploaded successfully for invoice {invoice_id}: {pdf_url}")
+                            else:
+                                invoice_status = "error"
+                                logger.error(f"✗ Failed to upload regenerated PDF for invoice {invoice_id}")
+                                
+                        except Exception as e:
+                            invoice_status = "error"
+                            logger.exception(f"✗ CRITICAL ERROR regenerating PDF for invoice {invoice_id}: {e}")
+                    
                 else:
-                    # Create new DriverInvoice with UTC timestamps in DB
+                    # Create new DriverInvoice
                     try:
+                        logger.info(f"Creating new DriverInvoice for period {wstart} to {wend}")
                         new_invoice = DriverInvoice.objects.create(
                             driver=driver,
                             start_date=wstart,
@@ -6044,14 +6101,12 @@ def driver_invoice_weeks(request):
                             total_amount=total_amount.quantize(Decimal("0.01")),
                             due_date=due_date,
                             status="generated"
-                            # created_at and updated_at automatically set to UTC by Django
                         )
                         invoice_created = True
                         invoice_id = new_invoice.id
-                        logger.info(f"Created new invoice ID: {invoice_id}")
+                        logger.info(f"✓ Created new invoice ID: {invoice_id}")
                         
                         # Prepare week data with invoice ID for PDF generation
-                        # Convert dates to local timezone for display
                         week_data = {
                             "invoice_id": invoice_id,
                             "payment_period": {
@@ -6066,6 +6121,7 @@ def driver_invoice_weeks(request):
                         
                         # Generate PDF
                         try:
+                            logger.info(f"Calling _generate_invoice_pdf for new invoice {invoice_id}")
                             pdf_buffer = _generate_invoice_pdf(driver, week_data, week_orders)
                             
                             # Create filename: driverId_driverName_StartDate_EndDate_InvoiceId.pdf
@@ -6073,7 +6129,7 @@ def driver_invoice_weeks(request):
                             safe_driver_name = driver.name.replace(' ', '_').replace('/', '_')
                             filename = f"{driver.id}_{safe_driver_name}_{wstart.isoformat()}_{wend.isoformat()}_INV{invoice_id}_{timestamp}.pdf"
                             
-                            logger.info(f"Uploading PDF: {filename}")
+                            logger.info(f"Uploading PDF to GCP: {filename}")
                             
                             # Upload to GCP
                             pdf_url = _upload_to_gcp(pdf_buffer, filename)
@@ -6082,18 +6138,20 @@ def driver_invoice_weeks(request):
                                 new_invoice.pdf_url = pdf_url
                                 new_invoice.save(update_fields=['pdf_url', 'updated_at'])
                                 invoice_status = "generated"
-                                logger.info(f"PDF uploaded successfully for invoice {invoice_id}: {pdf_url}")
+                                logger.info(f"✓ PDF uploaded successfully for invoice {invoice_id}: {pdf_url}")
                             else:
                                 invoice_status = "error"
-                                logger.error(f"Failed to upload PDF for invoice {invoice_id}")
+                                logger.error(f"✗ Failed to upload PDF for invoice {invoice_id}")
                                 
                         except Exception as e:
                             invoice_status = "error"
-                            logger.exception(f"Error generating/uploading PDF for invoice {invoice_id}: {e}")
+                            logger.exception(f"✗ CRITICAL ERROR generating/uploading PDF for invoice {invoice_id}: {e}")
                         
-                        # Send invoice notification email to delivery partner
+                        # Send invoice notification email to delivery partner (only for new invoices with PDF)
                         if invoice_created and pdf_url and driver.email:
                             try:
+                                logger.info(f"Sending invoice notification email to {driver.email} for invoice {invoice_id}")
+                                
                                 brand_primary = settings.BRAND_COLORS['primary']
                                 brand_primary_dark = settings.BRAND_COLORS['primary_dark']
                                 brand_accent = settings.BRAND_COLORS['accent']
@@ -6353,14 +6411,14 @@ def driver_invoice_weeks(request):
                                     html=driver_invoice_html,
                                     text_fallback=driver_invoice_text,
                                 )
-                                logger.info(f"Driver payment statement email sent to {driver.email} for invoice {invoice_id}")
+                                logger.info(f"✓ Driver payment statement email sent to {driver.email} for invoice {invoice_id}")
                                 
                             except Exception as e:
-                                logger.exception(f"ERROR sending driver invoice email to {driver.email} for invoice {invoice_id}: {str(e)}")
+                                logger.exception(f"✗ ERROR sending driver invoice email to {driver.email} for invoice {invoice_id}: {str(e)}")
                                 # Don't fail the invoice generation if email fails
                         
                     except Exception as e:
-                        logger.exception(f"Error creating invoice for week {wstart} to {wend}: {e}")
+                        logger.exception(f"✗ Error creating invoice for week {wstart} to {wend}: {e}")
                         invoice_status = "error"
             else:
                 logger.debug(f"Period {wstart} to {wend} is not complete yet, skipping invoice generation")
