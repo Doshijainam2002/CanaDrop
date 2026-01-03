@@ -97,3 +97,45 @@ def driver_auth_required(view_func):
         return view_func(request, *args, **kwargs)
 
     return wrapper
+
+
+def user_auth_required(view_func):
+    @wraps(view_func)
+    def wrapper(request, *args, **kwargs):
+        token = request.COOKIES.get("authToken")
+        if not token:
+            return JsonResponse({"success": False, "error": "Not authenticated"}, status=401)
+
+        try:
+            payload = jwt.decode(
+                token,
+                settings.JWT_SECRET_KEY,
+                algorithms=[settings.JWT_ALGORITHM]
+            )
+        except jwt.ExpiredSignatureError:
+            return JsonResponse({"success": False, "error": "Session expired"}, status=401)
+        except jwt.InvalidTokenError:
+            return JsonResponse({"success": False, "error": "Invalid token"}, status=401)
+
+        # Pharmacy user
+        if "pharmacy_id" in payload:
+            try:
+                request.user_type = "pharmacy"
+                request.user = Pharmacy.objects.get(id=payload["pharmacy_id"])
+            except Pharmacy.DoesNotExist:
+                return JsonResponse({"success": False, "error": "Invalid user"}, status=401)
+
+        # Driver user
+        elif "driver_id" in payload:
+            try:
+                request.user_type = "driver"
+                request.user = Driver.objects.get(id=payload["driver_id"], active=True)
+            except Driver.DoesNotExist:
+                return JsonResponse({"success": False, "error": "Invalid user"}, status=401)
+
+        else:
+            return JsonResponse({"success": False, "error": "Invalid token payload"}, status=401)
+
+        return view_func(request, *args, **kwargs)
+
+    return wrapper

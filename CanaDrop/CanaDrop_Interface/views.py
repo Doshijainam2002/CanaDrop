@@ -35,6 +35,7 @@ from reportlab.platypus import (
 )
 from PIL import Image as PILImage
 import jwt
+import hmac
 
 # Django Core
 from django.conf import settings
@@ -4886,844 +4887,6 @@ def _upload_to_gcp(pdf_buffer, filename):
         return None
 
 
-
-# def _upload_to_gcp(pdf_buffer, filename):
-#     """Upload PDF to GCP Storage and return the public URL."""
-#     try:
-#         client = _get_gcp_client()
-#         if not client:
-#             return None
-            
-#         bucket = client.bucket(GCP_BUCKET_NAME)
-#         blob_name = f"{GCP_FOLDER_NAME}/{filename}"
-#         blob = bucket.blob(blob_name)
-        
-#         pdf_buffer.seek(0)
-#         blob.upload_from_file(pdf_buffer, content_type='application/pdf')
-        
-#         # For uniform bucket-level access, construct the public URL directly
-#         public_url = f"https://storage.googleapis.com/{GCP_BUCKET_NAME}/{blob_name}"
-        
-#         return public_url
-#     except Exception as e:
-#         return None
-
-
-# def _get_gcp_client():
-#     """Initialize and return GCP Storage client with service account key."""
-#     try:
-#         # Check if the key file exists
-#         if not os.path.exists(GCP_KEY_PATH):
-#             return None
-        
-#         # Initialize client with service account key
-#         client = storage.Client.from_service_account_json(GCP_KEY_PATH)
-#         return client
-#     except Exception as e:
-#         return None
-
-
-# def _is_period_complete(end_date: date):
-#     """Check if the invoice period has ended (past 11:59 PM on end_date)."""
-#     # Get current time in user's timezone
-#     now = timezone.now().astimezone(USER_TZ)
-    
-#     # Create datetime for 11:59:59 PM on the end date
-#     end_datetime = USER_TZ.localize(
-#         datetime.combine(end_date, datetime.max.time())
-#     )
-    
-#     # Return True only if current time is past the end of period
-#     return now > end_datetime
-
-
-
-# def _generate_invoice_pdf(driver, week_data, orders):
-#     """Generate comprehensive PDF invoice for a driver's weekly summary with modern design."""
-#     from io import BytesIO
-#     from decimal import Decimal
-#     from datetime import datetime
-#     from reportlab.lib.pagesizes import A4
-#     from reportlab.lib import colors
-#     from reportlab.lib.units import inch
-#     from reportlab.lib.styles import getSampleStyleSheet, ParagraphStyle
-#     from reportlab.lib.enums import TA_CENTER, TA_RIGHT, TA_LEFT, TA_JUSTIFY
-#     from reportlab.platypus import SimpleDocTemplate, Paragraph, Spacer, Table, TableStyle, Image, PageBreak
-#     from reportlab.pdfgen import canvas
-#     from django.conf import settings
-#     from django.utils import timezone
-#     import os
-    
-#     buffer = BytesIO()
-    
-#     # Create PDF with professional margins
-#     doc = SimpleDocTemplate(
-#         buffer, 
-#         pagesize=A4, 
-#         rightMargin=40, 
-#         leftMargin=40,
-#         topMargin=40, 
-#         bottomMargin=60
-#     )
-    
-#     story = []
-#     styles = getSampleStyleSheet()
-    
-#     # ==================== CUSTOM STYLES ====================
-    
-#     # Modern color palette
-#     PRIMARY_BLUE = colors.HexColor('#0F172A')      # Deep slate
-#     ACCENT_BLUE = colors.HexColor('#3B82F6')       # Bright blue
-#     LIGHT_BG = colors.HexColor('#F8FAFC')          # Light slate
-#     BORDER_GRAY = colors.HexColor('#E2E8F0')       # Border gray
-#     TEXT_DARK = colors.HexColor('#1E293B')         # Text dark
-#     TEXT_GRAY = colors.HexColor('#64748B')         # Text gray
-#     SUCCESS_GREEN = colors.HexColor('#10B981')     # Success green
-#     ACCENT_TEAL = colors.HexColor('#06B6D4')       # Accent teal
-    
-#     # Invoice title - Large and bold
-#     invoice_title_style = ParagraphStyle(
-#         'InvoiceTitle',
-#         parent=styles['Heading1'],
-#         fontSize=36,
-#         textColor=PRIMARY_BLUE,
-#         fontName='Helvetica-Bold',
-#         alignment=TA_LEFT,
-#         spaceAfter=8,
-#         leading=42
-#     )
-    
-#     # Subtitle style
-#     invoice_subtitle_style = ParagraphStyle(
-#         'InvoiceSubtitle',
-#         parent=styles['Normal'],
-#         fontSize=11,
-#         textColor=TEXT_GRAY,
-#         fontName='Helvetica',
-#         alignment=TA_LEFT,
-#         spaceAfter=30
-#     )
-    
-#     # Section headers - Modern with bottom border effect
-#     section_header_style = ParagraphStyle(
-#         'SectionHeader',
-#         parent=styles['Heading2'],
-#         fontSize=14,
-#         textColor=PRIMARY_BLUE,
-#         fontName='Helvetica-Bold',
-#         spaceAfter=12,
-#         spaceBefore=25,
-#         leading=18
-#     )
-    
-#     # Body text
-#     body_style = ParagraphStyle(
-#         'BodyText',
-#         parent=styles['Normal'],
-#         fontSize=10,
-#         textColor=TEXT_DARK,
-#         fontName='Helvetica',
-#         leading=14,
-#         spaceAfter=6
-#     )
-    
-#     # Info card text
-#     card_text_style = ParagraphStyle(
-#         'CardText',
-#         parent=styles['Normal'],
-#         fontSize=10,
-#         textColor=TEXT_DARK,
-#         fontName='Helvetica',
-#         leading=15,
-#         leftIndent=0,
-#         rightIndent=0
-#     )
-    
-#     # Small text
-#     small_text_style = ParagraphStyle(
-#         'SmallText',
-#         parent=styles['Normal'],
-#         fontSize=8,
-#         textColor=TEXT_GRAY,
-#         fontName='Helvetica',
-#         leading=11
-#     )
-    
-#     # Footer style
-#     footer_style = ParagraphStyle(
-#         'FooterStyle',
-#         parent=styles['Normal'],
-#         fontSize=8,
-#         textColor=TEXT_GRAY,
-#         fontName='Helvetica',
-#         alignment=TA_CENTER,
-#         leading=11
-#     )
-    
-#     # ==================== HEADER SECTION ====================
-    
-#     current_date = datetime.now().strftime("%B %d, %Y")
-#     invoice_number = f"INV-{driver.id}-{week_data['payment_period']['start_date'].replace('-', '')}"
-    
-#     # Logo and company info side by side
-#     try:
-#         logo_path = settings.LOGO_PATH
-#         if os.path.exists(logo_path):
-#             logo = Image(logo_path, width=2.2*inch, height=1.6*inch)
-#         else:
-#             raise FileNotFoundError
-#     except:
-#         # Create text-based logo if image not found
-#         logo_text = Paragraph(
-#             '<b><font size="20" color="#3B82F6">Cana</font><font size="20" color="#0F172A">LogistiX</font></b>',
-#             ParagraphStyle('LogoText', parent=styles['Normal'], alignment=TA_LEFT)
-#         )
-#         logo = logo_text
-    
-#     company_info_text = f'''
-#     <b><font color="#0F172A" size="11">{settings.COMPANY_OPERATING_NAME}</font></b><br/>
-#     <font color="#64748B" size="9">{settings.COMPANY_SUB_GROUP_NAME}<br/>
-#     Operating Name of {settings.CORPORATION_NAME}<br/>
-#     BN: {settings.CORPORATION_BUSINESS_NUMBER}<br/>
-#     {settings.EMAIL_HELP_DESK}<br/>
-#     Ontario, Canada</font>
-#     '''
-    
-#     invoice_info_text = f'''
-#     <para alignment="right">
-#     <font color="#64748B" size="9">INVOICE NUMBER<br/></font>
-#     <b><font color="#0F172A" size="11">{invoice_number}</font></b><br/>
-#     <font color="#64748B" size="9"><br/>ISSUE DATE<br/></font>
-#     <b><font color="#0F172A" size="11">{current_date}</font></b>
-#     </para>
-#     '''
-    
-#     header_data = [
-#         [Paragraph(company_info_text, card_text_style), Paragraph(invoice_info_text, card_text_style)]
-#     ]
-    
-#     header_table = Table(header_data, colWidths=[3.5*inch, 3.5*inch])
-#     header_table.setStyle(TableStyle([
-#         ('VALIGN', (0, 0), (-1, -1), 'TOP'),
-#         ('LEFTPADDING', (0, 0), (-1, -1), 0),
-#         ('RIGHTPADDING', (0, 0), (-1, -1), 0),
-#         ('TOPPADDING', (0, 0), (-1, -1), 0),
-#         ('BOTTOMPADDING', (0, 0), (-1, -1), 0),
-#     ]))
-    
-#     story.append(header_table)
-#     story.append(Spacer(1, 35))
-    
-#     # Invoice title
-#     story.append(Paragraph("PAYMENT INVOICE", invoice_title_style))
-#     story.append(Paragraph(f"Driver Payment Summary for Week Ending {week_data['payment_period']['end_date']}", invoice_subtitle_style))
-    
-#     # Horizontal divider line
-#     line_table = Table([['']], colWidths=[7*inch])
-#     line_table.setStyle(TableStyle([
-#         ('LINEBELOW', (0, 0), (-1, -1), 2, ACCENT_BLUE),
-#         ('TOPPADDING', (0, 0), (-1, -1), 0),
-#         ('BOTTOMPADDING', (0, 0), (-1, -1), 0),
-#     ]))
-#     story.append(line_table)
-#     story.append(Spacer(1, 30))
-    
-#     # ==================== DRIVER & PERIOD INFO CARDS ====================
-    
-#     # Driver information card
-#     driver_card_text = f'''
-#     <font color="#64748B" size="8"><b>DRIVER INFORMATION</b></font><br/>
-#     <font color="#0F172A" size="11"><b>{driver.name}</b></font><br/>
-#     <font color="#64748B" size="9">{driver.email}<br/>
-#     Driver ID: #{driver.id}<br/>
-#     Status: <font color="#10B981"><b>Active</b></font></font>
-#     '''
-    
-#     # Payment period card
-#     start_date = week_data['payment_period']['start_date']
-#     end_date = week_data['payment_period']['end_date']
-    
-#     period_card_text = f'''
-#     <font color="#64748B" size="8"><b>PAYMENT PERIOD</b></font><br/>
-#     <font color="#0F172A" size="11"><b>{start_date} to {end_date}</b></font><br/>
-#     <font color="#64748B" size="9">Payment Due: {week_data['due_date']}<br/>
-#     Status: {week_data['status'].title()}<br/>
-#     Total Orders: {week_data['total_orders']}</font>
-#     '''
-    
-#     info_cards_data = [
-#         [Paragraph(driver_card_text, card_text_style), Paragraph(period_card_text, card_text_style)]
-#     ]
-    
-#     info_cards_table = Table(info_cards_data, colWidths=[3.5*inch, 3.5*inch])
-#     info_cards_table.setStyle(TableStyle([
-#         ('BACKGROUND', (0, 0), (-1, -1), LIGHT_BG),
-#         ('BOX', (0, 0), (-1, -1), 1, BORDER_GRAY),
-#         ('VALIGN', (0, 0), (-1, -1), 'TOP'),
-#         ('LEFTPADDING', (0, 0), (-1, -1), 18),
-#         ('RIGHTPADDING', (0, 0), (-1, -1), 18),
-#         ('TOPPADDING', (0, 0), (-1, -1), 18),
-#         ('BOTTOMPADDING', (0, 0), (-1, -1), 18),
-#         ('INNERGRID', (0, 0), (-1, -1), 1, BORDER_GRAY),
-#     ]))
-    
-#     story.append(info_cards_table)
-#     story.append(Spacer(1, 35))
-    
-#     # ==================== FINANCIAL SUMMARY ====================
-    
-#     story.append(Paragraph("Payment Breakdown", section_header_style))
-    
-#     # Calculate financial details - MUST be done before any string formatting
-#     gross_amount = sum(Decimal(str(order.rate or 0)) for order in orders)
-#     commission_rate = Decimal(str(settings.DRIVER_COMMISSION_RATE))
-#     commission_percentage = int(commission_rate * 100)  # Calculate BEFORE using in strings
-#     commission_amount = gross_amount * commission_rate
-#     net_amount = gross_amount - commission_amount
-    
-#     # Summary table with modern styling
-#     summary_data = [
-#         ['', ''],
-#         ['Total Deliveries Completed', f"{week_data['total_orders']} orders"],
-#         ['Gross Delivery Revenue', f"${gross_amount:,.2f}"],
-#         [f'Platform Commission ({commission_percentage}%)', f"-${commission_amount:,.2f}"],
-#         ['', ''],
-#     ]
-    
-#     summary_table = Table(summary_data, colWidths=[5*inch, 2*inch])
-#     summary_table.setStyle(TableStyle([
-#         ('FONTNAME', (0, 0), (-1, -1), 'Helvetica'),
-#         ('FONTSIZE', (0, 0), (-1, -1), 10),
-#         ('TEXTCOLOR', (0, 0), (-1, -1), TEXT_DARK),
-#         ('ALIGN', (0, 0), (0, -1), 'LEFT'),
-#         ('ALIGN', (1, 0), (1, -1), 'RIGHT'),
-#         ('LEFTPADDING', (0, 0), (-1, -1), 15),
-#         ('RIGHTPADDING', (0, 0), (-1, -1), 15),
-#         ('TOPPADDING', (0, 1), (-1, -2), 10),
-#         ('BOTTOMPADDING', (0, 1), (-1, -2), 10),
-#         ('LINEBELOW', (0, -2), (-1, -2), 1, BORDER_GRAY),
-#         ('BACKGROUND', (0, 1), (-1, -2), LIGHT_BG),
-#     ]))
-    
-#     story.append(summary_table)
-#     story.append(Spacer(1, 5))
-    
-#     # Net payment - Large and prominent
-#     net_payment_data = [
-#         ['NET PAYMENT DUE', f"${net_amount:,.2f}"]
-#     ]
-    
-#     net_payment_table = Table(net_payment_data, colWidths=[5*inch, 2*inch])
-#     net_payment_table.setStyle(TableStyle([
-#         ('BACKGROUND', (0, 0), (-1, -1), ACCENT_BLUE),
-#         ('TEXTCOLOR', (0, 0), (-1, -1), colors.white),
-#         ('FONTNAME', (0, 0), (-1, -1), 'Helvetica-Bold'),
-#         ('FONTSIZE', (0, 0), (-1, -1), 16),
-#         ('ALIGN', (0, 0), (0, -1), 'LEFT'),
-#         ('ALIGN', (1, 0), (1, -1), 'RIGHT'),
-#         ('LEFTPADDING', (0, 0), (-1, -1), 15),
-#         ('RIGHTPADDING', (0, 0), (-1, -1), 15),
-#         ('TOPPADDING', (0, 0), (-1, -1), 15),
-#         ('BOTTOMPADDING', (0, 0), (-1, -1), 15),
-#     ]))
-    
-#     story.append(net_payment_table)
-#     story.append(Spacer(1, 40))
-    
-#     # ==================== ORDER DETAILS ====================
-    
-#     if orders:
-#         story.append(Paragraph("Order Details", section_header_style))
-#         story.append(Spacer(1, 10))
-        
-#         # Create order table
-#         order_data = [
-#             ['Order ID', 'Date', 'Pickup', 'Delivery', 'Status', 'Rate']
-#         ]
-        
-#         for order in orders:
-#             delivery_date = order.updated_at.strftime('%m/%d/%Y') if order.updated_at else 'N/A'
-#             pickup_location = order.pickup_city if order.pickup_city else 'N/A'
-#             delivery_location = getattr(order, 'drop_city', None) or getattr(order, 'dropoff_city', None) or 'N/A'
-            
-#             order_data.append([
-#                 f"#{order.id}",
-#                 delivery_date,
-#                 pickup_location[:20],  # Truncate if too long
-#                 delivery_location[:20],
-#                 order.status.title(),
-#                 f"${order.rate or 0:.2f}"
-#             ])
-        
-#         order_table = Table(order_data, colWidths=[0.8*inch, 0.95*inch, 1.6*inch, 1.6*inch, 1*inch, 0.85*inch])
-#         order_table.setStyle(TableStyle([
-#             # Header row
-#             ('BACKGROUND', (0, 0), (-1, 0), PRIMARY_BLUE),
-#             ('TEXTCOLOR', (0, 0), (-1, 0), colors.white),
-#             ('FONTNAME', (0, 0), (-1, 0), 'Helvetica-Bold'),
-#             ('FONTSIZE', (0, 0), (-1, 0), 9),
-#             ('ALIGN', (0, 0), (-1, 0), 'CENTER'),
-            
-#             # Data rows
-#             ('FONTNAME', (0, 1), (-1, -1), 'Helvetica'),
-#             ('FONTSIZE', (0, 1), (-1, -1), 8.5),
-#             ('TEXTCOLOR', (0, 1), (-1, -1), TEXT_DARK),
-#             ('ALIGN', (0, 1), (0, -1), 'CENTER'),  # Order ID
-#             ('ALIGN', (1, 1), (1, -1), 'CENTER'),  # Date
-#             ('ALIGN', (2, 1), (3, -1), 'LEFT'),    # Locations
-#             ('ALIGN', (4, 1), (4, -1), 'CENTER'),  # Status
-#             ('ALIGN', (5, 1), (5, -1), 'RIGHT'),   # Rate
-            
-#             # Styling
-#             ('ROWBACKGROUNDS', (0, 1), (-1, -1), [colors.white, LIGHT_BG]),
-#             ('GRID', (0, 0), (-1, -1), 0.5, BORDER_GRAY),
-#             ('LINEBELOW', (0, 0), (-1, 0), 1.5, PRIMARY_BLUE),
-#             ('LEFTPADDING', (0, 0), (-1, -1), 8),
-#             ('RIGHTPADDING', (0, 0), (-1, -1), 8),
-#             ('TOPPADDING', (0, 0), (-1, -1), 8),
-#             ('BOTTOMPADDING', (0, 0), (-1, -1), 8),
-#             ('VALIGN', (0, 0), (-1, -1), 'MIDDLE'),
-#         ]))
-        
-#         story.append(order_table)
-#         story.append(Spacer(1, 35))
-    
-#     # ==================== TERMS & CONDITIONS ====================
-    
-#     story.append(Paragraph("Payment Terms & Conditions", section_header_style))
-    
-#     terms_text = f'''
-#     <b>Payment Schedule:</b> Weekly payments are processed every Monday for completed deliveries from the previous week (Monday to Sunday).<br/><br/>
-    
-#     <b>Commission Structure:</b> {settings.COMPANY_OPERATING_NAME} retains {commission_percentage}% of gross delivery fees to cover platform operations, insurance coverage, customer support services, and technology infrastructure.<br/><br/>
-    
-#     <b>Payment Method:</b> Funds are transferred via direct deposit to your registered bank account within 2-3 business days of processing.<br/><br/>
-    
-#     <b>Dispute Resolution:</b> Payment disputes must be submitted within 7 calendar days of invoice receipt. Contact our support team for assistance.<br/><br/>
-    
-#     <b>Independent Contractor Status:</b> As an independent contractor, you are responsible for all applicable taxes, licenses, and insurance. This payment constitutes gross income for tax purposes.
-#     '''
-    
-#     story.append(Paragraph(terms_text, body_style))
-#     story.append(Spacer(1, 30))
-    
-#     # ==================== SUPPORT INFORMATION ====================
-
-#     email_help_desk = settings.EMAIL_HELP_DESK
-    
-#     story.append(Paragraph("Questions or Concerns?", section_header_style))
-    
-#     support_text = '''
-#     Our support team is here to help with any questions about this invoice or your deliveries. Log in to the portal and raise a Support Ticket by contacting the Admin.<br/><br/>
-#     <b>Email:</b> {email_help_desk} <br/>
-#     <b>Support Hours:</b> Monday - Friday, 9:00 AM - 6:00 PM EST<br/>
-#     <b>Response Time:</b> Within 24 business hours
-#     '''
-    
-#     story.append(Paragraph(support_text, body_style))
-#     story.append(Spacer(1, 40))
-    
-#     # ==================== FOOTER ====================
-    
-#     footer_text = f'''
-#     <i>This invoice was automatically generated by {settings.COMPANY_OPERATING_NAME} payment processing system on {current_date}.<br/>
-#     Invoice Reference: {invoice_number} | Confidential Financial Document<br/>
-#     © {timezone.now().year} {settings.COMPANY_OPERATING_NAME} - {settings.COMPANY_SUB_GROUP_NAME}. All rights reserved.</i>
-#     '''
-    
-#     story.append(Paragraph(footer_text, footer_style))
-    
-#     # Build PDF
-#     doc.build(story)
-    
-#     return buffer
-
-
-
-# Working Function New - 1
-# def _generate_invoice_pdf(driver, week_data, orders):
-#     """
-#     Generate comprehensive PDF invoice for a driver's weekly summary.
-    
-#     Args:
-#         driver: Driver model instance
-#         week_data: Dictionary with keys: invoice_id, payment_period, total_orders, total_amount, due_date, status
-#         orders: List/QuerySet of DeliveryOrder instances
-    
-#     Returns:
-#         BytesIO buffer containing the PDF
-#     """
-#     from io import BytesIO
-#     from decimal import Decimal
-#     from datetime import datetime, date
-#     from reportlab.lib.pagesizes import A4
-#     from reportlab.lib import colors
-#     from reportlab.lib.units import inch
-#     from reportlab.lib.styles import getSampleStyleSheet, ParagraphStyle
-#     from reportlab.lib.enums import TA_CENTER, TA_RIGHT, TA_LEFT
-#     from reportlab.platypus import SimpleDocTemplate, Paragraph, Spacer, Table, TableStyle, Image
-#     from django.conf import settings
-#     from django.utils import timezone
-#     import os
-#     import logging
-    
-#     logger = logging.getLogger(__name__)
-    
-#     try:
-#         logger.info(f"=== STARTING PDF GENERATION ===")
-#         logger.info(f"Invoice ID: {week_data.get('invoice_id', 'MISSING!')}")
-#         logger.info(f"Driver: {driver.name} (ID: {driver.id})")
-#         logger.info(f"Orders count: {len(orders)}")
-        
-#         # Validate invoice_id exists
-#         if 'invoice_id' not in week_data or week_data['invoice_id'] is None:
-#             raise ValueError("invoice_id is required in week_data")
-        
-#         invoice_id = week_data['invoice_id']
-        
-#         buffer = BytesIO()
-#         doc = SimpleDocTemplate(buffer, pagesize=A4, rightMargin=40, leftMargin=40, topMargin=40, bottomMargin=60)
-        
-#         story = []
-#         styles = getSampleStyleSheet()
-        
-#         # Colors
-#         PRIMARY_BLUE = colors.HexColor('#0F172A')
-#         ACCENT_BLUE = colors.HexColor('#3B82F6')
-#         LIGHT_BG = colors.HexColor('#F8FAFC')
-#         BORDER_GRAY = colors.HexColor('#E2E8F0')
-#         TEXT_DARK = colors.HexColor('#1E293B')
-#         TEXT_GRAY = colors.HexColor('#64748B')
-        
-#         # Styles
-#         invoice_title_style = ParagraphStyle(
-#             'InvoiceTitle', parent=styles['Heading1'],
-#             fontSize=36, textColor=PRIMARY_BLUE, fontName='Helvetica-Bold',
-#             alignment=TA_LEFT, spaceAfter=8, leading=42
-#         )
-        
-#         invoice_subtitle_style = ParagraphStyle(
-#             'InvoiceSubtitle', parent=styles['Normal'],
-#             fontSize=11, textColor=TEXT_GRAY, fontName='Helvetica',
-#             alignment=TA_LEFT, spaceAfter=30
-#         )
-        
-#         section_header_style = ParagraphStyle(
-#             'SectionHeader', parent=styles['Heading2'],
-#             fontSize=14, textColor=PRIMARY_BLUE, fontName='Helvetica-Bold',
-#             spaceAfter=12, spaceBefore=25, leading=18
-#         )
-        
-#         body_style = ParagraphStyle(
-#             'BodyText', parent=styles['Normal'],
-#             fontSize=10, textColor=TEXT_DARK, fontName='Helvetica',
-#             leading=14, spaceAfter=6
-#         )
-        
-#         card_text_style = ParagraphStyle(
-#             'CardText', parent=styles['Normal'],
-#             fontSize=10, textColor=TEXT_DARK, fontName='Helvetica',
-#             leading=15
-#         )
-        
-#         footer_style = ParagraphStyle(
-#             'FooterStyle', parent=styles['Normal'],
-#             fontSize=8, textColor=TEXT_GRAY, fontName='Helvetica',
-#             alignment=TA_CENTER, leading=11
-#         )
-        
-#         # Format current date
-#         try:
-#             current_date_local = timezone.localtime(timezone.now(), settings.USER_TIMEZONE)
-#             current_date = current_date_local.strftime("%B %d, %Y")
-#         except:
-#             current_date = datetime.now().strftime("%B %d, %Y")
-        
-#         # Format invoice number
-#         invoice_number = f"#{str(invoice_id).zfill(6)}"
-#         logger.info(f"Formatted invoice number: {invoice_number}")
-        
-#         # Company info
-#         company_info_text = f'''
-#         <b><font color="#0F172A" size="11">{settings.COMPANY_OPERATING_NAME}</font></b><br/>
-#         <font color="#64748B" size="9">{settings.COMPANY_SUB_GROUP_NAME}<br/>
-#         {settings.EMAIL_HELP_DESK}<br/>
-#         Ontario, Canada</font>
-#         '''
-        
-#         invoice_info_text = f'''
-#         <para alignment="right">
-#         <font color="#64748B" size="9">INVOICE NUMBER<br/></font>
-#         <b><font color="#3B82F6" size="14">{invoice_number}</font></b><br/>
-#         <font color="#64748B" size="9"><br/>ISSUE DATE<br/></font>
-#         <b><font color="#0F172A" size="11">{current_date}</font></b>
-#         </para>
-#         '''
-        
-#         header_table = Table(
-#             [[Paragraph(company_info_text, card_text_style), Paragraph(invoice_info_text, card_text_style)]],
-#             colWidths=[3.5*inch, 3.5*inch]
-#         )
-#         header_table.setStyle(TableStyle([
-#             ('VALIGN', (0, 0), (-1, -1), 'TOP'),
-#             ('LEFTPADDING', (0, 0), (-1, -1), 0),
-#             ('RIGHTPADDING', (0, 0), (-1, -1), 0),
-#         ]))
-        
-#         story.append(header_table)
-#         story.append(Spacer(1, 35))
-#         story.append(Paragraph("PAYMENT INVOICE", invoice_title_style))
-        
-#         # Parse dates
-#         try:
-#             start_str = week_data['payment_period']['start_date']
-#             end_str = week_data['payment_period']['end_date']
-            
-#             logger.info(f"Parsing dates - start: {start_str}, end: {end_str}")
-            
-#             if isinstance(start_str, str):
-#                 start_date = datetime.strptime(start_str, "%Y-%m-%d").date()
-#             else:
-#                 start_date = start_str
-            
-#             if isinstance(end_str, str):
-#                 end_date = datetime.strptime(end_str, "%Y-%m-%d").date()
-#             else:
-#                 end_date = end_str
-            
-#             start_formatted = start_date.strftime("%B %d, %Y")
-#             end_formatted = end_date.strftime("%B %d, %Y")
-            
-#             logger.info(f"Formatted dates - start: {start_formatted}, end: {end_formatted}")
-#         except Exception as e:
-#             logger.error(f"Date parsing error: {e}")
-#             raise
-        
-#         story.append(Paragraph(
-#             f"Driver Payment Summary for Week {start_formatted} to {end_formatted}",
-#             invoice_subtitle_style
-#         ))
-        
-#         # Divider
-#         line_table = Table([['']], colWidths=[7*inch])
-#         line_table.setStyle(TableStyle([
-#             ('LINEBELOW', (0, 0), (-1, -1), 2, ACCENT_BLUE),
-#         ]))
-#         story.append(line_table)
-#         story.append(Spacer(1, 30))
-        
-#         # Driver info
-#         driver_card = f'''
-#         <font color="#64748B" size="8"><b>DRIVER INFORMATION</b></font><br/>
-#         <font color="#0F172A" size="11"><b>{driver.name}</b></font><br/>
-#         <font color="#64748B" size="9">{driver.email}<br/>
-#         Driver ID: #{driver.id}</font>
-#         '''
-        
-#         # Parse due date
-#         try:
-#             due_str = week_data.get('due_date', 'N/A')
-#             if isinstance(due_str, str) and due_str != 'N/A':
-#                 due_date = datetime.strptime(due_str, "%Y-%m-%d").date()
-#                 due_formatted = due_date.strftime("%B %d, %Y")
-#             else:
-#                 due_formatted = str(due_str)
-#         except:
-#             due_formatted = str(due_str)
-        
-#         period_card = f'''
-#         <font color="#64748B" size="8"><b>PAYMENT PERIOD</b></font><br/>
-#         <font color="#0F172A" size="11"><b>{start_formatted} to {end_formatted}</b></font><br/>
-#         <font color="#64748B" size="9">Invoice: <b>{invoice_number}</b><br/>
-#         Due: {due_formatted}<br/>
-#         Orders: {week_data.get('total_orders', 0)}</font>
-#         '''
-        
-#         info_table = Table(
-#             [[Paragraph(driver_card, card_text_style), Paragraph(period_card, card_text_style)]],
-#             colWidths=[3.5*inch, 3.5*inch]
-#         )
-#         info_table.setStyle(TableStyle([
-#             ('BACKGROUND', (0, 0), (-1, -1), LIGHT_BG),
-#             ('BOX', (0, 0), (-1, -1), 1, BORDER_GRAY),
-#             ('VALIGN', (0, 0), (-1, -1), 'TOP'),
-#             ('LEFTPADDING', (0, 0), (-1, -1), 18),
-#             ('RIGHTPADDING', (0, 0), (-1, -1), 18),
-#             ('TOPPADDING', (0, 0), (-1, -1), 18),
-#             ('BOTTOMPADDING', (0, 0), (-1, -1), 18),
-#             ('INNERGRID', (0, 0), (-1, -1), 1, BORDER_GRAY),
-#         ]))
-        
-#         story.append(info_table)
-#         story.append(Spacer(1, 35))
-        
-#         # Financial summary
-#         story.append(Paragraph("Payment Breakdown", section_header_style))
-        
-#         try:
-#             gross = Decimal('0.00')
-#             for order in orders:
-#                 rate = order.rate if order.rate else Decimal('0.00')
-#                 if not isinstance(rate, Decimal):
-#                     rate = Decimal(str(rate))
-#                 gross += rate
-            
-#             comm_rate = Decimal(str(settings.DRIVER_COMMISSION_RATE))
-#             comm_pct = int(comm_rate * 100)
-#             commission = gross * comm_rate
-#             net = gross - commission
-            
-#             logger.info(f"Calculations - Gross: ${gross}, Commission: ${commission}, Net: ${net}")
-#         except Exception as e:
-#             logger.error(f"Financial calculation error: {e}")
-#             raise
-        
-#         summary_data = [
-#             ['', ''],
-#             ['Total Deliveries', f"{week_data.get('total_orders', 0)} orders"],
-#             ['Gross Revenue', f"${gross:,.2f}"],
-#             [f'Commission ({comm_pct}%)', f"-${commission:,.2f}"],
-#             ['', ''],
-#         ]
-        
-#         summary_table = Table(summary_data, colWidths=[5*inch, 2*inch])
-#         summary_table.setStyle(TableStyle([
-#             ('FONTNAME', (0, 0), (-1, -1), 'Helvetica'),
-#             ('FONTSIZE', (0, 0), (-1, -1), 10),
-#             ('ALIGN', (0, 0), (0, -1), 'LEFT'),
-#             ('ALIGN', (1, 0), (1, -1), 'RIGHT'),
-#             ('LEFTPADDING', (0, 0), (-1, -1), 15),
-#             ('RIGHTPADDING', (0, 0), (-1, -1), 15),
-#             ('TOPPADDING', (0, 1), (-1, -2), 10),
-#             ('BOTTOMPADDING', (0, 1), (-1, -2), 10),
-#             ('LINEBELOW', (0, -2), (-1, -2), 1, BORDER_GRAY),
-#             ('BACKGROUND', (0, 1), (-1, -2), LIGHT_BG),
-#         ]))
-        
-#         story.append(summary_table)
-#         story.append(Spacer(1, 5))
-        
-#         # Net payment
-#         net_table = Table([['NET PAYMENT DUE', f"${net:,.2f}"]], colWidths=[5*inch, 2*inch])
-#         net_table.setStyle(TableStyle([
-#             ('BACKGROUND', (0, 0), (-1, -1), ACCENT_BLUE),
-#             ('TEXTCOLOR', (0, 0), (-1, -1), colors.white),
-#             ('FONTNAME', (0, 0), (-1, -1), 'Helvetica-Bold'),
-#             ('FONTSIZE', (0, 0), (-1, -1), 16),
-#             ('ALIGN', (0, 0), (0, -1), 'LEFT'),
-#             ('ALIGN', (1, 0), (1, -1), 'RIGHT'),
-#             ('LEFTPADDING', (0, 0), (-1, -1), 15),
-#             ('RIGHTPADDING', (0, 0), (-1, -1), 15),
-#             ('TOPPADDING', (0, 0), (-1, -1), 15),
-#             ('BOTTOMPADDING', (0, 0), (-1, -1), 15),
-#         ]))
-        
-#         story.append(net_table)
-#         story.append(Spacer(1, 40))
-        
-#         # Order details
-#         if orders and len(orders) > 0:
-#             story.append(Paragraph("Order Details", section_header_style))
-#             story.append(Spacer(1, 10))
-            
-#             order_data = [['Order ID', 'Date', 'Pickup', 'Delivery', 'Status', 'Rate']]
-            
-#             for order in orders:
-#                 try:
-#                     if order.delivered_at:
-#                         try:
-#                             dt = timezone.localtime(order.delivered_at, settings.USER_TIMEZONE)
-#                             date_str = dt.strftime('%m/%d/%Y')
-#                         except:
-#                             date_str = order.delivered_at.strftime('%m/%d/%Y')
-#                     else:
-#                         date_str = 'N/A'
-                    
-#                     pickup = order.pickup_city if order.pickup_city else 'N/A'
-#                     delivery = getattr(order, 'drop_city', 'N/A') or 'N/A'
-                    
-#                     rate_val = order.rate if order.rate else Decimal('0.00')
-#                     if not isinstance(rate_val, Decimal):
-#                         rate_val = Decimal(str(rate_val))
-                    
-#                     order_data.append([
-#                         f"#{order.id}",
-#                         date_str,
-#                         str(pickup)[:20],
-#                         str(delivery)[:20],
-#                         order.status.title() if order.status else 'N/A',
-#                         f"${rate_val:.2f}"
-#                     ])
-#                 except Exception as e:
-#                     logger.warning(f"Error processing order {order.id}: {e}")
-#                     continue
-            
-#             order_table = Table(order_data, colWidths=[0.8*inch, 0.95*inch, 1.6*inch, 1.6*inch, 1*inch, 0.85*inch])
-#             order_table.setStyle(TableStyle([
-#                 ('BACKGROUND', (0, 0), (-1, 0), PRIMARY_BLUE),
-#                 ('TEXTCOLOR', (0, 0), (-1, 0), colors.white),
-#                 ('FONTNAME', (0, 0), (-1, 0), 'Helvetica-Bold'),
-#                 ('FONTSIZE', (0, 0), (-1, 0), 9),
-#                 ('ALIGN', (0, 0), (-1, 0), 'CENTER'),
-#                 ('FONTNAME', (0, 1), (-1, -1), 'Helvetica'),
-#                 ('FONTSIZE', (0, 1), (-1, -1), 8.5),
-#                 ('ALIGN', (0, 1), (0, -1), 'CENTER'),
-#                 ('ALIGN', (1, 1), (1, -1), 'CENTER'),
-#                 ('ALIGN', (2, 1), (3, -1), 'LEFT'),
-#                 ('ALIGN', (4, 1), (4, -1), 'CENTER'),
-#                 ('ALIGN', (5, 1), (5, -1), 'RIGHT'),
-#                 ('ROWBACKGROUNDS', (0, 1), (-1, -1), [colors.white, LIGHT_BG]),
-#                 ('GRID', (0, 0), (-1, -1), 0.5, BORDER_GRAY),
-#                 ('LEFTPADDING', (0, 0), (-1, -1), 8),
-#                 ('RIGHTPADDING', (0, 0), (-1, -1), 8),
-#                 ('TOPPADDING', (0, 0), (-1, -1), 8),
-#                 ('BOTTOMPADDING', (0, 0), (-1, -1), 8),
-#                 ('VALIGN', (0, 0), (-1, -1), 'MIDDLE'),
-#             ]))
-            
-#             story.append(order_table)
-#             story.append(Spacer(1, 35))
-#             logger.info(f"Added {len(order_data)-1} orders to PDF")
-        
-#         # Terms
-#         story.append(Paragraph("Payment Terms", section_header_style))
-#         terms = f'''
-#         <b>Payment Schedule:</b> Weekly payments processed every Monday.<br/><br/>
-#         <b>Commission:</b> {comm_pct}% platform fee covers operations and support.<br/><br/>
-#         <b>Payment Method:</b> Direct deposit within 2-3 business days.<br/><br/>
-#         <b>Disputes:</b> Must be submitted within 7 days of invoice.
-#         '''
-#         story.append(Paragraph(terms, body_style))
-#         story.append(Spacer(1, 30))
-        
-#         # Footer
-#         try:
-#             year = timezone.localtime(timezone.now(), settings.USER_TIMEZONE).year
-#         except:
-#             year = timezone.now().year
-        
-#         footer = f'''
-#         <i>Generated by {settings.COMPANY_OPERATING_NAME} on {current_date}.<br/>
-#         Invoice {invoice_number} | © {year} {settings.COMPANY_OPERATING_NAME}. All rights reserved.</i>
-#         '''
-#         story.append(Paragraph(footer, footer_style))
-        
-#         # Build PDF
-#         logger.info("Building PDF...")
-#         doc.build(story)
-        
-#         size = buffer.getbuffer().nbytes
-#         logger.info(f"=== PDF GENERATED SUCCESSFULLY === Size: {size} bytes")
-        
-#         return buffer
-        
-#     except Exception as e:
-#         logger.exception(f"CRITICAL ERROR in _generate_invoice_pdf: {e}")
-#         raise
-
-
-
-# Working Function New - 2
 def _generate_invoice_pdf(driver, week_data, orders):
     """
     Generate comprehensive PDF invoice for a driver's weekly payment summary with extensive details.
@@ -6926,427 +6089,10 @@ def driver_invoice_weeks(request):
         }, status=500)
 
 
-# @csrf_exempt
-# def driver_invoice_weeks(request):
-#     """
-#     GET param: driverId
-#     Returns weekly invoice buckets for delivered orders for that driver.
-#     Generates PDF and uploads to GCP only after period ends (11:59 PM on end_date).
-#     """
-#     driver_id = request.GET.get("driverId") or request.POST.get("driverId")
-#     if not driver_id:
-#         return HttpResponseBadRequest('Missing "driverId" parameter.')
 
-#     # Validate driver exists
-#     try:
-#         driver = Driver.objects.get(pk=driver_id)
-#     except Driver.DoesNotExist:
-#         return HttpResponseBadRequest("Driver not found.")
-
-#     # Fetch delivered orders for this driver
-#     orders_qs = DeliveryOrder.objects.filter(status="delivered", driver_id=driver_id).order_by("updated_at")
-
-#     if not orders_qs.exists():
-#         return JsonResponse({"message": "No delivered orders found for this driver.", "weeks": []})
-
-#     # Convert updated_at to user's local tz and collect (order, local_date)
-#     orders_with_local_dt = []
-#     for o in orders_qs:
-#         if not o.updated_at:
-#             continue
-#         local_dt = _ensure_local(o.updated_at)
-#         orders_with_local_dt.append((o, local_dt))
-
-#     if not orders_with_local_dt:
-#         return JsonResponse({"message": "No orders with updated_at timestamps.", "weeks": []})
-
-#     # Determine overall earliest and latest based on local updated_at
-#     local_datetimes = [ldt for (_, ldt) in orders_with_local_dt]
-#     earliest_local = min(local_datetimes)
-#     latest_local = max(local_datetimes)
-
-#     overall_start_date = _start_of_week(earliest_local.date())
-#     overall_end_date = _end_of_week(latest_local.date())
-
-#     # Build week buckets
-#     weeks = []
-#     cur_start = overall_start_date
-#     while cur_start <= overall_end_date:
-#         cur_end = cur_start + timedelta(days=6)
-#         weeks.append((cur_start, cur_end))
-#         cur_start = cur_start + timedelta(days=7)
-
-#     # Prepare result weeks
-#     result_weeks = []
-#     for wstart, wend in weeks:
-#         # Select orders whose local updated_at date falls inside this week
-#         week_orders = [
-#             o for (o, ldt) in orders_with_local_dt
-#             if (ldt.date() >= wstart and ldt.date() <= wend)
-#         ]
-
-#         if not week_orders:  # Skip weeks with no orders
-#             continue
-
-#         total_orders = len(week_orders)
-#         total_amount = Decimal("0.00")
-#         payment_rate_decimal = Decimal(str(1 - settings.DRIVER_COMMISSION_RATE))
-#         for o in week_orders:
-#             rate = o.rate if o.rate is not None else Decimal("0.00")
-#             if not isinstance(rate, Decimal):
-#                 rate = Decimal(str(rate))
-#             total_amount += (rate * payment_rate_decimal)
-
-#         due_date = wend + timedelta(days=7)
-
-#         # Check if DriverInvoice already exists for this period
-#         existing_invoice = DriverInvoice.objects.filter(
-#             driver=driver,
-#             start_date=wstart,
-#             end_date=wend
-#         ).first()
-
-#         pdf_url = None
-#         invoice_status = "pending"
-#         invoice_created = False
-
-#         # Only generate invoice if period is complete (after 11:59 PM on end date)
-#         if _is_period_complete(wend):
-#             if existing_invoice:
-#                 # Use existing PDF URL if available
-#                 pdf_url = existing_invoice.pdf_url
-#                 invoice_status = "generated" if pdf_url else "pending"
-#             else:
-#                 # Create new DriverInvoice and generate PDF
-#                 new_invoice = DriverInvoice.objects.create(
-#                     driver=driver,
-#                     start_date=wstart,
-#                     end_date=wend,
-#                     total_deliveries=total_orders,
-#                     total_amount=total_amount.quantize(Decimal("0.01")),
-#                     due_date=due_date,
-#                     status="generated"
-#                 )
-#                 invoice_created = True
-
-#                 # Generate PDF
-#                 week_data = {
-#                     "payment_period": {
-#                         "start_date": wstart.isoformat(),
-#                         "end_date": wend.isoformat()
-#                     },
-#                     "total_orders": total_orders,
-#                     "total_amount": str(total_amount.quantize(Decimal("0.01"))),
-#                     "due_date": due_date.isoformat(),
-#                     "status": "generated",
-#                 }
-
-#                 try:
-#                     pdf_buffer = _generate_invoice_pdf(driver, week_data, week_orders)
-                    
-#                     # Create filename: driverId_driverName_StartDate_EndDate.pdf
-#                     timestamp = datetime.now().strftime('%Y%m%d_%H%M%S')
-#                     filename = f"{driver.id}_{driver.name.replace(' ', '_')}_{wstart.isoformat()}_{wend.isoformat()}_{timestamp}.pdf"
-                    
-#                     # Upload to GCP
-#                     pdf_url = _upload_to_gcp(pdf_buffer, filename)
-                    
-#                     if pdf_url:
-#                         new_invoice.pdf_url = pdf_url
-#                         new_invoice.save()
-#                         invoice_status = "generated"
-#                     else:
-#                         invoice_status = "error"
-                        
-#                 except Exception as e:
-#                     invoice_status = "error"
-
-#                 # Send invoice notification email to delivery partner
-#                 if invoice_created and pdf_url and driver.email:
-#                     try:
-#                         brand_primary = settings.BRAND_COLORS['primary']
-#                         brand_primary_dark = settings.BRAND_COLORS['primary_dark']
-#                         brand_accent = settings.BRAND_COLORS['accent']
-#                         now_str = timezone.now().strftime("%b %d, %Y %H:%M %Z")
-#                         logo_url = settings.LOGO_URL
-                        
-#                         start_date_formatted = wstart.strftime("%B %d, %Y")
-#                         end_date_formatted = wend.strftime("%B %d, %Y")
-#                         due_date_formatted = due_date.strftime("%B %d, %Y")
-#                         total_amount_formatted = total_amount.quantize(Decimal("0.01"))
-#                         payment_rate_percent = settings.PAYMENT_RATE_PERCENT
-
-#                         company_name = settings.COMPANY_OPERATING_NAME
-#                         company_subgroup_name = settings.COMPANY_SUB_GROUP_NAME
-
-#                         # Using .format() to avoid f-string CSS brace conflicts
-#                         driver_invoice_html = """
-# <!doctype html>
-# <html lang="en">
-#   <head>
-#     <meta charset="utf-8">
-#     <title>Payment Statement Available • {company_name}</title>
-#     <meta name="viewport" content="width=device-width, initial-scale=1">
-#     <style>
-#       @media (prefers-color-scheme: dark) {{
-#         body {{ background: #0b1220 !important; color: #e5e7eb !important; }}
-#         .card {{ background: #0f172a !important; border-color: #1f2937 !important; }}
-#         .muted {{ color: #94a3b8 !important; }}
-#       }}
-#     </style>
-#   </head>
-#   <body style="margin:0;padding:0;background:#f4f7f9;">
-#     <table role="presentation" width="100%" cellspacing="0" cellpadding="0" border="0" style="background:#f4f7f9;padding:24px 12px;">
-#       <tr>
-#         <td align="center">
-#           <table role="presentation" width="100%" cellspacing="0" cellpadding="0" border="0" class="card" style="max-width:640px;background:#ffffff;border:1px solid #e5e7eb;border-radius:16px;overflow:hidden;">
-#             <tr>
-#               <td style="background:{brand_primary};padding:18px 20px;">
-#                 <table width="100%" cellspacing="0" cellpadding="0" border="0">
-#                   <tr>
-#                     <td align="left">
-#                       <img src="{logo_url}" alt="{company_name}" width="64" height="64" style="display:block;border:0;outline:none;text-decoration:none;border-radius:50%;object-fit:cover;">
-#                     </td>
-#                     <td align="right" style="font:600 16px/1.2 system-ui,-apple-system,'Segoe UI',Roboto,Helvetica,Arial;color:#e6fffb;">
-#                       Payment Statement Ready
-#                     </td>
-#                   </tr>
-#                 </table>
-#               </td>
-#             </tr>
-            
-#             <tr>
-#               <td style="padding:28px 24px 6px;">
-#                 <h1 style="margin:0 0 10px;font:800 24px/1.25 system-ui,-apple-system,'Segoe UI',Roboto,Helvetica,Arial;color:#0f172a;">
-#                   Your weekly payment statement is ready
-#                 </h1>
-#                 <p style="margin:0 0 16px;font:400 14px/1.7 system-ui,-apple-system,'Segoe UI',Roboto,Helvetica,Arial;color:#475569;">
-#                   Hello <strong>{driver_name}</strong>, your payment statement for the week of <strong>{start_date_formatted}</strong> to <strong>{end_date_formatted}</strong> has been generated and is now available.
-#                 </p>
-                
-#                 <div style="margin:18px 0;background:#f0fdf4;border:1px solid #10b981;border-radius:12px;padding:14px 18px;">
-#                   <p style="margin:0;font:600 13px/1.6 system-ui,-apple-system,'Segoe UI',Roboto,Helvetica,Arial;color:#166534;">
-#                     💰 Payment of <strong>${total_amount}</strong> will be processed by <strong>{due_date_formatted}</strong>
-#                   </p>
-#                 </div>
-                
-#                 <div style="margin:18px 0;background:#f0fdfa;border:1px solid {brand_primary};border-radius:12px;padding:16px 18px;">
-#                   <p style="margin:0 0 12px;font:700 15px/1.3 system-ui,-apple-system,'Segoe UI',Roboto,Helvetica,Arial;color:#0f172a;">
-#                     📊 Payment Summary
-#                   </p>
-#                   <table width="100%" cellspacing="0" cellpadding="0" border="0">
-#                     <tr>
-#                       <td style="padding:4px 0;font:600 13px/1.5 system-ui,-apple-system,'Segoe UI',Roboto,Helvetica,Arial;color:#334155;">
-#                         Statement Period:
-#                       </td>
-#                       <td style="padding:4px 0;font:400 13px/1.5 system-ui,-apple-system,'Segoe UI',Roboto,Helvetica,Arial;color:#334155;">
-#                         {start_date_formatted} - {end_date_formatted}
-#                       </td>
-#                     </tr>
-#                     <tr>
-#                       <td style="padding:4px 0;font:600 13px/1.5 system-ui,-apple-system,'Segoe UI',Roboto,Helvetica,Arial;color:#334155;">
-#                         Total Deliveries:
-#                       </td>
-#                       <td style="padding:4px 0;font:400 13px/1.5 system-ui,-apple-system,'Segoe UI',Roboto,Helvetica,Arial;color:#334155;">
-#                         {total_orders} completed deliveries
-#                       </td>
-#                     </tr>
-#                     <tr>
-#                       <td style="padding:4px 0;font:600 13px/1.5 system-ui,-apple-system,'Segoe UI',Roboto,Helvetica,Arial;color:#334155;">
-#                         Payment Rate:
-#                       </td>
-#                       <td style="padding:4px 0;font:400 13px/1.5 system-ui,-apple-system,'Segoe UI',Roboto,Helvetica,Arial;color:#334155;">
-#                         {payment_rate_percent}% of delivery rate
-#                       </td>
-#                     </tr>
-#                     <tr>
-#                       <td style="padding:8px 0 4px;font:700 15px/1.5 system-ui,-apple-system,'Segoe UI',Roboto,Helvetica,Arial;color:#0f172a;border-top:2px solid #e5e7eb;">
-#                         Total Payment:
-#                       </td>
-#                       <td style="padding:8px 0 4px;font:700 15px/1.5 system-ui,-apple-system,'Segoe UI',Roboto,Helvetica,Arial;color:#10b981;border-top:2px solid #e5e7eb;">
-#                         ${total_amount}
-#                       </td>
-#                     </tr>
-#                   </table>
-#                 </div>
-                
-#                 <div style="margin:18px 0;background:#fef3c7;border:1px solid {brand_accent};border-radius:12px;padding:16px 18px;">
-#                   <p style="margin:0 0 12px;font:700 15px/1.3 system-ui,-apple-system,'Segoe UI',Roboto,Helvetica,Arial;color:#0f172a;">
-#                     📅 Payment Processing
-#                   </p>
-#                   <table width="100%" cellspacing="0" cellpadding="0" border="0">
-#                     <tr>
-#                       <td style="padding:4px 0;font:600 13px/1.5 system-ui,-apple-system,'Segoe UI',Roboto,Helvetica,Arial;color:#334155;">
-#                         Payment Date:
-#                       </td>
-#                       <td style="padding:4px 0;font:400 13px/1.5 system-ui,-apple-system,'Segoe UI',Roboto,Helvetica,Arial;color:#334155;">
-#                         {due_date_formatted}
-#                       </td>
-#                     </tr>
-#                     <tr>
-#                       <td style="padding:4px 0;font:600 13px/1.5 system-ui,-apple-system,'Segoe UI',Roboto,Helvetica,Arial;color:#334155;">
-#                         Payment Amount:
-#                       </td>
-#                       <td style="padding:4px 0;font:700 13px/1.5 system-ui,-apple-system,'Segoe UI',Roboto,Helvetica,Arial;color:#0f172a;">
-#                         ${total_amount}
-#                       </td>
-#                     </tr>
-#                     <tr>
-#                       <td style="padding:4px 0;font:600 13px/1.5 system-ui,-apple-system,'Segoe UI',Roboto,Helvetica,Arial;color:#334155;">
-#                         Status:
-#                       </td>
-#                       <td style="padding:4px 0;font:400 13px/1.5 system-ui,-apple-system,'Segoe UI',Roboto,Helvetica,Arial;color:#334155;">
-#                         Pending Processing
-#                       </td>
-#                     </tr>
-#                   </table>
-#                 </div>
-                
-#                 <div style="margin:18px 0;text-align:center;">
-#                   <a href="{pdf_url}" 
-#                      style="display:inline-block;background:{brand_primary};color:#ffffff;text-decoration:none;padding:12px 32px;border-radius:8px;font:600 14px/1.5 system-ui,-apple-system,'Segoe UI',Roboto,Helvetica,Arial;">
-#                     📥 Download Payment Statement PDF
-#                   </a>
-#                 </div>
-                
-#                 <div style="margin:18px 0;background:#f8fafc;border:1px solid #e2e8f0;border-radius:12px;padding:16px 18px;">
-#                   <p style="margin:0 0 12px;font:700 15px/1.3 system-ui,-apple-system,'Segoe UI',Roboto,Helvetica,Arial;color:#0f172a;">
-#                     📋 Statement Details
-#                   </p>
-#                   <p style="margin:0 0 8px;font:400 13px/1.6 system-ui,-apple-system,'Segoe UI',Roboto,Helvetica,Arial;color:#475569;">
-#                     This statement covers <strong>{total_orders} completed deliveries</strong> during the period from {start_date_formatted} to {end_date_formatted}.
-#                   </p>
-#                   <p style="margin:0;font:400 13px/1.6 system-ui,-apple-system,'Segoe UI',Roboto,Helvetica,Arial;color:#475569;">
-#                     Your payment is calculated at {payment_rate_percent}% of the total delivery rates. Download the detailed PDF statement using the button above or access it through your driver dashboard.
-#                   </p>
-#                 </div>
-                
-#                 <div style="margin:18px 0;background:#eff6ff;border-left:3px solid #3b82f6;border-radius:8px;padding:14px 16px;">
-#                   <p style="margin:0 0 8px;font:700 14px/1.4 system-ui,-apple-system,'Segoe UI',Roboto,Helvetica,Arial;color:#1e40af;">
-#                     ℹ️ Payment Information
-#                   </p>
-#                   <p style="margin:0;font:400 13px/1.6 system-ui,-apple-system,'Segoe UI',Roboto,Helvetica,Arial;color:#1e3a8a;">
-#                     Your payment will be processed automatically by {due_date_formatted}. If you have any questions about this statement, please contact our operations team.
-#                   </p>
-#                 </div>
-                
-#                 <p style="margin:18px 0 0;font:400 12px/1.7 system-ui,-apple-system,'Segoe UI',Roboto,Helvetica,Arial;color:#64748b;">
-#                   Statement generated on <strong style="color:{brand_primary_dark};">{now_str}</strong>.
-#                 </p>
-                
-#                 <hr style="border:0;border-top:1px solid #e5e7eb;margin:24px 0;">
-#                 <p class="muted" style="margin:0;font:400 12px/1.7 system-ui,-apple-system,'Segoe UI',Roboto,Helvetica,Arial;color:#6b7280;">
-#                   For payment inquiries or statement questions, Log in to the portal and raise a Support Ticket by contacting the Admin. Our team will be happy to assist you.
-#                 </p>
-#               </td>
-#             </tr>
-            
-#             <tr>
-#               <td style="padding:0 24px 24px;">
-#                 <table width="100%" cellspacing="0" cellpadding="0" border="0" style="background:#f8fafc;border:1px dashed #e2e8f0;border-radius:12px;">
-#                   <tr>
-#                     <td style="padding:12px 16px;">
-#                       <p style="margin:0;font:400 12px/1.6 system-ui,-apple-system,'Segoe UI',Roboto,Helvetica,Arial;color:#64748b;">
-#                         Thank you for being a valued Delivery Partner with {company_name}!
-#                       </p>
-#                     </td>
-#                   </tr>
-#                 </table>
-#               </td>
-#             </tr>
-
-#           </table>
-          
-#           <p style="margin:14px 0 0;font:400 12px/1.6 system-ui,-apple-system,'Segoe UI',Roboto,Helvetica,Arial;color:#94a3b8;">
-#             © {current_year} {company_name} - {company_subgroup_name}. All rights reserved.
-#           </p>
-#         </td>
-#       </tr>
-#     </table>
-#   </body>
-# </html>
-# """.format(
-#                             brand_primary=brand_primary,
-#                             brand_primary_dark=brand_primary_dark,
-#                             brand_accent=brand_accent,
-#                             logo_url=logo_url,
-#                             driver_name=driver.name,
-#                             start_date_formatted=start_date_formatted,
-#                             end_date_formatted=end_date_formatted,
-#                             total_amount=total_amount_formatted,
-#                             due_date_formatted=due_date_formatted,
-#                             total_orders=total_orders,
-#                             pdf_url=pdf_url,
-#                             now_str=now_str,
-#                             current_year=timezone.now().year,
-#                             payment_rate_percent=payment_rate_percent
-#                         )
-
-#                         driver_invoice_text = (
-#                             f"Payment Statement Available - {settings.COMPANY_OPERATING_NAME}\n\n"
-#                             f"Hello {driver.name},\n\n"
-#                             f"Your payment statement for the week of {start_date_formatted} to {end_date_formatted} is now available.\n\n"
-#                             f"PAYMENT SUMMARY:\n"
-#                             f"- Statement Period: {start_date_formatted} - {end_date_formatted}\n"
-#                             f"- Total Deliveries: {total_orders} completed deliveries\n"
-#                             f"- Payment Rate: {payment_rate_percent}% of delivery rate\n"
-#                             f"- Total Payment: ${total_amount_formatted}\n\n"
-#                             f"PAYMENT PROCESSING:\n"
-#                             f"- Payment Date: {due_date_formatted}\n"
-#                             f"- Payment Amount: ${total_amount_formatted}\n"
-#                             f"- Status: Pending Processing\n\n"
-#                             f"Your payment will be processed automatically by {due_date_formatted}.\n\n"
-#                             f"Download your statement: {pdf_url}\n\n"
-#                             f"For payment inquiries, contact operations at {settings.EMAIL_OPERATIONS}\n"
-#                         )
-
-#                         _send_html_email_billing(
-#                             subject=f"Payment Statement Available • Week of {start_date_formatted}",
-#                             to_email=driver.email,
-#                             html=driver_invoice_html,
-#                             text_fallback=driver_invoice_text,
-#                         )
-#                         logger.info(f"Driver payment statement email sent to {driver.email} for week {wstart} to {wend}")
-                        
-#                     except Exception as e:
-#                         logger.error(f"ERROR sending driver invoice email to {driver.email}: {str(e)}")
-#                         import traceback
-#                         traceback.print_exc()
-#                         # Don't fail the invoice generation if email fails
-
-#         # Serialize orders
-#         orders_serialized = [_order_to_dict(o) for o in week_orders]
-
-#         result_weeks.append({
-#             "payment_period": {
-#                 "start_date": wstart.isoformat(),
-#                 "end_date": wend.isoformat()
-#             },
-#             "total_orders": total_orders,
-#             "total_amount": str(total_amount.quantize(Decimal("0.01"))),
-#             "due_date": due_date.isoformat(),
-#             "status": invoice_status,
-#             "pdf_url": pdf_url,
-#             "orders": orders_serialized,
-#         })
-
-#     response_payload = {
-#         "driver_id": int(driver_id),
-#         "overall_period": {
-#             "start_date": overall_start_date.isoformat(),
-#             "end_date": overall_end_date.isoformat()
-#         },
-#         "weeks": result_weeks,
-#     }
-
-#     return JsonResponse(response_payload, safe=True)
-
-
-
-
-
-@csrf_exempt
+@csrf_protect
 @require_http_methods(["POST"])
+@user_auth_required
 def contact_admin_api(request):
     try:
         # Parse JSON body
@@ -7359,8 +6105,6 @@ def contact_admin_api(request):
         subject = data.get('subject')
         other_subject = data.get('otherSubject', '')
         message = data.get('message')
-        pharmacy_id = data.get('pharmacy_id')
-        driver_id = data.get('driver_id')
         
         # Validate required fields
         if not subject:
@@ -7368,10 +6112,6 @@ def contact_admin_api(request):
         
         if not message:
             return JsonResponse({'error': 'Message is required'}, status=400)
-        
-        # Validate that either pharmacy_id or driver_id is provided
-        if not pharmacy_id and not driver_id:
-            return JsonResponse({'error': 'User authentication required'}, status=400)
         
         # Validate 'other' subject
         if subject == 'other':
@@ -7393,6 +6133,10 @@ def contact_admin_api(request):
         if subject not in valid_subjects:
             return JsonResponse({'error': 'Invalid subject category'}, status=400)
         
+        # Get authenticated user from decorator
+        user = request.user
+        user_type_key = request.user_type
+        
         # Prepare contact data
         contact_data = {
             'subject': subject,
@@ -7404,39 +6148,29 @@ def contact_admin_api(request):
             contact_data['other_subject'] = other_subject.strip()
         
         # Variables for email sending
-        user_email = None
-        user_name = None
-        user_type = None
-        user_id = None
-        user_phone = None
+        user_email = user.email
+        user_name = user.name
+        user_id = user.id
+        user_phone = user.phone_number
         
-        # Add pharmacy or driver reference
-        if pharmacy_id:
-            try:
-                pharmacy = Pharmacy.objects.get(id=pharmacy_id)
-                contact_data['pharmacy'] = pharmacy
-                user_email = pharmacy.email
-                user_name = pharmacy.name
-                user_type = "Pharmacy"
-                user_id = pharmacy.id
-                user_phone = pharmacy.phone_number
-            except Pharmacy.DoesNotExist:
-                return JsonResponse({'error': 'Invalid pharmacy ID'}, status=400)
+        # Add pharmacy or driver reference based on user type
+        if user_type_key == 'pharmacy':
+            contact_data['pharmacy'] = user
+            user_type = "Pharmacy"
+        elif user_type_key == 'driver':
+            contact_data['driver'] = user
+            user_type = "Driver"
+        else:
+            return JsonResponse({'error': 'Invalid user type'}, status=400)
         
-        if driver_id:
-            try:
-                driver = Driver.objects.get(id=driver_id)
-                contact_data['driver'] = driver
-                user_email = driver.email
-                user_name = driver.name
-                user_type = "Driver"
-                user_id = driver.id
-                user_phone = driver.phone_number
-            except Driver.DoesNotExist:
-                return JsonResponse({'error': 'Invalid driver ID'}, status=400)
-        
-        # Create record
+        # Create record (stored in UTC by Django)
         contact = ContactAdmin.objects.create(**contact_data)
+        
+        # Get current time in UTC, then convert to user timezone for display
+        now_utc = timezone.now()
+        user_tz = settings.USER_TIMEZONE
+        now_local = now_utc.astimezone(user_tz)
+        now_str = now_local.strftime("%b %d, %Y %I:%M %p %Z")
         
         # ---- Send confirmation email ----
         if user_email:
@@ -7444,7 +6178,6 @@ def contact_admin_api(request):
                 brand_primary = settings.BRAND_COLORS['primary']
                 brand_primary_dark = settings.BRAND_COLORS['primary_dark']
                 brand_accent = settings.BRAND_COLORS['accent']
-                now_str = timezone.now().strftime("%b %d, %Y %H:%M %Z")
                 logo_url = settings.LOGO_URL
                 
                 # Format subject for display
@@ -7560,7 +6293,7 @@ def contact_admin_api(request):
           </table>
 
           <p style="margin:14px 0 0;font:400 12px/1.6 system-ui,-apple-system,'Segoe UI',Roboto,Helvetica,Arial;color:#94a3b8;">
-            © {timezone.now().year} {settings.COMPANY_OPERATING_NAME} - {settings.COMPANY_SUB_GROUP_NAME}. All rights reserved.
+            © {now_utc.year} {settings.COMPANY_OPERATING_NAME} - {settings.COMPANY_SUB_GROUP_NAME}. All rights reserved.
           </p>
         </td>
       </tr>
@@ -7593,7 +6326,6 @@ def contact_admin_api(request):
         try:
             brand_primary = settings.BRAND_COLORS['primary']
             brand_primary_dark = settings.BRAND_COLORS['primary_dark']
-            now_str = timezone.now().strftime("%b %d, %Y %H:%M %Z")
             logo_url = settings.LOGO_URL
             
             # Format subject for display
@@ -7718,7 +6450,7 @@ def contact_admin_api(request):
           </table>
 
           <p style="margin:14px 0 0;font:400 12px/1.6 system-ui,-apple-system,'Segoe UI',Roboto,Helvetica,Arial;color:#94a3b8;">
-            © {timezone.now().year} {settings.COMPANY_OPERATING_NAME} - {settings.COMPANY_SUB_GROUP_NAME}. All rights reserved.
+            © {now_utc.year} {settings.COMPANY_OPERATING_NAME} - {settings.COMPANY_SUB_GROUP_NAME}. All rights reserved.
           </p>
         </td>
       </tr>
@@ -7759,15 +6491,188 @@ def contact_admin_api(request):
         })
         
     except Exception as e:
+        logger.exception("Error processing contact admin request")
         return JsonResponse({
             'error': 'An error occurred while processing your request. Please try again.'
         }, status=500)
 
 
 
+
+# OTP_TTL_SECONDS = settings.OTP_TTL_SECONDS
+# VERIFY_TOKEN_TTL_SECONDS = settings.VERIFY_TOKEN_TTL_SECONDS
+# SIGNING_SALT = settings.OTP_SIGNING_SALT
+
+# # ---- tiny helpers ----
+# def _json(request: HttpRequest):
+#     try:
+#         return json.loads(request.body.decode("utf-8"))
+#     except Exception:
+#         return {}
+
+# def _ok(message, **extra):  return JsonResponse({"success": True, "message": message, **extra})
+# def _err(message, code=400): return JsonResponse({"success": False, "message": message}, status=code)
+# def _otp_key(email: str) -> str: return f"otp:{email.strip().lower()}"
+
+# def _valid_email(addr: str) -> bool:
+#     try:
+#         validate_email(addr)
+#         return True
+#     except ValidationError:
+#         return False
+
+
+# @csrf_exempt
+# def send_otp(request: HttpRequest):
+#     if request.method != "POST":
+#         return _err("Method not allowed", 405)
+
+#     data = _json(request)
+#     email = (data.get("email") or "").strip().lower()
+
+#     if not email or not _valid_email(email):
+#         return _err("Please provide a valid email address.")
+
+#     # Generate + store OTP in cache (plaintext for simplicity)
+#     otp = "".join(random.choice("0123456789") for _ in range(6))
+#     cache.set(_otp_key(email), otp, timeout=OTP_TTL_SECONDS)
+
+#     # --- Brand colors (bluish-green family used across the app) ---
+#     brand_primary = settings.BRAND_COLORS['primary']      
+#     brand_primary_dark = settings.BRAND_COLORS['primary_dark']
+#     brand_accent = settings.BRAND_COLORS['accent']
+
+#     # Modern, responsive-friendly HTML (works in Gmail/Outlook/Apple Mail)
+#     html = f"""
+# <!doctype html>
+# <html lang="en">
+#   <head>
+#     <meta charset="utf-8">
+#     <title>{settings.COMPANY_OPERATING_NAME} Verification Code</title>
+#     <meta name="viewport" content="width=device-width, initial-scale=1">
+#     <style>
+#       @media (prefers-color-scheme: dark) {{
+#         body {{ background: #0b1220 !important; color: #e5e7eb !important; }}
+#         .card {{ background: #0f172a !important; border-color: #1f2937 !important; }}
+#         .muted {{ color: #94a3b8 !important; }}
+#       }}
+#     </style>
+#   </head>
+#   <body style="margin:0;padding:0;background:#f4f7f9;">
+#     <!-- Preheader (hidden, improves inbox preview) -->
+#     <div style="display:none;visibility:hidden;opacity:0;height:0;width:0;overflow:hidden;">
+#       Your {settings.COMPANY_OPERATING_NAME} verification code. Expires in {OTP_TTL_SECONDS//60} minute(s).
+#     </div>
+
+#     <table role="presentation" width="100%" cellspacing="0" cellpadding="0" border="0" style="background:#f4f7f9;padding:24px 12px;">
+#       <tr>
+#         <td align="center">
+#           <!-- Card -->
+#           <table role="presentation" width="100%" cellspacing="0" cellpadding="0" border="0" style="max-width:560px;background:#ffffff;border:1px solid #e5e7eb;border-radius:16px;overflow:hidden;" class="card">
+#                 <!-- Header bar -->
+#                 <tr>
+#                 <td style="background:{brand_primary};padding:18px 20px;">
+#                     <table role="presentation" width="100%" cellspacing="0" cellpadding="0" border="0">
+#                     <tr>
+#                         <td align="left" style="vertical-align:middle;">
+#                         <img src="https://canalogistix.s3.us-east-2.amazonaws.com/Logo/CanaLogistiX_Logo_NOBG.png"
+#                             alt="{settings.COMPANY_OPERATING_NAME}"
+#                             width="64"
+#                             height="64"
+#                             style="display:block;border:0;outline:none;text-decoration:none;border-radius:50%;object-fit:cover;">
+#                         </td>
+#                         <td align="right" style="font:600 16px/1.2 system-ui,-apple-system,'Segoe UI',Roboto,Helvetica,Arial,'Apple Color Emoji','Segoe UI Emoji';color:#e6fffb;">
+#                         Security Verification
+#                         </td>
+#                     </tr>
+#                     </table>
+#                 </td>
+#                 </tr>
+
+
+#             <!-- Content -->
+#             <tr>
+#               <td style="padding:28px 24px 8px 24px;">
+#                 <h1 style="margin:0 0 10px 0;font:700 22px/1.25 system-ui,-apple-system,'Segoe UI',Roboto,Helvetica,Arial;color:#0f172a;">
+#                   Your {settings.COMPANY_OPERATING_NAME} verification code
+#                 </h1>
+#                 <p style="margin:0 0 18px 0;font:400 14px/1.6 system-ui,-apple-system,'Segoe UI',Roboto,Helvetica,Arial;color:#475569;">
+#                   Use the code below to continue. For your security, don’t share it with anyone.
+#                 </p>
+
+#                 <!-- OTP box -->
+#                 <div style="
+#                   margin:18px 0 10px 0;
+#                   background:#f0fdfa;
+#                   border:1px solid {brand_primary};
+#                   color:{brand_primary_dark};
+#                   border-radius:12px;
+#                   padding:16px 20px;
+#                   text-align:center;
+#                   font:700 28px/1.1 'SFMono-Regular',Consolas,'Liberation Mono',Menlo,monospace;">
+#                   <span style="letter-spacing:6px;display:inline-block;">{otp}</span>
+#                 </div>
+
+#                 <p style="margin:8px 0 0 0;font:500 13px/1.6 system-ui,-apple-system,'Segoe UI',Roboto,Helvetica,Arial;color:#334155;">
+#                   Expires in <strong>{OTP_TTL_SECONDS//60} minute(s)</strong>.
+#                 </p>
+
+#                 <hr style="border:0;border-top:1px solid #e5e7eb;margin:24px 0;">
+
+#                 <p class="muted" style="margin:0 0 6px 0;font:400 12px/1.6 system-ui,-apple-system,'Segoe UI',Roboto,Helvetica,Arial;color:#6b7280;">
+#                   Didn’t request this? You can safely ignore this email.
+#                 </p>
+#               </td>
+#             </tr>
+
+#             <!-- Footer -->
+#             <tr>
+#               <td style="padding:0 24px 24px 24px;">
+#                 <table role="presentation" width="100%" cellspacing="0" cellpadding="0" border="0" style="background:#f8fafc;border:1px dashed #e2e8f0;border-radius:12px;">
+#                   <tr>
+#                     <td style="padding:12px 16px;">
+#                       <p style="margin:0;font:400 12px/1.6 system-ui,-apple-system,'Segoe UI',Roboto,Helvetica,Arial;color:#64748b;">
+#                         Need help? Reply to this email and our team will assist you.
+#                       </p>
+#                     </td>
+#                   </tr>
+#                 </table>
+#               </td>
+#             </tr>
+
+#           </table>
+
+#           <!-- Brand footer -->
+#           <p style="margin:14px 0 0 0;font:400 12px/1.6 system-ui,-apple-system,'Segoe UI',Roboto,Helvetica,Arial;color:#94a3b8;">
+#             © {datetime.utcnow().year} {settings.COMPANY_OPERATING_NAME} - {settings.COMPANY_SUB_GROUP_NAME}. All rights reserved.
+#           </p>
+#         </td>
+#       </tr>
+#     </table>
+#   </body>
+# </html>
+# """
+
+#     subject = f"Your {settings.COMPANY_OPERATING_NAME} code • Expires in {OTP_TTL_SECONDS // 60} min"
+#     text = f"Your {settings.COMPANY_OPERATING_NAME} verification code is: {otp}\nThis code expires in {OTP_TTL_SECONDS//60} minute(s).\nIf you didn’t request it, you can ignore this message."
+
+#     try:
+#         _send_html_email_help_desk(subject, email, html, text)
+#     except Exception:
+#         # Swallow send errors but keep response generic (avoid account existence leak)
+#         pass
+
+#     return _ok("If a pharmacy exists for this email, an OTP will be sent shortly.")
+
+
+
 OTP_TTL_SECONDS = settings.OTP_TTL_SECONDS
 VERIFY_TOKEN_TTL_SECONDS = settings.VERIFY_TOKEN_TTL_SECONDS
 SIGNING_SALT = settings.OTP_SIGNING_SALT
+
+OTP_RATE_LIMIT_SECONDS = settings.OTP_RATE_LIMIT_SECONDS      # 60s
+OTP_MAX_PER_HOUR = settings.OTP_MAX_PER_HOUR                  # 5
+
 
 # ---- tiny helpers ----
 def _json(request: HttpRequest):
@@ -7776,9 +6681,23 @@ def _json(request: HttpRequest):
     except Exception:
         return {}
 
-def _ok(message, **extra):  return JsonResponse({"success": True, "message": message, **extra})
-def _err(message, code=400): return JsonResponse({"success": False, "message": message}, status=code)
-def _otp_key(email: str) -> str: return f"otp:{email.strip().lower()}"
+def _ok(message, **extra):
+    return JsonResponse({"success": True, "message": message, **extra})
+
+def _err(message, code=400):
+    return JsonResponse({"success": False, "message": message}, status=code)
+
+def _otp_key(email: str) -> str:
+    return f"otp:{email.strip().lower()}"
+
+def _otp_meta_key(email: str) -> str:
+    return f"otp_meta:{email.strip().lower()}"
+
+def _rl_last_key(email: str) -> str:
+    return f"otp_rl_last:{email.strip().lower()}"
+
+def _rl_hour_key(email: str, hour_bucket: str) -> str:
+    return f"otp_rl_hour:{email.strip().lower()}:{hour_bucket}"
 
 def _valid_email(addr: str) -> bool:
     try:
@@ -7787,35 +6706,67 @@ def _valid_email(addr: str) -> bool:
     except ValidationError:
         return False
 
-# def _send_html_email(subject: str, to_email: str, html: str, text_fallback: str = " "):
-#     msg = EmailMessage(subject=subject, body=html, from_email=EMAIL_FROM, to=[to_email])
-#     msg.content_subtype = "html"
-#     msg.send(fail_silently=False)
-
-
+def _hash_otp(email: str, otp: str) -> str:
+    # Store only a derived value (not plaintext OTP)
+    material = f"{SIGNING_SALT}:{email.strip().lower()}:{otp}"
+    return hashlib.sha256(material.encode("utf-8")).hexdigest()
 
 
 @csrf_exempt
+@require_http_methods(["POST"])
 def send_otp(request: HttpRequest):
-    if request.method != "POST":
-        return _err("Method not allowed", 405)
-
     data = _json(request)
     email = (data.get("email") or "").strip().lower()
+
+    # Always keep responses generic to avoid user/account enumeration
+    generic_ok = _ok("If a pharmacy exists for this email, an OTP will be sent shortly.")
 
     if not email or not _valid_email(email):
         return _err("Please provide a valid email address.")
 
-    # Generate + store OTP in cache (plaintext for simplicity)
+    # ---- Rate limiting (per-email) ----
+    # 1) 1 OTP per OTP_RATE_LIMIT_SECONDS
+    if cache.add(_rl_last_key(email), "1", timeout=OTP_RATE_LIMIT_SECONDS) is False:
+        return generic_ok
+
+    # 2) Hard cap per hour
+    hour_bucket = timezone.now().strftime("%Y%m%d%H")  # UTC bucket (safe + consistent)
+    hour_key = _rl_hour_key(email, hour_bucket)
+    try:
+        if cache.add(hour_key, 1, timeout=3600) is False:
+            count = cache.incr(hour_key)
+        else:
+            count = 1
+    except Exception:
+        # If cache backend doesn't support incr reliably, fail closed-ish but don't break UX
+        count = 1
+
+    if count > OTP_MAX_PER_HOUR:
+        return generic_ok
+
+    # Generate OTP
     otp = "".join(random.choice("0123456789") for _ in range(6))
-    cache.set(_otp_key(email), otp, timeout=OTP_TTL_SECONDS)
+
+    # Store HASHED OTP + optional metadata (not plaintext)
+    otp_hash = _hash_otp(email, otp)
+    cache.set(_otp_key(email), otp_hash, timeout=OTP_TTL_SECONDS)
+    cache.set(_otp_meta_key(email), {"issued_at_utc": timezone.now().isoformat()}, timeout=OTP_TTL_SECONDS)
+
+    # Timezone for email footer year (and any future displayed times)
+    now_utc = timezone.now()
+    try:
+        user_tz = pytz.timezone(settings.USER_TIMEZONE)
+        now_local = now_utc.astimezone(user_tz)
+    except Exception:
+        now_local = now_utc
 
     # --- Brand colors (bluish-green family used across the app) ---
-    brand_primary = settings.BRAND_COLORS['primary']      
+    brand_primary = settings.BRAND_COLORS['primary']
     brand_primary_dark = settings.BRAND_COLORS['primary_dark']
     brand_accent = settings.BRAND_COLORS['accent']
 
     # Modern, responsive-friendly HTML (works in Gmail/Outlook/Apple Mail)
+    # NOTE: Email formatting preserved; only the footer year uses USER_TIMEZONE.
     html = f"""
 <!doctype html>
 <html lang="en">
@@ -7917,7 +6868,7 @@ def send_otp(request: HttpRequest):
 
           <!-- Brand footer -->
           <p style="margin:14px 0 0 0;font:400 12px/1.6 system-ui,-apple-system,'Segoe UI',Roboto,Helvetica,Arial;color:#94a3b8;">
-            © {datetime.utcnow().year} {settings.COMPANY_OPERATING_NAME} - {settings.COMPANY_SUB_GROUP_NAME}. All rights reserved.
+            © {now_local.year} {settings.COMPANY_OPERATING_NAME} - {settings.COMPANY_SUB_GROUP_NAME}. All rights reserved.
           </p>
         </td>
       </tr>
@@ -7927,43 +6878,88 @@ def send_otp(request: HttpRequest):
 """
 
     subject = f"Your {settings.COMPANY_OPERATING_NAME} code • Expires in {OTP_TTL_SECONDS // 60} min"
-    text = f"Your {settings.COMPANY_OPERATING_NAME} verification code is: {otp}\nThis code expires in {OTP_TTL_SECONDS//60} minute(s).\nIf you didn’t request it, you can ignore this message."
+    text = (
+        f"Your {settings.COMPANY_OPERATING_NAME} verification code is: {otp}\n"
+        f"This code expires in {OTP_TTL_SECONDS//60} minute(s).\n"
+        "If you didn’t request it, you can ignore this message."
+    )
 
     try:
         _send_html_email_help_desk(subject, email, html, text)
     except Exception:
-        # Swallow send errors but keep response generic (avoid account existence leak)
-        pass
+        # Keep response generic (avoid account existence leak)
+        logger.exception("OTP email send failed")
+        return generic_ok
 
-    return _ok("If a pharmacy exists for this email, an OTP will be sent shortly.")
+    return generic_ok
 
 
 @csrf_exempt
+@require_http_methods(["POST"])
 def verify_otp(request: HttpRequest):
-    if request.method != "POST":
-        return _err("Method not allowed", 405)
-
     data = _json(request)
     email = (data.get("email") or "").strip().lower()
     otp = (data.get("otp") or "").strip()
 
     if not email or not _valid_email(email):
         return _err("Please provide a valid email address.")
+
     if not otp.isdigit() or not (4 <= len(otp) <= 8):
         return _err("Please provide a valid OTP.")
 
-    stored = cache.get(_otp_key(email))
-    if not stored:
+    stored_hash = cache.get(_otp_key(email))
+    if not stored_hash:
         return _err("OTP expired or not found. Please request a new one.", 400)
 
-    if stored != otp:
+    # 🔐 Hash the submitted OTP exactly like send_otp
+    submitted_hash = _hash_otp(email, otp)
+
+    if not hmac.compare_digest(stored_hash, submitted_hash):
         return _err("Incorrect OTP.", 400)
 
-    # success: clear OTP and mint a short-lived token tied to the email
+    # ✅ OTP is valid — consume it (one-time use)
     cache.delete(_otp_key(email))
-    token = dumps({"email": email}, salt=SIGNING_SALT)  # signed with SECRET_KEY
+    cache.delete(_otp_meta_key(email))
 
-    return _ok("OTP verified.", token=token, expires_in=VERIFY_TOKEN_TTL_SECONDS)
+    # Issue short-lived verification token
+    token = dumps(
+        {"email": email, "ts": timezone.now().timestamp()},
+        salt=SIGNING_SALT
+    )
+
+    return _ok(
+        "OTP verified.",
+        token=token,
+        expires_in=VERIFY_TOKEN_TTL_SECONDS
+    )
+
+
+# @csrf_exempt
+# def verify_otp(request: HttpRequest):
+#     if request.method != "POST":
+#         return _err("Method not allowed", 405)
+
+#     data = _json(request)
+#     email = (data.get("email") or "").strip().lower()
+#     otp = (data.get("otp") or "").strip()
+
+#     if not email or not _valid_email(email):
+#         return _err("Please provide a valid email address.")
+#     if not otp.isdigit() or not (4 <= len(otp) <= 8):
+#         return _err("Please provide a valid OTP.")
+
+#     stored = cache.get(_otp_key(email))
+#     if not stored:
+#         return _err("OTP expired or not found. Please request a new one.", 400)
+
+#     if stored != otp:
+#         return _err("Incorrect OTP.", 400)
+
+#     # success: clear OTP and mint a short-lived token tied to the email
+#     cache.delete(_otp_key(email))
+#     token = dumps({"email": email}, salt=SIGNING_SALT)  # signed with SECRET_KEY
+
+#     return _ok("OTP verified.", token=token, expires_in=VERIFY_TOKEN_TTL_SECONDS)
 
 
 

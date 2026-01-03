@@ -42,7 +42,7 @@ urlpatterns = [
     path('webhooks/stripe/', views.stripe_webhook, name='stripe_webhook'), # Not Required
     path('api/payment-status/', views.get_payment_status, name='payment_status'), # No Occurrence Found
     path('driverFinances/', views.driverFinancesView, name="DriverFinancesPage"),
-    path("api/driver/invoices/weeks/", views.driver_invoice_weeks, name="driver_invoice_weeks"), # Done - Not Working
+    path("api/driver/invoices/weeks/", views.driver_invoice_weeks, name="driver_invoice_weeks"), # Done
     path('driverForgotPassword/', views.driverForgotPasswordView, name="driverForgotPasswordPage"),
     path('driverRegister/', views.driverRegisterView, name="driverRegisterPage"),
     path('api/driver/register/', views.register_driver, name='register_driver'),
@@ -55,7 +55,7 @@ urlpatterns = [
     path("api/driver/<int:driver_id>/cc-points/", views.get_driver_cc_points, name="driver_cc_points"),
 
     path('contactAdmin/', views.contactAdminView, name='contactAdminPage'), 
-    path('api/contact-admin/', views.contact_admin_api, name='contact_admin_api'),
+    path('api/contact-admin/', views.contact_admin_api, name='contact_admin_api'), # Done
     path('adminLogin/', views.adminLoginView, name='AdminLoginPage'),  
     path("api/admin/login/", views.admin_login, name="admin_login"),
     path('adminDashboard/', views.adminDashboardView, name="AdminDashboardPage"),

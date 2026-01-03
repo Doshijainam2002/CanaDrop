@@ -181,6 +181,9 @@ OTP_TTL_SECONDS = int(os.getenv("OTP_TTL_SECONDS", 600))
 VERIFY_TOKEN_TTL_SECONDS = int(os.getenv("VERIFY_TOKEN_TTL_SECONDS", 900))
 OTP_SIGNING_SALT = os.getenv("OTP_SIGNING_SALT", "canadrop-otp-verify")
 
+OTP_RATE_LIMIT_SECONDS = 60        # 1 OTP / minute
+OTP_MAX_PER_HOUR = 5               # hard cap
+
 # -------------------------------------------------
 # APP CONSTANTS
 # -------------------------------------------------

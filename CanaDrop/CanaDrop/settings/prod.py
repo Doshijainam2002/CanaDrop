@@ -168,6 +168,9 @@ OTP_TTL_SECONDS = 10 * 60
 VERIFY_TOKEN_TTL_SECONDS = 15 * 60
 OTP_SIGNING_SALT = "canadrop-otp-verify"
 
+OTP_RATE_LIMIT_SECONDS = 60        # 1 OTP / minute
+OTP_MAX_PER_HOUR = 5               # hard cap
+
 GCP_BUCKET_NAME = "canadrop-bucket"
 GCP_INVOICE_FOLDER = "PharmacyInvoices"
 GCP_CUSTOMER_PHARMACY_SIGNED_ACKNOWLEDGEMENTS = "PharmacySignedAcknowledgements"
