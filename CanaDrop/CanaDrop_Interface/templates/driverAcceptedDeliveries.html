@@ -1151,8 +1151,18 @@ function navigateTo(section) {
 }
 
 function handleLogout() {
-    document.cookie = 'driverId=; path=/; expires=Thu, 01 Jan 1970 00:00:01 GMT;';
-    window.location.href = '/driverLogin/';
+    const cookiesToClear = [
+        "authToken",
+        "csrftoken",
+        "tokenExpiresAt",
+        "driverId"
+    ];
+
+    cookiesToClear.forEach(name => {
+        document.cookie = `${name}=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/;`;
+    });
+
+    window.location.href = "/driverLogin/";
 }
 
 async function loadDriverInfo() {
@@ -1436,14 +1446,15 @@ async function verifyCustomerId(orderId) {
         
         const formData = new FormData();
         formData.append('orderId', orderId);
-        formData.append('driverId', driverId);
+        // formData.append('driverId', driverId);
         formData.append('verified', 'true');
         
         const response = await fetch('/api/verify-customer-id/', {
             method: 'POST',
             headers: {
-                'X-CSRFToken': getCookie('csrftoken')
+                'X-CSRFToken': getCSRFToken()
             },
+            credentials : "include",
             body: formData
         });
         

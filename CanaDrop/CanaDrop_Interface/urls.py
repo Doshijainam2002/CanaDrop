@@ -48,13 +48,13 @@ urlpatterns = [
     path('api/driver/register/', views.register_driver, name='register_driver'), # Done
     path("api/driver/optimize-route/", views.optimize_route_api, name="optimize_route_api"), # Done
     path('driverIdentity/', views.driverIdentityView, name='DriverIdentityPage'), # Done
-    path("api/driver/upload-identity-image/", views.upload_driver_identity_image, name="upload-driver-identity-image"),
+    path("api/driver/upload-identity-image/", views.upload_driver_identity_image, name="upload-driver-identity-image"), # Done
     path('api/upload-signature-acknowledgement/', views.upload_signature_acknowledgement, name='upload-signature-acknowledgement'), # Done
-    path('api/verify-customer-id/', views.verify_customer_id, name='verify-customer-id'),
+    path('api/verify-customer-id/', views.verify_customer_id, name='verify-customer-id'), # Done
     path('driverCCPoints/', views.driverCCPointsView, name='DriverCCPointsPage'), # Done
-    path("api/driver/<int:driver_id>/cc-points/", views.get_driver_cc_points, name="driver_cc_points"),
+    path("api/driver/<int:driver_id>/cc-points/", views.get_driver_cc_points, name="driver_cc_points"), # Done
 
-    path('contactAdmin/', views.contactAdminView, name='contactAdminPage'), 
+    path('contactAdmin/', views.contactAdminView, name='contactAdminPage'), # Done
     path('api/contact-admin/', views.contact_admin_api, name='contact_admin_api'), # Done
     path('adminLogin/', views.adminLoginView, name='AdminLoginPage'),  
     path("api/admin/login/", views.admin_login, name="admin_login"),

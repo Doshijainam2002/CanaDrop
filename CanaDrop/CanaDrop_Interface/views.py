@@ -250,6 +250,7 @@ def adminDriversView(request):
 # ----------------------------
 # General Page Logins
 # ----------------------------
+@user_auth_required
 def contactAdminView(request):
     return render(request, 'contactAdmin.html')
 
@@ -13150,8 +13151,9 @@ def get_pharmacy_cc_points(request: HttpRequest, pharmacy_id: int):
 
         
 
-@csrf_exempt
+@csrf_protect
 @require_http_methods(["POST"])
+@driver_auth_required
 def upload_driver_identity_image(request):
     """
     Upload or replace a driver's identity/profile image to GCP
@@ -13159,22 +13161,20 @@ def upload_driver_identity_image(request):
     """
 
     try:
-        driver_id = request.POST.get("driverId")
-        image_file = request.FILES.get("image")
+        # ✅ Authenticated driver (trusted)
+        driver = request.driver
 
-        if not driver_id or not image_file:
+        image_file = request.FILES.get("image")
+        if not image_file:
             return JsonResponse({
                 "success": False,
-                "error": "driverId and image file are required"
+                "error": "image file is required"
             }, status=400)
-
-        driver = get_object_or_404(Driver, id=driver_id)
 
         # ----------------------------
         # Build safe filename
         # ----------------------------
         ext = os.path.splitext(image_file.name)[1] or ".jpg"
-
         safe_name = "".join(c for c in driver.name if c.isalnum() or c in ("_", "-"))
         safe_email = driver.email.replace("@", "_").replace(".", "_")
 
@@ -13187,7 +13187,7 @@ def upload_driver_identity_image(request):
         )
 
         # ----------------------------
-        # Initialize GCP client (same style as working API)
+        # Initialize GCP client
         # ----------------------------
         credentials = service_account.Credentials.from_service_account_file(
             settings.GCP_KEY_PATH
@@ -13197,7 +13197,6 @@ def upload_driver_identity_image(request):
         bucket = client.bucket(settings.GCP_BUCKET_NAME)
         blob = bucket.blob(gcp_object_path)
 
-        # Reset file pointer (important for safety)
         image_file.seek(0)
 
         # ----------------------------
@@ -13209,7 +13208,7 @@ def upload_driver_identity_image(request):
         )
 
         # ----------------------------
-        # UBLA-safe public URL (NO ACLs)
+        # UBLA-safe public URL
         # ----------------------------
         public_url = f"https://storage.googleapis.com/{bucket.name}/{gcp_object_path}"
 
@@ -13224,13 +13223,15 @@ def upload_driver_identity_image(request):
             "driver_id": driver.id,
             "identity_url": public_url,
             "message": "Driver identity image uploaded successfully"
-        })
+        }, status=200)
 
     except Exception as e:
+        logger.exception("Error uploading driver identity image")
         return JsonResponse({
             "success": False,
-            "error": str(e)
+            "error": "Failed to upload identity image"
         }, status=500)
+
 
 
 def generate_acknowledgement_pdf(order, signature_image_path):
@@ -13693,54 +13694,54 @@ def upload_signature_acknowledgement(request):
         )
 
 
-    
-@csrf_exempt
+@csrf_protect
 @require_http_methods(["POST"])
+@driver_auth_required
 def verify_customer_id(request):
     """
     API endpoint to mark ID verification as completed for an order
 
     Expected POST parameters:
     - orderId: The delivery order ID
-    - driverId: The driver performing verification
-    - verified: Boolean indicating verification status (ignored; we always set True)
+    - verified: Boolean (ignored)
 
     Returns:
     - JSON response with success status
     """
     try:
         order_id = request.POST.get('orderId')
-        driver_id = request.POST.get('driverId')
-        _ = request.POST.get('verified')  # keep input structure, but ignored
+        _ = request.POST.get('verified')  # ignored
 
-        if not order_id or not driver_id:
+        if not order_id:
             return JsonResponse({
                 'success': False,
-                'error': 'orderId and driverId are required'
+                'error': 'orderId is required'
             }, status=400)
 
-        # Get order and validate driver
+        driver = request.driver  # 🔐 AUTH SOURCE OF TRUTH
+
         order = get_object_or_404(DeliveryOrder, id=order_id)
 
-        if str(order.driver_id) != str(driver_id):
+        if order.driver_id != driver.id:
             return JsonResponse({
                 'success': False,
                 'error': 'Driver is not assigned to this order'
             }, status=403)
 
-        # Validate order status - ID verification should happen during delivery
         if order.status not in ['inTransit', 'delivered']:
             return JsonResponse({
                 'success': False,
                 'error': 'ID verification can only be done during transit or delivery'
             }, status=400)
 
-        # ✅ MAIN LOGIC: always set id_verified = True
+        # ✅ MAIN LOGIC (unchanged)
         if not order.id_verified:
             order.id_verified = True
             order.save(update_fields=['id_verified', 'updated_at'])
 
-        logger.info(f"ID verification set TRUE for order {order_id} by driver {driver_id}")
+        logger.info(
+            f"ID verification set TRUE for order {order.id} by driver {driver.id}"
+        )
 
         return JsonResponse({
             'success': True,
@@ -13748,24 +13749,65 @@ def verify_customer_id(request):
             'message': 'ID verification recorded successfully'
         })
 
-    except Exception as e:
-        logger.error(f"Unexpected error in verify_customer_id: {e}")
+    except Exception:
+        logger.exception("Unexpected error in verify_customer_id")
         return JsonResponse({
             'success': False,
-            'error': f'An unexpected error occurred: {str(e)}'
+            'error': 'An unexpected error occurred'
         }, status=500)
 
 
-@csrf_exempt
+
+# @csrf_exempt
+# @require_http_methods(["GET"])
+# def get_driver_cc_points(request, driver_id):
+#     try:
+#         # (Optional but recommended) Validate driver exists
+#         if not Driver.objects.filter(id=driver_id).exists():
+#             return JsonResponse({
+#                 "success": False,
+#                 "error": "Driver not found"
+#             }, status=404)
+
+#         # 1) Delivered orders count (ONLY by status)
+#         delivered_orders_count = DeliveryOrder.objects.filter(
+#             driver_id=driver_id,
+#             status="delivered"
+#         ).count()
+
+#         # 2) Points from CCPointsAccount table (no multiplication)
+#         points_obj = CCPointsAccount.objects.filter(driver_id=driver_id).first()
+#         cc_points = points_obj.points_balance if points_obj else 0
+
+#         return JsonResponse({
+#             "success": True,
+#             "driver_id": driver_id,
+#             "delivered_orders": delivered_orders_count,
+#             "cc_points": cc_points
+#         })
+
+#     except Exception as e:
+#         return JsonResponse({
+#             "success": False,
+#             "error": str(e)
+#         }, status=500)
+
+@csrf_protect
 @require_http_methods(["GET"])
+@driver_auth_required
 def get_driver_cc_points(request, driver_id):
+    """
+    GET API to fetch CC points and delivered orders count for a driver.
+    """
+
     try:
-        # (Optional but recommended) Validate driver exists
-        if not Driver.objects.filter(id=driver_id).exists():
+        # 🔐 AUTHORIZATION CHECK
+        # driver_auth_required already authenticated the driver
+        if int(request.driver.id) != int(driver_id):
             return JsonResponse({
                 "success": False,
-                "error": "Driver not found"
-            }, status=404)
+                "error": "Unauthorized access"
+            }, status=403)
 
         # 1) Delivered orders count (ONLY by status)
         delivered_orders_count = DeliveryOrder.objects.filter(
@@ -13782,12 +13824,13 @@ def get_driver_cc_points(request, driver_id):
             "driver_id": driver_id,
             "delivered_orders": delivered_orders_count,
             "cc_points": cc_points
-        })
+        }, status=200)
 
     except Exception as e:
+        logger.exception("Error fetching driver CC points")
         return JsonResponse({
             "success": False,
-            "error": str(e)
+            "error": "An unexpected error occurred"
         }, status=500)
 
 

@@ -1634,13 +1634,24 @@ async function loadPaymentInformation() {
 }
 
 
+// Logout function
 function logoutPharmacy() {
-    // Remove the pharmacyId cookie
-    document.cookie = "pharmacyId=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/;";
+    // ✅ Clear all auth/session cookies for pharmacy logout (except driverId)
+    const cookiesToClear = [
+        "authToken",
+        "pharmacyId",
+        "tokenExpiresAt",
+        "csrftoken"
+    ];
+
+    cookiesToClear.forEach(name => {
+        document.cookie = `${name}=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/;`;
+    });
 
     // Redirect to pharmacy login
     window.location.href = "/pharmacyLogin/";
 }
+
 
 // Initialize the page
 

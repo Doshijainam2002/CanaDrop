@@ -725,12 +725,20 @@ async function refreshData() {
 }
 
 function handleLogout() {
-    // Remove driverId cookie
-    document.cookie = 'driverId=; path=/; expires=Thu, 01 Jan 1970 00:00:01 GMT;';
-    
-    // Redirect to login page
-    window.location.href = '/driverLogin/';
+    const cookiesToClear = [
+        "authToken",
+        "csrftoken",
+        "tokenExpiresAt",
+        "driverId"
+    ];
+
+    cookiesToClear.forEach(name => {
+        document.cookie = `${name}=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/;`;
+    });
+
+    window.location.href = "/driverLogin/";
 }
+
 
 
 async function loadDriverInfo() {

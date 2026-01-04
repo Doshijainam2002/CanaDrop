@@ -346,6 +346,13 @@
             return cookieValue;
         }
 
+        function getCSRFToken() {
+    return document.cookie
+        .split('; ')
+        .find(row => row.startsWith('csrftoken='))
+        ?.split('=')[1];
+}
+
 function renderProfilePhoto(url) {
     const profilePhoto = document.getElementById('profilePhoto');
     const photoPlaceholder = document.getElementById('photoPlaceholder');
@@ -515,6 +522,8 @@ async function loadDriverIdentity() {
             document.getElementById('photoInput').click();
         }
 
+
+
 async function handlePhotoUpload(event) {
     const file = event.target.files[0];
     if (!file) return;
@@ -552,12 +561,16 @@ async function handlePhotoUpload(event) {
 
         // Prepare form data
         const formData = new FormData();
-        formData.append('driverId', driverId);
+        // formData.append('driverId', driverId);
         formData.append('image', file);
 
-        // Upload to API
+        // Upload to API (✅ CSRF + credentials)
         const response = await fetch('/api/driver/upload-identity-image/', {
             method: 'POST',
+            headers: {
+                'X-CSRFToken': getCSRFToken()
+            },
+            credentials: 'include',
             body: formData
         });
 
@@ -582,12 +595,14 @@ async function handlePhotoUpload(event) {
     } catch (error) {
         console.error('Error uploading photo:', error);
         showNotification('Failed to upload photo: ' + error.message, 'error');
+
         // Reload to restore state
         setTimeout(() => {
             location.reload();
         }, 2000);
     }
 }
+
 
         function showNotification(message, type = 'info') {
             const notification = document.createElement('div');
@@ -617,9 +632,20 @@ async function handlePhotoUpload(event) {
         }
 
         function handleLogout() {
-            document.cookie = 'driverId=; path=/; expires=Thu, 01 Jan 1970 00:00:01 GMT;';
-            window.location.href = '/driverLogin/';
+            const cookiesToClear = [
+                "authToken",
+                "csrftoken",
+                "tokenExpiresAt",
+                "driverId"
+            ];
+
+            cookiesToClear.forEach(name => {
+                document.cookie = `${name}=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/;`;
+            });
+
+            window.location.href = "/driverLogin/";
         }
+
 
         // Mobile menu toggle
         const menuToggle = document.getElementById('menuToggle');

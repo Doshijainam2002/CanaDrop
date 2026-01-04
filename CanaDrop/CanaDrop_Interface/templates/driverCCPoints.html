@@ -252,6 +252,13 @@
             return null;
         }
 
+        function getCSRFToken() {
+            return document.cookie
+                .split('; ')
+                .find(row => row.startsWith('csrftoken='))
+                ?.split('=')[1];
+        }
+
         // Load CC Points data
         async function loadCCPoints() {
             try {
@@ -261,18 +268,25 @@
                     return;
                 }
 
-                const response = await fetch(`/api/driver/${driverId}/cc-points/`);
+                const response = await fetch(`/api/driver/${driverId}/cc-points/`, {
+                    method: "GET",
+                    headers: {
+                        "Accept": "application/json",
+                        "X-CSRFToken": getCSRFToken()
+                    },
+                    credentials: "include" // ✅ sends authToken + csrftoken cookies
+                });
+
                 if (!response.ok) {
                     throw new Error("Failed to fetch CC points");
                 }
 
                 const data = await response.json();
-                
+
                 if (data.success) {
-                    // Update all CC points displays
                     const ccPoints = data.cc_points;
                     const deliveredOrders = data.delivered_orders;
-                    
+
                     document.getElementById('headerCCPoints').textContent = ccPoints;
                     document.getElementById('totalCCPoints').textContent = ccPoints;
                     document.getElementById('deliveredOrders').textContent = deliveredOrders;
@@ -284,6 +298,7 @@
                 console.error("Error loading CC points:", error);
             }
         }
+
 
         // Load driver details
         async function loadDriverDetails() {
@@ -317,9 +332,20 @@
 
         // Logout function
         function handleLogout() {
-            document.cookie = "driverId=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/;";
+            const cookiesToClear = [
+                "authToken",
+                "csrftoken",
+                "tokenExpiresAt",
+                "driverId"
+            ];
+
+            cookiesToClear.forEach(name => {
+                document.cookie = `${name}=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/;`;
+            });
+
             window.location.href = "/driverLogin/";
         }
+
 
         // Initialize on page load
         document.addEventListener("DOMContentLoaded", function() {

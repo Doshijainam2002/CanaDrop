@@ -540,89 +540,26 @@
         }
 
 
-        // function acceptDelivery(orderId) {
-        //     const driverId = getCookie('driverId');
-            
-        //     if (!driverId) {
-        //         alert('Driver ID not found. Please login again.');
-        //         return;
-        //     }
-
-        //     // Disable the button to prevent multiple clicks
-        //     const button = event.target;
-        //     const originalText = button.textContent;
-        //     button.disabled = true;
-        //     button.textContent = 'Processing...';
-        //     button.classList.add('opacity-50', 'cursor-not-allowed');
-
-        //     // Make API call to assign driver
-        //     fetch('/api/orders/assign-driver/', {
-        //         method: 'POST',
-        //         headers: {
-        //             'Content-Type': 'application/json',
-        //         },
-        //         body: JSON.stringify({
-        //             orderId: orderId,
-        //             driverId: parseInt(driverId)
-        //         })
-        //     })
-        //     .then(response => response.json())
-        //     .then(data => {
-        //         if (data.message) {
-        //             // Show success modal
-        //             document.getElementById('acceptModal').classList.remove('hidden');
-                    
-        //             // Remove the accepted delivery from the list with animation
-        //             const card = button.closest('.bg-slate-800');
-        //             card.style.transform = 'translateX(100%)';
-        //             card.style.opacity = '0';
-                    
-        //             setTimeout(() => {
-        //                 card.remove();
-                        
-        //                 // Check if no more deliveries
-        //                 const remainingCards = document.querySelectorAll('#deliveryCards .bg-slate-800');
-        //                 if (remainingCards.length === 0) {
-        //                     document.getElementById('noDeliveries').classList.remove('hidden');
-        //                 }
-        //             }, 300);
-
-        //             // Auto-close modal after 3 seconds
-        //             setTimeout(() => {
-        //                 closeAcceptModal();
-        //             }, 3000);
-                    
-        //         } else {
-        //             // Handle error
-        //             alert(data.error || 'Failed to accept delivery. Please try again.');
-        //             // Re-enable button
-        //             button.disabled = false;
-        //             button.textContent = originalText;
-        //             button.classList.remove('opacity-50', 'cursor-not-allowed');
-        //         }
-        //     })
-        //     .catch(error => {
-        //         console.error('Error accepting delivery:', error);
-        //         alert('Failed to accept delivery. Please try again.');
-        //         // Re-enable button
-        //         button.disabled = false;
-        //         button.textContent = originalText;
-        //         button.classList.remove('opacity-50', 'cursor-not-allowed');
-        //     });
-        // }
 
         function closeAcceptModal() {
             document.getElementById('acceptModal').classList.add('hidden');
         }
 
         function handleLogout() {
-            // Remove both driverId and authToken cookies
-            document.cookie = 'driverId=; path=/; expires=Thu, 01 Jan 1970 00:00:01 GMT;';
-            document.cookie = 'authToken=; path=/; expires=Thu, 01 Jan 1970 00:00:01 GMT;';
-            
-            // Redirect to login page
-            window.location.href = '/driverLogin/';
+            const cookiesToClear = [
+                "authToken",
+                "csrftoken",
+                "tokenExpiresAt",
+                "driverId"
+            ];
+
+            cookiesToClear.forEach(name => {
+                document.cookie = `${name}=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/;`;
+            });
+
+            window.location.href = "/driverLogin/";
         }
+
 
 
         // Initialize dashboard on page load
@@ -630,51 +567,6 @@
             loadDeliveries();
         });
 
-// async function loadDriverInfo() {
-//     try {
-//         const driverId = getCookie("driverId");
-//         if (!driverId) {
-//             console.error("driverId not found in cookies");
-//             return;
-//         }
-
-//         const response = await fetch(`/api/driver/details/?driverId=${driverId}`);
-//         if (!response.ok) {
-//             throw new Error("Failed to fetch driver info");
-//         }
-
-//         const data = await response.json();
-
-//         // Update header text & profile circle
-//         const welcomeEl = document.getElementById("welcomeText");
-//         const profileEl = document.getElementById("profileInitial");
-        
-//         if (welcomeEl) {
-//             welcomeEl.textContent = `Welcome back, ${data.name} (${data.email})`;
-//         }
-//         if (profileEl) {
-//             profileEl.textContent = data.name.charAt(0).toUpperCase();
-//         }
-        
-//         // Also update sidebar profile
-//         const sidebarInitial = document.getElementById("profileInitialSidebar");
-//         const sidebarName = document.getElementById("driverNameSidebar");
-//         const sidebarEmail = document.getElementById("driverEmailSidebar");
-
-//         if (sidebarInitial) {
-//             sidebarInitial.textContent = data.name.charAt(0).toUpperCase();
-//         }
-//         if (sidebarName) {
-//             sidebarName.textContent = data.name;
-//         }
-//         if (sidebarEmail) {
-//             sidebarEmail.textContent = data.email;
-//         }
-
-//     } catch (error) {
-//         console.error("Error loading driver info:", error);
-//     }
-// }
 
 
 async function loadDriverInfo() {
