@@ -1093,22 +1093,33 @@ document.addEventListener("DOMContentLoaded", function() {
     });
 });
 // Logout function
-function logoutPharmacy() {
-    // ✅ Clear all auth/session cookies for pharmacy logout (except driverId)
-    const cookiesToClear = [
-        "authToken",
-        "pharmacyId",
-        "tokenExpiresAt",
-        "csrftoken"
-    ];
+        // Logout function
+        async function logoutPharmacy() {
+        try {
+            const res = await fetch("/api/pharmacy/logout/", {
+            method: "POST",
+            headers: {
+                "X-CSRFToken": getCSRFToken(),
+                "Accept": "application/json"
+            },
+            credentials: "include" // ✅ send HttpOnly authToken + csrftoken cookies
+            });
 
-    cookiesToClear.forEach(name => {
-        document.cookie = `${name}=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/;`;
-    });
+            // If token already expired/invalid, still proceed to clear client-side cookies + redirect
+            try { await res.json(); } catch (_) {}
+        } catch (e) {
+            console.error("Logout error:", e);
+        } finally {
+            // ✅ Clear client-side readable cookies (authToken is HttpOnly so JS cannot delete it)
+            const cookiesToClear = ["pharmacyId", "tokenExpiresAt", "csrftoken"];
+            cookiesToClear.forEach(name => {
+            document.cookie = `${name}=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/;`;
+            });
 
-    // Redirect to pharmacy login
-    window.location.href = "/pharmacyLogin/";
-}
+            // Redirect to pharmacy login
+            window.location.href = "/pharmacyLogin/?reason=expired";
+        }
+        }
 
 </script>
 </body>

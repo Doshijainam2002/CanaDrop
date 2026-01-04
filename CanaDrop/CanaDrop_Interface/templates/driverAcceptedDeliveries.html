@@ -1150,19 +1150,35 @@ function navigateTo(section) {
     return;
 }
 
-function handleLogout() {
-    const cookiesToClear = [
-        "authToken",
-        "csrftoken",
-        "tokenExpiresAt",
-        "driverId"
-    ];
+async function handleLogout() {
+  try {
+    const csrfToken = getCSRFToken(); // already implemented above
 
-    cookiesToClear.forEach(name => {
-        document.cookie = `${name}=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/;`;
+    // ✅ Call logout API so HttpOnly authToken is cleared server-side
+    await fetch("/api/driver/logout/", {
+      method: "POST",
+      headers: {
+        "X-CSRFToken": csrfToken,
+        "Accept": "application/json"
+      },
+      credentials: "include" // ✅ send cookies (authToken, csrftoken, etc.)
     });
+  } catch (e) {
+    console.error("Driver logout API failed (continuing local cleanup):", e);
+  }
 
-    window.location.href = "/driverLogin/";
+  // ✅ Clear JS-managed cookies (authToken won't clear if HttpOnly — API handles it)
+  const cookiesToClear = [
+    "driverId",
+    "tokenExpiresAt",
+    "csrftoken"
+  ];
+
+  cookiesToClear.forEach(name => {
+    document.cookie = `${name}=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/;`;
+  });
+
+  window.location.href = "/driverLogin/?reason=expired";
 }
 
 async function loadDriverInfo() {

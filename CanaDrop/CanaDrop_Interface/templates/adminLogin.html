@@ -97,40 +97,49 @@
   </div>
 
   <script>
-    function handleAdminLogin(event) {
-      event.preventDefault();
 
-      const email = document.getElementById("email").value.trim();
-      const password = document.getElementById("password").value.trim();
+            function getCSRFToken() {
+    return document.cookie
+        .split('; ')
+        .find(row => row.startsWith('csrftoken='))
+        ?.split('=')[1];
+}
 
-      if (!email || !password) {
-        showModal("error", "Please enter both email and password.");
-        return;
-      }
+function handleAdminLogin(event) {
+  event.preventDefault();
 
-      fetch("/api/admin/login/", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ email, password }),
-      })
-      .then(res => res.json())
-      .then(data => {
-        if (data.success) {
+  const email = document.getElementById("email").value.trim();
+  const password = document.getElementById("password").value.trim();
 
-          document.cookie = `adminId=${data.id}; Path=/; Max-Age=${24*60*60}; SameSite=Lax${location.protocol === 'https:' ? '; Secure' : ''}`;
-          showModal("success", "Welcome back, " + (data.first_name || "Admin") + "!");
-          setTimeout(() => {
-            closeModal();
-            window.location.href = "/adminDashboard/";
-          }, 3000);
-        } else {
-          showModal("error", data.message || "Invalid credentials");
-        }
-      })
-      .catch(() => {
-        showModal("error", "Network error. Please try again.");
-      });
+  if (!email || !password) {
+    showModal("error", "Please enter both email and password.");
+    return;
+  }
+
+  fetch("/api/admin/login/", {
+    method: "POST",
+    headers: { 
+      "Content-Type": "application/json", 
+      'X-CSRFToken': getCSRFToken() 
+    },
+    body: JSON.stringify({ email, password }),
+  })
+  .then(res => res.json())
+  .then(data => {
+    if (data.success) {      
+      showModal("success", "Welcome back, " + (data.first_name || "Admin") + "!");
+      setTimeout(() => {
+        closeModal();
+        window.location.href = "/adminDashboard/";
+      }, 3000);
+    } else {
+      showModal("error", data.message || "Invalid credentials");
     }
+  })
+  .catch(() => {
+    showModal("error", "Network error. Please try again.");
+  });
+}
 
     function showModal(type, message) {
       const modal = document.getElementById("modal");

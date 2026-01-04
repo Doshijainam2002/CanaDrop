@@ -94,37 +94,204 @@
       </header>
 
         <!-- Summary Cards -->
-        <section class="px-4 sm:px-6 py-6 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-6">
-        <!-- Total Pharmacies -->
-        <div class="bg-neutral-800/80 border border-neutral-700 p-6 rounded-xl shadow">
-            <p class="text-sm text-neutral-400">Total Pharmacies</p>
-            <p id="statTotalPharmacies" class="text-2xl font-bold text-white mt-1">—</p>
+<!-- Summary Cards -->
+<section class="px-4 sm:px-6 py-6">
+  <!-- Top Row: Main Metrics -->
+  <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 xl:grid-cols-7 gap-4 mb-4">
+    <!-- Total Pharmacies -->
+    <div class="bg-neutral-800/80 border border-neutral-700 p-4 rounded-xl shadow relative group">
+      <div class="flex items-center justify-between mb-2">
+        <p class="text-xs sm:text-sm text-neutral-400">Total Pharmacies</p>
+        <svg class="w-4 h-4 text-neutral-500 cursor-help" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/>
+        </svg>
+        <div class="absolute top-full mt-1 right-0 w-48 sm:w-56 bg-neutral-700 text-neutral-100 text-xs rounded-lg p-2 shadow-lg opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-200 z-10">
+          Total number of active pharmacy partners currently registered in the system
         </div>
+      </div>
+      <p id="statTotalPharmacies" class="text-xl sm:text-2xl font-bold text-white">—</p>
+    </div>
 
-        <!-- Total Drivers -->
-        <div class="bg-neutral-800/80 border border-neutral-700 p-6 rounded-xl shadow">
-            <p class="text-sm text-neutral-400">Total Drivers</p>
-            <p id="statTotalDrivers" class="text-2xl font-bold text-white mt-1">—</p>
+    <!-- Total Drivers -->
+    <div class="bg-neutral-800/80 border border-neutral-700 p-4 rounded-xl shadow relative group">
+      <div class="flex items-center justify-between mb-2">
+        <p class="text-xs sm:text-sm text-neutral-400">Total Drivers</p>
+        <svg class="w-4 h-4 text-neutral-500 cursor-help" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/>
+        </svg>
+        <div class="absolute top-full mt-1 right-0 w-48 sm:w-56 bg-neutral-700 text-neutral-100 text-xs rounded-lg p-2 shadow-lg opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-200 z-10">
+          Total number of active delivery drivers available for order fulfillment
         </div>
+      </div>
+      <p id="statTotalDrivers" class="text-xl sm:text-2xl font-bold text-white">—</p>
+    </div>
 
-        <!-- Active Orders -->
-        <div class="bg-neutral-800/80 border border-neutral-700 p-6 rounded-xl shadow">
-            <p class="text-sm text-neutral-400">Active Orders</p>
-            <p id="statActiveOrders" class="text-2xl font-bold text-white mt-1">—</p>
+    <!-- Active Orders -->
+    <div class="bg-neutral-800/80 border border-neutral-700 p-4 rounded-xl shadow relative group">
+      <div class="flex items-center justify-between mb-2">
+        <p class="text-xs sm:text-sm text-neutral-400">Active Orders</p>
+        <svg class="w-4 h-4 text-neutral-500 cursor-help" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/>
+        </svg>
+        <div class="absolute top-full mt-1 right-0 w-48 sm:w-56 bg-neutral-700 text-neutral-100 text-xs rounded-lg p-2 shadow-lg opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-200 z-10">
+          Orders currently in progress (pending, accepted, picked up, or in transit)
         </div>
+      </div>
+      <p id="statActiveOrders" class="text-xl sm:text-2xl font-bold text-white">—</p>
+    </div>
 
-        <!-- Monthly Revenue -->
-        <div class="bg-neutral-800/80 border border-neutral-700 p-6 rounded-xl shadow">
-            <p class="text-sm text-neutral-400">Revenue (This Month)</p>
-            <p id="statRevenue" class="text-2xl font-bold text-white mt-1">—</p>
+    <!-- Monthly Revenue -->
+    <div class="bg-neutral-800/80 border border-neutral-700 p-4 rounded-xl shadow relative group">
+      <div class="flex items-center justify-between mb-2">
+        <p class="text-xs sm:text-sm text-neutral-400">Revenue (Month)</p>
+        <svg class="w-4 h-4 text-neutral-500 cursor-help" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/>
+        </svg>
+        <div class="absolute top-full mt-1 right-0 w-48 sm:w-56 bg-neutral-700 text-neutral-100 text-xs rounded-lg p-2 shadow-lg opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-200 z-10">
+          Total revenue from delivered orders in the current calendar month (America/Toronto timezone)
         </div>
+      </div>
+      <p id="statRevenue" class="text-xl sm:text-2xl font-bold text-white">—</p>
+    </div>
 
-        <!-- Driver Payouts -->
-        <div class="bg-neutral-800/80 border border-neutral-700 p-6 rounded-xl shadow">
-            <p class="text-sm text-neutral-400">Driver Payouts (This Month)</p>
-            <p id="statDriverPayouts" class="text-2xl font-bold text-white mt-1">—</p>
+    <!-- Driver Payouts -->
+    <div class="bg-neutral-800/80 border border-neutral-700 p-4 rounded-xl shadow relative group">
+      <div class="flex items-center justify-between mb-2">
+        <p class="text-xs sm:text-sm text-neutral-400">Driver Payouts</p>
+        <svg class="w-4 h-4 text-neutral-500 cursor-help" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/>
+        </svg>
+        <div class="absolute top-full mt-1 right-0 w-48 sm:w-56 bg-neutral-700 text-neutral-100 text-xs rounded-lg p-2 shadow-lg opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-200 z-10">
+          Total amount paid to drivers via invoices for the current month
         </div>
-        </section>
+      </div>
+      <p id="statDriverPayouts" class="text-xl sm:text-2xl font-bold text-white">—</p>
+    </div>
+
+    <!-- Delayed Orders -->
+    <div class="bg-neutral-800/80 border border-neutral-700 p-4 rounded-xl shadow relative group">
+      <div class="flex items-center justify-between mb-2">
+        <p class="text-xs sm:text-sm text-neutral-400">Delayed Orders</p>
+        <svg class="w-4 h-4 text-neutral-500 cursor-help" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/>
+        </svg>
+        <div class="absolute top-full mt-1 right-0 w-48 sm:w-56 bg-neutral-700 text-neutral-100 text-xs rounded-lg p-2 shadow-lg opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-200 z-10">
+          Orders with pickup date before today that are still pending or accepted (require attention)
+        </div>
+      </div>
+      <p id="statDelayedOrders" class="text-xl sm:text-2xl font-bold text-red-400">—</p>
+    </div>
+
+    <!-- Today's Orders -->
+    <div class="bg-neutral-800/80 border border-neutral-700 p-4 rounded-xl shadow relative group">
+      <div class="flex items-center justify-between mb-2">
+        <p class="text-xs sm:text-sm text-neutral-400">Today's Orders</p>
+        <svg class="w-4 h-4 text-neutral-500 cursor-help" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/>
+        </svg>
+        <div class="absolute top-full mt-1 right-0 w-48 sm:w-56 bg-neutral-700 text-neutral-100 text-xs rounded-lg p-2 shadow-lg opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-200 z-10">
+          New orders created today (America/Toronto timezone)
+        </div>
+      </div>
+      <p id="statTodaysOrders" class="text-xl sm:text-2xl font-bold text-green-400">—</p>
+    </div>
+  </div>
+
+  <!-- Bottom Row: Order Status Breakdown -->
+  <div class="bg-neutral-800/80 border border-neutral-700 rounded-xl p-4">
+    <h3 class="text-sm font-semibold text-neutral-300 mb-3 flex items-center gap-2">
+      <svg class="w-5 h-5 text-orange-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"/>
+      </svg>
+      Order Status Breakdown (All Time)
+    </h3>
+    <div class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3">
+      <!-- Pending -->
+      <div class="bg-neutral-700/50 border border-yellow-600/30 p-3 rounded-lg relative group">
+        <div class="flex items-center justify-between mb-1">
+          <p class="text-xs text-neutral-400">Pending</p>
+          <svg class="w-3 h-3 text-neutral-500 cursor-help" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/>
+          </svg>
+          <div class="absolute top-full mt-1 right-0 w-40 bg-neutral-700 text-neutral-100 text-xs rounded-lg p-2 shadow-lg opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-200 z-10">
+            Orders awaiting driver assignment
+          </div>
+        </div>
+        <p id="statPending" class="text-lg font-bold text-yellow-400">—</p>
+      </div>
+
+      <!-- Accepted -->
+      <div class="bg-neutral-700/50 border border-blue-600/30 p-3 rounded-lg relative group">
+        <div class="flex items-center justify-between mb-1">
+          <p class="text-xs text-neutral-400">Accepted</p>
+          <svg class="w-3 h-3 text-neutral-500 cursor-help" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/>
+          </svg>
+          <div class="absolute top-full mt-1 right-0 w-40 bg-neutral-700 text-neutral-100 text-xs rounded-lg p-2 shadow-lg opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-200 z-10">
+            Assigned to driver, not yet picked up
+          </div>
+        </div>
+        <p id="statAccepted" class="text-lg font-bold text-blue-400">—</p>
+      </div>
+
+      <!-- Picked Up -->
+      <div class="bg-neutral-700/50 border border-purple-600/30 p-3 rounded-lg relative group">
+        <div class="flex items-center justify-between mb-1">
+          <p class="text-xs text-neutral-400">Picked Up</p>
+          <svg class="w-3 h-3 text-neutral-500 cursor-help" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/>
+          </svg>
+          <div class="absolute top-full mt-1 right-0 w-40 bg-neutral-700 text-neutral-100 text-xs rounded-lg p-2 shadow-lg opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-200 z-10">
+            Collected from pharmacy
+          </div>
+        </div>
+        <p id="statPickedUp" class="text-lg font-bold text-purple-400">—</p>
+      </div>
+
+      <!-- In Transit -->
+      <div class="bg-neutral-700/50 border border-amber-600/30 p-3 rounded-lg relative group">
+        <div class="flex items-center justify-between mb-1">
+          <p class="text-xs text-neutral-400">In Transit</p>
+          <svg class="w-3 h-3 text-neutral-500 cursor-help" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/>
+          </svg>
+          <div class="absolute top-full mt-1 right-0 w-40 bg-neutral-700 text-neutral-100 text-xs rounded-lg p-2 shadow-lg opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-200 z-10">
+            En route to customer
+          </div>
+        </div>
+        <p id="statInTransit" class="text-lg font-bold text-amber-400">—</p>
+      </div>
+
+      <!-- Delivered -->
+      <div class="bg-neutral-700/50 border border-green-600/30 p-3 rounded-lg relative group">
+        <div class="flex items-center justify-between mb-1">
+          <p class="text-xs text-neutral-400">Delivered</p>
+          <svg class="w-3 h-3 text-neutral-500 cursor-help" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/>
+          </svg>
+          <div class="absolute top-full mt-1 right-0 w-40 bg-neutral-700 text-neutral-100 text-xs rounded-lg p-2 shadow-lg opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-200 z-10">
+            Successfully completed deliveries
+          </div>
+        </div>
+        <p id="statDelivered" class="text-lg font-bold text-green-400">—</p>
+      </div>
+
+      <!-- Cancelled -->
+      <div class="bg-neutral-700/50 border border-red-600/30 p-3 rounded-lg relative group">
+        <div class="flex items-center justify-between mb-1">
+          <p class="text-xs text-neutral-400">Cancelled</p>
+          <svg class="w-3 h-3 text-neutral-500 cursor-help" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/>
+          </svg>
+          <div class="absolute top-full mt-1 right-0 w-40 bg-neutral-700 text-neutral-100 text-xs rounded-lg p-2 shadow-lg opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-200 z-10">
+            Orders that were cancelled
+          </div>
+        </div>
+        <p id="statCancelled" class="text-lg font-bold text-red-400">—</p>
+      </div>
+    </div>
+  </div>
+</section>
 
 
       <!-- 3-column insights section -->
@@ -238,7 +405,7 @@
         </div>
 
         <!-- Alert List -->
-        <ul id="alertsContainer" class="space-y-3 text-sm">
+        <ul id="alertsContainer" class="space-y-3 text-sm max-h-96 overflow-y-auto">
             <!-- Alerts will be dynamically populated -->
             <li class="text-neutral-400 text-center py-4">Loading alerts...</li>
         </ul>
@@ -302,42 +469,119 @@
       <script>
 
           // Formatters
+
+                    function getCSRFToken() {
+    return document.cookie
+        .split('; ')
+        .find(row => row.startsWith('csrftoken='))
+        ?.split('=')[1];
+}
+
   const fmtInt = n => new Intl.NumberFormat().format(Number(n || 0));
   const fmtCAD = n => new Intl.NumberFormat('en-CA', { style: 'currency', currency: 'CAD', maximumFractionDigits: 2 }).format(Number(n || 0));
 
-  async function loadAdminDashboardStats() {
-    const els = {
-      pharm: document.getElementById('statTotalPharmacies'),
-      drivers: document.getElementById('statTotalDrivers'),
-      active: document.getElementById('statActiveOrders'),
-      revenue: document.getElementById('statRevenue'),
-      payouts: document.getElementById('statDriverPayouts'),
-    };
+  // async function loadAdminDashboardStats() {
+  //   const els = {
+  //     pharm: document.getElementById('statTotalPharmacies'),
+  //     drivers: document.getElementById('statTotalDrivers'),
+  //     active: document.getElementById('statActiveOrders'),
+  //     revenue: document.getElementById('statRevenue'),
+  //     payouts: document.getElementById('statDriverPayouts'),
+  //   };
 
-    // quick skeleton placeholders
-    Object.values(els).forEach(el => el && (el.textContent = '…'));
+  //   // quick skeleton placeholders
+  //   Object.values(els).forEach(el => el && (el.textContent = '…'));
 
-    try {
-      const res = await fetch('/api/adminDashboardStats/', { method: 'GET' });
-      if (!res.ok) throw new Error('Network error');
-      const { success, metrics } = await res.json();
-      if (!success) throw new Error('API returned error');
+  //   try {
+  //     const res = await fetch('/api/adminDashboardStats/', { method: 'GET' });
+  //     if (!res.ok) throw new Error('Network error');
+  //     const { success, metrics } = await res.json();
+  //     if (!success) throw new Error('API returned error');
 
-      els.pharm.textContent   = fmtInt(metrics.total_pharmacies);
-      els.drivers.textContent = fmtInt(metrics.total_drivers);
-      els.active.textContent  = fmtInt(metrics.active_orders);
-      els.revenue.textContent = fmtCAD(metrics.revenue_this_month);
-      els.payouts.textContent = fmtCAD(metrics.driver_payout_this_month);
-    } catch (err) {
-      console.error('Failed to load dashboard stats:', err);
-      // graceful fallback
-      els.pharm.textContent   = '0';
-      els.drivers.textContent = '0';
-      els.active.textContent  = '0';
-      els.revenue.textContent = fmtCAD(0);
-      els.payouts.textContent = fmtCAD(0);
-    }
+  //     els.pharm.textContent   = fmtInt(metrics.total_pharmacies);
+  //     els.drivers.textContent = fmtInt(metrics.total_drivers);
+  //     els.active.textContent  = fmtInt(metrics.active_orders);
+  //     els.revenue.textContent = fmtCAD(metrics.revenue_this_month);
+  //     els.payouts.textContent = fmtCAD(metrics.driver_payout_this_month);
+  //   } catch (err) {
+  //     console.error('Failed to load dashboard stats:', err);
+  //     // graceful fallback
+  //     els.pharm.textContent   = '0';
+  //     els.drivers.textContent = '0';
+  //     els.active.textContent  = '0';
+  //     els.revenue.textContent = fmtCAD(0);
+  //     els.payouts.textContent = fmtCAD(0);
+  //   }
+  // }
+
+async function loadAdminDashboardStats() {
+  const els = {
+    pharm: document.getElementById('statTotalPharmacies'),
+    drivers: document.getElementById('statTotalDrivers'),
+    active: document.getElementById('statActiveOrders'),
+    revenue: document.getElementById('statRevenue'),
+    payouts: document.getElementById('statDriverPayouts'),
+    delayed: document.getElementById('statDelayedOrders'),
+    today: document.getElementById('statTodaysOrders'),
+    // Order status breakdown
+    pending: document.getElementById('statPending'),
+    accepted: document.getElementById('statAccepted'),
+    pickedUp: document.getElementById('statPickedUp'),
+    inTransit: document.getElementById('statInTransit'),
+    delivered: document.getElementById('statDelivered'),
+    cancelled: document.getElementById('statCancelled'),
+  };
+
+  // quick skeleton placeholders
+  Object.values(els).forEach(el => el && (el.textContent = '…'));
+
+  try {
+    const res = await fetch('/api/adminDashboardStats/', { 
+      method: 'GET',
+      credentials: 'include',
+      headers: {
+        'X-CSRFToken': getCSRFToken()
+      }
+    });
+    if (!res.ok) throw new Error('Network error');
+    const { success, metrics } = await res.json();
+    if (!success) throw new Error('API returned error');
+
+    // Top row metrics
+    els.pharm.textContent   = fmtInt(metrics.total_pharmacies);
+    els.drivers.textContent = fmtInt(metrics.total_drivers);
+    els.active.textContent  = fmtInt(
+      metrics.order_status_counts.pending + 
+      metrics.order_status_counts.accepted + 
+      metrics.order_status_counts.picked_up + 
+      metrics.order_status_counts.inTransit
+    );
+    els.revenue.textContent = fmtCAD(metrics.revenue_this_month);
+    els.payouts.textContent = fmtCAD(metrics.driver_payout_this_month);
+    els.delayed.textContent = fmtInt(metrics.delayed_orders);
+    els.today.textContent   = fmtInt(metrics.todays_orders);
+
+    // Order status breakdown
+    els.pending.textContent   = fmtInt(metrics.order_status_counts.pending);
+    els.accepted.textContent  = fmtInt(metrics.order_status_counts.accepted);
+    els.pickedUp.textContent  = fmtInt(metrics.order_status_counts.picked_up);
+    els.inTransit.textContent = fmtInt(metrics.order_status_counts.inTransit);
+    els.delivered.textContent = fmtInt(metrics.order_status_counts.delivered);
+    els.cancelled.textContent = fmtInt(metrics.order_status_counts.cancelled);
+  } catch (err) {
+    console.error('Failed to load dashboard stats:', err);
+    // graceful fallback - set all to 0
+    Object.values(els).forEach(el => {
+      if (el) {
+        if (el.id.includes('revenue') || el.id.includes('payouts')) {
+          el.textContent = fmtCAD(0);
+        } else {
+          el.textContent = '0';
+        }
+      }
+    });
   }
+}
 
   document.addEventListener('DOMContentLoaded', loadAdminDashboardStats);
 
@@ -366,6 +610,8 @@
       return `${d.getFullYear()}-${pad(d.getMonth()+1)}-${pad(d.getDate())} ${pad(d.getHours())}:${pad(d.getMinutes())}`;
     } catch { return ts; }
   }
+
+
 
   async function loadRecentActivity() {
     const listEl = document.getElementById("recentActivityList");
@@ -660,6 +906,28 @@ function renderRecentOrdersTable(allOrders) {
   });
 }
 
+// Helper function to render individual alert items
+function renderAlertItem(alert, color) {
+  const icon = alert.severity === 'critical' ? '🔥' : '⚠️';
+  const severityBadge = alert.severity === 'critical' 
+    ? `<span class="text-xs px-2 py-0.5 bg-red-500/20 text-red-400 rounded font-semibold">CRITICAL</span>`
+    : '';
+  
+  return `
+    <li class="flex items-start bg-neutral-800 border-l-4 border-${color}-500 p-3 rounded hover:bg-neutral-700/50 transition">
+      <span class="text-${color}-400 mr-2 flex-shrink-0 text-lg">${icon}</span>
+      <div class="flex-1 min-w-0">
+        <div class="flex items-center gap-2 mb-1 flex-wrap">
+          <p class="font-semibold text-neutral-200 text-sm">${esc(alert.type)}</p>
+          ${severityBadge}
+        </div>
+        <p class="text-xs text-neutral-300 break-words leading-relaxed">${esc(alert.message)}</p>
+        <p class="text-xs text-neutral-500 mt-1">${alert.timestamp_local ? new Date(alert.timestamp_local).toLocaleString() : ''}</p>
+      </div>
+    </li>
+  `;
+}
+
 
 async function loadAlerts() {
   const container = document.getElementById("alertsContainer");
@@ -672,63 +940,60 @@ async function loadAlerts() {
   try {
     container.innerHTML = '<li class="text-neutral-400 text-center py-4">Loading...</li>';
 
-    const response = await fetch("/api/adminAlerts/");
+    // ✅ ADD CSRF TOKEN AND CREDENTIALS
+    const response = await fetch("/api/adminAlerts/", {
+      method: "GET",
+      credentials: "include",
+      headers: {
+        'X-CSRFToken': getCSRFToken()
+      }
+    });
     const data = await response.json();
 
     if (!data.success) throw new Error("Failed to fetch alerts");
 
-    // Update summary counts
-    summary.operational.textContent = data.categories.operational;
-    summary.financial.textContent = data.categories.financial;
-    summary.support.textContent = data.categories.support;
+    // ✅ UPDATE TO USE NEW API STRUCTURE
+    summary.operational.textContent = data.summary.totals_by_category.operational;
+    summary.financial.textContent = data.summary.totals_by_category.financial;
+    summary.support.textContent = data.summary.totals_by_category.support;
 
-    const alerts = [
-      ...data.alerts.operational.map((a) => ({ ...a, category: "operational" })),
-      ...data.alerts.financial.map((a) => ({ ...a, category: "financial" })),
-      ...data.alerts.support.map((a) => ({ ...a, category: "support" })),
-    ];
+    // ✅ BUILD CATEGORIZED HTML - NO LIMITS, SHOW ALL
+    let html = '';
 
-    if (!alerts.length) {
-      container.innerHTML =
-        '<li class="text-neutral-400 text-center py-4">✅ All systems normal — no active alerts.</li>';
-      return;
+    // Operational Alerts - ALL
+    if (data.alerts.operational.length > 0) {
+      html += '<li class="mb-4"><h4 class="text-xs font-semibold text-yellow-400 uppercase mb-2 flex items-center gap-1.5"><span class="w-2 h-2 bg-yellow-400 rounded-full"></span>Operational Alerts</h4><ul class="space-y-2">';
+      data.alerts.operational.forEach(a => {
+        html += renderAlertItem(a, 'yellow');
+      });
+      html += '</ul></li>';
     }
 
-    // Render alerts list
-    container.innerHTML = alerts
-      .map((a) => {
-        let color = "yellow";
-        let icon = "⚠";
-        if (a.category === "financial") {
-          color = "red";
-          icon = "💰";
-        } else if (a.category === "support") {
-          color = "orange";
-          icon = "📨";
-        }
+    // Financial Alerts - ALL
+    if (data.alerts.financial.length > 0) {
+      html += '<li class="mb-4"><h4 class="text-xs font-semibold text-red-400 uppercase mb-2 flex items-center gap-1.5"><span class="w-2 h-2 bg-red-400 rounded-full"></span>Financial Alerts</h4><ul class="space-y-2">';
+      data.alerts.financial.forEach(a => {
+        html += renderAlertItem(a, 'red');
+      });
+      html += '</ul></li>';
+    }
 
-        return `
-          <li class="flex items-start bg-neutral-800 border-l-4 border-${color}-500 p-3 rounded hover:bg-neutral-700/50 transition">
-            <span class="text-${color}-400 mr-2">${icon}</span>
-            <div>
-              <p class="text-neutral-200">
-                <strong>${a.type}</strong> — ${a.message}
-              </p>
-              <p class="text-xs text-neutral-500 mt-1">${new Date(
-                a.timestamp
-              ).toLocaleString()}</p>
-            </div>
-          </li>
-        `;
-      })
-      .join("");
+    // Support Alerts - ALL
+    if (data.alerts.support.length > 0) {
+      html += '<li class="mb-4"><h4 class="text-xs font-semibold text-orange-400 uppercase mb-2 flex items-center gap-1.5"><span class="w-2 h-2 bg-orange-400 rounded-full"></span>Support Alerts</h4><ul class="space-y-2">';
+      data.alerts.support.forEach(a => {
+        html += renderAlertItem(a, 'orange');
+      });
+      html += '</ul></li>';
+    }
+
+    container.innerHTML = html || '<li class="text-neutral-400 text-center py-4">✅ All systems normal — no active alerts.</li>';
   } catch (error) {
     console.error(error);
     container.innerHTML =
       '<li class="text-red-400 text-center py-4">❌ Failed to load alerts.</li>';
   }
 }
-
 // 🧭 Refresh Button
 document.getElementById("refreshAlerts").addEventListener("click", loadAlerts);
 

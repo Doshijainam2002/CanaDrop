@@ -49,7 +49,7 @@ from django.core.mail import EmailMessage, EmailMultiAlternatives, get_connectio
 from django.core.signing import BadSignature, SignatureExpired, dumps, loads
 from django.core.validators import validate_email
 from django.db import IntegrityError, transaction, connection
-from django.db.models import Count, Sum, Q
+from django.db.models import Count, Sum, Q, Exists, OuterRef
 from django.http import (
     HttpRequest, HttpResponse, HttpResponseBadRequest,
     HttpResponseNotAllowed, JsonResponse
@@ -223,27 +223,35 @@ def driverCCPointsView(request):
 # Admin Page Logins
 # ----------------------------
 
+@ensure_csrf_cookie
 def adminLoginView(request):
     return render(request, 'adminLogin.html')
 
+@admin_auth_required
 def adminDashboardView(request):
     return render(request, 'adminDashboard.html')
 
+@admin_auth_required
 def adminOrdersView(request):
     return render(request, 'adminOrders.html')
 
+@admin_auth_required
 def adminPharmaciesView(request):
     return render(request, 'adminPharmacies.html')
 
+@admin_auth_required
 def adminOrdersView(request):
     return render(request, 'adminOrders.html')
 
+@admin_auth_required
 def adminInvoicesView(request):
     return render(request, 'adminInvoices.html')
 
+@admin_auth_required
 def adminSupportView(request):
     return render(request, 'adminSupport.html')
 
+@admin_auth_required
 def adminDriversView(request):
     return render(request, 'adminDrivers.html')
 
@@ -335,6 +343,19 @@ def pharmacy_login_api(request):
         samesite="Lax",                # 🛡 CSRF protection
         path="/",
     )
+
+    return response
+
+@csrf_protect
+@require_http_methods(["POST"])
+@pharmacy_auth_required
+def pharmacy_logout_api(request):
+    response = JsonResponse({"success": True})
+
+    # Clear server-managed/session cookies
+    response.delete_cookie("authToken", path="/")
+    response.delete_cookie("pharmacyId", path="/")
+    response.delete_cookie("tokenExpiresAt", path="/")
 
     return response
 
@@ -1671,6 +1692,19 @@ def driver_login(request):
         samesite="Lax",                        # 🛡 CSRF protection
         path="/",
     )
+
+    return response
+
+@csrf_protect
+@require_http_methods(["POST"])
+@driver_auth_required
+def driver_logout_api(request):
+    response = JsonResponse({"success": True})
+
+    # Clear server-managed/session cookies
+    response.delete_cookie("authToken", path="/")
+    response.delete_cookie("driverId", path="/")
+    response.delete_cookie("tokenExpiresAt", path="/")
 
     return response
 
@@ -9230,123 +9264,266 @@ def optimize_route_api(request):
         }, status=500)
 
 
-@csrf_exempt
-@require_http_methods(["POST"])
+@require_POST
+@csrf_protect
 def admin_login(request):
+    """
+    Authenticates an admin user and sets JWT in an HttpOnly secure cookie.
+    """
+
+    # 1️⃣ Parse request body
     try:
-        # Parse JSON
-        try:
-            data = json.loads(request.body or b"{}")
-        except json.JSONDecodeError:
-            return JsonResponse(
-                {"success": False, "message": "Invalid JSON format"},
-                status=400,
+        data = json.loads(request.body)
+        email = data.get("email")
+        password = data.get("password")
+    except Exception:
+        return JsonResponse(
+            {"success": False, "message": "Invalid JSON"},
+            status=400
+        )
+
+    if not email or not password:
+        return JsonResponse(
+            {"success": False, "message": "Email and password required"},
+            status=400
+        )
+
+    # 2️⃣ Fetch admin (case-insensitive email match)
+    try:
+        admin = AdminUser.objects.get(email__iexact=email.strip())
+    except AdminUser.DoesNotExist:
+        return JsonResponse(
+            {"success": False, "message": "Invalid credentials"},
+            status=401
+        )
+
+    # 3️⃣ Verify password
+    password_valid = False
+    if admin.password:
+        if admin.password.startswith("pbkdf2_"):
+            password_valid = check_password(password, admin.password)
+        else:
+            # Legacy/plain-text fallback
+            password_valid = (admin.password == password)
+
+    if not password_valid:
+        return JsonResponse(
+            {"success": False, "message": "Invalid credentials"},
+            status=401
+        )
+
+    # 4️⃣ Create JWT payload
+    issued_at = timezone.now()  # UTC
+    expires_at = issued_at + timedelta(hours=settings.JWT_EXPIRY_HOURS)
+
+    payload = {
+        "admin_id": admin.id,
+        "email": admin.email,
+        "iat": int(issued_at.timestamp()),
+        "exp": int(expires_at.timestamp()),
+    }
+
+    token = jwt.encode(
+        payload,
+        settings.JWT_SECRET_KEY,
+        algorithm=settings.JWT_ALGORITHM
+    )
+
+    # 5️⃣ Build response (NO token in JSON)
+    response = JsonResponse({
+        "success": True,
+        "id": admin.id,
+        "message": "Login successful",
+        "first_name": admin.first_name,
+        "last_name": admin.last_name,
+        "email": admin.email,
+        "expiresAt": timezone.localtime(
+            expires_at,
+            settings.USER_TIMEZONE
+        ).isoformat(),
+    })
+
+    # 6️⃣ Set secure HttpOnly cookie (authToken)
+    response.set_cookie(
+        key="authToken",
+        value=token,
+        max_age=settings.JWT_EXPIRY_HOURS * 60 * 60,
+        httponly=True,                 # 🔐 JS cannot read
+        secure=settings.SECURE_SSL_REDIRECT,  # 🔐 HTTPS only
+        samesite="Lax",                # 🛡 CSRF protection
+        path="/",
+    )
+
+    # 7️⃣ Set adminId cookie (readable by JS for convenience)
+    response.set_cookie(
+        key="adminId",
+        value=str(admin.id),
+        max_age=settings.JWT_EXPIRY_HOURS * 60 * 60,  # ⚠️ Same expiration as authToken
+        httponly=False,                # ✅ JS can read this
+        secure=settings.SECURE_SSL_REDIRECT,  # 🔐 HTTPS only
+        samesite="Lax",                # 🛡 CSRF protection
+        path="/",
+    )
+
+    return response
+
+
+
+# @csrf_exempt
+# def admin_dashboard_stats(request):
+#     try:
+#         # 1️⃣ Total active pharmacies
+#         total_pharmacies = Pharmacy.objects.filter(active=True).count()
+
+#         # 2️⃣ Total active drivers
+#         total_drivers = Driver.objects.filter(active=True).count()
+
+#         # 3️⃣ Active orders: pending / accepted / inTransit / picked_up
+#         active_statuses = ['pending', 'accepted', 'inTransit', 'picked_up']
+#         active_orders = DeliveryOrder.objects.filter(status__in=active_statuses).count()
+
+#         # 4️⃣ Revenue this month (sum of rate for delivered)
+#         today = date.today()
+#         revenue_this_month = (
+#             DeliveryOrder.objects.filter(
+#                 status='delivered',
+#                 created_at__year=today.year,
+#                 created_at__month=today.month
+#             ).aggregate(total=Sum('rate'))['total'] or 0
+#         )
+
+#         # 5️⃣ Driver payouts this month
+#         # include invoices where start_date OR end_date is in current month
+#         driver_payout_this_month = (
+#             DriverInvoice.objects.filter(
+#                 Q(start_date__year=today.year, start_date__month=today.month)
+#                 | Q(end_date__year=today.year, end_date__month=today.month)
+#             ).aggregate(total=Sum('total_amount'))['total'] or 0
+#         )
+
+#         data = {
+#             "success": True,
+#             "metrics": {
+#                 "total_pharmacies": total_pharmacies,
+#                 "total_drivers": total_drivers,
+#                 "active_orders": active_orders,
+#                 "revenue_this_month": float(revenue_this_month),
+#                 "driver_payout_this_month": float(driver_payout_this_month),
+#             }
+#         }
+#         return JsonResponse(data, status=200)
+
+#     except Exception as e:
+#         return JsonResponse({"success": False, "error": str(e)}, status=500)
+
+@csrf_protect
+@admin_auth_required
+@require_http_methods(["GET"])
+def admin_dashboard_stats(request):
+    try:
+        # 🌍 Timezone setup
+        user_tz = settings.USER_TIMEZONE  # America/Toronto
+        now_utc = timezone.now()
+        now_local = now_utc.astimezone(user_tz)
+
+        today_local_date = now_local.date()
+
+        # 📅 Local month boundaries
+        month_start_local = now_local.replace(
+            day=1, hour=0, minute=0, second=0, microsecond=0
+        )
+
+        if month_start_local.month == 12:
+            next_month_start_local = month_start_local.replace(
+                year=month_start_local.year + 1, month=1
+            )
+        else:
+            next_month_start_local = month_start_local.replace(
+                month=month_start_local.month + 1
             )
 
-        email = (data.get("email") or "").strip()
-        password = (data.get("password") or "").strip()
+        # Convert local boundaries → UTC for DB queries
+        month_start_utc = month_start_local.astimezone(pytz.UTC)
+        next_month_start_utc = next_month_start_local.astimezone(pytz.UTC)
 
-        # Basic validations
-        if not email or not password:
-            return JsonResponse(
-                {"success": False, "message": "Email and password are required"},
-                status=400,
-            )
+        # 1️⃣ Active pharmacies & drivers
+        total_pharmacies = Pharmacy.objects.filter(active=True).count()
+        total_drivers = Driver.objects.filter(active=True).count()
 
-        # Fetch admin (case-insensitive email match)
-        admin = AdminUser.objects.filter(email__iexact=email).first()
-        if not admin:
-            return JsonResponse(
-                {"success": False, "message": "Invalid credentials"},
-                status=401,
-            )
+        # 2️⃣ Order counts by status (REAL-TIME)
+        order_status_counts = {
+            "pending": DeliveryOrder.objects.filter(status="pending").count(),
+            "accepted": DeliveryOrder.objects.filter(status="accepted").count(),
+            "inTransit": DeliveryOrder.objects.filter(status="inTransit").count(),
+            "picked_up": DeliveryOrder.objects.filter(status="picked_up").count(),
+            "delivered": DeliveryOrder.objects.filter(status="delivered").count(),
+            "cancelled": DeliveryOrder.objects.filter(status="cancelled").count(),
+        }
 
-        # Validate password (hashed or fallback to plain-text compare if ever stored that way)
-        password_valid = False
-        if admin.password:
-            if admin.password.startswith("pbkdf2_"):
-                password_valid = check_password(password, admin.password)
-            else:
-                # Legacy/plain-text fallback
-                password_valid = (admin.password == password)
+        # 3️⃣ Gross revenue this month (DELIVERED only, LOCAL month window)
+        revenue_this_month = (
+            DeliveryOrder.objects.filter(
+                status="delivered",
+                delivered_at__gte=month_start_utc,
+                delivered_at__lt=next_month_start_utc,
+            ).aggregate(total=Sum("rate"))["total"] or 0
+        )
 
-        if not password_valid:
-            return JsonResponse(
-                {"success": False, "message": "Invalid credentials"},
-                status=401,
-            )
+        # 4️⃣ Driver payouts this month (invoice-based – correct as-is)
+        driver_payout_this_month = (
+            DriverInvoice.objects.filter(
+                Q(start_date__year=now_local.year, start_date__month=now_local.month)
+                | Q(end_date__year=now_local.year, end_date__month=now_local.month)
+            ).aggregate(total=Sum("total_amount"))["total"] or 0
+        )
 
-        # Success
+        # 5️⃣ Delayed orders
+        # pickup_day < today (LOCAL) AND not picked up yet
+        delayed_orders_count = DeliveryOrder.objects.filter(
+            pickup_day__lt=today_local_date,
+            status__in=["pending", "accepted"]
+        ).count()
+
+        # 6️⃣ Today's orders (created today in LOCAL time)
+        today_start_local = now_local.replace(
+            hour=0, minute=0, second=0, microsecond=0
+        )
+        today_end_local = today_start_local + timedelta(days=1)
+
+        today_start_utc = today_start_local.astimezone(pytz.UTC)
+        today_end_utc = today_end_local.astimezone(pytz.UTC)
+
+        todays_orders_count = DeliveryOrder.objects.filter(
+            created_at__gte=today_start_utc,
+            created_at__lt=today_end_utc
+        ).count()
+
+        # ✅ Response
         return JsonResponse(
             {
                 "success": True,
-                "id": admin.id,
-                "message": "Login successful",
-                # Optional convenience fields:
-                "first_name": admin.first_name,
-                "last_name": admin.last_name,
-                "email": admin.email,
+                "timezone": str(user_tz),
+                "metrics": {
+                    "total_pharmacies": total_pharmacies,
+                    "total_drivers": total_drivers,
+
+                    "order_status_counts": order_status_counts,
+
+                    "revenue_this_month": float(revenue_this_month),
+                    "driver_payout_this_month": float(driver_payout_this_month),
+
+                    "delayed_orders": delayed_orders_count,
+                    "todays_orders": todays_orders_count,
+                }
             },
-            status=200,
+            status=200
         )
-
-    except Exception:
-        # Avoid leaking internals
-        return JsonResponse(
-            {"success": False, "message": "An error occurred during login"},
-            status=500,
-        )
-
-
-
-@csrf_exempt
-def admin_dashboard_stats(request):
-    try:
-        # 1️⃣ Total active pharmacies
-        total_pharmacies = Pharmacy.objects.filter(active=True).count()
-
-        # 2️⃣ Total active drivers
-        total_drivers = Driver.objects.filter(active=True).count()
-
-        # 3️⃣ Active orders: pending / accepted / inTransit / picked_up
-        active_statuses = ['pending', 'accepted', 'inTransit', 'picked_up']
-        active_orders = DeliveryOrder.objects.filter(status__in=active_statuses).count()
-
-        # 4️⃣ Revenue this month (sum of rate for delivered)
-        today = date.today()
-        revenue_this_month = (
-            DeliveryOrder.objects.filter(
-                status='delivered',
-                created_at__year=today.year,
-                created_at__month=today.month
-            ).aggregate(total=Sum('rate'))['total'] or 0
-        )
-
-        # 5️⃣ Driver payouts this month
-        # include invoices where start_date OR end_date is in current month
-        driver_payout_this_month = (
-            DriverInvoice.objects.filter(
-                Q(start_date__year=today.year, start_date__month=today.month)
-                | Q(end_date__year=today.year, end_date__month=today.month)
-            ).aggregate(total=Sum('total_amount'))['total'] or 0
-        )
-
-        data = {
-            "success": True,
-            "metrics": {
-                "total_pharmacies": total_pharmacies,
-                "total_drivers": total_drivers,
-                "active_orders": active_orders,
-                "revenue_this_month": float(revenue_this_month),
-                "driver_payout_this_month": float(driver_payout_this_month),
-            }
-        }
-        return JsonResponse(data, status=200)
 
     except Exception as e:
-        return JsonResponse({"success": False, "error": str(e)}, status=500)
-
-
+        return JsonResponse(
+            {"success": False, "error": str(e)},
+            status=500
+        )
 
 
 
@@ -9531,312 +9708,756 @@ def order_tracking_overview(request):
 
 
 
-@csrf_exempt
+# @csrf_exempt
+# def admin_alerts(request):
+#     """
+#     Incremental alert building with error isolation
+#     """
+#     alerts = {
+#         "operational": [],
+#         "financial": [],
+#         "support": []
+#     }
+    
+#     errors = []
+#     current_time = timezone.now()
+    
+#     # ----------------------------
+#     # 1️⃣ OPERATIONAL ALERTS
+#     # ----------------------------
+    
+#     # Test 1: Unassigned orders
+#     try:
+#         from canadrop_interface.models import DeliveryOrder
+        
+#         unassigned_orders = DeliveryOrder.objects.filter(
+#             driver__isnull=True,
+#             status__in=["pending", "accepted"]
+#         )[:20]
+        
+#         for order in unassigned_orders:
+#             pharmacy_name = "Unknown"
+#             try:
+#                 if order.pharmacy:
+#                     pharmacy_name = order.pharmacy.name
+#             except:
+#                 pass
+                
+#             alerts["operational"].append({
+#                 "type": "Unassigned Order",
+#                 "message": f"Order #{order.id} from {pharmacy_name} has no assigned driver.",
+#                 "order_id": order.id,
+#                 "timestamp": str(order.created_at) if order.created_at else ""
+#             })
+#     except Exception as e:
+#         errors.append(f"Unassigned orders error: {str(e)}")
+    
+#     # Test 2: Stuck orders
+#     try:
+#         from canadrop_interface.models import DeliveryOrder
+        
+#         two_hours_ago = current_time - timedelta(hours=2)
+#         stuck_orders = DeliveryOrder.objects.filter(
+#             status__in=["inTransit", "picked_up"],
+#             updated_at__lt=two_hours_ago
+#         )[:20]
+        
+#         for order in stuck_orders:
+#             pharmacy_name = "Unknown"
+#             try:
+#                 if order.pharmacy:
+#                     pharmacy_name = order.pharmacy.name
+#             except:
+#                 pass
+                
+#             alerts["operational"].append({
+#                 "type": "Stuck Order",
+#                 "message": f"Order #{order.id} by {pharmacy_name} is '{order.status}' for over 2 hours.",
+#                 "order_id": order.id,
+#                 "timestamp": str(order.updated_at) if order.updated_at else ""
+#             })
+#     except Exception as e:
+#         errors.append(f"Stuck orders error: {str(e)}")
+    
+#     # Test 3: Inactive drivers with orders
+#     try:
+#         from canadrop_interface.models import DeliveryOrder
+        
+#         orders_with_drivers = DeliveryOrder.objects.filter(
+#             driver__isnull=False,
+#             status__in=["pending", "accepted", "inTransit"]
+#         )[:50]
+        
+#         for order in orders_with_drivers:
+#             try:
+#                 if order.driver and hasattr(order.driver, 'active') and order.driver.active == False:
+#                     alerts["operational"].append({
+#                         "type": "Inactive Driver Assigned",
+#                         "message": f"Inactive driver {order.driver.name} still has order #{order.id}.",
+#                         "order_id": order.id,
+#                         "timestamp": str(order.updated_at) if order.updated_at else ""
+#                     })
+#             except:
+#                 pass
+#     except Exception as e:
+#         errors.append(f"Inactive driver orders error: {str(e)}")
+    
+#     # Test 4: Inactive pharmacy orders
+#     try:
+#         from canadrop_interface.models import DeliveryOrder
+        
+#         three_days_ago = current_time - timedelta(days=3)
+#         recent_orders = DeliveryOrder.objects.filter(
+#             pharmacy__isnull=False,
+#             created_at__gte=three_days_ago
+#         )[:50]
+        
+#         for order in recent_orders:
+#             try:
+#                 if order.pharmacy and hasattr(order.pharmacy, 'active') and order.pharmacy.active == False:
+#                     alerts["operational"].append({
+#                         "type": "Inactive Pharmacy Order",
+#                         "message": f"Inactive pharmacy {order.pharmacy.name} created order #{order.id}.",
+#                         "order_id": order.id,
+#                         "timestamp": str(order.created_at) if order.created_at else ""
+#                     })
+#             except:
+#                 pass
+#     except Exception as e:
+#         errors.append(f"Inactive pharmacy orders error: {str(e)}")
+    
+#     # ----------------------------
+#     # 2️⃣ FINANCIAL ALERTS
+#     # ----------------------------
+    
+#     # Test 5: Overdue invoices
+#     try:
+#         from canadrop_interface.models import Invoice
+        
+#         overdue_invoices = Invoice.objects.filter(status="past_due")[:20]
+        
+#         for inv in overdue_invoices:
+#             pharmacy_name = "Unknown"
+#             try:
+#                 if inv.pharmacy:
+#                     pharmacy_name = inv.pharmacy.name
+#             except:
+#                 pass
+            
+#             amount = 0
+#             try:
+#                 amount = float(inv.total_amount)
+#             except:
+#                 pass
+                
+#             alerts["financial"].append({
+#                 "type": "Overdue Invoice",
+#                 "message": f"Invoice #{inv.id} for {pharmacy_name} is past due (${amount:.2f}).",
+#                 "invoice_id": inv.id,
+#                 "timestamp": str(inv.due_date) if inv.due_date else ""
+#             })
+#     except Exception as e:
+#         errors.append(f"Overdue invoices error: {str(e)}")
+    
+#     # Test 6: Pending driver payouts
+#     try:
+#         from canadrop_interface.models import DriverInvoice
+        
+#         today = current_time.date()
+#         pending_driver_invoices = DriverInvoice.objects.filter(
+#             status="generated",
+#             due_date__lt=today
+#         )[:20]
+        
+#         for inv in pending_driver_invoices:
+#             driver_name = "Unknown"
+#             try:
+#                 if inv.driver:
+#                     driver_name = inv.driver.name
+#             except:
+#                 pass
+            
+#             amount = 0
+#             try:
+#                 amount = float(inv.total_amount)
+#             except:
+#                 pass
+                
+#             alerts["financial"].append({
+#                 "type": "Pending Driver Payout",
+#                 "message": f"Driver {driver_name}'s invoice #{inv.id} is pending (${amount:.2f}).",
+#                 "invoice_id": inv.id,
+#                 "timestamp": str(inv.due_date) if inv.due_date else ""
+#             })
+#     except Exception as e:
+#         errors.append(f"Pending driver invoices error: {str(e)}")
+    
+#     # ----------------------------
+#     # 3️⃣ SUPPORT ALERTS
+#     # ----------------------------
+    
+#     # Test 7: Old pending tickets
+#     try:
+#         from canadrop_interface.models import ContactAdmin
+        
+#         forty_eight_hours_ago = current_time - timedelta(hours=48)
+#         old_pending_tickets = ContactAdmin.objects.filter(
+#             status="pending",
+#             created_at__lt=forty_eight_hours_ago
+#         )[:20]
+        
+#         subject_map = {
+#             'account_creation': 'Account Creation Issue',
+#             'login_problem': 'Login / Authentication Problem',
+#             'password_reset': 'Password Reset Issue',
+#             'profile_update': 'Profile / Information Update Issue',
+#             'order_placement': 'Order Placement Issue',
+#             'order_cancellation': 'Order Cancellation Issue',
+#             'order_tracking': 'Order Tracking / Status Issue',
+#             'order_payment': 'Order Payment / Rate Issue',
+#             'pickup_issue': 'Pickup Issue by Driver',
+#             'delivery_delay': 'Delivery Delay',
+#             'delivery_incorrect': 'Incorrect Delivery / Item Issue',
+#             'driver_unavailable': 'Driver Unavailable / Assignment Issue',
+#             'invoice_generated': 'Invoice Generated Issue',
+#             'invoice_payment': 'Invoice Payment / Stripe Issue',
+#             'driver_invoice': 'Driver Invoice / Payment Issue',
+#             'technical_bug': 'Technical / App Bug',
+#             'cloud_storage': 'Cloud / Image Upload Issue',
+#             'notification': 'Notification / Alert Issue',
+#             'feedback': 'Feedback / Suggestion',
+#             'other': 'Other',
+#         }
+        
+#         for ticket in old_pending_tickets:
+#             sender = "Unknown"
+#             try:
+#                 if ticket.pharmacy:
+#                     sender = ticket.pharmacy.name
+#                 elif ticket.driver:
+#                     sender = ticket.driver.name
+#             except:
+#                 pass
+            
+#             subject_display = subject_map.get(ticket.subject, ticket.subject)
+#             if ticket.subject == 'other' and ticket.other_subject:
+#                 subject_display = ticket.other_subject
+                
+#             alerts["support"].append({
+#                 "type": "Old Pending Ticket",
+#                 "message": f"Ticket '{subject_display}' from {sender} pending > 48 hours.",
+#                 "ticket_id": ticket.id,
+#                 "timestamp": str(ticket.created_at) if ticket.created_at else ""
+#             })
+#     except Exception as e:
+#         errors.append(f"Old pending tickets error: {str(e)}")
+    
+#     # Test 8: Unresponded tickets
+#     try:
+#         from canadrop_interface.models import ContactAdmin
+        
+#         in_progress_tickets = ContactAdmin.objects.filter(status="in_progress")[:50]
+        
+#         subject_map = {
+#             'account_creation': 'Account Creation Issue',
+#             'login_problem': 'Login / Authentication Problem',
+#             'password_reset': 'Password Reset Issue',
+#             'profile_update': 'Profile / Information Update Issue',
+#             'order_placement': 'Order Placement Issue',
+#             'order_cancellation': 'Order Cancellation Issue',
+#             'order_tracking': 'Order Tracking / Status Issue',
+#             'order_payment': 'Order Payment / Rate Issue',
+#             'pickup_issue': 'Pickup Issue by Driver',
+#             'delivery_delay': 'Delivery Delay',
+#             'delivery_incorrect': 'Incorrect Delivery / Item Issue',
+#             'driver_unavailable': 'Driver Unavailable / Assignment Issue',
+#             'invoice_generated': 'Invoice Generated Issue',
+#             'invoice_payment': 'Invoice Payment / Stripe Issue',
+#             'driver_invoice': 'Driver Invoice / Payment Issue',
+#             'technical_bug': 'Technical / App Bug',
+#             'cloud_storage': 'Cloud / Image Upload Issue',
+#             'notification': 'Notification / Alert Issue',
+#             'feedback': 'Feedback / Suggestion',
+#             'other': 'Other',
+#         }
+        
+#         for ticket in in_progress_tickets:
+#             try:
+#                 if not ticket.admin_response or ticket.admin_response.strip() == "":
+#                     subject_display = subject_map.get(ticket.subject, ticket.subject)
+#                     if ticket.subject == 'other' and ticket.other_subject:
+#                         subject_display = ticket.other_subject
+                        
+#                     alerts["support"].append({
+#                         "type": "Unresponded Ticket",
+#                         "message": f"'{subject_display}' ticket has no admin response yet.",
+#                         "ticket_id": ticket.id,
+#                         "timestamp": str(ticket.updated_at) if ticket.updated_at else ""
+#                     })
+#             except:
+#                 pass
+#     except Exception as e:
+#         errors.append(f"Unresponded tickets error: {str(e)}")
+    
+#     # ----------------------------
+#     # ✅ Return Response
+#     # ----------------------------
+#     total_alerts = sum(len(v) for v in alerts.values())
+    
+#     return JsonResponse({
+#         "success": True,
+#         "total_alerts": total_alerts,
+#         "categories": {k: len(v) for k, v in alerts.items()},
+#         "alerts": alerts,
+#         "generated_at": str(current_time),
+#         "errors": errors if errors else None
+#     }, status=200)
+
+
+def _to_local_iso(dt):
+    """
+    Convert UTC datetime to local timezone ISO string for API response.
+    Returns "" if dt is falsy.
+    """
+    if not dt:
+        return ""
+    # Ensure aware
+    if timezone.is_naive(dt):
+        dt = timezone.make_aware(dt, pytz.UTC)
+    return timezone.localtime(dt, settings.USER_TIMEZONE).isoformat()
+
+
+@csrf_protect
+@admin_auth_required
+@require_http_methods(["GET"])
 def admin_alerts(request):
     """
-    Incremental alert building with error isolation
+    Real-time Admin Alerts (Production)
+    - Secure (CSRF + Admin Auth)
+    - GET only
+    - Uses local timezone boundaries for date-based logic
+    - Returns counts + capped samples per alert type
     """
+
+    user_tz = settings.USER_TIMEZONE
+    now_utc = timezone.now()
+    now_local = timezone.localtime(now_utc, user_tz)
+    today_local = now_local.date()
+
+    # Limits to keep payload safe
+    SAMPLE_LIMIT = 20
+
     alerts = {
         "operational": [],
         "financial": [],
         "support": []
     }
-    
-    errors = []
-    current_time = timezone.now()
-    
-    # ----------------------------
-    # 1️⃣ OPERATIONAL ALERTS
-    # ----------------------------
-    
-    # Test 1: Unassigned orders
-    try:
-        from canadrop_interface.models import DeliveryOrder
-        
-        unassigned_orders = DeliveryOrder.objects.filter(
-            driver__isnull=True,
-            status__in=["pending", "accepted"]
-        )[:20]
-        
-        for order in unassigned_orders:
-            pharmacy_name = "Unknown"
-            try:
-                if order.pharmacy:
-                    pharmacy_name = order.pharmacy.name
-            except:
-                pass
-                
-            alerts["operational"].append({
-                "type": "Unassigned Order",
-                "message": f"Order #{order.id} from {pharmacy_name} has no assigned driver.",
-                "order_id": order.id,
-                "timestamp": str(order.created_at) if order.created_at else ""
-            })
-    except Exception as e:
-        errors.append(f"Unassigned orders error: {str(e)}")
-    
-    # Test 2: Stuck orders
-    try:
-        from canadrop_interface.models import DeliveryOrder
-        
-        two_hours_ago = current_time - timedelta(hours=2)
-        stuck_orders = DeliveryOrder.objects.filter(
-            status__in=["inTransit", "picked_up"],
-            updated_at__lt=two_hours_ago
-        )[:20]
-        
-        for order in stuck_orders:
-            pharmacy_name = "Unknown"
-            try:
-                if order.pharmacy:
-                    pharmacy_name = order.pharmacy.name
-            except:
-                pass
-                
-            alerts["operational"].append({
-                "type": "Stuck Order",
-                "message": f"Order #{order.id} by {pharmacy_name} is '{order.status}' for over 2 hours.",
-                "order_id": order.id,
-                "timestamp": str(order.updated_at) if order.updated_at else ""
-            })
-    except Exception as e:
-        errors.append(f"Stuck orders error: {str(e)}")
-    
-    # Test 3: Inactive drivers with orders
-    try:
-        from canadrop_interface.models import DeliveryOrder
-        
-        orders_with_drivers = DeliveryOrder.objects.filter(
-            driver__isnull=False,
-            status__in=["pending", "accepted", "inTransit"]
-        )[:50]
-        
-        for order in orders_with_drivers:
-            try:
-                if order.driver and hasattr(order.driver, 'active') and order.driver.active == False:
-                    alerts["operational"].append({
-                        "type": "Inactive Driver Assigned",
-                        "message": f"Inactive driver {order.driver.name} still has order #{order.id}.",
-                        "order_id": order.id,
-                        "timestamp": str(order.updated_at) if order.updated_at else ""
-                    })
-            except:
-                pass
-    except Exception as e:
-        errors.append(f"Inactive driver orders error: {str(e)}")
-    
-    # Test 4: Inactive pharmacy orders
-    try:
-        from canadrop_interface.models import DeliveryOrder
-        
-        three_days_ago = current_time - timedelta(days=3)
-        recent_orders = DeliveryOrder.objects.filter(
-            pharmacy__isnull=False,
-            created_at__gte=three_days_ago
-        )[:50]
-        
-        for order in recent_orders:
-            try:
-                if order.pharmacy and hasattr(order.pharmacy, 'active') and order.pharmacy.active == False:
-                    alerts["operational"].append({
-                        "type": "Inactive Pharmacy Order",
-                        "message": f"Inactive pharmacy {order.pharmacy.name} created order #{order.id}.",
-                        "order_id": order.id,
-                        "timestamp": str(order.created_at) if order.created_at else ""
-                    })
-            except:
-                pass
-    except Exception as e:
-        errors.append(f"Inactive pharmacy orders error: {str(e)}")
-    
-    # ----------------------------
-    # 2️⃣ FINANCIAL ALERTS
-    # ----------------------------
-    
-    # Test 5: Overdue invoices
-    try:
-        from canadrop_interface.models import Invoice
-        
-        overdue_invoices = Invoice.objects.filter(status="past_due")[:20]
-        
-        for inv in overdue_invoices:
-            pharmacy_name = "Unknown"
-            try:
-                if inv.pharmacy:
-                    pharmacy_name = inv.pharmacy.name
-            except:
-                pass
-            
-            amount = 0
-            try:
-                amount = float(inv.total_amount)
-            except:
-                pass
-                
-            alerts["financial"].append({
-                "type": "Overdue Invoice",
-                "message": f"Invoice #{inv.id} for {pharmacy_name} is past due (${amount:.2f}).",
-                "invoice_id": inv.id,
-                "timestamp": str(inv.due_date) if inv.due_date else ""
-            })
-    except Exception as e:
-        errors.append(f"Overdue invoices error: {str(e)}")
-    
-    # Test 6: Pending driver payouts
-    try:
-        from canadrop_interface.models import DriverInvoice
-        
-        today = current_time.date()
-        pending_driver_invoices = DriverInvoice.objects.filter(
-            status="generated",
-            due_date__lt=today
-        )[:20]
-        
-        for inv in pending_driver_invoices:
-            driver_name = "Unknown"
-            try:
-                if inv.driver:
-                    driver_name = inv.driver.name
-            except:
-                pass
-            
-            amount = 0
-            try:
-                amount = float(inv.total_amount)
-            except:
-                pass
-                
-            alerts["financial"].append({
-                "type": "Pending Driver Payout",
-                "message": f"Driver {driver_name}'s invoice #{inv.id} is pending (${amount:.2f}).",
-                "invoice_id": inv.id,
-                "timestamp": str(inv.due_date) if inv.due_date else ""
-            })
-    except Exception as e:
-        errors.append(f"Pending driver invoices error: {str(e)}")
-    
-    # ----------------------------
-    # 3️⃣ SUPPORT ALERTS
-    # ----------------------------
-    
-    # Test 7: Old pending tickets
-    try:
-        from canadrop_interface.models import ContactAdmin
-        
-        forty_eight_hours_ago = current_time - timedelta(hours=48)
-        old_pending_tickets = ContactAdmin.objects.filter(
-            status="pending",
-            created_at__lt=forty_eight_hours_ago
-        )[:20]
-        
-        subject_map = {
-            'account_creation': 'Account Creation Issue',
-            'login_problem': 'Login / Authentication Problem',
-            'password_reset': 'Password Reset Issue',
-            'profile_update': 'Profile / Information Update Issue',
-            'order_placement': 'Order Placement Issue',
-            'order_cancellation': 'Order Cancellation Issue',
-            'order_tracking': 'Order Tracking / Status Issue',
-            'order_payment': 'Order Payment / Rate Issue',
-            'pickup_issue': 'Pickup Issue by Driver',
-            'delivery_delay': 'Delivery Delay',
-            'delivery_incorrect': 'Incorrect Delivery / Item Issue',
-            'driver_unavailable': 'Driver Unavailable / Assignment Issue',
-            'invoice_generated': 'Invoice Generated Issue',
-            'invoice_payment': 'Invoice Payment / Stripe Issue',
-            'driver_invoice': 'Driver Invoice / Payment Issue',
-            'technical_bug': 'Technical / App Bug',
-            'cloud_storage': 'Cloud / Image Upload Issue',
-            'notification': 'Notification / Alert Issue',
-            'feedback': 'Feedback / Suggestion',
-            'other': 'Other',
-        }
-        
-        for ticket in old_pending_tickets:
-            sender = "Unknown"
-            try:
-                if ticket.pharmacy:
-                    sender = ticket.pharmacy.name
-                elif ticket.driver:
-                    sender = ticket.driver.name
-            except:
-                pass
-            
-            subject_display = subject_map.get(ticket.subject, ticket.subject)
-            if ticket.subject == 'other' and ticket.other_subject:
-                subject_display = ticket.other_subject
-                
-            alerts["support"].append({
-                "type": "Old Pending Ticket",
-                "message": f"Ticket '{subject_display}' from {sender} pending > 48 hours.",
-                "ticket_id": ticket.id,
-                "timestamp": str(ticket.created_at) if ticket.created_at else ""
-            })
-    except Exception as e:
-        errors.append(f"Old pending tickets error: {str(e)}")
-    
-    # Test 8: Unresponded tickets
-    try:
-        from canadrop_interface.models import ContactAdmin
-        
-        in_progress_tickets = ContactAdmin.objects.filter(status="in_progress")[:50]
-        
-        subject_map = {
-            'account_creation': 'Account Creation Issue',
-            'login_problem': 'Login / Authentication Problem',
-            'password_reset': 'Password Reset Issue',
-            'profile_update': 'Profile / Information Update Issue',
-            'order_placement': 'Order Placement Issue',
-            'order_cancellation': 'Order Cancellation Issue',
-            'order_tracking': 'Order Tracking / Status Issue',
-            'order_payment': 'Order Payment / Rate Issue',
-            'pickup_issue': 'Pickup Issue by Driver',
-            'delivery_delay': 'Delivery Delay',
-            'delivery_incorrect': 'Incorrect Delivery / Item Issue',
-            'driver_unavailable': 'Driver Unavailable / Assignment Issue',
-            'invoice_generated': 'Invoice Generated Issue',
-            'invoice_payment': 'Invoice Payment / Stripe Issue',
-            'driver_invoice': 'Driver Invoice / Payment Issue',
-            'technical_bug': 'Technical / App Bug',
-            'cloud_storage': 'Cloud / Image Upload Issue',
-            'notification': 'Notification / Alert Issue',
-            'feedback': 'Feedback / Suggestion',
-            'other': 'Other',
-        }
-        
-        for ticket in in_progress_tickets:
-            try:
-                if not ticket.admin_response or ticket.admin_response.strip() == "":
-                    subject_display = subject_map.get(ticket.subject, ticket.subject)
-                    if ticket.subject == 'other' and ticket.other_subject:
-                        subject_display = ticket.other_subject
-                        
-                    alerts["support"].append({
-                        "type": "Unresponded Ticket",
-                        "message": f"'{subject_display}' ticket has no admin response yet.",
-                        "ticket_id": ticket.id,
-                        "timestamp": str(ticket.updated_at) if ticket.updated_at else ""
-                    })
-            except:
-                pass
-    except Exception as e:
-        errors.append(f"Unresponded tickets error: {str(e)}")
-    
-    # ----------------------------
-    # ✅ Return Response
-    # ----------------------------
-    total_alerts = sum(len(v) for v in alerts.values())
-    
-    return JsonResponse({
-        "success": True,
-        "total_alerts": total_alerts,
-        "categories": {k: len(v) for k, v in alerts.items()},
-        "alerts": alerts,
-        "generated_at": str(current_time),
-        "errors": errors if errors else None
-    }, status=200)
 
+    # We'll also return counts per alert type (even if samples are capped)
+    counts = {
+        "operational": {},
+        "financial": {},
+        "support": {}
+    }
 
+    # ----------------------------
+    # OPERATIONAL ALERTS
+    # ----------------------------
+
+    # A1) Delayed Orders (pickup day passed, still not picked up)
+    delayed_qs = DeliveryOrder.objects.filter(
+        pickup_day__lt=today_local,
+        status__in=["pending", "accepted"]
+    )
+    counts["operational"]["delayed_orders"] = delayed_qs.count()
+
+    for o in delayed_qs.select_related("pharmacy", "driver").order_by("-updated_at")[:SAMPLE_LIMIT]:
+        alerts["operational"].append({
+            "alert_key": "delayed_orders",
+            "severity": "critical",
+            "type": "Delayed Order",
+            "message": f"Order #{o.id} pickup day {o.pickup_day} has passed but status is '{o.status}'.",
+            "order_id": o.id,
+            "pharmacy_id": o.pharmacy_id,
+            "driver_id": o.driver_id,
+            "timestamp_local": _to_local_iso(o.updated_at),
+        })
+
+    # A2) Unassigned Orders (pending/accepted with no driver)
+    unassigned_qs = DeliveryOrder.objects.filter(
+        driver__isnull=True,
+        status__in=["pending", "accepted"]
+    )
+    counts["operational"]["unassigned_orders"] = unassigned_qs.count()
+
+    for o in unassigned_qs.select_related("pharmacy").order_by("-created_at")[:SAMPLE_LIMIT]:
+        pharmacy_name = o.pharmacy.name if o.pharmacy_id else "Unknown"
+        alerts["operational"].append({
+            "alert_key": "unassigned_orders",
+            "severity": "critical",
+            "type": "Unassigned Order",
+            "message": f"Order #{o.id} from {pharmacy_name} has no assigned driver.",
+            "order_id": o.id,
+            "pharmacy_id": o.pharmacy_id,
+            "driver_id": None,
+            "timestamp_local": _to_local_iso(o.created_at),
+        })
+
+    # A3) Orders stuck too long (status timeout)
+    # - inTransit or picked_up older than 2 hours since last update
+    two_hours_ago_utc = now_utc - timedelta(hours=2)
+    stuck_qs = DeliveryOrder.objects.filter(
+        status__in=["inTransit", "picked_up"],
+        updated_at__lt=two_hours_ago_utc
+    )
+    counts["operational"]["stuck_orders"] = stuck_qs.count()
+
+    for o in stuck_qs.select_related("pharmacy", "driver").order_by("updated_at")[:SAMPLE_LIMIT]:
+        pharmacy_name = o.pharmacy.name if o.pharmacy_id else "Unknown"
+        alerts["operational"].append({
+            "alert_key": "stuck_orders",
+            "severity": "critical",
+            "type": "Stuck Order",
+            "message": f"Order #{o.id} by {pharmacy_name} is '{o.status}' for over 2 hours.",
+            "order_id": o.id,
+            "pharmacy_id": o.pharmacy_id,
+            "driver_id": o.driver_id,
+            "timestamp_local": _to_local_iso(o.updated_at),
+        })
+
+    # A4) Inactive driver assigned to active orders
+    inactive_driver_assigned_qs = DeliveryOrder.objects.filter(
+        driver__isnull=False,
+        driver__active=False,
+        status__in=["pending", "accepted", "inTransit", "picked_up"]
+    )
+    counts["operational"]["inactive_driver_assigned"] = inactive_driver_assigned_qs.count()
+
+    for o in inactive_driver_assigned_qs.select_related("driver").order_by("-updated_at")[:SAMPLE_LIMIT]:
+        driver_name = o.driver.name if o.driver_id else "Unknown"
+        alerts["operational"].append({
+            "alert_key": "inactive_driver_assigned",
+            "severity": "warning",
+            "type": "Inactive Driver Assigned",
+            "message": f"Inactive driver {driver_name} is assigned to order #{o.id}.",
+            "order_id": o.id,
+            "pharmacy_id": o.pharmacy_id,
+            "driver_id": o.driver_id,
+            "timestamp_local": _to_local_iso(o.updated_at),
+        })
+
+    # A5) Delivered orders missing proof (delivered-stage image)
+    delivered_missing_proof_qs = DeliveryOrder.objects.filter(status="delivered").annotate(
+        has_delivered_image=Exists(
+            OrderImage.objects.filter(order_id=OuterRef("id"), stage="delivered")
+        )
+    ).filter(has_delivered_image=False)
+
+    counts["operational"]["delivered_missing_proof"] = delivered_missing_proof_qs.count()
+
+    for o in delivered_missing_proof_qs.select_related("pharmacy", "driver").order_by("-delivered_at")[:SAMPLE_LIMIT]:
+        alerts["operational"].append({
+            "alert_key": "delivered_missing_proof",
+            "severity": "warning",
+            "type": "Missing Delivery Proof",
+            "message": f"Order #{o.id} is delivered but has no 'delivered' proof image.",
+            "order_id": o.id,
+            "pharmacy_id": o.pharmacy_id,
+            "driver_id": o.driver_id,
+            "timestamp_local": _to_local_iso(o.delivered_at),
+        })
+
+    # A6) Orders with tracking gaps (no tracking entries at all)
+    tracking_gap_qs = DeliveryOrder.objects.annotate(
+        has_tracking=Exists(
+            OrderTracking.objects.filter(order_id=OuterRef("id"))
+        )
+    ).filter(has_tracking=False)
+
+    counts["operational"]["tracking_gaps"] = tracking_gap_qs.count()
+
+    for o in tracking_gap_qs.select_related("pharmacy", "driver").order_by("-created_at")[:SAMPLE_LIMIT]:
+        alerts["operational"].append({
+            "alert_key": "tracking_gaps",
+            "severity": "warning",
+            "type": "Tracking Missing",
+            "message": f"Order #{o.id} has no tracking entries logged.",
+            "order_id": o.id,
+            "pharmacy_id": o.pharmacy_id,
+            "driver_id": o.driver_id,
+            "timestamp_local": _to_local_iso(o.created_at),
+        })
+
+    # ----------------------------
+    # FINANCIAL ALERTS
+    # ----------------------------
+
+    # F1) Past-due pharmacy invoices
+    past_due_qs = Invoice.objects.filter(status="past_due")
+    counts["financial"]["past_due_invoices"] = past_due_qs.count()
+    past_due_total = past_due_qs.aggregate(total=Sum("total_amount"))["total"] or 0
+
+    for inv in past_due_qs.select_related("pharmacy").order_by("due_date")[:SAMPLE_LIMIT]:
+        pharmacy_name = inv.pharmacy.name if inv.pharmacy_id else "Unknown"
+        alerts["financial"].append({
+            "alert_key": "past_due_invoices",
+            "severity": "critical",
+            "type": "Past Due Invoice",
+            "message": f"Invoice #{inv.id} for {pharmacy_name} is past due (${float(inv.total_amount):.2f}).",
+            "invoice_id": inv.id,
+            "pharmacy_id": inv.pharmacy_id,
+            "timestamp_local": str(inv.due_date),
+        })
+
+    # F2) Unpaid driver invoices
+    unpaid_driver_qs = DriverInvoice.objects.filter(
+        status="generated",
+        due_date__lt=today_local
+    )
+    counts["financial"]["unpaid_driver_invoices"] = unpaid_driver_qs.count()
+
+    for inv in unpaid_driver_qs.select_related("driver").order_by("due_date")[:SAMPLE_LIMIT]:
+        driver_name = inv.driver.name if inv.driver_id else "Unknown"
+        alerts["financial"].append({
+            "alert_key": "unpaid_driver_invoices",
+            "severity": "critical",
+            "type": "Unpaid Driver Invoice",
+            "message": f"Driver {driver_name}'s invoice #{inv.id} is overdue (${float(inv.total_amount):.2f}).",
+            "invoice_id": inv.id,
+            "driver_id": inv.driver_id,
+            "timestamp_local": str(inv.due_date),
+        })
+
+    # F3) Negative net margin (UNCHANGED)
+    month_start_local = now_local.replace(day=1, hour=0, minute=0, second=0, microsecond=0)
+    if month_start_local.month == 12:
+        next_month_start_local = month_start_local.replace(year=month_start_local.year + 1, month=1)
+    else:
+        next_month_start_local = month_start_local.replace(month=month_start_local.month + 1)
+
+    month_start_utc = month_start_local.astimezone(pytz.UTC)
+    next_month_start_utc = next_month_start_local.astimezone(pytz.UTC)
+
+    gross_revenue_mtd = (
+        DeliveryOrder.objects.filter(
+            status="delivered",
+            delivered_at__gte=month_start_utc,
+            delivered_at__lt=next_month_start_utc
+        ).aggregate(total=Sum("rate"))["total"] or 0
+    )
+
+    driver_payout_mtd = (
+        DriverInvoice.objects.filter(
+            Q(start_date__year=now_local.year, start_date__month=now_local.month) |
+            Q(end_date__year=now_local.year, end_date__month=now_local.month)
+        ).aggregate(total=Sum("total_amount"))["total"] or 0
+    )
+
+    net_margin_mtd = gross_revenue_mtd - driver_payout_mtd
+    counts["financial"]["negative_margin"] = 1 if net_margin_mtd < 0 else 0
+
+    if net_margin_mtd < 0:
+        alerts["financial"].append({
+            "alert_key": "negative_margin",
+            "severity": "critical",
+            "type": "Negative Net Margin",
+            "message": (
+                f"Month-to-date net margin is negative. "
+                f"Revenue: ${gross_revenue_mtd:.2f}, "
+                f"Payouts: ${driver_payout_mtd:.2f}, "
+                f"Net: ${net_margin_mtd:.2f}."
+            ),
+            "timestamp_local": now_local.isoformat(),
+        })
+
+    # ------------------------------------------------
+    # F4) Revenue leakage — UPDATED TO MATCH INVOICE LOGIC
+    # ------------------------------------------------
+
+    revenue_leak_candidates = DeliveryOrder.objects.filter(
+        status="delivered",
+        delivered_at__isnull=False
+    ).select_related("pharmacy")
+
+    revenue_leak_orders = []
+
+    for o in revenue_leak_candidates:
+        # Convert delivered_at to LOCAL date
+        delivered_local_date = timezone.localtime(
+            o.delivered_at,
+            user_tz
+        ).date()
+
+        # Invoice week logic (EXACTLY SAME AS generator)
+        week_start = delivered_local_date
+        week_end = week_start + timedelta(days=6)
+
+        # If the week is NOT fully complete yet, skip (no alert)
+        if today_local <= week_end:
+            continue
+
+        # Check if invoice exists for this exact week
+        invoice_exists = Invoice.objects.filter(
+            pharmacy_id=o.pharmacy_id,
+            start_date=week_start,
+            end_date=week_end
+        ).exists()
+
+        if not invoice_exists:
+            revenue_leak_orders.append(o)
+
+    counts["financial"]["revenue_leakage_orders"] = len(revenue_leak_orders)
+
+    for o in revenue_leak_orders[:SAMPLE_LIMIT]:
+        pharmacy_name = o.pharmacy.name if o.pharmacy_id else "Unknown"
+        alerts["financial"].append({
+            "alert_key": "revenue_leakage_orders",
+            "severity": "critical",
+            "type": "Missing Invoice (Completed Week)",
+            "message": (
+                f"Delivered order #{o.id} ({pharmacy_name}) belongs to a completed "
+                f"invoice week but no invoice was generated."
+            ),
+            "order_id": o.id,
+            "pharmacy_id": o.pharmacy_id,
+            "timestamp_local": _to_local_iso(o.delivered_at),
+            "meta": {
+                "rate": float(o.rate or 0),
+                "week_start": week_start.strftime("%Y-%m-%d"),
+                "week_end": week_end.strftime("%Y-%m-%d"),
+            },
+        })
+
+    # ----------------------------
+    # SUPPORT ALERTS
+    # ----------------------------
+
+    # S1) Payment-related support tickets (not resolved)
+    payment_subjects = ["invoice_payment", "driver_invoice", "order_payment"]
+    payment_tickets_qs = ContactAdmin.objects.filter(
+        subject__in=payment_subjects
+    ).exclude(status="resolved")
+
+    counts["support"]["payment_tickets_open"] = payment_tickets_qs.count()
+
+    for t in payment_tickets_qs.select_related("pharmacy", "driver").order_by("-created_at")[:SAMPLE_LIMIT]:
+        sender = t.pharmacy.name if t.pharmacy_id else (t.driver.name if t.driver_id else "Unknown")
+        subject_display = t.other_subject if (t.subject == "other" and t.other_subject) else t.get_subject_display()
+
+        alerts["support"].append({
+            "alert_key": "payment_tickets_open",
+            "severity": "critical",
+            "type": "Payment Support Ticket",
+            "message": f"Payment-related ticket '{subject_display}' from {sender} is {t.status}.",
+            "ticket_id": t.id,
+            "timestamp_local": _to_local_iso(t.created_at),
+        })
+
+    # S2) Operational support tickets (not resolved)
+    ops_subjects = ["pickup_issue", "delivery_delay", "driver_unavailable"]
+    ops_tickets_qs = ContactAdmin.objects.filter(
+        subject__in=ops_subjects
+    ).exclude(status="resolved")
+
+    counts["support"]["operational_tickets_open"] = ops_tickets_qs.count()
+
+    for t in ops_tickets_qs.select_related("pharmacy", "driver").order_by("-created_at")[:SAMPLE_LIMIT]:
+        sender = t.pharmacy.name if t.pharmacy_id else (t.driver.name if t.driver_id else "Unknown")
+        subject_display = t.other_subject if (t.subject == "other" and t.other_subject) else t.get_subject_display()
+
+        alerts["support"].append({
+            "alert_key": "operational_tickets_open",
+            "severity": "warning",
+            "type": "Operational Support Ticket",
+            "message": f"Operational ticket '{subject_display}' from {sender} is {t.status}.",
+            "ticket_id": t.id,
+            "timestamp_local": _to_local_iso(t.created_at),
+        })
+
+    # S3) Repeated complaints pattern (>=3 in last 7 days by same pharmacy or driver)
+    seven_days_ago_utc = now_utc - timedelta(days=7)
+
+    # Pharmacy patterns
+    pharmacy_pattern = (
+        ContactAdmin.objects.filter(created_at__gte=seven_days_ago_utc, pharmacy__isnull=False)
+        .values("pharmacy_id")
+        .annotate(cnt=Count("id"))
+        .filter(cnt__gte=3)
+        .order_by("-cnt")
+    )
+    # Driver patterns
+    driver_pattern = (
+        ContactAdmin.objects.filter(created_at__gte=seven_days_ago_utc, driver__isnull=False)
+        .values("driver_id")
+        .annotate(cnt=Count("id"))
+        .filter(cnt__gte=3)
+        .order_by("-cnt")
+    )
+
+    counts["support"]["repeat_complaints_pharmacy"] = pharmacy_pattern.count()
+    counts["support"]["repeat_complaints_driver"] = driver_pattern.count()
+
+    # Sample a few pattern alerts (top offenders)
+    for row in pharmacy_pattern[:10]:
+        alerts["support"].append({
+            "alert_key": "repeat_complaints_pharmacy",
+            "severity": "warning",
+            "type": "Repeated Complaints",
+            "message": f"Pharmacy ID {row['pharmacy_id']} has {row['cnt']} support tickets in the last 7 days.",
+            "pharmacy_id": row["pharmacy_id"],
+            "timestamp_local": now_local.isoformat(),
+        })
+
+    for row in driver_pattern[:10]:
+        alerts["support"].append({
+            "alert_key": "repeat_complaints_driver",
+            "severity": "warning",
+            "type": "Repeated Complaints",
+            "message": f"Driver ID {row['driver_id']} has {row['cnt']} support tickets in the last 7 days.",
+            "driver_id": row["driver_id"],
+            "timestamp_local": now_local.isoformat(),
+        })
+
+    # ----------------------------
+    # RESPONSE
+    # ----------------------------
+    category_counts = {k: len(v) for k, v in alerts.items()}
+    total_alerts_sampled = sum(category_counts.values())
+
+    # Also compute total counts per category (sum of per-type counts)
+    totals_by_category = {
+        "operational": int(sum(counts["operational"].values())),
+        "financial": int(sum(counts["financial"].values())),
+        "support": int(sum(counts["support"].values())),
+    }
+    total_alerts_total = sum(totals_by_category.values())
+
+    return JsonResponse(
+        {
+            "success": True,
+            "timezone": str(user_tz),
+            "generated_at_local": now_local.isoformat(),
+            "summary": {
+                "total_alerts": total_alerts_total,              # total matches in DB (real-time)
+                "total_alerts_sampled": total_alerts_sampled,    # items included in response lists
+                "totals_by_category": totals_by_category,
+                "sample_counts_by_category": category_counts,
+                "counts_by_type": counts,
+                "financial_totals": {
+                    "past_due_amount_total": float(past_due_total),
+                    "revenue_mtd": float(gross_revenue_mtd),
+                    "payouts_mtd": float(driver_payout_mtd),
+                    "net_margin_mtd": float(net_margin_mtd),
+                }
+            },
+            "alerts": {
+                "operational": alerts["operational"],
+                "financial": alerts["financial"],
+                "support": alerts["support"],
+            }
+        },
+        status=200
+    )
 
 
 
