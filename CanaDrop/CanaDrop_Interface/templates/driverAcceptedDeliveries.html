@@ -428,8 +428,9 @@ async function optimizeRoute() {
             method: 'POST',
             headers: { 
                 'Content-Type': 'application/json',
-                'X-CSRFToken': getCookie('csrftoken')
+                "X-CSRFToken": getCSRFToken()
             },
+            credentials : "include",
             body: JSON.stringify(payload)
         });
 

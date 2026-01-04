@@ -266,38 +266,53 @@
             return null;
         }
 
+        function getCSRFToken() {
+    return document.cookie
+        .split('; ')
+        .find(row => row.startsWith('csrftoken='))
+        ?.split('=')[1];
+        }
+
         // Load CC Points data
         async function loadCCPoints() {
-            try {
-                const pharmacyId = getCookie("pharmacyId");
-                if (!pharmacyId) {
-                    console.error("Pharmacy ID not found in cookies");
-                    return;
-                }
-
-                const response = await fetch(`/api/pharmacy/${pharmacyId}/cc-points/`);
-                if (!response.ok) {
-                    throw new Error("Failed to fetch CC points");
-                }
-
-                const data = await response.json();
-                
-                if (data.success) {
-                    // Update all CC points displays
-                    const ccPoints = data.cc_points;
-                    const deliveredOrders = data.delivered_orders;
-                    
-                    document.getElementById('headerCCPoints').textContent = ccPoints;
-                    document.getElementById('totalCCPoints').textContent = ccPoints;
-                    document.getElementById('deliveredOrders').textContent = deliveredOrders;
-                } else {
-                    console.error("Failed to load CC points:", data.error);
-                }
-
-            } catch (error) {
-                console.error("Error loading CC points:", error);
+        try {
+            const pharmacyId = getCookie("pharmacyId");
+            if (!pharmacyId) {
+            console.error("Pharmacy ID not found in cookies");
+            return;
             }
+
+            const response = await fetch(`/api/pharmacy/${pharmacyId}/cc-points/`, {
+            method: "GET",
+            headers: {
+                "X-CSRFToken": getCSRFToken(),
+                "Accept": "application/json"
+            },
+            credentials: "include" // ✅ send authToken + csrftoken cookies
+            });
+
+            if (!response.ok) {
+            throw new Error("Failed to fetch CC points");
+            }
+
+            const data = await response.json();
+
+            if (data.success) {
+            // Update all CC points displays
+            const ccPoints = data.cc_points;
+            const deliveredOrders = data.delivered_orders;
+
+            document.getElementById("headerCCPoints").textContent = ccPoints;
+            document.getElementById("totalCCPoints").textContent = ccPoints;
+            document.getElementById("deliveredOrders").textContent = deliveredOrders;
+            } else {
+            console.error("Failed to load CC points:", data.error);
+            }
+        } catch (error) {
+            console.error("Error loading CC points:", error);
         }
+        }
+
 
         // Load pharmacy details
         async function loadPharmacyDetails() {

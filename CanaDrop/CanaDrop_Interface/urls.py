@@ -2,38 +2,38 @@ from django.urls import path
 from . import views  # make sure the import works
 
 urlpatterns = [
-    path('pharmacyLogin/', views.pharmacyLoginView, name='PharmacyLoginPage'),  
-    path('pharmacyDashboard/', views.pharmacyDashboardView, name="PharmacyDashboardPage"),
-    path('pharmacyOrders/', views.pharmacyOrdersView, name="PharmacyOrdersPage"),
-    path('pharmacyInvoices/', views.pharmacyInvoicesView, name="PharmacyInvoicesPage"),
+    path('pharmacyLogin/', views.pharmacyLoginView, name='PharmacyLoginPage'), # Done
+    path('pharmacyDashboard/', views.pharmacyDashboardView, name="PharmacyDashboardPage"), # Done
+    path('pharmacyOrders/', views.pharmacyOrdersView, name="PharmacyOrdersPage"), # Done
+    path('pharmacyInvoices/', views.pharmacyInvoicesView, name="PharmacyInvoicesPage"), # Done
     path('api/pharmacy/login/', views.pharmacy_login_api, name='pharmacy-login-api'), # Done
     path('api/createDeliveryOrder/', views.create_delivery_order, name='create_delivery_order'), # Done
     path("api/get-delivery-rate/", views.get_delivery_rate, name="get_delivery_rate"), # Done
-    path("pharmacy/<int:pharmacy_id>/", views.get_pharmacy_details, name="get_pharmacy_details"),
+    path("pharmacy/<int:pharmacy_id>/", views.get_pharmacy_details, name="get_pharmacy_details"), # Done
     path("pharmacy/<int:pharmacy_id>/orders/", views.get_pharmacy_orders, name="get_pharmacy_orders"), # Done
     path('api/pharmacy/<int:pharmacy_id>/orders/', views.pharmacy_orders_api, name='pharmacy_orders_api'), # Done
     path('api/upload-handover-image/', views.upload_handover_image_api, name='upload_handover_image'), # Done
-    path('pharmacyForgotPassword/', views.pharmacyForgotPasswordView, name="PharmacyForgotPasswordPage"),
+    path('pharmacyForgotPassword/', views.pharmacyForgotPasswordView, name="PharmacyForgotPasswordPage"), # Done
     path('api/auth/register-pharmacy/', views.register_pharmacy, name='register_pharmacy'), # Done
-    path('pharmacyRegister/', views.pharmacyRegisterView, name="PharmacyRegisterPage"),
-    path('pharmacyProfile/', views.pharmacyProfileView, name="PharmacyProfilePage"),
-    path("api/getPharmacyDetails/<int:pharmacy_id>/", views.get_pharmacy_details, name="get_pharmacy_details"),
-    path("api/changeExistingPassword/", views.change_existing_password, name="change_existing_password"),
-    path("api/editPharmacyProfile/", views.edit_pharmacy_profile, name="edit_pharmacy_profile"),
-    path('api/pharmacy-onboarding/', views.pharmacy_onboarding_api, name='pharmacy_onboarding_api'),
-    path('pharmacyTrial/', views.pharmacyTrialOnboarding, name='PharmacyTrialOnboardingPage'),  
-    path('pharmacyCCPoints/', views.pharmacyCCPointsView, name='PharmacyCCPointsPage'), 
-    path('api/pharmacy/<int:pharmacy_id>/cc-points/', views.get_pharmacy_cc_points, name='pharmacy_cc_points'),
+    path('pharmacyRegister/', views.pharmacyRegisterView, name="PharmacyRegisterPage"), # Done
+    path('pharmacyProfile/', views.pharmacyProfileView, name="PharmacyProfilePage"), # Done
+    path("api/getPharmacyDetails/<int:pharmacy_id>/", views.get_pharmacy_details, name="get_pharmacy_details"), # Done
+    path("api/changeExistingPassword/", views.change_existing_password, name="change_existing_password"), # Done
+    path("api/editPharmacyProfile/", views.edit_pharmacy_profile, name="edit_pharmacy_profile"), # Done
+    path('api/pharmacy-onboarding/', views.pharmacy_onboarding_api, name='pharmacy_onboarding_api'), # Not Required
+    path('pharmacyTrial/', views.pharmacyTrialOnboarding, name='PharmacyTrialOnboardingPage'), # Not Required
+    path('pharmacyCCPoints/', views.pharmacyCCPointsView, name='PharmacyCCPointsPage'), # Done
+    path('api/pharmacy/<int:pharmacy_id>/cc-points/', views.get_pharmacy_cc_points, name='pharmacy_cc_points'), # Done
     path('api/getActivePaymentMethods/', views.get_active_payment_methods, name="RetrieveActivePaymentMethods"), # Done
 
 
-    path('driverLogin/', views.driverLoginView, name='DriverLoginPage'),  
+    path('driverLogin/', views.driverLoginView, name='DriverLoginPage'), # Done
     path('api/driver/login/', views.driver_login, name='driver_login'), # Done
-    path('driverDashboard/', views.driverDashboardView, name="DriverDashboardPage"),
-    path("api/orders/pending/", views.get_pending_orders, name="get_pending_orders"),
+    path('driverDashboard/', views.driverDashboardView, name="DriverDashboardPage"), # Done
+    path("api/orders/pending/", views.get_pending_orders, name="get_pending_orders"), # Done
     path("api/orders/assign-driver/", views.assign_driver, name="assign_driver"), # Done
     path("api/driver/details/", views.get_driver_details, name="get_driver_details"), # Done
-    path('driverAcceptedDeliveries/', views.driverAcceptedDeliveriesView, name="DriverAcceptedDeliveriesPage"),
+    path('driverAcceptedDeliveries/', views.driverAcceptedDeliveriesView, name="DriverAcceptedDeliveriesPage"), # Done
     path("api/driver-orders/", views.driver_accepted_orders, name="driver_accepted_orders"), # Done
     path("api/driver-pickup-proof/", views.driver_pickup_proof, name="driver_pickup_proof"), # Done
     path("api/driver-delivery-proof/", views.driver_delivery_proof, name="driver_delivery_proof"), # Done
@@ -41,17 +41,17 @@ urlpatterns = [
     path('api/create-checkout-session/', views.create_checkout_session, name='create_checkout_session'), # Done - Not Tested
     path('webhooks/stripe/', views.stripe_webhook, name='stripe_webhook'), # Not Required
     path('api/payment-status/', views.get_payment_status, name='payment_status'), # No Occurrence Found
-    path('driverFinances/', views.driverFinancesView, name="DriverFinancesPage"),
+    path('driverFinances/', views.driverFinancesView, name="DriverFinancesPage"), # Done
     path("api/driver/invoices/weeks/", views.driver_invoice_weeks, name="driver_invoice_weeks"), # Done
-    path('driverForgotPassword/', views.driverForgotPasswordView, name="driverForgotPasswordPage"),
-    path('driverRegister/', views.driverRegisterView, name="driverRegisterPage"),
+    path('driverForgotPassword/', views.driverForgotPasswordView, name="driverForgotPasswordPage"), # Done
+    path('driverRegister/', views.driverRegisterView, name="driverRegisterPage"), # Done
     path('api/driver/register/', views.register_driver, name='register_driver'), # Done
-    path("api/driver/optimize-route/", views.optimize_route_api, name="optimize_route_api"),
-    path('driverIdentity/', views.driverIdentityView, name='DriverIdentityPage'),
+    path("api/driver/optimize-route/", views.optimize_route_api, name="optimize_route_api"), # Done
+    path('driverIdentity/', views.driverIdentityView, name='DriverIdentityPage'), # Done
     path("api/driver/upload-identity-image/", views.upload_driver_identity_image, name="upload-driver-identity-image"),
     path('api/upload-signature-acknowledgement/', views.upload_signature_acknowledgement, name='upload-signature-acknowledgement'), # Done
     path('api/verify-customer-id/', views.verify_customer_id, name='verify-customer-id'),
-    path('driverCCPoints/', views.driverCCPointsView, name='DriverCCPointsPage'), 
+    path('driverCCPoints/', views.driverCCPointsView, name='DriverCCPointsPage'), # Done
     path("api/driver/<int:driver_id>/cc-points/", views.get_driver_cc_points, name="driver_cc_points"),
 
     path('contactAdmin/', views.contactAdminView, name='contactAdminPage'), 
@@ -99,7 +99,7 @@ urlpatterns = [
 
 
 
-    path('', views.landingView, name='landingPage'),
+    path('', views.landingView, name='landingPage'), # Not Required
 
     path('api/auth/send-otp/', views.send_otp, name='send_otp'), # Done
     path('api/auth/verify-otp/', views.verify_otp, name='verify_otp'), # Done

@@ -417,10 +417,31 @@
                     <input type="password" id="currentPassword" class="w-full border border-gray-300 rounded-lg p-3 text-sm focus:ring-2 focus:ring-teal-500 focus:border-transparent transition-all" placeholder="Enter current password">
                 </div>
                 <div>
-                    <label class="block text-sm font-medium text-gray-700 mb-2">
-                        New Password
-                        <span class="text-red-500">*</span>
-                    </label>
+                    <div class="flex items-center justify-between mb-2">
+                        <label class="block text-sm font-medium text-gray-700">
+                            New Password
+                            <span class="text-red-500">*</span>
+                        </label>
+                        <div class="relative group">
+                            <button type="button" class="text-teal-600 hover:text-teal-700">
+                                <svg class="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/>
+                                </svg>
+                            </button>
+                            <div class="absolute right-0 bottom-full mb-2 w-64 bg-gray-900 text-white text-xs rounded-lg p-3 opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-200 z-10 shadow-xl">
+                                <div class="font-semibold mb-2">Password Requirements:</div>
+                                <ul class="space-y-1 list-disc list-inside">
+                                    <li>At least 8 characters long</li>
+                                    <li>Mix of uppercase & lowercase letters</li>
+                                    <li>Include numbers (0-9)</li>
+                                    <li>Add special characters (!@#$%^&*)</li>
+                                </ul>
+                                <div class="absolute top-full right-4 -mt-1">
+                                    <div class="border-4 border-transparent border-t-gray-900"></div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
                     <input type="password" id="newPassword" class="w-full border border-gray-300 rounded-lg p-3 text-sm focus:ring-2 focus:ring-teal-500 focus:border-transparent transition-all" placeholder="Enter new password">
                 </div>
                 <div>
@@ -454,6 +475,13 @@ function getCookie(name) {
     const parts = value.split(`; ${name}=`);
     if (parts.length === 2) return parts.pop().split(';').shift();
     return null;
+}
+
+function getCSRFToken() {
+    return document.cookie
+        .split('; ')
+        .find(row => row.startsWith('csrftoken='))
+        ?.split('=')[1];
 }
 
 function renderStoreTimings(formattedTimings, rawTimings, editable = false) {
@@ -612,7 +640,15 @@ async function loadPharmacyProfile() {
             return;
         }
 
-        const response = await fetch(`/api/getPharmacyDetails/${pharmacyId}/`);
+        const response = await fetch(`/api/getPharmacyDetails/${pharmacyId}/`, {
+            method: "GET",
+            headers: {
+                "Accept": "application/json",
+                "X-CSRFToken": getCSRFToken(), // ✅ CSRF token
+            },
+            credentials: "include" // ✅ send authToken + csrftoken cookies
+        });
+
         const data = await response.json();
 
         if (data.success && data.pharmacy) {
@@ -643,15 +679,16 @@ async function loadPharmacyProfile() {
             // Format created date
             if (pharmacy.created_at) {
                 const date = new Date(pharmacy.created_at);
-                document.getElementById('createdAt').value = date.toLocaleDateString('en-US', { 
-                    year: 'numeric', 
-                    month: 'long', 
-                    day: 'numeric' 
-                });
+                document.getElementById('createdAt').value = date.toLocaleDateString(
+                    'en-US',
+                    { year: 'numeric', month: 'long', day: 'numeric' }
+                );
             }
 
             if (pharmacy.business_hours_raw) {
-                originalBusinessHours = JSON.parse(JSON.stringify(pharmacy.business_hours_raw));
+                originalBusinessHours = JSON.parse(
+                    JSON.stringify(pharmacy.business_hours_raw)
+                );
 
                 renderStoreTimings(
                     pharmacy.business_hours_formatted,
@@ -660,9 +697,12 @@ async function loadPharmacyProfile() {
                 );
             }
 
-
             // Update profile header with initials
-            const initials = pharmacy.name.split(' ').map(word => word.charAt(0).toUpperCase()).join('');
+            const initials = pharmacy.name
+                .split(' ')
+                .map(word => word.charAt(0).toUpperCase())
+                .join('');
+
             document.getElementById('profileName').textContent = pharmacy.name;
             document.getElementById('profileEmail').textContent = pharmacy.email;
             document.getElementById('profileInitial').textContent = initials;
@@ -678,6 +718,7 @@ async function loadPharmacyProfile() {
         console.error("Error loading profile:", error);
     }
 }
+
 
 // Show notification function
 function showNotification(message, type = 'info') {
@@ -840,8 +881,11 @@ async function changePassword() {
     try {
         const response = await fetch('/api/changeExistingPassword/', {
             method: 'POST',
+            credentials: "include",            // 🔐 SEND JWT COOKIE
             headers: {
-                'Content-Type': 'application/json'
+                'Content-Type': 'application/json',
+                "X-CSRFToken": getCSRFToken(), // 🔐 CSRF PROTECTION
+                
             },
             body: JSON.stringify({
                 pharmacyId: parseInt(pharmacyId),
@@ -860,7 +904,7 @@ async function changePassword() {
         }
     } catch (error) {
         console.error("Error changing password:", error);
-        showNotification("Error changing password. Please try again.", "error");
+        showNotification("Error changing password. Please look at the tooltip for Password Instructions", "error");
     }
 }
 
@@ -971,7 +1015,8 @@ async function saveProfile() {
     try {
         const response = await fetch('/api/editPharmacyProfile/', {
             method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
+            headers: { 'Content-Type': 'application/json', "X-CSRFToken": getCSRFToken() },
+            credentials : "include",
             body: JSON.stringify(changedFields)
         });
 

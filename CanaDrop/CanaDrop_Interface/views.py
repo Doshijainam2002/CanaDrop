@@ -8060,21 +8060,40 @@ def register_driver(request: HttpRequest):
 
 
 
-@csrf_exempt
-@require_GET
-def get_pharmacy_details(request, pharmacy_id):
+@csrf_protect
+@require_http_methods(["GET"])
+@pharmacy_auth_required
+def get_pharmacy_details(request: HttpRequest, pharmacy_id: int):
     """
     GET API: Returns all information of a pharmacy by pharmacyId.
     Example: /api/getPharmacyDetails/1/
+
+    - DB timestamps are UTC
+    - API response timestamps are converted to local timezone
+      using settings.USER_TIMEZONE
     """
     try:
         pharmacy = Pharmacy.objects.get(id=pharmacy_id)
 
-        # ✅ Format business hours nicely
+        # ---- Time handling (UTC → Local) ----
+        created_at_utc = pharmacy.created_at
+        try:
+            created_at_local = created_at_utc.astimezone(settings.USER_TIMEZONE)
+        except Exception:
+            created_at_local = created_at_utc
+
+        created_at_str = created_at_local.strftime("%Y-%m-%d %H:%M:%S")
+
+        # ---- Business hours formatting (UNCHANGED) ----
         days_order = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"]
         day_full = {
-            "Mon": "Monday", "Tue": "Tuesday", "Wed": "Wednesday",
-            "Thu": "Thursday", "Fri": "Friday", "Sat": "Saturday", "Sun": "Sunday"
+            "Mon": "Monday",
+            "Tue": "Tuesday",
+            "Wed": "Wednesday",
+            "Thu": "Thursday",
+            "Fri": "Friday",
+            "Sat": "Saturday",
+            "Sun": "Sunday",
         }
 
         business_hours = pharmacy.business_hours or {}
@@ -8087,94 +8106,160 @@ def get_pharmacy_details(request, pharmacy_id):
             else:
                 open_t = v.get("open", "")
                 close_t = v.get("close", "")
-                # Keep as HH:MM; if you want AM/PM later, tell me
                 formatted_lines.append(f"{day_full[d]}: {open_t} - {close_t}")
 
-        data = {
-            "success": True,
-            "pharmacy": {
-                "id": pharmacy.id,
-                "name": pharmacy.name,
-                "store_address": pharmacy.store_address,
-                "city": pharmacy.city,
-                "province": pharmacy.province,
-                "postal_code": pharmacy.postal_code,
-                "country": pharmacy.country,
-                "phone_number": pharmacy.phone_number,
-                "email": pharmacy.email,
-                "created_at": pharmacy.created_at.strftime("%Y-%m-%d %H:%M:%S"),
+        # ---- Response (UNCHANGED STRUCTURE) ----
+        return JsonResponse(
+            {
+                "success": True,
+                "pharmacy": {
+                    "id": pharmacy.id,
+                    "name": pharmacy.name,
+                    "store_address": pharmacy.store_address,
+                    "city": pharmacy.city,
+                    "province": pharmacy.province,
+                    "postal_code": pharmacy.postal_code,
+                    "country": pharmacy.country,
+                    "phone_number": pharmacy.phone_number,
+                    "email": pharmacy.email,
+                    "created_at": created_at_str,
 
-                "business_hours_raw": business_hours,
-                "business_hours_formatted": formatted_lines,  # array of strings
+                    "business_hours_raw": business_hours,
+                    "business_hours_formatted": formatted_lines,
+                },
             },
-        }
-        return JsonResponse(data, status=200)
+            status=200,
+        )
 
     except Pharmacy.DoesNotExist:
-        return JsonResponse({"success": False, "error": "Pharmacy not found."}, status=404)
-    except Exception as e:
-        return JsonResponse({"success": False, "error": str(e)}, status=500)
+        return JsonResponse(
+            {"success": False, "error": "Pharmacy not found."},
+            status=404,
+        )
+
+    except Exception:
+        # Do NOT leak internals in prod
+        return JsonResponse(
+            {"success": False, "error": "Internal server error."},
+            status=500,
+        )
 
 
 
-
-@csrf_exempt
-@require_POST
+@csrf_protect
+@require_http_methods(["POST"])
+@pharmacy_auth_required
 def change_existing_password(request):
     """
     POST API to change an existing pharmacy password.
+
     Request Body (JSON):
     {
         "pharmacyId": 1,
         "old_password": "current_pass",
-        "new_password": "new_secure_pass"
+        "new_password": "NewStrong#123"
     }
+
+    Password Requirements:
+    - At least 8 characters
+    - Uppercase + lowercase
+    - Number (0-9)
+    - Special char (!@#$%^&*)
     """
+
     try:
-        data = json.loads(request.body.decode("utf-8"))
-        pharmacy_id = data.get("pharmacyId")
-        old_password = data.get("old_password")
-        new_password = data.get("new_password")
-
-        if not (pharmacy_id and old_password and new_password):
-            return JsonResponse({"success": False, "error": "Missing required fields."}, status=400)
-
-        # Retrieve pharmacy
+        # ---------- Parse JSON ----------
         try:
-            pharmacy = Pharmacy.objects.get(id=pharmacy_id)
-        except Pharmacy.DoesNotExist:
-            return JsonResponse({"success": False, "error": "Pharmacy not found."}, status=404)
+            data = json.loads(request.body.decode("utf-8"))
+        except Exception:
+            return JsonResponse(
+                {"success": False, "error": "Invalid JSON body."},
+                status=400
+            )
 
-        # Verify old password
-        if not pharmacy.check_password(old_password):
-            return JsonResponse({"success": False, "error": "Incorrect old password."}, status=401)
+        pharmacy_id = data.get("pharmacyId")
+        old_password = (data.get("old_password") or "").strip()
+        new_password = (data.get("new_password") or "").strip()
 
-        # Update new password
+        if not pharmacy_id or not old_password or not new_password:
+            return JsonResponse(
+                {"success": False, "error": "Missing required fields."},
+                status=400
+            )
+
+        # ---------- Auth safety ----------
+        # pharmacy_auth_required already validated token
+        if int(request.pharmacy.id) != int(pharmacy_id):
+            return JsonResponse(
+                {"success": False, "error": "Unauthorized action."},
+                status=403
+            )
+
+        pharmacy = request.pharmacy
+
+        # ---------- Verify old password ----------
+        if not check_password(old_password, pharmacy.password):
+            return JsonResponse(
+                {"success": False, "error": "Incorrect old password."},
+                status=401
+            )
+
+        # ---------- Password policy ----------
+        if len(new_password) < 8:
+            return JsonResponse(
+                {"success": False, "error": "Password must be at least 8 characters long."},
+                status=400
+            )
+
+        if not re.search(r"[A-Z]", new_password):
+            return JsonResponse(
+                {"success": False, "error": "Password must include at least one uppercase letter."},
+                status=400
+            )
+
+        if not re.search(r"[a-z]", new_password):
+            return JsonResponse(
+                {"success": False, "error": "Password must include at least one lowercase letter."},
+                status=400
+            )
+
+        if not re.search(r"[0-9]", new_password):
+            return JsonResponse(
+                {"success": False, "error": "Password must include at least one number (0-9)."},
+                status=400
+            )
+
+        if not re.search(r"[!@#$%^&*]", new_password):
+            return JsonResponse(
+                {"success": False, "error": "Password must include at least one special character (!@#$%^&*)."},
+                status=400
+            )
+
+        # Prevent reuse
+        if check_password(new_password, pharmacy.password):
+            return JsonResponse(
+                {"success": False, "error": "New password must be different from the old password."},
+                status=400
+            )
+
+        # ---------- Update password ----------
         pharmacy.password = make_password(new_password)
         pharmacy.save(update_fields=["password"])
 
-        # Send confirmation email
-        _send_password_change_email(pharmacy.email)
+        # ---------- Send email (non-blocking) ----------
+        try:
+            # Get current time in UTC (for DB storage if needed)
+            utc_now = timezone.now()
+            
+            # Convert to user's local timezone for email display
+            local_time = utc_now.astimezone(settings.USER_TIMEZONE)
+            changed_at = local_time.strftime("%b %d, %Y %I:%M %p %Z")  # e.g., "Jan 03, 2026 02:30 PM EST"
+            
+            brand_primary = settings.BRAND_COLORS['primary']
+            brand_primary_dark = settings.BRAND_COLORS['primary_dark']
+            logo_url = settings.LOGO_URL
 
-        return JsonResponse({"success": True, "message": "Password changed successfully."}, status=200)
-
-    except json.JSONDecodeError:
-        return JsonResponse({"success": False, "error": "Invalid JSON body."}, status=400)
-    except Exception as e:
-        return JsonResponse({"success": False, "error": str(e)}, status=500)
-
-
-
-def _send_password_change_email(email):
-    """
-    Sends a styled HTML + text password change confirmation email to the pharmacy.
-    """
-    brand_primary = settings.BRAND_COLORS['primary']
-    brand_primary_dark = settings.BRAND_COLORS['primary_dark']
-    logo_url = settings.LOGO_URL
-    changed_at = timezone.now().strftime("%b %d, %Y %H:%M %Z")
-
-    html_content = f"""
+            html_content = f"""
 <!doctype html>
 <html lang="en">
   <head>
@@ -8238,7 +8323,7 @@ def _send_password_change_email(email):
                         If <strong>you</strong> made this change, no further action is needed.
                       </p>
                       <p style="margin:0;font:400 13px/1.65 system-ui,-apple-system,'Segoe UI',Roboto,Helvetica,Arial;color:#334155;">
-                        If this wasn’t you, please reset your password immediately from the login page.
+                        If this wasn't you, please reset your password immediately from the login page.
                       </p>
                     </td>
                   </tr>
@@ -8267,7 +8352,7 @@ def _send_password_change_email(email):
           </table>
 
           <p style="margin:14px 0 0 0;font:400 12px/1.6 system-ui,-apple-system,'Segoe UI',Roboto,Helvetica,Arial;color:#94a3b8;">
-            © {timezone.now().year} {settings.COMPANY_OPERATING_NAME} - {settings.COMPANY_SUB_GROUP_NAME}. All rights reserved.
+            © {local_time.year} {settings.COMPANY_OPERATING_NAME} - {settings.COMPANY_SUB_GROUP_NAME}. All rights reserved.
           </p>
         </td>
       </tr>
@@ -8276,111 +8361,91 @@ def _send_password_change_email(email):
 </html>
 """
 
-    text_content = (
-        f"{settings.COMPANY_OPERATING_NAME} — Password Changed Successfully\n\n"
-        f"Your password was changed on {changed_at}.\n\n"
-        "If you did not perform this change, please reset your password immediately.\n\n"
-        f"{settings.COMPANY_OPERATING_NAME} Support\n"
-    )
+            text_content = (
+                f"{settings.COMPANY_OPERATING_NAME} — Password Changed Successfully\n\n"
+                f"Your password was changed on {changed_at}.\n\n"
+                "If you did not perform this change, please reset your password immediately.\n\n"
+                f"{settings.COMPANY_OPERATING_NAME} Support\n"
+            )
 
-    subject = f"Your {settings.COMPANY_OPERATING_NAME} Password Was Changed Successfully"
-    from_email = settings.DEFAULT_FROM_EMAIL
-    msg = EmailMultiAlternatives(subject, text_content, from_email, [email])
-    msg.attach_alternative(html_content, "text/html")
-    msg.send(fail_silently=True)
+            subject = f"Your {settings.COMPANY_OPERATING_NAME} Password Was Changed Successfully"
+            
+            _send_html_email_help_desk(
+                subject=subject,
+                to_email=pharmacy.email,
+                html=html_content,
+                text_fallback=text_content
+            )
+        except Exception as e:
+            # Log the error but don't fail the password change
+            print(f"Failed to send password change email: {str(e)}")
 
+        return JsonResponse(
+            {"success": True, "message": "Password changed successfully."},
+            status=200
+        )
 
+    except Exception as e:
+        return JsonResponse(
+            {"success": False, "error": str(e)},
+            status=500
+        )
 
-
-
-# @csrf_exempt
-# @require_POST
-# def edit_pharmacy_profile(request):
-#     """
-#     POST API to update pharmacy profile information.
-#     It accepts pharmacyId and any combination of editable fields.
-#     Example Body:
-#     {
-#         "pharmacyId": 1,
-#         "name": "New Pharmacy Name",
-#         "store_address": "123 New Street",
-#         "city": "Waterloo",
-#         "province": "Ontario",
-#         "postal_code": "N2L 3E2",
-#         "country": "Canada",
-#         "phone_number": "9876543210",
-#         "email": "newemail@pharmacy.com"
-#     }
-#     """
-#     try:
-#         data = json.loads(request.body.decode("utf-8"))
-#         pharmacy_id = data.get("pharmacyId")
-
-#         if not pharmacy_id:
-#             return JsonResponse({"success": False, "error": "pharmacyId is required."}, status=400)
-
-#         try:
-#             pharmacy = Pharmacy.objects.get(id=pharmacy_id)
-#         except Pharmacy.DoesNotExist:
-#             return JsonResponse({"success": False, "error": "Pharmacy not found."}, status=404)
-
-#         # Allowed editable fields
-#         editable_fields = [
-#             "name",
-#             "store_address",
-#             "city",
-#             "province",
-#             "postal_code",
-#             "country",
-#             "phone_number",
-#             "email"
-#         ]
-
-#         # Track updated fields
-#         updated_fields = []
-
-#         for field in editable_fields:
-#             if field in data and getattr(pharmacy, field) != data[field]:
-#                 setattr(pharmacy, field, data[field])
-#                 updated_fields.append(field)
-
-#         if not updated_fields:
-#             return JsonResponse({"success": False, "message": "No fields were changed."}, status=200)
-
-#         # Save only changed fields
-#         pharmacy.save(update_fields=updated_fields)
-
-#         return JsonResponse({
-#             "success": True,
-#             "message": f"Profile updated successfully.",
-#             "updated_fields": updated_fields
-#         }, status=200)
-
-#     except json.JSONDecodeError:
-#         return JsonResponse({"success": False, "error": "Invalid JSON body."}, status=400)
-#     except Exception as e:
-#         return JsonResponse({"success": False, "error": str(e)}, status=500)
-
-
-@csrf_exempt
-@require_POST
+@csrf_protect
+@require_http_methods(["POST"])
+@pharmacy_auth_required
 def edit_pharmacy_profile(request):
     """
     POST API to update pharmacy profile information (including business hours).
+    
+    Request Body (JSON):
+    {
+        "pharmacyId": 1,
+        "name": "Updated Pharmacy Name",
+        "store_address": "123 Main St",
+        "city": "Toronto",
+        "province": "ON",
+        "postal_code": "M5H 2N2",
+        "country": "Canada",
+        "phone_number": "+1-416-555-0123",
+        "email": "pharmacy@example.com",
+        "business_hours": {
+            "Mon": {"open": "09:00", "close": "17:00"},
+            "Tue": {"open": "09:00", "close": "17:00"},
+            "Wed": "closed",
+            ...
+        }
+    }
     """
     try:
-        data = json.loads(request.body.decode("utf-8"))
+        # ---------- Parse JSON ----------
+        try:
+            data = json.loads(request.body.decode("utf-8"))
+        except json.JSONDecodeError:
+            return JsonResponse(
+                {"success": False, "error": "Invalid JSON body."},
+                status=400
+            )
+
         pharmacy_id = data.get("pharmacyId")
 
         if not pharmacy_id:
-            return JsonResponse({"success": False, "error": "pharmacyId is required."}, status=400)
+            return JsonResponse(
+                {"success": False, "error": "pharmacyId is required."},
+                status=400
+            )
 
-        try:
-            pharmacy = Pharmacy.objects.get(id=pharmacy_id)
-        except Pharmacy.DoesNotExist:
-            return JsonResponse({"success": False, "error": "Pharmacy not found."}, status=404)
+        # ---------- Auth safety ----------
+        # pharmacy_auth_required already validated token
+        if int(request.pharmacy.id) != int(pharmacy_id):
+            return JsonResponse(
+                {"success": False, "error": "Unauthorized action."},
+                status=403
+            )
 
-        # Editable scalar fields
+        pharmacy = request.pharmacy
+
+        # ---------- Editable fields ----------
         editable_fields = [
             "name",
             "store_address",
@@ -8394,17 +8459,51 @@ def edit_pharmacy_profile(request):
 
         updated_fields = []
 
-        # Handle normal fields
+        # ---------- Validate and update scalar fields ----------
         for field in editable_fields:
-            if field in data and getattr(pharmacy, field) != data[field]:
-                setattr(pharmacy, field, data[field])
-                updated_fields.append(field)
+            if field in data:
+                new_value = data[field]
+                
+                # Trim whitespace for string fields
+                if isinstance(new_value, str):
+                    new_value = new_value.strip()
+                    
+                    # Additional validation for specific fields
+                    if field == "email" and new_value:
+                        # Basic email validation
+                        if not re.match(r"^[^\s@]+@[^\s@]+\.[^\s@]+$", new_value):
+                            return JsonResponse(
+                                {"success": False, "error": "Invalid email format."},
+                                status=400
+                            )
+                    
+                    if field == "phone_number" and new_value:
+                        # Remove spaces and validate phone has at least 10 digits
+                        clean_phone = re.sub(r'\D', '', new_value)
+                        if len(clean_phone) < 10:
+                            return JsonResponse(
+                                {"success": False, "error": "Phone number must have at least 10 digits."},
+                                status=400
+                            )
+                    
+                    if field == "postal_code" and new_value:
+                        # Basic postal code validation (not empty)
+                        if len(new_value) < 3:
+                            return JsonResponse(
+                                {"success": False, "error": "Invalid postal code."},
+                                status=400
+                            )
+                
+                # Check if value actually changed
+                if getattr(pharmacy, field) != new_value:
+                    setattr(pharmacy, field, new_value)
+                    updated_fields.append(field)
 
-        # ✅ Handle business hours separately
+        # ---------- Handle business hours separately ----------
         if "business_hours" in data:
             incoming_hours = data["business_hours"]
 
-            # Basic validation
+            # Validate business_hours structure
             if not isinstance(incoming_hours, dict):
                 return JsonResponse(
                     {"success": False, "error": "business_hours must be an object."},
@@ -8413,51 +8512,88 @@ def edit_pharmacy_profile(request):
 
             valid_days = {"Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"}
 
+            # Validate each day's hours
             for day, value in incoming_hours.items():
                 if day not in valid_days:
                     return JsonResponse(
-                        {"success": False, "error": f"Invalid day: {day}"},
+                        {"success": False, "error": f"Invalid day: {day}. Must be one of {valid_days}"},
                         status=400
                     )
 
-                if value != "closed":
-                    if (
-                        not isinstance(value, dict)
-                        or "open" not in value
-                        or "close" not in value
-                    ):
-                        return JsonResponse(
-                            {
-                                "success": False,
-                                "error": f"Invalid hours format for {day}"
-                            },
-                            status=400
-                        )
+                if value == "closed":
+                    continue
 
+                # Validate open/close format
+                if not isinstance(value, dict) or "open" not in value or "close" not in value:
+                    return JsonResponse(
+                        {"success": False, "error": f"Invalid hours format for {day}. Expected {{\"open\": \"HH:MM\", \"close\": \"HH:MM\"}} or \"closed\"."},
+                        status=400
+                    )
+
+                # Validate time format (HH:MM)
+                time_pattern = r"^([0-1]?[0-9]|2[0-3]):[0-5][0-9]$"
+                if not re.match(time_pattern, value["open"]) or not re.match(time_pattern, value["close"]):
+                    return JsonResponse(
+                        {"success": False, "error": f"Invalid time format for {day}. Use HH:MM format (e.g., 09:00, 17:30)."},
+                        status=400
+                    )
+
+                # Validate that close time is after open time
+                open_time = datetime.strptime(value["open"], "%H:%M").time()
+                close_time = datetime.strptime(value["close"], "%H:%M").time()
+                
+                if close_time <= open_time:
+                    return JsonResponse(
+                        {"success": False, "error": f"Close time must be after open time for {day}."},
+                        status=400
+                    )
+
+            # Check if business hours actually changed
             if pharmacy.business_hours != incoming_hours:
                 pharmacy.business_hours = incoming_hours
                 updated_fields.append("business_hours")
 
+        # ---------- Check if any changes were made ----------
         if not updated_fields:
             return JsonResponse(
                 {"success": False, "message": "No fields were changed."},
                 status=200
             )
 
+        # ---------- Save changes with timezone awareness ----------
+        # Django auto-updates `updated_at` if you have auto_now=True
+        # The timestamp is stored in UTC by default
         pharmacy.save(update_fields=updated_fields)
+
+        # ---------- Convert timestamps to local timezone for response ----------
+        utc_now = timezone.now()
+        local_time = utc_now.astimezone(settings.USER_TIMEZONE)
+        updated_at_local = local_time.strftime("%b %d, %Y %I:%M %p %Z")
 
         return JsonResponse({
             "success": True,
             "message": "Profile updated successfully.",
-            "updated_fields": updated_fields
+            "updated_fields": updated_fields,
+            "updated_at": updated_at_local
         }, status=200)
 
-    except json.JSONDecodeError:
-        return JsonResponse({"success": False, "error": "Invalid JSON body."}, status=400)
+    except Pharmacy.DoesNotExist:
+        return JsonResponse(
+            {"success": False, "error": "Pharmacy not found."},
+            status=404
+        )
+    except ValueError as ve:
+        return JsonResponse(
+            {"success": False, "error": f"Validation error: {str(ve)}"},
+            status=400
+        )
     except Exception as e:
-        return JsonResponse({"success": False, "error": str(e)}, status=500)
-
-
+        # Log the error in production
+        print(f"Error in edit_pharmacy_profile: {str(e)}")
+        return JsonResponse(
+            {"success": False, "error": "An error occurred while updating profile."},
+            status=500
+        )
 
 
 
@@ -8748,73 +8884,299 @@ def solve_single_date_group(date_key, date_deliveries, start_location, gmaps):
     }
 
 
-@csrf_exempt
+# @csrf_exempt
+# @require_http_methods(["POST"])
+# def optimize_route_api(request):
+#     """
+#     Optimized delivery route API with:
+#     - Parallel distance matrix fetching
+#     - Distance matrix caching
+#     - Adaptive solver timeouts
+#     - Better error handling
+#     - Consolidated consecutive same-address stops
+#     """
+#     try:
+#         data = json.loads(request.body)
+#         driver_start = data.get("driver_start")
+#         deliveries = data.get("deliveries", [])
+
+#         logger.info(f"Received optimization request: driver_start={driver_start}, deliveries={len(deliveries)}")
+
+#         if not driver_start or not deliveries:
+#             return JsonResponse({"error": "Missing required data", "success": False}, status=400)
+
+#         if not isinstance(deliveries, list) or len(deliveries) == 0:
+#             return JsonResponse({"error": "No deliveries provided", "success": False}, status=400)
+
+#         # Use secure Google Maps API key
+#         api_key = settings.GOOGLE_MAPS_API_KEY
+#         if not api_key:
+#             logger.error("Google Maps API key not configured")
+#             return JsonResponse({"error": "API key not configured", "success": False}, status=500)
+
+#         gmaps = googlemaps.Client(key=api_key)
+
+#         # Group deliveries by pickup date
+#         deliveries_by_date = defaultdict(list)
+#         from datetime import datetime, date
+#         today = date.today()
+        
+#         for d in deliveries:
+#             if not d.get("pickup_address") or not d.get("dropoff_address"):
+#                 logger.warning(f"Skipping delivery with missing address: {d}")
+#                 continue
+            
+#             # Extract date from pickup_date
+#             pickup_date = d.get("pickup_date", "unknown")
+#             if isinstance(pickup_date, str) and 'T' in pickup_date:
+#                 pickup_date = pickup_date.split('T')[0]
+            
+#             # Skip past dates
+#             try:
+#                 delivery_date = datetime.strptime(pickup_date, '%Y-%m-%d').date()
+#                 if delivery_date < today:
+#                     logger.info(f"Skipping past date delivery: {pickup_date} for order {d.get('order_id')}")
+#                     continue
+#             except:
+#                 logger.warning(f"Invalid date format: {pickup_date}, including in optimization")
+            
+#             deliveries_by_date[pickup_date].append(d)
+        
+#         if len(deliveries_by_date) == 0:
+#             return JsonResponse({
+#                 "error": "No current or future deliveries to optimize", 
+#                 "success": False
+#             }, status=400)
+        
+#         logger.info(f"Grouped {sum(len(v) for v in deliveries_by_date.values())} deliveries into {len(deliveries_by_date)} date groups")
+
+#         # Process each date group
+#         all_stops = []
+#         total_distance = 0
+#         current_location = driver_start
+
+#         # Sort dates chronologically
+#         sorted_dates = sorted(deliveries_by_date.keys())
+        
+#         for idx, date_key in enumerate(sorted_dates):
+#             date_deliveries = deliveries_by_date[date_key]
+            
+#             try:
+#                 result = solve_single_date_group(date_key, date_deliveries, current_location, gmaps)
+                
+#                 # Skip start point after first date group
+#                 if idx > 0 and result["stops"][0]["kind"] == "start":
+#                     result["stops"] = result["stops"][1:]
+                
+#                 all_stops.extend(result["stops"])
+#                 total_distance += result["distance"]
+#                 current_location = result["last_address"]
+                
+#             except Exception as e:
+#                 logger.error(f"Error optimizing date {date_key}: {str(e)}")
+#                 return JsonResponse({
+#                     "error": f"Failed to optimize route for {date_key}: {str(e)}", 
+#                     "success": False
+#                 }, status=500)
+
+#         # Consolidate consecutive stops at same address
+#         consolidated_stops = consolidate_consecutive_stops(all_stops)
+
+#         logger.info(f"✓✓ FULL ROUTE OPTIMIZED: {len(consolidated_stops)} total stops (consolidated from {len(all_stops)}), {round(total_distance/1000, 2)}km across {len(deliveries_by_date)} dates")
+
+#         return JsonResponse({
+#             "success": True,
+#             "stops": consolidated_stops,
+#             "total_distance_km": round(total_distance / 1000, 2),
+#             "dates_optimized": len(deliveries_by_date)
+#         })
+
+#     except json.JSONDecodeError as e:
+#         logger.error(f"JSON decode error: {str(e)}")
+#         return JsonResponse({"error": "Invalid JSON payload", "success": False}, status=400)
+#     except Exception as e:
+#         logger.exception(f"Unexpected error in route optimization: {str(e)}")
+#         return JsonResponse({"error": f"Internal server error: {str(e)}", "success": False}, status=500)
+
+
+@csrf_protect
 @require_http_methods(["POST"])
+@driver_auth_required
 def optimize_route_api(request):
     """
     Optimized delivery route API with:
+    - Driver authentication (JWT token)
+    - CSRF protection
+    - Timezone awareness (settings.USER_TIMEZONE)
     - Parallel distance matrix fetching
     - Distance matrix caching
     - Adaptive solver timeouts
     - Better error handling
     - Consolidated consecutive same-address stops
+    
+    Request Body (JSON):
+    {
+        "driver_start": "123 Main St, City, Province",
+        "deliveries": [
+            {
+                "order_id": 123,
+                "pickup_address": "456 Oak Ave, City",
+                "dropoff_address": "789 Pine St, City",
+                "pickup_date": "2026-01-15T10:00:00Z"
+            },
+            ...
+        ]
+    }
+    
+    Response:
+    {
+        "success": true,
+        "stops": [
+            {
+                "kind": "start|pickup|dropoff",
+                "address": "...",
+                "order_ids": [123, 124],
+                "date": "2026-01-15",
+                "leg_distance_km": 5.2
+            },
+            ...
+        ],
+        "total_distance_km": 45.8,
+        "dates_optimized": 3,
+        "optimized_at": "Jan 03, 2026 02:30 PM EST"
+    }
     """
     try:
-        data = json.loads(request.body)
+        # ---------- Parse JSON ----------
+        try:
+            data = json.loads(request.body.decode("utf-8"))
+        except json.JSONDecodeError as e:
+            logger.error(f"JSON decode error: {str(e)}")
+            return JsonResponse({
+                "success": False,
+                "error": "Invalid JSON payload"
+            }, status=400)
+
         driver_start = data.get("driver_start")
         deliveries = data.get("deliveries", [])
 
-        logger.info(f"Received optimization request: driver_start={driver_start}, deliveries={len(deliveries)}")
+        # ---------- Input Validation ----------
+        if not driver_start or not isinstance(driver_start, str):
+            return JsonResponse({
+                "success": False,
+                "error": "driver_start address is required"
+            }, status=400)
 
-        if not driver_start or not deliveries:
-            return JsonResponse({"error": "Missing required data", "success": False}, status=400)
+        driver_start = driver_start.strip()
+        if len(driver_start) < 5:
+            return JsonResponse({
+                "success": False,
+                "error": "Invalid driver_start address"
+            }, status=400)
 
         if not isinstance(deliveries, list) or len(deliveries) == 0:
-            return JsonResponse({"error": "No deliveries provided", "success": False}, status=400)
+            return JsonResponse({
+                "success": False,
+                "error": "No deliveries provided"
+            }, status=400)
 
-        # Use secure Google Maps API key
+        # Limit maximum deliveries per request (prevent abuse)
+        if len(deliveries) > 100:
+            return JsonResponse({
+                "success": False,
+                "error": "Maximum 100 deliveries per request"
+            }, status=400)
+
+        # Validate each delivery
+        validated_deliveries = []
+        for idx, d in enumerate(deliveries):
+            if not isinstance(d, dict):
+                return JsonResponse({
+                    "success": False,
+                    "error": f"Delivery {idx} must be an object"
+                }, status=400)
+
+            pickup = d.get("pickup_address", "").strip()
+            dropoff = d.get("dropoff_address", "").strip()
+
+            if not pickup or not dropoff:
+                return JsonResponse({
+                    "success": False,
+                    "error": f"Delivery {idx} missing pickup or dropoff address"
+                }, status=400)
+
+            if len(pickup) < 5 or len(dropoff) < 5:
+                return JsonResponse({
+                    "success": False,
+                    "error": f"Delivery {idx} has invalid address format"
+                }, status=400)
+
+            # Create validated delivery with formatted addresses
+            validated_deliveries.append({
+                "order_id": d.get("order_id"),
+                "pickup_address": pickup,
+                "dropoff_address": dropoff,
+                "pickup_date": d.get("pickup_date", "unknown")
+            })
+
+        logger.info(f"Driver {request.driver.id} optimization request: {len(validated_deliveries)} deliveries")
+
+        # ---------- Google Maps API ----------
         api_key = settings.GOOGLE_MAPS_API_KEY
         if not api_key:
             logger.error("Google Maps API key not configured")
-            return JsonResponse({"error": "API key not configured", "success": False}, status=500)
+            return JsonResponse({
+                "success": False,
+                "error": "Service temporarily unavailable"
+            }, status=500)
 
         gmaps = googlemaps.Client(key=api_key)
 
-        # Group deliveries by pickup date
+        # ---------- Timezone-aware date filtering ----------
+        # Get current date in user's timezone
+        utc_now = timezone.now()
+        local_now = utc_now.astimezone(settings.USER_TIMEZONE)
+        today = local_now.date()
+
+        logger.info(f"Current date in {settings.USER_TIMEZONE}: {today}")
+
+        # ---------- Group deliveries by pickup date ----------
         deliveries_by_date = defaultdict(list)
-        from datetime import datetime, date
-        today = date.today()
         
-        for d in deliveries:
+        for d in validated_deliveries:
             if not d.get("pickup_address") or not d.get("dropoff_address"):
-                logger.warning(f"Skipping delivery with missing address: {d}")
+                logger.warning(f"Skipping delivery with missing address: order_id={d.get('order_id')}")
                 continue
             
             # Extract date from pickup_date
-            pickup_date = d.get("pickup_date", "unknown")
-            if isinstance(pickup_date, str) and 'T' in pickup_date:
-                pickup_date = pickup_date.split('T')[0]
+            pickup_date_str = d.get("pickup_date", "unknown")
             
-            # Skip past dates
+            # Handle ISO format with timezone
+            if isinstance(pickup_date_str, str):
+                if 'T' in pickup_date_str:
+                    pickup_date_str = pickup_date_str.split('T')[0]
+            
+            # Skip past dates (using local timezone)
             try:
-                delivery_date = datetime.strptime(pickup_date, '%Y-%m-%d').date()
+                delivery_date = datetime.strptime(pickup_date_str, '%Y-%m-%d').date()
                 if delivery_date < today:
-                    logger.info(f"Skipping past date delivery: {pickup_date} for order {d.get('order_id')}")
+                    logger.info(f"Skipping past date delivery: {pickup_date_str} for order {d.get('order_id')}")
                     continue
-            except:
-                logger.warning(f"Invalid date format: {pickup_date}, including in optimization")
+            except (ValueError, AttributeError) as e:
+                logger.warning(f"Invalid date format '{pickup_date_str}' for order {d.get('order_id')}: {str(e)}")
+                continue
             
-            deliveries_by_date[pickup_date].append(d)
+            deliveries_by_date[pickup_date_str].append(d)
         
         if len(deliveries_by_date) == 0:
             return JsonResponse({
-                "error": "No current or future deliveries to optimize", 
-                "success": False
+                "success": False,
+                "error": "No current or future deliveries to optimize"
             }, status=400)
         
         logger.info(f"Grouped {sum(len(v) for v in deliveries_by_date.values())} deliveries into {len(deliveries_by_date)} date groups")
 
-        # Process each date group
+        # ---------- Process each date group ----------
         all_stops = []
         total_distance = 0
         current_location = driver_start
@@ -8839,28 +9201,32 @@ def optimize_route_api(request):
             except Exception as e:
                 logger.error(f"Error optimizing date {date_key}: {str(e)}")
                 return JsonResponse({
-                    "error": f"Failed to optimize route for {date_key}: {str(e)}", 
-                    "success": False
+                    "success": False,
+                    "error": f"Failed to optimize route for {date_key}"
                 }, status=500)
 
-        # Consolidate consecutive stops at same address
+        # ---------- Consolidate consecutive stops ----------
         consolidated_stops = consolidate_consecutive_stops(all_stops)
 
-        logger.info(f"✓✓ FULL ROUTE OPTIMIZED: {len(consolidated_stops)} total stops (consolidated from {len(all_stops)}), {round(total_distance/1000, 2)}km across {len(deliveries_by_date)} dates")
+        # ---------- Timezone-aware response timestamp ----------
+        optimized_at_local = local_now.strftime("%b %d, %Y %I:%M %p %Z")
+
+        logger.info(f"✓✓ FULL ROUTE OPTIMIZED for Driver {request.driver.id}: {len(consolidated_stops)} total stops (consolidated from {len(all_stops)}), {round(total_distance/1000, 2)}km across {len(deliveries_by_date)} dates")
 
         return JsonResponse({
             "success": True,
             "stops": consolidated_stops,
             "total_distance_km": round(total_distance / 1000, 2),
-            "dates_optimized": len(deliveries_by_date)
-        })
+            "dates_optimized": len(deliveries_by_date),
+            "optimized_at": optimized_at_local
+        }, status=200)
 
-    except json.JSONDecodeError as e:
-        logger.error(f"JSON decode error: {str(e)}")
-        return JsonResponse({"error": "Invalid JSON payload", "success": False}, status=400)
     except Exception as e:
-        logger.exception(f"Unexpected error in route optimization: {str(e)}")
-        return JsonResponse({"error": f"Internal server error: {str(e)}", "success": False}, status=500)
+        logger.exception(f"Unexpected error in route optimization for driver {getattr(request, 'driver', 'unknown')}")
+        return JsonResponse({
+            "success": False,
+            "error": "An error occurred while optimizing the route"
+        }, status=500)
 
 
 @csrf_exempt
@@ -12694,18 +13060,73 @@ def pharmacy_onboarding_api(request):
     )
 
 
-@csrf_exempt
+# @csrf_exempt
+# @require_http_methods(["GET"])
+# def get_pharmacy_cc_points(request, pharmacy_id):
+#     try:
+#         # 1) Delivered orders count (actual)
+#         delivered_orders_count = DeliveryOrder.objects.filter(
+#             pharmacy_id=pharmacy_id,
+#             status="delivered"
+#         ).count()
+
+#         # 2) Points from CCPointsAccount table (no multiplication)
+#         points_obj = CCPointsAccount.objects.filter(pharmacy_id=pharmacy_id).first()
+#         cc_points = points_obj.points_balance if points_obj else 0
+
+#         return JsonResponse({
+#             "success": True,
+#             "pharmacy_id": pharmacy_id,
+#             "delivered_orders": delivered_orders_count,
+#             "cc_points": cc_points
+#         })
+
+#     except Exception as e:
+#         return JsonResponse({
+#             "success": False,
+#             "error": str(e)
+#         }, status=400)
+
+
+
+@csrf_protect
 @require_http_methods(["GET"])
-def get_pharmacy_cc_points(request, pharmacy_id):
+@pharmacy_auth_required
+def get_pharmacy_cc_points(request: HttpRequest, pharmacy_id: int):
+    """
+    GET API: Returns CC Points and delivered orders count for a pharmacy.
+
+    URL:
+        /api/getPharmacyCCPoints/<pharmacy_id>/
+
+    Response:
+    {
+        "success": true,
+        "pharmacy_id": 1,
+        "delivered_orders": 25,
+        "cc_points": 400
+    }
+    """
     try:
-        # 1) Delivered orders count (actual)
+        # ---------- Auth safety ----------
+        # Ensure pharmacy can only access its own CC points
+        if int(request.pharmacy.id) != int(pharmacy_id):
+            return JsonResponse(
+                {"success": False, "error": "Unauthorized access."},
+                status=403
+            )
+
+        # ---------- Delivered orders count ----------
         delivered_orders_count = DeliveryOrder.objects.filter(
             pharmacy_id=pharmacy_id,
             status="delivered"
         ).count()
 
-        # 2) Points from CCPointsAccount table (no multiplication)
-        points_obj = CCPointsAccount.objects.filter(pharmacy_id=pharmacy_id).first()
+        # ---------- CC Points ----------
+        points_obj = CCPointsAccount.objects.filter(
+            pharmacy_id=pharmacy_id
+        ).only("points_balance").first()
+
         cc_points = points_obj.points_balance if points_obj else 0
 
         return JsonResponse({
@@ -12713,14 +13134,21 @@ def get_pharmacy_cc_points(request, pharmacy_id):
             "pharmacy_id": pharmacy_id,
             "delivered_orders": delivered_orders_count,
             "cc_points": cc_points
-        })
+        }, status=200)
 
     except Exception as e:
-        return JsonResponse({
-            "success": False,
-            "error": str(e)
-        }, status=400)
+        # ⚠️ Log in production instead of exposing error
+        print(f"Error in get_pharmacy_cc_points: {str(e)}")
 
+        return JsonResponse(
+            {
+                "success": False,
+                "error": "Failed to retrieve CC points."
+            },
+            status=500
+        )
+
+        
 
 @csrf_exempt
 @require_http_methods(["POST"])
