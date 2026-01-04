@@ -14,7 +14,7 @@ urlpatterns = [
     path('api/pharmacy/<int:pharmacy_id>/orders/', views.pharmacy_orders_api, name='pharmacy_orders_api'), # Done
     path('api/upload-handover-image/', views.upload_handover_image_api, name='upload_handover_image'), # Done
     path('pharmacyForgotPassword/', views.pharmacyForgotPasswordView, name="PharmacyForgotPasswordPage"),
-    path('api/auth/register-pharmacy/', views.register_pharmacy, name='register_pharmacy'),
+    path('api/auth/register-pharmacy/', views.register_pharmacy, name='register_pharmacy'), # Done
     path('pharmacyRegister/', views.pharmacyRegisterView, name="PharmacyRegisterPage"),
     path('pharmacyProfile/', views.pharmacyProfileView, name="PharmacyProfilePage"),
     path("api/getPharmacyDetails/<int:pharmacy_id>/", views.get_pharmacy_details, name="get_pharmacy_details"),
@@ -45,7 +45,7 @@ urlpatterns = [
     path("api/driver/invoices/weeks/", views.driver_invoice_weeks, name="driver_invoice_weeks"), # Done
     path('driverForgotPassword/', views.driverForgotPasswordView, name="driverForgotPasswordPage"),
     path('driverRegister/', views.driverRegisterView, name="driverRegisterPage"),
-    path('api/driver/register/', views.register_driver, name='register_driver'),
+    path('api/driver/register/', views.register_driver, name='register_driver'), # Done
     path("api/driver/optimize-route/", views.optimize_route_api, name="optimize_route_api"),
     path('driverIdentity/', views.driverIdentityView, name='DriverIdentityPage'),
     path("api/driver/upload-identity-image/", views.upload_driver_identity_image, name="upload-driver-identity-image"),
@@ -101,10 +101,10 @@ urlpatterns = [
 
     path('', views.landingView, name='landingPage'),
 
-    path('api/auth/send-otp/', views.send_otp, name='send_otp'),
-    path('api/auth/verify-otp/', views.verify_otp, name='verify_otp'),
-    path('api/auth/change-password/', views.change_password, name='change_password'),
-    path('api/driver/change-password/', views.change_password_driver, name='change_password_driver'),
+    path('api/auth/send-otp/', views.send_otp, name='send_otp'), # Done
+    path('api/auth/verify-otp/', views.verify_otp, name='verify_otp'), # Done
+    path('api/auth/change-password/', views.change_password, name='change_password'), # Done
+    path('api/driver/change-password/', views.change_password_driver, name='change_password_driver'), # Done
 
 
     

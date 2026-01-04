@@ -128,7 +128,28 @@
           </div>
 
           <div>
-            <label class="block text-sm font-medium text-slate-200">Password</label>
+            <div class="flex items-center justify-between mb-1">
+              <label class="block text-sm font-medium text-slate-200">Password</label>
+              <div class="relative group">
+                <button type="button" class="text-emerald-400 hover:text-emerald-300">
+                  <svg class="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/>
+                  </svg>
+                </button>
+                <div class="absolute right-0 bottom-full mb-2 w-64 bg-gray-900 text-white text-xs rounded-lg p-3 opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-200 z-10 shadow-xl">
+                  <div class="font-semibold mb-2">Password Requirements:</div>
+                  <ul class="space-y-1 list-disc list-inside">
+                    <li>At least 8 characters long</li>
+                    <li>Mix of uppercase & lowercase letters</li>
+                    <li>Include numbers (0-9)</li>
+                    <li>Add special characters (!@#$%^&*)</li>
+                  </ul>
+                  <div class="absolute top-full right-4 -mt-1">
+                    <div class="border-4 border-transparent border-t-gray-900"></div>
+                  </div>
+                </div>
+              </div>
+            </div>
             <input id="reg-pass1" type="password" placeholder="Minimum 8 characters"
                    class="w-full px-4 py-3 border border-slate-600 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-transparent bg-slate-700 focus:bg-slate-600 text-slate-100 placeholder-slate-400"/>
           </div>
@@ -193,6 +214,7 @@
     let resendCountdown = RESEND_SECONDS;
     let timerId = null;
     let autocomplete = null;
+    let weakPasswordAttempts = 0;
 
     // -------- Elements --------
     const stepEmail   = document.getElementById('step-email');
@@ -234,6 +256,7 @@
         types: ['address'],
         componentRestrictions: { country: ['ca', 'us'] }
       });
+      
 
       autocomplete.addListener('place_changed', () => {
         const place = autocomplete.getPlace();
@@ -297,46 +320,84 @@
         button.textContent = idleText;
       }
     }
+            function getCSRFToken() {
+    return document.cookie
+        .split('; ')
+        .find(row => row.startsWith('csrftoken='))
+        ?.split('=')[1];
+      }
 
     function isValidEmail(v){ return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(v); }
 
-    function show(section){
-      [stepEmail, stepOtp, stepRegister].forEach(s => s.classList.add('hidden'));
-      section.classList.remove('hidden');
-      
-      // Initialize autocomplete when registration form is shown
-      if (section === stepRegister) {
-        setTimeout(initAutocomplete, 100);
-      }
-    }
+function show(section){
+  [stepEmail, stepOtp, stepRegister].forEach(s => s.classList.add('hidden'));
+  section.classList.remove('hidden');
+  
+  // Reset weak password attempts when leaving register step
+  if (section !== stepRegister) {
+    weakPasswordAttempts = 0;
+  }
+  
+  // Initialize autocomplete when registration form is shown
+  if (section === stepRegister) {
+    setTimeout(initAutocomplete, 100);
+  }
+}
 
-    function showModal(status, title, message, redirect=true){
-      const iconSuccess = `
-        <svg class="h-16 w-16 text-green-500 mx-auto mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/>
-        </svg>`;
-      const iconFail = `
-        <svg class="h-16 w-16 text-red-500 mx-auto mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 14l2-2m0 0l2-2m-2 2l-2-2m2 2l2 2m7-2a9 9 0 11-18 0 9 9 0 0118 0z"/>
-        </svg>`;
-      modalContent.innerHTML = `
-        ${status === 'success' ? iconSuccess : iconFail}
-        <h3 class="text-xl font-bold text-slate-100 mb-2">${title}</h3>
-        <p class="text-slate-300 mb-4">${message || ''}</p>
-        <button id="modalAction" class="bg-emerald-600 text-white px-6 py-2 rounded-lg hover:bg-emerald-700 transition-colors">
-          Continue
-        </button>
-      `;
-      modal.classList.remove('hidden');
-      document.getElementById('modalAction').onclick = () => {
-        modal.classList.add('hidden');
-        if (redirect) window.location.href = REDIRECT_URL;
-      };
-    }
+function showModal(status, title, message){
+  const iconSuccess = `
+    <svg class="h-16 w-16 text-green-500 mx-auto mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/>
+    </svg>`;
+  const iconFail = `
+    <svg class="h-16 w-16 text-red-500 mx-auto mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 14l2-2m0 0l2-2m-2 2l-2-2m2 2l2 2m7-2a9 9 0 11-18 0 9 9 0 0118 0z"/>
+    </svg>`;
+  modalContent.innerHTML = `
+    ${status === 'success' ? iconSuccess : iconFail}
+    <h3 class="text-xl font-bold text-slate-100 mb-2">${title}</h3>
+    <p class="text-slate-300 mb-4">${message || ''}</p>
+    <button id="modalAction" class="bg-emerald-600 text-white px-6 py-2 rounded-lg hover:bg-emerald-700 transition-colors">
+      Continue
+    </button>
+  `;
+  modal.classList.remove('hidden');
+  document.getElementById('modalAction').onclick = () => {
+    modal.classList.add('hidden');
+    window.location.href = REDIRECT_URL;
+  };
+}
 
-    closeModalBtn.addEventListener('click', () => {
-      modal.classList.add('hidden');
-    });
+    function showWarningModal(title, message, callback) {
+  const iconWarning = `
+    <svg class="h-16 w-16 text-amber-500 mx-auto mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"/>
+    </svg>`;
+  
+  modalContent.innerHTML = `
+    ${iconWarning}
+    <h3 class="text-xl font-bold text-slate-100 mb-2">${title}</h3>
+    <p class="text-slate-300 mb-4 whitespace-pre-line">${message}</p>
+    <button id="modalWarningAction" class="bg-amber-600 text-white px-6 py-2 rounded-lg hover:bg-amber-700 transition-colors">
+      OK
+    </button>
+  `;
+  modal.classList.remove('hidden');
+
+  document.getElementById('modalWarningAction').onclick = () => {
+    modal.classList.add('hidden');
+    if (callback) callback();
+  };
+}
+
+closeModalBtn.addEventListener('click', () => {
+  modal.classList.add('hidden');
+  // Only redirect if the modal was a success/fail modal that should redirect
+  const modalAction = document.getElementById('modalAction');
+  if (modalAction) {
+    window.location.href = REDIRECT_URL;
+  }
+});
 
     // digits-only OTP input
     otpInput.addEventListener('input', () => {
@@ -362,9 +423,8 @@
 
     btnSendOtp.addEventListener('click', async () => {
       const rawEmail = emailInput.value.trim();
-
       if (!rawEmail || !isValidEmail(rawEmail)) {
-        return showModal('fail', 'Invalid Email', 'Please enter a valid email address.', false);
+        return showWarningModal('Invalid Email', 'Please enter a valid email address.');
       }
 
       const email = rawEmail.toLowerCase();
@@ -418,7 +478,7 @@
     btnVerifyOtp.addEventListener('click', async () => {
       const otp = otpInput.value.trim();
       if (otp.length < 4) {
-        return showModal('fail', 'Invalid OTP', 'Please enter the code sent to your email.', false);
+        return showWarningModal('Invalid OTP', 'Please enter the code sent to your email.');
       }
 
       const email = currentEmail.toLowerCase();
@@ -447,65 +507,138 @@
       }
     });
 
-    btnRegister.addEventListener('click', async () => {
-      const payload = {
-        name: nameInput.value.trim(),
-        phone_number: phoneInput.value.trim(),
-        address: addrInput.value.trim(),
-        city: cityInput.value.trim(),
-        province: provInput.value.trim(),
-        postal_code: postalInput.value.trim(),
-        country: countryInput.value.trim(),
-        email: currentEmail,
-        password: pass1.value.trim(),
-        vehicle_number: vehicleInput.value.trim(),
-        otpToken: otpToken
-      };
+btnRegister.addEventListener('click', async () => {
+  const name = nameInput.value.trim();
+  const phone = phoneInput.value.trim();
+  const address = addrInput.value.trim();
+  const city = cityInput.value.trim();
+  const province = provInput.value.trim();
+  const postal = postalInput.value.trim();
+  const country = countryInput.value.trim();
+  const vehicle = vehicleInput.value.trim();
+  const p1 = pass1.value.trim();
+  const p2 = pass2.value.trim();
 
-      // Client-side checks
-      const missing = [];
-      if (!payload.name) missing.push('name');
-      if (!payload.phone_number) missing.push('phone_number');
-      if (!payload.address) missing.push('address');
-      if (!payload.city) missing.push('city');
-      if (!payload.province) missing.push('province');
-      if (!payload.postal_code) missing.push('postal_code');
-      if (!payload.country) missing.push('country');
-      if (!payload.vehicle_number) missing.push('vehicle_number');
-      if (!payload.email) missing.push('email');
-      if (!payload.password) missing.push('password');
-      if (!payload.otpToken) missing.push('otpToken');
+  // Client-side checks
+  const missing = [];
+  if (!name) missing.push('name');
+  if (!phone) missing.push('phone_number');
+  if (!vehicle) missing.push('vehicle_number');
+  if (!p1) missing.push('password');
 
-      if (missing.length){
-        return showModal('fail','Missing Fields',`Please fill: ${missing.join(', ')}`, false);
-      }
-      if (payload.password.length < 8){
-        return showModal('fail','Weak Password','Please use at least 8 characters.', false);
-      }
-      if (pass1.value.trim() !== pass2.value.trim()){
-        return showModal('fail','Password Mismatch','Passwords do not match.', false);
-      }
+  if (missing.length){
+    return showWarningModal('Missing Fields', `Please fill: ${missing.join(', ')}`);
+  }
+  
+  if (p1 !== p2) {
+    return showWarningModal('Password Mismatch', 'Passwords do not match.');
+  }
 
-      setLoading(btnRegister, true, 'Create Account');
-      try{
-        const res = await fetch(API_REGISTER, {
-          method:'POST',
-          headers:{'Content-Type':'application/json'},
-          body: JSON.stringify(payload)
-        });
-        const data = await res.json();
-        if (data.success){
-          showModal('success','Registration Complete','Your driver account has been created. You can sign in now.');
-        } else {
-          showModal('fail','Registration Failed', data.message || 'Please try again.', false);
-        }
-      } catch (e){
-        console.error('register error:', e);
-        showModal('fail','Network Error','Could not complete registration.', false);
-      } finally {
-        setLoading(btnRegister, false, 'Create Account');
-      }
+  // Client-side password validation with retry logic
+  if (p1.length < 8) {
+    weakPasswordAttempts++;
+    const remainingAttempts = 3 - weakPasswordAttempts;
+    
+    if (weakPasswordAttempts >= 3) {
+      showModal(
+        'fail', 
+        'Too Many Attempts', 
+        'You have exceeded the maximum number of attempts. Please restart the registration process.'
+      );
+      return;
+    }
+    
+    showWarningModal(
+      'Weak Password',
+      `Please use at least 8 characters.\n\nAttempts remaining: ${remainingAttempts}`
+    );
+    return;
+  }
+
+  // Add password strength validation
+  const hasUpperCase = /[A-Z]/.test(p1);
+  const hasLowerCase = /[a-z]/.test(p1);
+  const hasNumber = /[0-9]/.test(p1);
+  const hasSpecialChar = /[!@#$%^&*(),.?":{}|<>]/.test(p1);
+
+  if (!hasUpperCase || !hasLowerCase || !hasNumber || !hasSpecialChar) {
+    weakPasswordAttempts++;
+    const remainingAttempts = 3 - weakPasswordAttempts;
+    
+    const missingCriteria = [];
+    if (!hasUpperCase) missingCriteria.push('uppercase letter');
+    if (!hasLowerCase) missingCriteria.push('lowercase letter');
+    if (!hasNumber) missingCriteria.push('number');
+    if (!hasSpecialChar) missingCriteria.push('special character');
+    
+    if (weakPasswordAttempts >= 3) {
+      showModal('fail', 'Too Many Attempts', 
+        'You have exceeded the maximum number of attempts. Please restart the registration process.');
+      return;
+    }
+    
+    showWarningModal(
+      'Weak Password',
+      `Password must include: ${missingCriteria.join(', ')}.\n\nAttempts remaining: ${remainingAttempts}`
+    );
+    return;
+  }
+
+  const payload = {
+    name: name,
+    phone_number: phone,
+    email: currentEmail,
+    password: p1,
+    vehicle_number: vehicle,
+    otpToken: otpToken
+  };
+
+  setLoading(btnRegister, true, 'Create Account');
+  try{
+    const res = await fetch(API_REGISTER, {
+      method:'POST',
+      headers: {
+        'Content-Type':'application/json',
+        'X-CSRFToken': getCSRFToken() // ✅ required by @csrf_protect
+      },
+      body: JSON.stringify(payload)
     });
+    const data = await res.json();
+    
+    if (data.success){
+      // Reset counter on success
+      weakPasswordAttempts = 0;
+      showModal('success','Registration Complete','Your driver account has been created. You can sign in now.');
+    } else {
+      // Check if it's a password strength issue from the server
+      if (data.message && data.message.toLowerCase().includes('password')) {
+        weakPasswordAttempts++;
+        const remainingAttempts = 3 - weakPasswordAttempts;
+        
+        if (weakPasswordAttempts >= 3) {
+          showModal(
+            'fail', 
+            'Too Many Attempts', 
+            'You have exceeded the maximum number of attempts. Please restart the registration process.'
+          );
+          return;
+        }
+        
+        showWarningModal(
+          'Password Requirements Not Met',
+          `${data.message}\n\nAttempts remaining: ${remainingAttempts}`
+        );
+      } else {
+        showModal('fail','Registration Failed', data.message || 'Please try again.');
+      }
+    }
+  } catch (e){
+    console.error('register error:', e);
+    showModal('fail','Network Error','Could not complete registration.');
+  } finally {
+    setLoading(btnRegister, false, 'Create Account');
+  }
+});
 
     document.getElementById("current-year").textContent = new Date().getFullYear();
   </script>

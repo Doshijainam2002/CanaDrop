@@ -119,7 +119,28 @@
 
         <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
           <div class="relative">
-            <label class="block text-sm font-medium text-gray-700">Password</label>
+            <div class="flex items-center justify-between mb-1">
+              <label class="block text-sm font-medium text-gray-700">Password</label>
+              <div class="relative group">
+                <button type="button" class="text-teal-600 hover:text-teal-700">
+                  <svg class="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/>
+                  </svg>
+                </button>
+                <div class="absolute right-0 bottom-full mb-2 w-64 bg-gray-900 text-white text-xs rounded-lg p-3 opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-200 z-10 shadow-xl">
+                  <div class="font-semibold mb-2">Password Requirements:</div>
+                  <ul class="space-y-1 list-disc list-inside">
+                    <li>At least 8 characters long</li>
+                    <li>Mix of uppercase & lowercase letters</li>
+                    <li>Include numbers (0-9)</li>
+                    <li>Add special characters (!@#$%^&*)</li>
+                  </ul>
+                  <div class="absolute top-full right-4 -mt-1">
+                    <div class="border-4 border-transparent border-t-gray-900"></div>
+                  </div>
+                </div>
+              </div>
+            </div>
             <input id="reg-pass" type="password" placeholder="New password"
                    class="w-full pr-12 px-4 py-3 border border-gray-200 rounded-lg focus:ring-2 focus:ring-teal-500 focus:border-transparent bg-gray-50 focus:bg-white"/>
             <button type="button" id="toggle-pass" class="absolute bottom-3 right-3 text-teal-500 hover:text-teal-600">
@@ -187,6 +208,7 @@
     let resendCountdown = RESEND_SECONDS;
     let timerId = null;
     let autocomplete = null;
+    let weakPasswordAttempts = 0;
 
     // ---------- Elements ----------
     const stepEmail     = document.getElementById('step-email');
@@ -279,6 +301,13 @@
       });
     }
 
+        function getCSRFToken() {
+    return document.cookie
+        .split('; ')
+        .find(row => row.startsWith('csrftoken='))
+        ?.split('=')[1];
+      }
+
     // ---------- Helpers ----------
     function setLoading(button, isLoading, textWhenIdle) {
       if (isLoading) {
@@ -295,6 +324,11 @@
     function show(section) {
       [stepEmail, stepOtp, stepRegister].forEach(s => s.classList.add('hidden'));
       section.classList.remove('hidden');
+      
+      // Reset weak password attempts when leaving register step
+      if (section !== stepRegister) {
+        weakPasswordAttempts = 0;
+      }
       
       // Initialize autocomplete when registration form is shown
       if (section === stepRegister) {
@@ -338,10 +372,36 @@
       };
     }
 
-    closeModalBtn.addEventListener('click', () => {
-      modal.classList.add('hidden');
-      window.location.href = REDIRECT_URL;
-    });
+    function showWarningModal(title, message, callback) {
+  const iconWarning = `
+    <svg class="h-16 w-16 text-amber-500 mx-auto mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"/>
+    </svg>`;
+  
+  modalContent.innerHTML = `
+    ${iconWarning}
+    <h3 class="text-xl font-bold text-gray-800 mb-2">${title}</h3>
+    <p class="text-gray-600 mb-4 whitespace-pre-line">${message}</p>
+    <button id="modalWarningAction" class="bg-amber-600 text-white px-6 py-2 rounded-lg hover:bg-amber-700 transition-colors">
+      OK
+    </button>
+  `;
+  modal.classList.remove('hidden');
+
+  document.getElementById('modalWarningAction').onclick = () => {
+    modal.classList.add('hidden');
+    if (callback) callback();
+  };
+}
+    
+closeModalBtn.addEventListener('click', () => {
+  modal.classList.add('hidden');
+  // Only redirect if the modal was a success/fail modal that should redirect
+  const modalAction = document.getElementById('modalAction');
+  if (modalAction) {
+    window.location.href = REDIRECT_URL;
+  }
+});
 
     // Only digits in OTP
     otpInput.addEventListener('input', () => {
@@ -375,7 +435,7 @@
     btnSendOtp.addEventListener('click', async () => {
       const rawEmail = emailInput.value.trim();
       if (!rawEmail || !isValidEmail(rawEmail)) {
-        return showModal('fail', 'Invalid Email', 'Please enter a valid email address.');
+        return showWarningModal('Invalid Email', 'Please enter a valid email address.');
       }
       const email = normalizeEmail(rawEmail);
 
@@ -430,7 +490,7 @@
     btnVerifyOtp.addEventListener('click', async () => {
       const otp = otpInput.value.trim();
       if (otp.length < 4) {
-        return showModal('fail', 'Invalid OTP', 'Please enter the code sent to your email.');
+        return showWarningModal('Invalid OTP', 'Please enter the code sent to your email.');
       }
 
       setLoading(btnVerifyOtp, true, 'Verify OTP');
@@ -459,7 +519,8 @@
     });
 
     btnRegister.addEventListener('click', async () => {
-      if (!otpToken) return showModal('fail', 'Not Verified', 'Please verify your email with the OTP first.');
+      if (!otpToken) return showWarningModal('Not Verified', 'Please verify your email with the OTP first.');
+      
       const name = nameInput.value.trim();
       const phone = phoneInput.value.trim();
       const address = addrInput.value.trim();
@@ -481,13 +542,60 @@
       if (!p1) missing.push('password');
 
       if (missing.length) {
-        return showModal('fail', 'Missing Fields', `Please fill: ${missing.join(', ')}`);
+        return showWarningModal('Missing Fields', `Please fill: ${missing.join(', ')}`);
       }
       if (p1 !== p2) {
-        return showModal('fail', 'Password Mismatch', 'Password and confirm password must match.');
+        return showWarningModal('Password Mismatch', 'Password and confirm password must match.');
       }
+      
+      // Client-side password validation with retry logic
       if (p1.length < 8) {
-        return showModal('fail', 'Weak Password', 'Please use at least 8 characters.');
+        weakPasswordAttempts++;
+        const remainingAttempts = 3 - weakPasswordAttempts;
+        
+        if (weakPasswordAttempts >= 3) {
+          showModal(
+            'fail', 
+            'Too Many Attempts', 
+            'You have exceeded the maximum number of attempts. Please restart the registration process.'
+          );
+          return;
+        }
+        
+        showWarningModal(
+          'Weak Password',
+          `Please use at least 8 characters.\n\nAttempts remaining: ${remainingAttempts}`
+        );
+        return;
+      }
+
+      // Add password strength validation
+      const hasUpperCase = /[A-Z]/.test(p1);
+      const hasLowerCase = /[a-z]/.test(p1);
+      const hasNumber = /[0-9]/.test(p1);
+      const hasSpecialChar = /[!@#$%^&*(),.?":{}|<>]/.test(p1);
+
+      if (!hasUpperCase || !hasLowerCase || !hasNumber || !hasSpecialChar) {
+        weakPasswordAttempts++;
+        const remainingAttempts = 3 - weakPasswordAttempts;
+        
+        const missing = [];
+        if (!hasUpperCase) missing.push('uppercase letter');
+        if (!hasLowerCase) missing.push('lowercase letter');
+        if (!hasNumber) missing.push('number');
+        if (!hasSpecialChar) missing.push('special character');
+        
+        if (weakPasswordAttempts >= 3) {
+          showModal('fail', 'Too Many Attempts', 
+            'You have exceeded the maximum number of attempts. Please restart the registration process.');
+          return;
+        }
+        
+        showWarningModal(
+          'Weak Password',
+          `Password must include: ${missing.join(', ')}.\n\nAttempts remaining: ${remainingAttempts}`
+        );
+        return;
       }
 
       setLoading(btnRegister, true, 'Create Account');
@@ -507,15 +615,45 @@
 
         const res = await fetch(API_REGISTER, {
           method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
+          credentials: 'include', // ✅ required for CSRF + cookies
+          headers: {
+            'Content-Type': 'application/json',
+            'X-CSRFToken': getCSRFToken() // ✅ required by @csrf_protect
+          },
           body: JSON.stringify(payload)
         });
         const data = await res.json();
 
         if (data.success) {
+          // Reset counter on success
+          weakPasswordAttempts = 0;
           showModal('success', 'Registration Complete', 'Your pharmacy account has been created.');
         } else {
-          showModal('fail', 'Registration Failed', data.message || 'Please try again.');
+          // Check if it's a password strength issue from the server
+          if (data.message && data.message.toLowerCase().includes('password')) {
+            weakPasswordAttempts++;
+            const remainingAttempts = 3 - weakPasswordAttempts;
+            
+            if (weakPasswordAttempts >= 3) {
+              showModal(
+                'fail', 
+                'Too Many Attempts', 
+                'You have exceeded the maximum number of attempts. Please restart the registration process.'
+              );
+              return;
+            }
+            
+            showWarningModal(
+              'Password Requirements Not Met',
+              `${data.message}\n\nAttempts remaining: ${remainingAttempts}`
+            );
+          } else {
+            showModal(
+              'fail',
+              'Registration Failed',
+              data.message || 'Please try again.'
+            );
+          }
         }
       } catch (e) {
         console.error('Register error:', e);

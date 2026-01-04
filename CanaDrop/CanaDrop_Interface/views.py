@@ -36,6 +36,7 @@ from reportlab.platypus import (
 from PIL import Image as PILImage
 import jwt
 import hmac
+import re
 
 # Django Core
 from django.conf import settings
@@ -127,6 +128,7 @@ def _send_html_email_billing(subject: str, to_email: str, html: str, text_fallba
 def pharmacyLoginView(request):
     return render(request, 'pharmacyLogin.html')
 
+@ensure_csrf_cookie
 def pharmacyRegisterView(request):
     return render(
         request,
@@ -146,6 +148,7 @@ def pharmacyDashboardView(request):
         }
     )
 
+@ensure_csrf_cookie
 def pharmacyForgotPasswordView(request):
     return render(request, 'pharmacyForgotPassword.html')
 
@@ -194,9 +197,11 @@ def driverAcceptedDeliveriesView(request):
 def driverFinancesView(request):
     return render(request, 'driverFinances.html')
 
+@ensure_csrf_cookie
 def driverForgotPasswordView(request):
     return render(request, 'driverForgotPassword.html')
 
+@ensure_csrf_cookie
 def driverRegisterView(request):
     return render(
         request,
@@ -6497,181 +6502,12 @@ def contact_admin_api(request):
         }, status=500)
 
 
-
-
-# OTP_TTL_SECONDS = settings.OTP_TTL_SECONDS
-# VERIFY_TOKEN_TTL_SECONDS = settings.VERIFY_TOKEN_TTL_SECONDS
-# SIGNING_SALT = settings.OTP_SIGNING_SALT
-
-# # ---- tiny helpers ----
-# def _json(request: HttpRequest):
-#     try:
-#         return json.loads(request.body.decode("utf-8"))
-#     except Exception:
-#         return {}
-
-# def _ok(message, **extra):  return JsonResponse({"success": True, "message": message, **extra})
-# def _err(message, code=400): return JsonResponse({"success": False, "message": message}, status=code)
-# def _otp_key(email: str) -> str: return f"otp:{email.strip().lower()}"
-
-# def _valid_email(addr: str) -> bool:
-#     try:
-#         validate_email(addr)
-#         return True
-#     except ValidationError:
-#         return False
-
-
-# @csrf_exempt
-# def send_otp(request: HttpRequest):
-#     if request.method != "POST":
-#         return _err("Method not allowed", 405)
-
-#     data = _json(request)
-#     email = (data.get("email") or "").strip().lower()
-
-#     if not email or not _valid_email(email):
-#         return _err("Please provide a valid email address.")
-
-#     # Generate + store OTP in cache (plaintext for simplicity)
-#     otp = "".join(random.choice("0123456789") for _ in range(6))
-#     cache.set(_otp_key(email), otp, timeout=OTP_TTL_SECONDS)
-
-#     # --- Brand colors (bluish-green family used across the app) ---
-#     brand_primary = settings.BRAND_COLORS['primary']      
-#     brand_primary_dark = settings.BRAND_COLORS['primary_dark']
-#     brand_accent = settings.BRAND_COLORS['accent']
-
-#     # Modern, responsive-friendly HTML (works in Gmail/Outlook/Apple Mail)
-#     html = f"""
-# <!doctype html>
-# <html lang="en">
-#   <head>
-#     <meta charset="utf-8">
-#     <title>{settings.COMPANY_OPERATING_NAME} Verification Code</title>
-#     <meta name="viewport" content="width=device-width, initial-scale=1">
-#     <style>
-#       @media (prefers-color-scheme: dark) {{
-#         body {{ background: #0b1220 !important; color: #e5e7eb !important; }}
-#         .card {{ background: #0f172a !important; border-color: #1f2937 !important; }}
-#         .muted {{ color: #94a3b8 !important; }}
-#       }}
-#     </style>
-#   </head>
-#   <body style="margin:0;padding:0;background:#f4f7f9;">
-#     <!-- Preheader (hidden, improves inbox preview) -->
-#     <div style="display:none;visibility:hidden;opacity:0;height:0;width:0;overflow:hidden;">
-#       Your {settings.COMPANY_OPERATING_NAME} verification code. Expires in {OTP_TTL_SECONDS//60} minute(s).
-#     </div>
-
-#     <table role="presentation" width="100%" cellspacing="0" cellpadding="0" border="0" style="background:#f4f7f9;padding:24px 12px;">
-#       <tr>
-#         <td align="center">
-#           <!-- Card -->
-#           <table role="presentation" width="100%" cellspacing="0" cellpadding="0" border="0" style="max-width:560px;background:#ffffff;border:1px solid #e5e7eb;border-radius:16px;overflow:hidden;" class="card">
-#                 <!-- Header bar -->
-#                 <tr>
-#                 <td style="background:{brand_primary};padding:18px 20px;">
-#                     <table role="presentation" width="100%" cellspacing="0" cellpadding="0" border="0">
-#                     <tr>
-#                         <td align="left" style="vertical-align:middle;">
-#                         <img src="https://canalogistix.s3.us-east-2.amazonaws.com/Logo/CanaLogistiX_Logo_NOBG.png"
-#                             alt="{settings.COMPANY_OPERATING_NAME}"
-#                             width="64"
-#                             height="64"
-#                             style="display:block;border:0;outline:none;text-decoration:none;border-radius:50%;object-fit:cover;">
-#                         </td>
-#                         <td align="right" style="font:600 16px/1.2 system-ui,-apple-system,'Segoe UI',Roboto,Helvetica,Arial,'Apple Color Emoji','Segoe UI Emoji';color:#e6fffb;">
-#                         Security Verification
-#                         </td>
-#                     </tr>
-#                     </table>
-#                 </td>
-#                 </tr>
-
-
-#             <!-- Content -->
-#             <tr>
-#               <td style="padding:28px 24px 8px 24px;">
-#                 <h1 style="margin:0 0 10px 0;font:700 22px/1.25 system-ui,-apple-system,'Segoe UI',Roboto,Helvetica,Arial;color:#0f172a;">
-#                   Your {settings.COMPANY_OPERATING_NAME} verification code
-#                 </h1>
-#                 <p style="margin:0 0 18px 0;font:400 14px/1.6 system-ui,-apple-system,'Segoe UI',Roboto,Helvetica,Arial;color:#475569;">
-#                   Use the code below to continue. For your security, don’t share it with anyone.
-#                 </p>
-
-#                 <!-- OTP box -->
-#                 <div style="
-#                   margin:18px 0 10px 0;
-#                   background:#f0fdfa;
-#                   border:1px solid {brand_primary};
-#                   color:{brand_primary_dark};
-#                   border-radius:12px;
-#                   padding:16px 20px;
-#                   text-align:center;
-#                   font:700 28px/1.1 'SFMono-Regular',Consolas,'Liberation Mono',Menlo,monospace;">
-#                   <span style="letter-spacing:6px;display:inline-block;">{otp}</span>
-#                 </div>
-
-#                 <p style="margin:8px 0 0 0;font:500 13px/1.6 system-ui,-apple-system,'Segoe UI',Roboto,Helvetica,Arial;color:#334155;">
-#                   Expires in <strong>{OTP_TTL_SECONDS//60} minute(s)</strong>.
-#                 </p>
-
-#                 <hr style="border:0;border-top:1px solid #e5e7eb;margin:24px 0;">
-
-#                 <p class="muted" style="margin:0 0 6px 0;font:400 12px/1.6 system-ui,-apple-system,'Segoe UI',Roboto,Helvetica,Arial;color:#6b7280;">
-#                   Didn’t request this? You can safely ignore this email.
-#                 </p>
-#               </td>
-#             </tr>
-
-#             <!-- Footer -->
-#             <tr>
-#               <td style="padding:0 24px 24px 24px;">
-#                 <table role="presentation" width="100%" cellspacing="0" cellpadding="0" border="0" style="background:#f8fafc;border:1px dashed #e2e8f0;border-radius:12px;">
-#                   <tr>
-#                     <td style="padding:12px 16px;">
-#                       <p style="margin:0;font:400 12px/1.6 system-ui,-apple-system,'Segoe UI',Roboto,Helvetica,Arial;color:#64748b;">
-#                         Need help? Reply to this email and our team will assist you.
-#                       </p>
-#                     </td>
-#                   </tr>
-#                 </table>
-#               </td>
-#             </tr>
-
-#           </table>
-
-#           <!-- Brand footer -->
-#           <p style="margin:14px 0 0 0;font:400 12px/1.6 system-ui,-apple-system,'Segoe UI',Roboto,Helvetica,Arial;color:#94a3b8;">
-#             © {datetime.utcnow().year} {settings.COMPANY_OPERATING_NAME} - {settings.COMPANY_SUB_GROUP_NAME}. All rights reserved.
-#           </p>
-#         </td>
-#       </tr>
-#     </table>
-#   </body>
-# </html>
-# """
-
-#     subject = f"Your {settings.COMPANY_OPERATING_NAME} code • Expires in {OTP_TTL_SECONDS // 60} min"
-#     text = f"Your {settings.COMPANY_OPERATING_NAME} verification code is: {otp}\nThis code expires in {OTP_TTL_SECONDS//60} minute(s).\nIf you didn’t request it, you can ignore this message."
-
-#     try:
-#         _send_html_email_help_desk(subject, email, html, text)
-#     except Exception:
-#         # Swallow send errors but keep response generic (avoid account existence leak)
-#         pass
-
-#     return _ok("If a pharmacy exists for this email, an OTP will be sent shortly.")
-
-
-
 OTP_TTL_SECONDS = settings.OTP_TTL_SECONDS
 VERIFY_TOKEN_TTL_SECONDS = settings.VERIFY_TOKEN_TTL_SECONDS
 SIGNING_SALT = settings.OTP_SIGNING_SALT
 
-OTP_RATE_LIMIT_SECONDS = settings.OTP_RATE_LIMIT_SECONDS      # 60s
-OTP_MAX_PER_HOUR = settings.OTP_MAX_PER_HOUR                  # 5
+OTP_RATE_LIMIT_SECONDS = settings.OTP_RATE_LIMIT_SECONDS     
+OTP_MAX_PER_HOUR = settings.OTP_MAX_PER_HOUR                  
 
 
 # ---- tiny helpers ----
@@ -6934,46 +6770,21 @@ def verify_otp(request: HttpRequest):
     )
 
 
-# @csrf_exempt
-# def verify_otp(request: HttpRequest):
-#     if request.method != "POST":
-#         return _err("Method not allowed", 405)
 
-#     data = _json(request)
-#     email = (data.get("email") or "").strip().lower()
-#     otp = (data.get("otp") or "").strip()
-
-#     if not email or not _valid_email(email):
-#         return _err("Please provide a valid email address.")
-#     if not otp.isdigit() or not (4 <= len(otp) <= 8):
-#         return _err("Please provide a valid OTP.")
-
-#     stored = cache.get(_otp_key(email))
-#     if not stored:
-#         return _err("OTP expired or not found. Please request a new one.", 400)
-
-#     if stored != otp:
-#         return _err("Incorrect OTP.", 400)
-
-#     # success: clear OTP and mint a short-lived token tied to the email
-#     cache.delete(_otp_key(email))
-#     token = dumps({"email": email}, salt=SIGNING_SALT)  # signed with SECRET_KEY
-
-#     return _ok("OTP verified.", token=token, expires_in=VERIFY_TOKEN_TTL_SECONDS)
-
-
-
-@csrf_exempt
+@csrf_protect
+@require_http_methods(["POST"])
 def change_password(request: HttpRequest):
-    if request.method != "POST":
-        return _err("Method not allowed", 405)
+    try:
+        data = json.loads(request.body.decode("utf-8"))
+    except Exception:
+        return _err("Invalid JSON payload", 400)
 
-    data = _json(request)
     email = (data.get("email") or "").strip().lower()
     new_password = (data.get("newPassword") or "").strip()
     confirm_password = (data.get("confirmPassword") or "").strip()
     token = (data.get("otpToken") or "").strip()
 
+    # ---- Validation ----
     if not email or not _valid_email(email):
         return _err("Please provide a valid email address.")
     if not token:
@@ -6982,36 +6793,61 @@ def change_password(request: HttpRequest):
         return _err("Please provide both password fields.")
     if new_password != confirm_password:
         return _err("New Password and Confirm Password must match.")
+    
+    # ---- Enhanced Password Validation ----
     if len(new_password) < 8:
         return _err("Password must be at least 8 characters long.")
+    
+    if not re.search(r'[A-Z]', new_password):
+        return _err("Password must include at least one uppercase letter.")
+    
+    if not re.search(r'[a-z]', new_password):
+        return _err("Password must include at least one lowercase letter.")
+    
+    if not re.search(r'[0-9]', new_password):
+        return _err("Password must include at least one number.")
+    
+    if not re.search(r'[!@#$%^&*(),.?":{}|<>]', new_password):
+        return _err("Password must include at least one special character (!@#$%^&*).")
 
-    # validate token + email match
+    # ---- Verify OTP token ----
     try:
-        data = loads(token, salt=SIGNING_SALT, max_age=VERIFY_TOKEN_TTL_SECONDS)
-    except SignatureExpired:
-        return _err("Verification token is invalid or expired.", 400)
-    except BadSignature:
+        token_data = loads(
+            token,
+            salt=SIGNING_SALT,
+            max_age=VERIFY_TOKEN_TTL_SECONDS
+        )
+    except (SignatureExpired, BadSignature):
         return _err("Verification token is invalid or expired.", 400)
 
-    if data.get("email") != email:
+    if token_data.get("email") != email:
         return _err("Verification token does not match this email.", 400)
 
-    # update Pharmacy password (must exist here; if not, return generic 404)
+    # ---- Fetch pharmacy ----
     try:
         pharmacy = Pharmacy.objects.get(email__iexact=email)
     except Pharmacy.DoesNotExist:
         return _err("No pharmacy account found with this email.", 404)
 
+    # ---- DB WRITE (UTC) ----
     pharmacy.password = make_password(new_password)
     pharmacy.save(update_fields=["password"])
 
+    # ---- Time handling ----
+    changed_at_utc = timezone.now()  # DB truth (UTC)
     try:
-        # Brand colors (bluish green family)
+        changed_at_local = changed_at_utc.astimezone(USER_TZ)
+    except Exception:
+        changed_at_local = changed_at_utc
+
+    changed_at = changed_at_local.strftime("%b %d, %Y %H:%M %Z")
+
+    # ---- Email (HTML UNCHANGED) ----
+    try:
         brand_primary = settings.BRAND_COLORS['primary']
         brand_primary_dark = settings.BRAND_COLORS['primary_dark']
 
         logo_url = settings.LOGO_URL
-        changed_at = timezone.now().strftime("%b %d, %Y %H:%M %Z")
         site_url = settings.SITE_URL.rstrip("/")
         reset_link = f"{site_url}/forgotPassword/" if site_url else "/forgotPassword/"
 
@@ -7032,7 +6868,6 @@ def change_password(request: HttpRequest):
     </style>
   </head>
   <body style="margin:0;padding:0;background:#f4f7f9;">
-    <!-- Preheader (hidden) -->
     <div style="display:none;visibility:hidden;opacity:0;height:0;width:0;overflow:hidden;">
       Your {settings.COMPANY_OPERATING_NAME} password was changed on {changed_at}.
     </div>
@@ -7040,79 +6875,48 @@ def change_password(request: HttpRequest):
     <table role="presentation" width="100%" cellspacing="0" cellpadding="0" border="0" style="background:#f4f7f9;padding:24px 12px;">
       <tr>
         <td align="center">
-          <!-- Card -->
           <table role="presentation" width="100%" cellspacing="0" cellpadding="0" border="0" style="max-width:560px;background:#ffffff;border:1px solid #e5e7eb;border-radius:16px;overflow:hidden;" class="card">
-                <!-- Header bar -->
-                <tr>
-                <td style="background:{brand_primary};padding:18px 20px;">
-                    <table role="presentation" width="100%" cellspacing="0" cellpadding="0" border="0">
-                    <tr>
-                        <td align="left" style="vertical-align:middle;">
-                        <img src="{logo_url}"
-                            alt="{settings.COMPANY_OPERATING_NAME}"
-                            width="64" height="64"
-                            style="display:block;border:0;outline:none;text-decoration:none;border-radius:50%;object-fit:cover;">
-                        </td>
-                        <td align="right" style="font:600 16px/1.2 system-ui,-apple-system,'Segoe UI',Roboto,Helvetica,Arial;color:#e6fffb;">
-                        Security Notification
-                        </td>
-                    </tr>
-                    </table>
-                </td>
-                </tr>
+            <tr>
+              <td style="background:{brand_primary};padding:18px 20px;">
+                <table width="100%">
+                  <tr>
+                    <td>
+                      <img src="{logo_url}" width="64" height="64" style="border-radius:50%;">
+                    </td>
+                    <td align="right" style="color:#e6fffb;font-weight:600;">
+                      Security Notification
+                    </td>
+                  </tr>
+                </table>
+              </td>
+            </tr>
 
-
-            <!-- Content -->
             <tr>
               <td style="padding:28px 24px 10px 24px;">
-                <h1 style="margin:0 0 10px 0;font:700 22px/1.25 system-ui,-apple-system,'Segoe UI',Roboto,Helvetica,Arial;color:#0f172a;">
-                  Password Changed Successfully
-                </h1>
-                <p style="margin:0 0 16px 0;font:400 14px/1.6 system-ui,-apple-system,'Segoe UI',Roboto,Helvetica,Arial;color:#475569;">
+                <h1>Password Changed Successfully</h1>
+                <p>
                   Your {settings.COMPANY_OPERATING_NAME} account password was changed on
                   <strong style="color:{brand_primary_dark}">{changed_at}</strong>.
                 </p>
 
-                <table role="presentation" width="100%" cellspacing="0" cellpadding="0" border="0" style="background:#f8fafc;border:1px dashed #e2e8f0;border-radius:12px;" class="panel">
+                <table width="100%" style="background:#f8fafc;border:1px dashed #e2e8f0;border-radius:12px;">
                   <tr>
                     <td style="padding:14px 16px;">
-                      <p style="margin:0 0 6px 0;font:400 13px/1.65 system-ui,-apple-system,'Segoe UI',Roboto,Helvetica,Arial;color:#334155;">
-                        If <strong>you</strong> made this change, no further action is needed.
-                      </p>
-                      <p style="margin:0;font:400 13px/1.65 system-ui,-apple-system,'Segoe UI',Roboto,Helvetica,Arial;color:#334155;">
-                        If this wasn’t you, please reset your password immediately
-                        
-                      </p>
+                      <p>If <strong>you</strong> made this change, no further action is needed.</p>
+                      <p>If this wasn't you, please reset your password immediately</p>
                     </td>
                   </tr>
                 </table>
 
-                <p class="muted" style="margin:16px 0 0 0;font:400 12px/1.6 system-ui,-apple-system,'Segoe UI',Roboto,Helvetica,Arial;color:#6b7280;">
+                <p class="muted" style="margin-top:16px;">
                   For your security, never share your password with anyone.
                 </p>
               </td>
             </tr>
-
-            <!-- Footer -->
-            <tr>
-              <td style="padding:0 24px 24px 24px;">
-                <table role="presentation" width="100%" cellspacing="0" cellpadding="0" border="0" style="background:#f8fafc;border:1px dashed #e2e8f0;border-radius:12px;" class="panel">
-                  <tr>
-                    <td style="padding:12px 16px;">
-                      <p style="margin:0;font:400 12px/1.6 system-ui,-apple-system,'Segoe UI',Roboto,Helvetica,Arial;color:#64748b;">
-                        Need help? Reply to this email and our team will assist you.
-                      </p>
-                    </td>
-                  </tr>
-                </table>
-              </td>
-            </tr>
-
           </table>
 
-          <!-- Brand footer -->
-          <p style="margin:14px 0 0 0;font:400 12px/1.6 system-ui,-apple-system,'Segoe UI',Roboto,Helvetica,Arial;color:#94a3b8;">
-            © {timezone.now().year} {settings.COMPANY_OPERATING_NAME} - {settings.COMPANY_SUB_GROUP_NAME}. All rights reserved.
+          <p style="margin-top:14px;font-size:12px;color:#94a3b8;">
+            © {changed_at_local.year} {settings.COMPANY_OPERATING_NAME} - {settings.COMPANY_SUB_GROUP_NAME}. All rights reserved.
           </p>
         </td>
       </tr>
@@ -7120,6 +6924,7 @@ def change_password(request: HttpRequest):
   </body>
 </html>
 """
+
         text = (
             f"{settings.COMPANY_OPERATING_NAME} — Password Changed Successfully\n\n"
             f"Timestamp: {changed_at}\n\n"
@@ -7133,26 +6938,202 @@ def change_password(request: HttpRequest):
             html=html,
             text_fallback=text,
         )
+
     except Exception:
-        # Keep API response the same; just log email errors for visibility
-        logger.exception("Password-change email failed to send")
+        logger.exception("Password-change email failed")
 
-    return _ok("Password changed successfully.")
+    return _ok(
+        "Password changed successfully.",
+        changed_at=changed_at
+    )
 
 
+# @csrf_exempt
+# def change_password_driver(request: HttpRequest):
+#     if request.method != "POST":
+#         return _err("Method not allowed", 405)
+
+#     data = _json(request)
+#     email = (data.get("email") or "").strip().lower()
+#     new_password = (data.get("newPassword") or "").strip()
+#     confirm_password = (data.get("confirmPassword") or "").strip()
+#     token = (data.get("otpToken") or "").strip()
+
+#     if not email or not _valid_email(email):
+#         return _err("Please provide a valid email address.")
+#     if not token:
+#         return _err("Missing verification token.")
+#     if not new_password or not confirm_password:
+#         return _err("Please provide both password fields.")
+#     if new_password != confirm_password:
+#         return _err("New Password and Confirm Password must match.")
+#     if len(new_password) < 8:
+#         return _err("Password must be at least 8 characters long.")
+
+#     try:
+#         token_data = loads(token, salt=SIGNING_SALT, max_age=VERIFY_TOKEN_TTL_SECONDS)
+#     except SignatureExpired:
+#         return _err("Verification token is invalid or expired.", 400)
+#     except BadSignature:
+#         return _err("Verification token is invalid or expired.", 400)
+
+#     if token_data.get("email") != email:
+#         return _err("Verification token does not match this email.", 400)
+
+#     # Update DRIVER password
+#     try:
+#         driver = Driver.objects.get(email__iexact=email)
+#     except Driver.DoesNotExist:
+#         return _err("No driver account found with this email.", 404)
+
+#     driver.password = make_password(new_password)
+#     driver.save(update_fields=["password"])
+
+#     # ---- Dark theme email (bluish grey + teal accent) ----
+#     try:
+#         brand_primary = settings.BRAND_COLORS['primary']
+#         brand_primary_dark = settings.BRAND_COLORS['primary_dark']
+#         bg_dark = settings.BRAND_COLORS['bg_dark']
+#         card_dark = settings.BRAND_COLORS['card_dark']
+#         border_dark = settings.BRAND_COLORS['border_dark']
+#         text_light = settings.BRAND_COLORS['text_light']
+#         text_muted = settings.BRAND_COLORS['text_muted']
+
+#         logo_url = settings.LOGO_URL
+#         changed_at = timezone.now().strftime("%b %d, %Y %H:%M %Z")
+
+#         html = f"""
+# <!doctype html>
+# <html lang="en">
+#   <head>
+#     <meta charset="utf-8">
+#     <title>Password Changed • {settings.COMPANY_OPERATING_NAME} Driver</title>
+#     <meta name="viewport" content="width=device-width, initial-scale=1">
+#   </head>
+#   <body style="margin:0;padding:0;background:{bg_dark};">
+#     <!-- Preheader (hidden) -->
+#     <div style="display:none;visibility:hidden;opacity:0;height:0;width:0;overflow:hidden;">
+#       Your {settings.COMPANY_OPERATING_NAME} driver password was changed on {changed_at}.
+#     </div>
+
+#     <table role="presentation" width="100%" cellspacing="0" cellpadding="0" border="0" style="background:{bg_dark};padding:24px 12px;">
+#       <tr>
+#         <td align="center">
+#           <!-- Card -->
+#           <table role="presentation" width="100%" cellspacing="0" cellpadding="0" border="0" style="max-width:560px;background:{card_dark};border:1px solid {border_dark};border-radius:16px;overflow:hidden;">
+#             <!-- Header bar -->
+#             <tr>
+#             <td style="background:{brand_primary};padding:18px 20px;">
+#                 <table role="presentation" width="100%" cellspacing="0" cellpadding="0" border="0">
+#                 <tr>
+#                     <td align="left" style="vertical-align:middle;">
+#                     <img src="{logo_url}"
+#                         alt="{settings.COMPANY_OPERATING_NAME}"
+#                         width="64"
+#                         height="64"
+#                         style="display:block;border:0;outline:none;text-decoration:none;border-radius:50%;object-fit:cover;">
+#                     </td>
+#                     <td align="right" style="font:600 16px/1.2 system-ui,-apple-system,'Segoe UI',Roboto,Helvetica,Arial;color:#e6fffb;">
+#                     Security Notification
+#                     </td>
+#                 </tr>
+#                 </table>
+#             </td>
+#             </tr>
 
 
-@csrf_exempt
+#             <!-- Content -->
+#             <tr>
+#               <td style="padding:28px 24px 10px 24px;">
+#                 <h1 style="margin:0 0 10px 0;font:700 22px/1.25 system-ui,-apple-system,'Segoe UI',Roboto,Helvetica,Arial;color:{text_light};">
+#                   Password Changed Successfully
+#                 </h1>
+#                 <p style="margin:0 0 16px 0;font:400 14px/1.6 system-ui,-apple-system,'Segoe UI',Roboto,Helvetica,Arial;color:{text_muted};">
+#                   Your {settings.COMPANY_OPERATING_NAME} <strong style="color:{text_light};">driver</strong> account password was changed on
+#                   <strong style="color:{brand_primary};">{changed_at}</strong>.
+#                 </p>
+
+#                 <table role="presentation" width="100%" cellspacing="0" cellpadding="0" border="0" style="background:{bg_dark};border:1px dashed {border_dark};border-radius:12px;">
+#                   <tr>
+#                     <td style="padding:14px 16px;">
+#                       <p style="margin:0 0 6px 0;font:400 13px/1.7 system-ui,-apple-system,'Segoe UI',Roboto,Helvetica,Arial;color:{text_light};">
+#                         If <strong>you</strong> made this change, no further action is needed.
+#                       </p>
+#                       <p style="margin:0;font:400 13px/1.7 system-ui,-apple-system,'Segoe UI',Roboto,Helvetica,Arial;color:{text_muted};">
+#                         If this wasn’t you, please reset your password immediately.
+#                       </p>
+#                     </td>
+#                   </tr>
+#                 </table>
+
+#                 <p style="margin:16px 0 0 0;font:400 12px/1.6 system-ui,-apple-system,'Segoe UI',Roboto,Helvetica,Arial;color:{text_muted};">
+#                   For your security, never share your password with anyone.
+#                 </p>
+#               </td>
+#             </tr>
+
+#             <!-- Footer -->
+#             <tr>
+#               <td style="padding:0 24px 24px 24px;">
+#                 <table role="presentation" width="100%" cellspacing="0" cellpadding="0" border="0" style="background:{bg_dark};border:1px dashed {border_dark};border-radius:12px;">
+#                   <tr>
+#                     <td style="padding:12px 16px;">
+#                       <p style="margin:0;font:400 12px/1.6 system-ui,-apple-system,'Segoe UI',Roboto,Helvetica,Arial;color:{text_muted};">
+#                         Need help? Reply to this email and our team will assist you.
+#                       </p>
+#                     </td>
+#                   </tr>
+#                 </table>
+#               </td>
+#             </tr>
+
+#           </table>
+
+#           <!-- Brand footer -->
+#           <p style="margin:14px 0 0 0;font:400 12px/1.6 system-ui,-apple-system,'Segoe UI',Roboto,Helvetica,Arial;color:{text_muted};">
+#             © {timezone.now().year} {settings.COMPANY_OPERATING_NAME} - {settings.COMPANY_SUB_GROUP_NAME}. All rights reserved.
+#           </p>
+#         </td>
+#       </tr>
+#     </table>
+#   </body>
+# </html>
+# """
+#         text = (
+#             f"{settings.COMPANY_OPERATING_NAME} — Driver Password Changed Successfully\n\n"
+#             f"Timestamp: {changed_at}\n\n"
+#             "If you did not make this change, please reset your password immediately."
+#         )
+
+#         _send_html_email_help_desk(
+#             subject=f"Your {settings.COMPANY_OPERATING_NAME} driver password was changed",
+#             to_email=email,
+#             html=html,
+#             text_fallback=text,
+#         )
+#     except Exception:
+#         logger.exception("Driver password-change email failed to send")
+
+#     return _ok("Driver password changed successfully.")
+
+
+import re
+
+@csrf_protect
+@require_http_methods(["POST"])
 def change_password_driver(request: HttpRequest):
-    if request.method != "POST":
-        return _err("Method not allowed", 405)
+    # ---- Parse JSON safely ----
+    try:
+        data = json.loads(request.body.decode("utf-8"))
+    except Exception:
+        return _err("Invalid JSON payload", 400)
 
-    data = _json(request)
     email = (data.get("email") or "").strip().lower()
     new_password = (data.get("newPassword") or "").strip()
     confirm_password = (data.get("confirmPassword") or "").strip()
     token = (data.get("otpToken") or "").strip()
 
+    # ---- Validation ----
     if not email or not _valid_email(email):
         return _err("Please provide a valid email address.")
     if not token:
@@ -7161,29 +7142,56 @@ def change_password_driver(request: HttpRequest):
         return _err("Please provide both password fields.")
     if new_password != confirm_password:
         return _err("New Password and Confirm Password must match.")
+    
+    # ---- Enhanced Password Validation ----
     if len(new_password) < 8:
         return _err("Password must be at least 8 characters long.")
+    
+    if not re.search(r'[A-Z]', new_password):
+        return _err("Password must include at least one uppercase letter.")
+    
+    if not re.search(r'[a-z]', new_password):
+        return _err("Password must include at least one lowercase letter.")
+    
+    if not re.search(r'[0-9]', new_password):
+        return _err("Password must include at least one number.")
+    
+    if not re.search(r'[!@#$%^&*(),.?":{}|<>]', new_password):
+        return _err("Password must include at least one special character (!@#$%^&*).")
 
+    # ---- Verify OTP token (email-bound, time-bound) ----
     try:
-        token_data = loads(token, salt=SIGNING_SALT, max_age=VERIFY_TOKEN_TTL_SECONDS)
-    except SignatureExpired:
-        return _err("Verification token is invalid or expired.", 400)
-    except BadSignature:
+        token_data = loads(
+            token,
+            salt=SIGNING_SALT,
+            max_age=VERIFY_TOKEN_TTL_SECONDS
+        )
+    except (SignatureExpired, BadSignature):
         return _err("Verification token is invalid or expired.", 400)
 
     if token_data.get("email") != email:
         return _err("Verification token does not match this email.", 400)
 
-    # Update DRIVER password
+    # ---- Fetch driver ----
     try:
         driver = Driver.objects.get(email__iexact=email)
     except Driver.DoesNotExist:
         return _err("No driver account found with this email.", 404)
 
+    # ---- DB WRITE (UTC truth) ----
     driver.password = make_password(new_password)
     driver.save(update_fields=["password"])
 
-    # ---- Dark theme email (bluish grey + teal accent) ----
+    # ---- Time handling ----
+    changed_at_utc = timezone.now()  # DB truth (UTC)
+    try:
+        changed_at_local = changed_at_utc.astimezone(USER_TZ)
+    except Exception:
+        changed_at_local = changed_at_utc
+
+    changed_at = changed_at_local.strftime("%b %d, %Y %H:%M %Z")
+
+    # ---- Email (HTML preserved, only time injected) ----
     try:
         brand_primary = settings.BRAND_COLORS['primary']
         brand_primary_dark = settings.BRAND_COLORS['primary_dark']
@@ -7194,7 +7202,6 @@ def change_password_driver(request: HttpRequest):
         text_muted = settings.BRAND_COLORS['text_muted']
 
         logo_url = settings.LOGO_URL
-        changed_at = timezone.now().strftime("%b %d, %Y %H:%M %Z")
 
         html = f"""
 <!doctype html>
@@ -7205,7 +7212,6 @@ def change_password_driver(request: HttpRequest):
     <meta name="viewport" content="width=device-width, initial-scale=1">
   </head>
   <body style="margin:0;padding:0;background:{bg_dark};">
-    <!-- Preheader (hidden) -->
     <div style="display:none;visibility:hidden;opacity:0;height:0;width:0;overflow:hidden;">
       Your {settings.COMPANY_OPERATING_NAME} driver password was changed on {changed_at}.
     </div>
@@ -7213,79 +7219,50 @@ def change_password_driver(request: HttpRequest):
     <table role="presentation" width="100%" cellspacing="0" cellpadding="0" border="0" style="background:{bg_dark};padding:24px 12px;">
       <tr>
         <td align="center">
-          <!-- Card -->
-          <table role="presentation" width="100%" cellspacing="0" cellpadding="0" border="0" style="max-width:560px;background:{card_dark};border:1px solid {border_dark};border-radius:16px;overflow:hidden;">
-            <!-- Header bar -->
+          <table role="presentation" width="100%" cellspacing="0" cellpadding="0" border="0"
+            style="max-width:560px;background:{card_dark};border:1px solid {border_dark};border-radius:16px;overflow:hidden;">
+
             <tr>
-            <td style="background:{brand_primary};padding:18px 20px;">
-                <table role="presentation" width="100%" cellspacing="0" cellpadding="0" border="0">
-                <tr>
-                    <td align="left" style="vertical-align:middle;">
-                    <img src="{logo_url}"
-                        alt="{settings.COMPANY_OPERATING_NAME}"
-                        width="64"
-                        height="64"
-                        style="display:block;border:0;outline:none;text-decoration:none;border-radius:50%;object-fit:cover;">
+              <td style="background:{brand_primary};padding:18px 20px;">
+                <table width="100%">
+                  <tr>
+                    <td>
+                      <img src="{logo_url}" width="64" height="64" style="border-radius:50%;">
                     </td>
-                    <td align="right" style="font:600 16px/1.2 system-ui,-apple-system,'Segoe UI',Roboto,Helvetica,Arial;color:#e6fffb;">
-                    Security Notification
+                    <td align="right" style="color:#e6fffb;font-weight:600;">
+                      Security Notification
                     </td>
-                </tr>
+                  </tr>
                 </table>
-            </td>
+              </td>
             </tr>
 
-
-            <!-- Content -->
             <tr>
               <td style="padding:28px 24px 10px 24px;">
-                <h1 style="margin:0 0 10px 0;font:700 22px/1.25 system-ui,-apple-system,'Segoe UI',Roboto,Helvetica,Arial;color:{text_light};">
-                  Password Changed Successfully
-                </h1>
-                <p style="margin:0 0 16px 0;font:400 14px/1.6 system-ui,-apple-system,'Segoe UI',Roboto,Helvetica,Arial;color:{text_muted};">
-                  Your {settings.COMPANY_OPERATING_NAME} <strong style="color:{text_light};">driver</strong> account password was changed on
-                  <strong style="color:{brand_primary};">{changed_at}</strong>.
+                <h1 style="color:{text_light};">Password Changed Successfully</h1>
+                <p style="color:{text_muted};">
+                  Your {settings.COMPANY_OPERATING_NAME} <strong>driver</strong> account password
+                  was changed on <strong style="color:{brand_primary};">{changed_at}</strong>.
                 </p>
 
-                <table role="presentation" width="100%" cellspacing="0" cellpadding="0" border="0" style="background:{bg_dark};border:1px dashed {border_dark};border-radius:12px;">
+                <table width="100%" style="background:{bg_dark};border:1px dashed {border_dark};border-radius:12px;">
                   <tr>
                     <td style="padding:14px 16px;">
-                      <p style="margin:0 0 6px 0;font:400 13px/1.7 system-ui,-apple-system,'Segoe UI',Roboto,Helvetica,Arial;color:{text_light};">
-                        If <strong>you</strong> made this change, no further action is needed.
-                      </p>
-                      <p style="margin:0;font:400 13px/1.7 system-ui,-apple-system,'Segoe UI',Roboto,Helvetica,Arial;color:{text_muted};">
-                        If this wasn’t you, please reset your password immediately.
-                      </p>
+                      <p style="color:{text_light};">If <strong>you</strong> made this change, no action is needed.</p>
+                      <p style="color:{text_muted};">If this wasn't you, reset your password immediately.</p>
                     </td>
                   </tr>
                 </table>
 
-                <p style="margin:16px 0 0 0;font:400 12px/1.6 system-ui,-apple-system,'Segoe UI',Roboto,Helvetica,Arial;color:{text_muted};">
+                <p style="margin-top:16px;color:{text_muted};font-size:12px;">
                   For your security, never share your password with anyone.
                 </p>
               </td>
             </tr>
-
-            <!-- Footer -->
-            <tr>
-              <td style="padding:0 24px 24px 24px;">
-                <table role="presentation" width="100%" cellspacing="0" cellpadding="0" border="0" style="background:{bg_dark};border:1px dashed {border_dark};border-radius:12px;">
-                  <tr>
-                    <td style="padding:12px 16px;">
-                      <p style="margin:0;font:400 12px/1.6 system-ui,-apple-system,'Segoe UI',Roboto,Helvetica,Arial;color:{text_muted};">
-                        Need help? Reply to this email and our team will assist you.
-                      </p>
-                    </td>
-                  </tr>
-                </table>
-              </td>
-            </tr>
-
           </table>
 
-          <!-- Brand footer -->
-          <p style="margin:14px 0 0 0;font:400 12px/1.6 system-ui,-apple-system,'Segoe UI',Roboto,Helvetica,Arial;color:{text_muted};">
-            © {timezone.now().year} {settings.COMPANY_OPERATING_NAME} - {settings.COMPANY_SUB_GROUP_NAME}. All rights reserved.
+          <p style="margin-top:14px;font-size:12px;color:{text_muted};">
+            © {changed_at_local.year} {settings.COMPANY_OPERATING_NAME} - {settings.COMPANY_SUB_GROUP_NAME}. All rights reserved.
           </p>
         </td>
       </tr>
@@ -7293,6 +7270,7 @@ def change_password_driver(request: HttpRequest):
   </body>
 </html>
 """
+
         text = (
             f"{settings.COMPANY_OPERATING_NAME} — Driver Password Changed Successfully\n\n"
             f"Timestamp: {changed_at}\n\n"
@@ -7305,16 +7283,33 @@ def change_password_driver(request: HttpRequest):
             html=html,
             text_fallback=text,
         )
+
     except Exception:
-        logger.exception("Driver password-change email failed to send")
+        logger.exception("Driver password-change email failed")
 
-    return _ok("Driver password changed successfully.")
+    return _ok(
+        "Driver password changed successfully.",
+        changed_at=changed_at
+    )
+
+import re
+from django.views.decorators.csrf import csrf_protect
+from django.views.decorators.http import require_http_methods
+from django.db import transaction, IntegrityError
+from django.utils import timezone
+from itsdangerous import URLSafeTimedSerializer, SignatureExpired, BadSignature
+import logging
+
+logger = logging.getLogger(__name__)
+
+# Assuming these are defined in your settings or constants
+# SIGNING_SALT = "your-signing-salt"
+# VERIFY_TOKEN_TTL_SECONDS = 600
+# USER_TZ = pytz.timezone("America/Toronto")
 
 
-
-
-
-@csrf_exempt
+@csrf_protect
+@require_http_methods(["POST"])
 def register_pharmacy(request: HttpRequest):
     """
     POST /api/auth/register-pharmacy/
@@ -7331,13 +7326,23 @@ def register_pharmacy(request: HttpRequest):
       "password": "StrongPass#1",
       "otpToken": "<token returned by /api/auth/verify-otp/>"
     }
+    
+    Returns:
+    {
+      "success": true,
+      "message": "Registration successful.",
+      "id": 123,
+      "email": "owner@example.com",
+      "registered_at": "Jan 03, 2026 14:30 EST"
+    }
     """
-    if request.method != "POST":
-        return _err("Method not allowed", 405)
+    # ---- Parse JSON safely ----
+    try:
+        data = json.loads(request.body.decode("utf-8"))
+    except Exception:
+        return _err("Invalid JSON payload", 400)
 
-    data = _json(request)
-
-    # Extract
+    # ---- Extract and normalize fields ----
     name          = (data.get("name") or "").strip()
     store_address = (data.get("store_address") or "").strip()
     city          = (data.get("city") or "").strip()
@@ -7345,12 +7350,11 @@ def register_pharmacy(request: HttpRequest):
     postal_code   = (data.get("postal_code") or "").strip()
     country       = (data.get("country") or "").strip()
     phone_number  = (data.get("phone_number") or "").strip()
-
     email         = (data.get("email") or "").strip().lower()
     password      = (data.get("password") or "").strip()
     otp_token     = (data.get("otpToken") or "").strip()
 
-    # Basic validations
+    # ---- Validation ----
     required_fields = {
         "name": name,
         "store_address": store_address,
@@ -7370,22 +7374,37 @@ def register_pharmacy(request: HttpRequest):
     if not _valid_email(email):
         return _err("Please provide a valid email address.")
 
+    # ---- Enhanced Password Validation ----
     if len(password) < 8:
         return _err("Password must be at least 8 characters long.")
+    
+    if not re.search(r'[A-Z]', password):
+        return _err("Password must include at least one uppercase letter.")
+    
+    if not re.search(r'[a-z]', password):
+        return _err("Password must include at least one lowercase letter.")
+    
+    if not re.search(r'[0-9]', password):
+        return _err("Password must include at least one number.")
+    
+    if not re.search(r'[!@#$%^&*(),.?":{}|<>]', password):
+        return _err("Password must include at least one special character (!@#$%^&*).")
 
-    # Verify OTP token and email match
+    # ---- Verify OTP token ----
     try:
-        token_data = loads(otp_token, salt=SIGNING_SALT, max_age=VERIFY_TOKEN_TTL_SECONDS)
-    except SignatureExpired:
-        return _err("Verification token is invalid or expired.", 400)
-    except BadSignature:
+        token_data = loads(
+            otp_token, 
+            salt=SIGNING_SALT, 
+            max_age=VERIFY_TOKEN_TTL_SECONDS
+        )
+    except (SignatureExpired, BadSignature):
         return _err("Verification token is invalid or expired.", 400)
 
     token_email = (token_data.get("email") or "").strip().lower()
     if token_email != email:
         return _err("Verification token does not match this email.", 400)
 
-    # Create pharmacy
+    # ---- Create pharmacy (UTC timestamp in DB) ----
     try:
         with transaction.atomic():
             pharmacy = Pharmacy.objects.create(
@@ -7397,17 +7416,25 @@ def register_pharmacy(request: HttpRequest):
                 country=country,
                 phone_number=phone_number,
                 email=email,
-                password=password,  # hashed by Pharmacy.save()
+                password=password,  # Hashed by Pharmacy.save() or override
             )
     except IntegrityError:
         return _err("An account with this email already exists.", 409)
 
-    # ---- Light-theme welcome email (Pharmacy) ----
+    # ---- Time handling (DB=UTC, Display=Local) ----
+    registered_at_utc = timezone.now()  # DB truth (UTC)
+    try:
+        registered_at_local = registered_at_utc.astimezone(USER_TZ)
+    except Exception:
+        registered_at_local = registered_at_utc
+    
+    registered_at = registered_at_local.strftime("%b %d, %Y %H:%M %Z")
+
+    # ---- Send welcome email to pharmacy ----
     try:
         brand_primary = settings.BRAND_COLORS['primary']
         brand_primary_dark = settings.BRAND_COLORS['primary_dark']
         brand_accent = settings.BRAND_COLORS['accent']
-        now_str = timezone.now().strftime("%b %d, %Y %H:%M %Z")
         logo_url = settings.LOGO_URL
 
         html = f"""\
@@ -7460,21 +7487,22 @@ def register_pharmacy(request: HttpRequest):
                   Hi {name or "there"}, your pharmacy is all set 🎉
                 </h1>
                 <p style="margin:0 0 16px;font:400 14px/1.7 system-ui,-apple-system,'Segoe UI',Roboto,Helvetica,Arial;color:#475569;">
-                  Thanks for registering with <strong>{settings.COMPANY_OPERATING_NAME}</strong> and joining the <strong>Cana Family by {settings.COMPANY_SUB_GROUP_NAME}</strong>.
-                  We’re excited to help your team coordinate secure, trackable, and timely deliveries with a dashboard
+                  Thanks for registering with <strong>{settings.COMPANY_OPERATING_NAME}</strong> an operating name of {settings.CORPORATION_NAME} and joining the <strong>Cana Family by {settings.COMPANY_SUB_GROUP_NAME}</strong>.
+                  We're excited to help your team coordinate secure, trackable, and timely deliveries with a dashboard
                   designed for pharmacies.
                 </p>
 
                 <div style="margin:18px 0;background:#f0fdfa;border:1px solid {brand_primary};border-radius:12px;padding:16px 18px;">
                   <ul style="margin:0;padding-left:18px;font:400 14px/1.8 system-ui,-apple-system,'Segoe UI',Roboto,Helvetica,Arial;color:#334155;">
                     <li>Live order tracking with photo proof at each stage</li>
+                    <li>Professional Delivery Management System using Customer ID and Signature Verifications
                     <li>Smart weekly invoices and transparent earnings</li>
                     <li>Secure driver handover and delivery confirmations</li>
                   </ul>
                 </div>
 
                 <p style="margin:8px 0 0;font:400 12px/1.7 system-ui,-apple-system,'Segoe UI',Roboto,Helvetica,Arial;color:#64748b;">
-                  Registered on <strong style="color:{brand_primary_dark};">{now_str}</strong>.
+                  Registered on <strong style="color:{brand_primary_dark};">{registered_at}</strong>.
                 </p>
 
                 <hr style="border:0;border-top:1px solid #e5e7eb;margin:24px 0;">
@@ -7490,7 +7518,7 @@ def register_pharmacy(request: HttpRequest):
                   <tr>
                     <td style="padding:12px 16px;">
                       <p style="margin:0;font:400 12px/1.6 system-ui,-apple-system,'Segoe UI',Roboto,Helvetica,Arial;color:#64748b;">
-                        Welcome aboard — we’re thrilled to partner with you.
+                        Welcome aboard — we're thrilled to partner with you.
                       </p>
                     </td>
                   </tr>
@@ -7501,7 +7529,7 @@ def register_pharmacy(request: HttpRequest):
           </table>
 
           <p style="margin:14px 0 0;font:400 12px/1.6 system-ui,-apple-system,'Segoe UI',Roboto,Helvetica,Arial;color:#94a3b8;">
-            © {timezone.now().year} {settings.COMPANY_OPERATING_NAME} - {settings.COMPANY_SUB_GROUP_NAME}. All rights reserved.
+            © {registered_at_local.year} {settings.COMPANY_OPERATING_NAME} - {settings.COMPANY_SUB_GROUP_NAME}. All rights reserved.
           </p>
         </td>
       </tr>
@@ -7527,11 +7555,10 @@ def register_pharmacy(request: HttpRequest):
     except Exception:
         logger.exception("Failed to send pharmacy registration email")
     
-    # ---- Office notification email (New Pharmacy Registration) ----
+    # ---- Send office notification email ----
     try:
         brand_primary = settings.BRAND_COLORS['primary']
         brand_primary_dark = settings.BRAND_COLORS['primary_dark']
-        now_str = timezone.now().strftime("%b %d, %Y %H:%M %Z")
         logo_url = settings.LOGO_URL
 
         office_html = f"""\
@@ -7618,7 +7645,7 @@ def register_pharmacy(request: HttpRequest):
                     </tr>
                     <tr class="info-row" style="background:#f1f5f9;">
                       <td style="padding:12px 18px;color:#64748b;font-weight:600;border-top:1px solid #e2e8f0;">Registration Time</td>
-                      <td style="padding:12px 18px;color:{brand_primary_dark};font-weight:500;border-top:1px solid #e2e8f0;">{now_str}</td>
+                      <td style="padding:12px 18px;color:{brand_primary_dark};font-weight:500;border-top:1px solid #e2e8f0;">{registered_at}</td>
                     </tr>
                     <tr>
                       <td style="padding:12px 18px;color:#64748b;font-weight:600;border-top:1px solid #e2e8f0;">Pharmacy ID</td>
@@ -7643,7 +7670,7 @@ def register_pharmacy(request: HttpRequest):
           </table>
 
           <p style="margin:14px 0 0;font:400 12px/1.6 system-ui,-apple-system,'Segoe UI',Roboto,Helvetica,Arial;color:#94a3b8;">
-            © {timezone.now().year} {settings.COMPANY_OPERATING_NAME} - {settings.COMPANY_SUB_GROUP_NAME}. All rights reserved.
+            © {registered_at_local.year} {settings.COMPANY_OPERATING_NAME} - {settings.COMPANY_SUB_GROUP_NAME}. All rights reserved.
           </p>
         </td>
       </tr>
@@ -7661,7 +7688,7 @@ def register_pharmacy(request: HttpRequest):
             f"Province: {province}\n"
             f"Postal Code: {postal_code}\n"
             f"Country: {country}\n"
-            f"Registration Time: {now_str}\n"
+            f"Registration Time: {registered_at}\n"
             f"Pharmacy ID: {pharmacy.id}\n\n"
             "The pharmacy has been added to the system and received their welcome email.\n"
         )
@@ -7675,38 +7702,55 @@ def register_pharmacy(request: HttpRequest):
     except Exception:
         logger.exception("Failed to send office notification email for pharmacy registration")
 
-    return _ok("Registration successful.", id=pharmacy.id, email=pharmacy.email)
+    return _ok(
+        "Registration successful.",
+        id=pharmacy.id,
+        email=pharmacy.email,
+        registered_at=registered_at
+    )
 
 
 
-
-@csrf_exempt
+@csrf_protect
+@require_http_methods(["POST"])
 def register_driver(request: HttpRequest):
     """
     POST /api/driver/register/
+    JSON body:
     {
       "name": "John Doe",
       "phone_number": "416-555-1212",
       "email": "driver@example.com",
       "password": "StrongPass#1",
-      "vehicle_number": "ABC-1234",      # REQUIRED
+      "vehicle_number": "ABC-1234",
       "otpToken": "<token from /api/auth/verify-otp/>"
     }
+    
+    Returns:
+    {
+      "success": true,
+      "message": "Driver registration successful.",
+      "id": 456,
+      "email": "driver@example.com",
+      "registered_at": "Jan 03, 2026 14:30 EST"
+    }
     """
-    if request.method != "POST":
-        return _err("Method not allowed", 405)
+    # ---- Parse JSON safely ----
+    try:
+        data = json.loads(request.body.decode("utf-8"))
+    except Exception:
+        return _err("Invalid JSON payload", 400)
 
-    data = _json(request)
-
+    # ---- Extract and normalize fields ----
     name           = (data.get("name") or "").strip()
     phone_number   = (data.get("phone_number") or "").strip()
     email          = (data.get("email") or "").strip().lower()
     password       = (data.get("password") or "").strip()
-    vehicle_number = (data.get("vehicle_number") or "").strip()  # REQUIRED
+    vehicle_number = (data.get("vehicle_number") or "").strip()
     otp_token      = (data.get("otpToken") or "").strip()
 
-    # Required fields (vehicle_number included)
-    required = {
+    # ---- Validation ----
+    required_fields = {
         "name": name,
         "phone_number": phone_number,
         "email": email,
@@ -7714,40 +7758,66 @@ def register_driver(request: HttpRequest):
         "vehicle_number": vehicle_number,
         "otpToken": otp_token,
     }
-    missing = [k for k, v in required.items() if not v]
+    missing = [k for k, v in required_fields.items() if not v]
     if missing:
         return _err("Missing required fields.", 400, missing=missing)
 
     if not _valid_email(email):
         return _err("Please provide a valid email address.")
+
+    # ---- Enhanced Password Validation ----
     if len(password) < 8:
         return _err("Password must be at least 8 characters long.")
+    
+    if not re.search(r'[A-Z]', password):
+        return _err("Password must include at least one uppercase letter.")
+    
+    if not re.search(r'[a-z]', password):
+        return _err("Password must include at least one lowercase letter.")
+    
+    if not re.search(r'[0-9]', password):
+        return _err("Password must include at least one number.")
+    
+    if not re.search(r'[!@#$%^&*(),.?":{}|<>]', password):
+        return _err("Password must include at least one special character (!@#$%^&*).")
 
-    # Validate OTP token matches email
+    # ---- Verify OTP token ----
     try:
-        token_data = loads(otp_token, salt=SIGNING_SALT, max_age=VERIFY_TOKEN_TTL_SECONDS)
-    except SignatureExpired:
-        return _err("Verification token is invalid or expired.", 400)
-    except BadSignature:
+        token_data = loads(
+            otp_token,
+            salt=SIGNING_SALT,
+            max_age=VERIFY_TOKEN_TTL_SECONDS
+        )
+    except (SignatureExpired, BadSignature):
         return _err("Verification token is invalid or expired.", 400)
 
-    if (token_data.get("email") or "").strip().lower() != email:
+    token_email = (token_data.get("email") or "").strip().lower()
+    if token_email != email:
         return _err("Verification token does not match this email.", 400)
 
-    # Create Driver
+    # ---- Create Driver (UTC timestamp in DB) ----
     try:
         with transaction.atomic():
             driver = Driver.objects.create(
                 name=name,
                 phone_number=phone_number,
                 email=email,
-                password=password,        # hashed by Driver.save()
+                password=password,  # Hashed by Driver.save() or override
                 vehicle_number=vehicle_number,
             )
     except IntegrityError:
         return _err("An account with this email already exists.", 409)
 
-    # ---- Dark-theme welcome email (Driver) ----
+    # ---- Time handling (DB=UTC, Display=Local) ----
+    registered_at_utc = timezone.now()  # DB truth (UTC)
+    try:
+        registered_at_local = registered_at_utc.astimezone(USER_TZ)
+    except Exception:
+        registered_at_local = registered_at_utc
+    
+    registered_at = registered_at_local.strftime("%b %d, %Y %H:%M %Z")
+
+    # ---- Send welcome email to driver ----
     try:
         brand_primary = settings.BRAND_COLORS['primary']
         bg_dark = settings.BRAND_COLORS['bg_dark']
@@ -7756,7 +7826,6 @@ def register_driver(request: HttpRequest):
         text_light = settings.BRAND_COLORS['text_light']
         text_muted = settings.BRAND_COLORS['text_muted']
         logo_url = settings.LOGO_URL
-        now_str = timezone.now().strftime("%b %d, %Y %H:%M %Z")
 
         html = f"""\
 <!doctype html>
@@ -7801,7 +7870,7 @@ def register_driver(request: HttpRequest):
                   Hey {name or "driver"}, you're in!
                 </h1>
                 <p style="margin:0 0 16px;font:400 14px/1.7 system-ui,-apple-system,'Segoe UI',Roboto,Helvetica,Arial;color:{text_muted};">
-                  Welcome to <strong style="color:{text_light};">{settings.COMPANY_OPERATING_NAME}</strong> and the <strong style="color:{text_light};">Cana Family by {settings.COMPANY_SUB_GROUP_NAME}</strong>.
+                  Welcome to <strong style="color:{text_light};">{settings.COMPANY_OPERATING_NAME}</strong> an operating name of <strong style="color:{text_light};">{settings.CORPORATION_NAME}</strong> and the <strong style="color:{text_light};">Cana Family by {settings.COMPANY_SUB_GROUP_NAME}</strong>.
                   You now have access to a streamlined delivery experience with clear routes, photo-verified steps, and
                   weekly earnings summaries.
                 </p>
@@ -7810,12 +7879,13 @@ def register_driver(request: HttpRequest):
                   <ul style="margin:0;padding-left:18px;font:400 14px/1.8 system-ui,-apple-system,'Segoe UI',Roboto,Helvetica,Arial;color:{text_light};">
                     <li>Pickup → in-transit → delivered — all verified with photos</li>
                     <li>Clear delivery details and navigation shortcuts</li>
-                    <li>Automatic weekly payouts with transparent summaries</li>
+                    <li>Secure Customer ID and Signature Verifications.
+                    <li>Automatic bi-weekly payouts with transparent summaries</li>
                   </ul>
                 </div>
 
                 <p style="margin:8px 0 0;font:400 12px/1.7 system-ui,-apple-system,'Segoe UI',Roboto,Helvetica,Arial;color:{text_muted};">
-                  Registered on <strong style="color:{text_light};">{now_str}</strong>.
+                  Registered on <strong style="color:{text_light};">{registered_at}</strong>.
                 </p>
 
                 <hr style="border:0;border-top:1px solid {border_dark};margin:24px 0;">
@@ -7828,7 +7898,7 @@ def register_driver(request: HttpRequest):
           </table>
 
           <p style="margin:14px 0 0;font:400 12px/1.6 system-ui,-apple-system,'Segoe UI',Roboto,Helvetica,Arial;color:{text_muted};">
-            © {timezone.now().year} {settings.COMPANY_OPERATING_NAME} - {settings.COMPANY_SUB_GROUP_NAME}. All rights reserved.
+            © {registered_at_local.year} {settings.COMPANY_OPERATING_NAME} - {settings.COMPANY_SUB_GROUP_NAME}. All rights reserved.
           </p>
         </td>
       </tr>
@@ -7854,11 +7924,10 @@ def register_driver(request: HttpRequest):
     except Exception:
         logger.exception("Failed to send driver registration email")
     
-    # ---- Office notification email (New Driver Registration) ----
+    # ---- Send office notification email ----
     try:
         brand_primary = settings.BRAND_COLORS['primary']
         brand_primary_dark = settings.BRAND_COLORS['primary_dark']
-        now_str = timezone.now().strftime("%b %d, %Y %H:%M %Z")
         logo_url = settings.LOGO_URL
 
         office_html = f"""\
@@ -7929,7 +7998,7 @@ def register_driver(request: HttpRequest):
                     </tr>
                     <tr class="info-row" style="background:#f1f5f9;">
                       <td style="padding:12px 18px;color:#64748b;font-weight:600;border-top:1px solid #e2e8f0;">Registration Time</td>
-                      <td style="padding:12px 18px;color:{brand_primary_dark};font-weight:500;border-top:1px solid #e2e8f0;">{now_str}</td>
+                      <td style="padding:12px 18px;color:{brand_primary_dark};font-weight:500;border-top:1px solid #e2e8f0;">{registered_at}</td>
                     </tr>
                     <tr>
                       <td style="padding:12px 18px;color:#64748b;font-weight:600;border-top:1px solid #e2e8f0;">Driver ID</td>
@@ -7954,7 +8023,7 @@ def register_driver(request: HttpRequest):
           </table>
 
           <p style="margin:14px 0 0;font:400 12px/1.6 system-ui,-apple-system,'Segoe UI',Roboto,Helvetica,Arial;color:#94a3b8;">
-            © {timezone.now().year} {settings.COMPANY_OPERATING_NAME} - {settings.COMPANY_SUB_GROUP_NAME}. All rights reserved.
+            © {registered_at_local.year} {settings.COMPANY_OPERATING_NAME} - {settings.COMPANY_SUB_GROUP_NAME}. All rights reserved.
           </p>
         </td>
       </tr>
@@ -7968,7 +8037,7 @@ def register_driver(request: HttpRequest):
             f"Email: {email}\n"
             f"Phone: {phone_number}\n"
             f"Vehicle Number: {vehicle_number}\n"
-            f"Registration Time: {now_str}\n"
+            f"Registration Time: {registered_at}\n"
             f"Driver ID: {driver.id}\n\n"
             "The driver has been added to the system and received their welcome email.\n"
         )
@@ -7982,8 +8051,12 @@ def register_driver(request: HttpRequest):
     except Exception:
         logger.exception("Failed to send office notification email for driver registration")
 
-    return _ok("Driver registration successful.", id=driver.id, email=driver.email)
-
+    return _ok(
+        "Driver registration successful.",
+        id=driver.id,
+        email=driver.email,
+        registered_at=registered_at
+    )
 
 
 
