@@ -448,7 +448,126 @@ class OrderTracking(models.Model):
         return f"Order #{self.order.id} - {self.step} at {self.timestamp}"
 
 
-class PharmacyTrialOnboarding(models.Model):
+# class PharmacyTrialOnboarding(models.Model):
+#     # -------------------------------
+#     # Section 1: Pharmacy Info
+#     # -------------------------------
+#     pharmacy_name = models.CharField(max_length=255)
+#     pharmacy_phone = models.CharField(max_length=20)
+#     pharmacy_email = models.EmailField()
+
+#     address_line_1 = models.CharField(max_length=255)
+#     city = models.CharField(max_length=100)
+#     postal_code = models.CharField(max_length=10)
+
+#     store_hours = models.CharField(
+#         max_length=255,
+#         help_text="Example: Mon–Fri 9am–7pm"
+#     )
+
+#     # -------------------------------
+#     # Section 2: Owner / Manager
+#     # -------------------------------
+#     contact_name = models.CharField(max_length=255)
+#     contact_role = models.CharField(
+#         max_length=50,
+#         choices=[
+#             ("owner", "Owner"),
+#             ("manager", "Manager"),
+#             ("pharmacist", "Pharmacist"),
+#         ]
+#     )
+#     contact_phone = models.CharField(max_length=20)
+#     contact_email = models.EmailField()
+
+#     # -------------------------------
+#     # Section 3: Trial Delivery Setup
+#     # -------------------------------
+#     currently_offers_delivery = models.BooleanField(default=False)
+
+#     estimated_deliveries_per_day = models.PositiveIntegerField()
+
+#     DELIVERY_TYPE_CHOICES = [
+#         ("same_day", "Same-day"),
+#         ("next_day", "Next-day"),
+#         ("both", "Both"),
+#     ]
+#     preferred_delivery_type = models.CharField(
+#         max_length=10,
+#         choices=DELIVERY_TYPE_CHOICES
+#     )
+
+#     same_day_cutoff_time = models.TimeField(
+#         null=True,
+#         blank=True,
+#         help_text="Required if same-day delivery is selected"
+#     )
+
+#     delivery_radius_km = models.PositiveIntegerField(
+#         help_text="Delivery radius in kilometers"
+#     )
+
+#     # -------------------------------
+#     # Section 4: Compliance Basics
+#     # -------------------------------
+#     signature_required = models.BooleanField(default=True)
+#     id_verification_required = models.BooleanField(default=False)
+
+#     special_delivery_instructions = models.TextField(
+#         blank=True,
+#         null=True
+#     )
+
+#     # -------------------------------
+#     # Section 5: Trial Confirmation
+#     # -------------------------------
+#     trial_start_date = models.DateField()
+
+#     trial_duration_days = models.PositiveIntegerField(default=7)
+
+#     agreed_delivery_fee = models.DecimalField(
+#         max_digits=6,
+#         decimal_places=2,
+#         help_text="Per delivery fee during trial"
+#     )
+
+#     # -------------------------------
+#     # Section 6: Consent & Meta
+#     # -------------------------------
+#     consent_given = models.BooleanField(default=False)
+
+#     created_at = models.DateTimeField(auto_now_add=True)
+
+#     # -------------------------------
+#     # Internal Tracking (Optional)
+#     # -------------------------------
+#     onboarding_notes = models.TextField(blank=True, null=True)
+
+#     STATUS_CHOICES = [
+#         ("trial", "Trial"),
+#         ("active", "Converted to Active"),
+#         ("inactive", "Inactive"),
+#     ]
+#     status = models.CharField(
+#         max_length=10,
+#         choices=STATUS_CHOICES,
+#         default="trial"
+#     )
+
+#     class Meta:
+#         ordering = ["-created_at"]
+#         verbose_name = "Pharmacy Trial Onboarding"
+#         verbose_name_plural = "Pharmacy Trial Onboardings"
+
+#     def __str__(self):
+#         return f"{self.pharmacy_name} - Trial"
+
+
+class PharmacyInfo(models.Model):
+    """
+    Internal analytics and baseline tracking for pharmacy onboarding.
+    Stores initial setup information and delivery preferences for business intelligence.
+    """
     # -------------------------------
     # Section 1: Pharmacy Info
     # -------------------------------
@@ -466,7 +585,7 @@ class PharmacyTrialOnboarding(models.Model):
     )
 
     # -------------------------------
-    # Section 2: Owner / Manager
+    # Section 2: Contact Person
     # -------------------------------
     contact_name = models.CharField(max_length=255)
     contact_role = models.CharField(
@@ -481,7 +600,7 @@ class PharmacyTrialOnboarding(models.Model):
     contact_email = models.EmailField()
 
     # -------------------------------
-    # Section 3: Trial Delivery Setup
+    # Section 3: Delivery Preferences & Analytics Baseline
     # -------------------------------
     currently_offers_delivery = models.BooleanField(default=False)
 
@@ -497,18 +616,12 @@ class PharmacyTrialOnboarding(models.Model):
         choices=DELIVERY_TYPE_CHOICES
     )
 
-    same_day_cutoff_time = models.TimeField(
-        null=True,
-        blank=True,
-        help_text="Required if same-day delivery is selected"
-    )
-
     delivery_radius_km = models.PositiveIntegerField(
         help_text="Delivery radius in kilometers"
     )
 
     # -------------------------------
-    # Section 4: Compliance Basics
+    # Section 4: Compliance & Special Instructions
     # -------------------------------
     signature_required = models.BooleanField(default=True)
     id_verification_required = models.BooleanField(default=False)
@@ -519,48 +632,30 @@ class PharmacyTrialOnboarding(models.Model):
     )
 
     # -------------------------------
-    # Section 5: Trial Confirmation
-    # -------------------------------
-    trial_start_date = models.DateField()
-
-    trial_duration_days = models.PositiveIntegerField(default=7)
-
-    agreed_delivery_fee = models.DecimalField(
-        max_digits=6,
-        decimal_places=2,
-        help_text="Per delivery fee during trial"
-    )
-
-    # -------------------------------
-    # Section 6: Consent & Meta
+    # Section 5: Consent & Meta
     # -------------------------------
     consent_given = models.BooleanField(default=False)
 
     created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
 
     # -------------------------------
-    # Internal Tracking (Optional)
+    # Internal Notes
     # -------------------------------
-    onboarding_notes = models.TextField(blank=True, null=True)
-
-    STATUS_CHOICES = [
-        ("trial", "Trial"),
-        ("active", "Converted to Active"),
-        ("inactive", "Inactive"),
-    ]
-    status = models.CharField(
-        max_length=10,
-        choices=STATUS_CHOICES,
-        default="trial"
+    internal_notes = models.TextField(
+        blank=True, 
+        null=True,
+        help_text="Internal notes for analytics and tracking"
     )
 
     class Meta:
         ordering = ["-created_at"]
-        verbose_name = "Pharmacy Trial Onboarding"
-        verbose_name_plural = "Pharmacy Trial Onboardings"
+        verbose_name = "Pharmacy Information"
+        verbose_name_plural = "Pharmacy Information"
+        db_table = "canadrop_interface_pharmacyinfo"
 
     def __str__(self):
-        return f"{self.pharmacy_name} - Trial"
+        return f"{self.pharmacy_name} - {self.city}"
 
 
 

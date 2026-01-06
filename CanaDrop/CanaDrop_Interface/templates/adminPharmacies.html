@@ -291,6 +291,77 @@
               <input id="phEmail" type="email" placeholder="Email Address"
                 class="bg-neutral-900 border border-neutral-700 rounded-lg px-3 py-2 text-neutral-200 text-sm focus:ring-2 focus:ring-orange-500"/>
             </div>
+
+            <!-- Business Hours Section -->
+            <div class="mt-6 border-t border-neutral-700 pt-4">
+              <h3 class="text-sm font-semibold text-white mb-3">Business Hours (Optional)</h3>
+              <p class="text-xs text-neutral-400 mb-4">Leave empty to use default hours (Mon-Fri: 9 AM - 6 PM)</p>
+              
+              <div class="space-y-3 max-h-64 overflow-y-auto custom-scrollbar">
+                <!-- Monday -->
+                <div class="grid grid-cols-12 gap-2 items-center">
+                  <label class="col-span-2 text-sm text-neutral-300">Mon</label>
+                  <input type="checkbox" id="phMon" checked class="col-span-1" onchange="toggleDay('phMon')">
+                  <input type="time" id="phMonOpen" value="09:00" class="col-span-4 bg-neutral-900 border border-neutral-700 rounded px-2 py-1 text-xs text-neutral-200">
+                  <span class="col-span-1 text-center text-neutral-500">to</span>
+                  <input type="time" id="phMonClose" value="18:00" class="col-span-4 bg-neutral-900 border border-neutral-700 rounded px-2 py-1 text-xs text-neutral-200">
+                </div>
+                
+                <!-- Tuesday -->
+                <div class="grid grid-cols-12 gap-2 items-center">
+                  <label class="col-span-2 text-sm text-neutral-300">Tue</label>
+                  <input type="checkbox" id="phTue" checked class="col-span-1" onchange="toggleDay('phTue')">
+                  <input type="time" id="phTueOpen" value="09:00" class="col-span-4 bg-neutral-900 border border-neutral-700 rounded px-2 py-1 text-xs text-neutral-200">
+                  <span class="col-span-1 text-center text-neutral-500">to</span>
+                  <input type="time" id="phTueClose" value="18:00" class="col-span-4 bg-neutral-900 border border-neutral-700 rounded px-2 py-1 text-xs text-neutral-200">
+                </div>
+                
+                <!-- Wednesday -->
+                <div class="grid grid-cols-12 gap-2 items-center">
+                  <label class="col-span-2 text-sm text-neutral-300">Wed</label>
+                  <input type="checkbox" id="phWed" checked class="col-span-1" onchange="toggleDay('phWed')">
+                  <input type="time" id="phWedOpen" value="09:00" class="col-span-4 bg-neutral-900 border border-neutral-700 rounded px-2 py-1 text-xs text-neutral-200">
+                  <span class="col-span-1 text-center text-neutral-500">to</span>
+                  <input type="time" id="phWedClose" value="18:00" class="col-span-4 bg-neutral-900 border border-neutral-700 rounded px-2 py-1 text-xs text-neutral-200">
+                </div>
+                
+                <!-- Thursday -->
+                <div class="grid grid-cols-12 gap-2 items-center">
+                  <label class="col-span-2 text-sm text-neutral-300">Thu</label>
+                  <input type="checkbox" id="phThu" checked class="col-span-1" onchange="toggleDay('phThu')">
+                  <input type="time" id="phThuOpen" value="09:00" class="col-span-4 bg-neutral-900 border border-neutral-700 rounded px-2 py-1 text-xs text-neutral-200">
+                  <span class="col-span-1 text-center text-neutral-500">to</span>
+                  <input type="time" id="phThuClose" value="18:00" class="col-span-4 bg-neutral-900 border border-neutral-700 rounded px-2 py-1 text-xs text-neutral-200">
+                </div>
+                
+                <!-- Friday -->
+                <div class="grid grid-cols-12 gap-2 items-center">
+                  <label class="col-span-2 text-sm text-neutral-300">Fri</label>
+                  <input type="checkbox" id="phFri" checked class="col-span-1" onchange="toggleDay('phFri')">
+                  <input type="time" id="phFriOpen" value="09:00" class="col-span-4 bg-neutral-900 border border-neutral-700 rounded px-2 py-1 text-xs text-neutral-200">
+                  <span class="col-span-1 text-center text-neutral-500">to</span>
+                  <input type="time" id="phFriClose" value="18:00" class="col-span-4 bg-neutral-900 border border-neutral-700 rounded px-2 py-1 text-xs text-neutral-200">
+                </div>
+                
+                <!-- Saturday -->
+                <div class="grid grid-cols-12 gap-2 items-center">
+                  <label class="col-span-2 text-sm text-neutral-300">Sat</label>
+                  <input type="checkbox" id="phSat" class="col-span-1" onchange="toggleDay('phSat')">
+                  <input type="time" id="phSatOpen" value="09:00" disabled class="col-span-4 bg-neutral-900 border border-neutral-700 rounded px-2 py-1 text-xs text-neutral-500">
+                  <span class="col-span-1 text-center text-neutral-500">to</span>
+                  <input type="time" id="phSatClose" value="18:00" disabled class="col-span-4 bg-neutral-900 border border-neutral-700 rounded px-2 py-1 text-xs text-neutral-500">
+                </div>
+                
+                <!-- Sunday -->
+                <div class="grid grid-cols-12 gap-2 items-center">
+                  <label class="col-span-2 text-sm text-neutral-300">Sun</label>
+                  <input type="checkbox" id="phSun" class="col-span-1" onchange="toggleDay('phSun')">
+                  <input type="time" id="phSunOpen" value="09:00" disabled class="col-span-4 bg-neutral-900 border border-neutral-700 rounded px-2 py-1 text-xs text-neutral-500">
+                  <span class="col-span-1 text-center text-neutral-500">to</span>
+                  <input type="time" id="phSunClose" value="18:00" disabled class="col-span-4 bg-neutral-900 border border-neutral-700 rounded px-2 py-1 text-xs text-neutral-500">
+                </div>
+              </div>
+            </div>
           </div>
 
           <div class="mt-6 flex justify-end space-x-3">
@@ -414,6 +485,14 @@ let currentPharmacy = null;
 let editingPharmacyId = null;
 let togglingPharmacyId = null;
 let togglingAction = null; 
+
+
+        function getCSRFToken() {
+            return document.cookie
+                .split('; ')
+                .find(row => row.startsWith('csrftoken='))
+                ?.split('=')[1];
+        }
 
 // Logout
 document.getElementById("logoutBtn").addEventListener("click", function (event) {
@@ -739,7 +818,11 @@ function resetCredentials() {
     try {
       const res = await fetch(`/pharmacy/reset-password/${pharmacyId}/`, {
         method: "POST",
-        headers: { "Content-Type": "application/json" }
+        headers: { 
+          "Content-Type": "application/json",
+          "X-CSRFToken": getCSRFToken()
+        },
+        credentials: "include"
       });
 
       const data = await res.json();
@@ -881,6 +964,48 @@ function addViewOrdersButton() {
   }
 }
 
+// Toggle business hours day
+function toggleDay(dayPrefix) {
+  const checkbox = document.getElementById(dayPrefix);
+  const openInput = document.getElementById(dayPrefix + 'Open');
+  const closeInput = document.getElementById(dayPrefix + 'Close');
+  
+  if (checkbox.checked) {
+    openInput.disabled = false;
+    closeInput.disabled = false;
+    openInput.classList.remove('text-neutral-500');
+    closeInput.classList.remove('text-neutral-500');
+    openInput.classList.add('text-neutral-200');
+    closeInput.classList.add('text-neutral-200');
+  } else {
+    openInput.disabled = true;
+    closeInput.disabled = true;
+    openInput.classList.add('text-neutral-500');
+    closeInput.classList.add('text-neutral-500');
+    openInput.classList.remove('text-neutral-200');
+    closeInput.classList.remove('text-neutral-200');
+  }
+}
+
+// Build business hours object from form
+function getBusinessHoursFromForm() {
+  const days = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
+  const businessHours = {};
+  
+  days.forEach(day => {
+    const checkbox = document.getElementById('ph' + day);
+    if (checkbox.checked) {
+      const open = document.getElementById('ph' + day + 'Open').value;
+      const close = document.getElementById('ph' + day + 'Close').value;
+      businessHours[day] = { open, close };
+    } else {
+      businessHours[day] = "closed";
+    }
+  });
+  
+  return businessHours;
+}
+
 async function submitAddPharmacy() {
   const name = document.getElementById("phName").value.trim();
   const store_address = document.getElementById("phAddress").value.trim();
@@ -896,10 +1021,17 @@ async function submitAddPharmacy() {
     return;
   }
 
+  // Get business hours (optional - will use defaults if not modified)
+  const business_hours = getBusinessHoursFromForm();
+
   try {
     const res = await fetch("/pharmacy/add/", {
       method: "POST",
-      headers: { "Content-Type": "application/json" },
+      headers: { 
+        "Content-Type": "application/json",
+        "X-CSRFToken": getCSRFToken()
+      },
+      credentials: "include",
       body: JSON.stringify({
         name,
         store_address,
@@ -908,19 +1040,29 @@ async function submitAddPharmacy() {
         postal_code,
         country,
         phone_number,
-        email
+        email,
+        business_hours
       })
     });
 
     const data = await res.json();
 
     if (!data.success) {
-      showNotification("❌ " + data.message, "error");
+      showNotification("❌ " + (data.error || data.message), "error");
       return;
     }
 
     showNotification("✅ Pharmacy added successfully!", "success");
     closeModal("addPharmacyModal");
+    
+    // Clear form
+    document.getElementById("phName").value = "";
+    document.getElementById("phAddress").value = "";
+    document.getElementById("phCity").value = "";
+    document.getElementById("phPostal").value = "";
+    document.getElementById("phPhone").value = "";
+    document.getElementById("phEmail").value = "";
+    
     loadPharmacies();
 
   } catch (err) {
@@ -949,14 +1091,18 @@ async function submitEditPharmacy() {
   try {
     const res = await fetch(`/pharmacy/edit/${editingPharmacyId}/`, {
       method: "PUT",
-      headers: { "Content-Type": "application/json" },
+      headers: { 
+        "Content-Type": "application/json",
+        "X-CSRFToken": getCSRFToken()
+      },
+      credentials: "include",
       body: JSON.stringify(payload)
     });
 
     const data = await res.json();
 
     if (!data.success) {
-      showNotification("❌ " + data.message, "error");
+      showNotification("❌ " + (data.error || data.message), "error");
       return;
     }
 
@@ -985,7 +1131,11 @@ document.getElementById("toggleStatusConfirmBtn").onclick = async function () {
   try {
     const res = await fetch(`/pharmacy/toggle-status/${togglingPharmacyId}/`, {
       method: "POST",
-      headers: { "Content-Type": "application/json" },
+      headers: { 
+        "Content-Type": "application/json",
+        "X-CSRFToken": getCSRFToken()
+      },
+      credentials: "include",
       body: JSON.stringify({
         active: togglingAction === "activate" ? true : false
       })

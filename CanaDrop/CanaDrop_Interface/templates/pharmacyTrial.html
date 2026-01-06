@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Pharmacy Trial Onboarding - CanaLogistiX</title>
+    <title>Pharmacy Information Form - CanaLogistiX</title>
     <link rel="icon" href="https://canalogistix.s3.us-east-2.amazonaws.com/Logo/CanaLogistiX_Logo_BG.png">
     <style>
         * {
@@ -131,7 +131,6 @@
         .section:nth-child(3) { animation-delay: 0.3s; }
         .section:nth-child(4) { animation-delay: 0.4s; }
         .section:nth-child(5) { animation-delay: 0.5s; }
-        .section:nth-child(6) { animation-delay: 0.6s; }
 
         @keyframes fadeInUp {
             from {
@@ -213,8 +212,6 @@
         input[type="text"],
         input[type="email"],
         input[type="tel"],
-        input[type="date"],
-        input[type="time"],
         input[type="number"],
         select,
         textarea {
@@ -491,11 +488,11 @@
             <div class="logo-container">
                 <img src="https://canalogistix.s3.us-east-2.amazonaws.com/Logo/CanaLogistiX_Logo_NOBG.png" alt="CanaLogistiX Logo" class="logo">
             </div>
-            <h1>Pharmacy Trial Onboarding</h1>
-            <p>Join our delivery network and start your trial program today</p>
+            <h1>Pharmacy Information Form</h1>
+            <p>Share your pharmacy details to help us serve you better</p>
         </div>
 
-        <form class="form-container" id="onboardingForm">
+        <form class="form-container" id="pharmacyInfoForm">
             <div id="successMessage" class="success-message"></div>
             <div id="errorMessage" class="error-message"></div>
             
@@ -551,7 +548,7 @@
                 </div>
             </div>
 
-            <!-- Section 2: Owner/Manager -->
+            <!-- Section 2: Contact Person -->
             <div class="section">
                 <h2 class="section-title">
                     <span class="section-number">2</span>
@@ -570,7 +567,6 @@
                             <option value="owner">Owner</option>
                             <option value="manager">Manager</option>
                             <option value="pharmacist">Pharmacist</option>
-                            <option value="staff">Staff Member</option>
                         </select>
                     </div>
                 </div>
@@ -587,11 +583,11 @@
                 </div>
             </div>
 
-            <!-- Section 3: Trial Delivery Setup -->
+            <!-- Section 3: Delivery Preferences -->
             <div class="section">
                 <h2 class="section-title">
                     <span class="section-number">3</span>
-                    Delivery Setup
+                    Delivery Preferences
                 </h2>
                 
                 <div class="form-row">
@@ -605,6 +601,7 @@
                     <div class="form-group">
                         <label for="estimated_deliveries_per_day" class="required">Est. Deliveries Per Day</label>
                         <input type="number" id="estimated_deliveries_per_day" name="estimated_deliveries_per_day" min="0" placeholder="10" required>
+                        <span class="help-text">Estimated average per day</span>
                     </div>
                     <div class="form-group">
                         <label for="delivery_radius_km" class="required">Delivery Radius (km)</label>
@@ -615,7 +612,7 @@
 
                 <div class="form-row">
                     <div class="form-group">
-                        <label for="preferred_delivery_type" class="required">Delivery Type</label>
+                        <label for="preferred_delivery_type" class="required">Preferred Delivery Type</label>
                         <select id="preferred_delivery_type" name="preferred_delivery_type" required>
                             <option value="">Select type...</option>
                             <option value="same_day">Same-day</option>
@@ -626,12 +623,26 @@
                 </div>
             </div>
 
-            <!-- Section 4: Compliance Basics -->
+            <!-- Section 4: Compliance & Special Instructions -->
             <div class="section">
                 <h2 class="section-title">
                     <span class="section-number">4</span>
-                    Compliance & Security
+                    Compliance & Special Instructions
                 </h2>
+
+                <div class="form-row">
+                    <div class="checkbox-group">
+                        <input type="checkbox" id="signature_required" name="signature_required" checked>
+                        <label for="signature_required">Signature required for deliveries</label>
+                    </div>
+                </div>
+
+                <div class="form-row">
+                    <div class="checkbox-group">
+                        <input type="checkbox" id="id_verification_required" name="id_verification_required">
+                        <label for="id_verification_required">ID verification required</label>
+                    </div>
+                </div>
 
                 <div class="form-row">
                     <div class="form-group">
@@ -641,58 +652,39 @@
                 </div>
             </div>
 
-            <!-- Section 5: Trial Confirmation -->
+            <!-- Section 5: Consent -->
             <div class="section">
                 <h2 class="section-title">
                     <span class="section-number">5</span>
-                    Trial Details
-                </h2>
-                
-                <div class="form-row two-col">
-                    <div class="form-group">
-                        <label for="trial_start_date" class="required">Trial Start Date</label>
-                        <input type="date" id="trial_start_date" name="trial_start_date" required>
-                    </div>
-                    <div class="form-group">
-                        <label for="trial_duration_days" class="required">Trial Duration (days)</label>
-                        <input type="number" id="trial_duration_days" name="trial_duration_days" value="7" min="1" placeholder="7" required>
-                    </div>
-                </div>
-            </div>
-
-            <!-- Section 6: Consent -->
-            <div class="section">
-                <h2 class="section-title">
-                    <span class="section-number">6</span>
                     Consent & Agreement
                 </h2>
                 
                 <div class="consent-box">
-                    <h3>Terms & Conditions</h3>
-                    <p>By submitting this form, you agree to participate in the pharmacy delivery trial program. You understand that this is a trial period to evaluate the service, and either party may discontinue at the end of the trial period. All delivery operations will comply with applicable pharmacy regulations and privacy laws.</p>
+                    <h3>Information Usage</h3>
+                    <p>By submitting this form, you consent to the collection and use of your pharmacy information for service delivery, analytics, and improvement purposes. All information will be handled in accordance with applicable privacy laws and regulations.</p>
                 </div>
 
                 <div class="form-row">
                     <div class="checkbox-group">
                         <input type="checkbox" id="consent_given" name="consent_given" required>
-                        <label for="consent_given" class="required">I agree to the terms and conditions outlined above</label>
+                        <label for="consent_given" class="required">I agree to the terms outlined above</label>
                     </div>
                 </div>
 
                 <div class="form-row">
                     <div class="form-group">
-                        <label for="onboarding_notes">Additional Notes (Internal Use)</label>
-                        <textarea id="onboarding_notes" name="onboarding_notes" placeholder="Any additional information or special requirements..."></textarea>
+                        <label for="internal_notes">Additional Notes</label>
+                        <textarea id="internal_notes" name="internal_notes" placeholder="Any additional information or special requirements..."></textarea>
                     </div>
                 </div>
             </div>
 
-            <button type="submit" class="submit-btn">Submit Onboarding Form</button>
+            <button type="submit" class="submit-btn">Submit Information</button>
         </form>
     </div>
 
     <script>
-        const form = document.getElementById('onboardingForm');
+        const form = document.getElementById('pharmacyInfoForm');
         const submitBtn = form.querySelector('.submit-btn');
         const successMessage = document.getElementById('successMessage');
         const errorMessage = document.getElementById('errorMessage');
@@ -714,6 +706,8 @@
             // Convert FormData to JSON
             for (let [key, value] of formData.entries()) {
                 if (key === 'currently_offers_delivery' || 
+                    key === 'signature_required' ||
+                    key === 'id_verification_required' ||
                     key === 'consent_given') {
                     data[key] = form.elements[key].checked;
                 } else {
@@ -722,7 +716,7 @@
             }
             
             try {
-                const response = await fetch('/api/pharmacy-onboarding/', {
+                const response = await fetch('/api/pharmacy-info/', {
                     method: 'POST',
                     headers: {
                         'Content-Type': 'application/json',
@@ -733,9 +727,11 @@
                 const result = await response.json();
                 
                 if (response.ok) {
-                    successMessage.textContent = result.message || 'Onboarding form submitted successfully!';
+                    successMessage.textContent = result.message || 'Pharmacy information submitted successfully!';
                     successMessage.style.display = 'block';
                     form.reset();
+                    // Reset checkboxes to their default state
+                    document.getElementById('signature_required').checked = true;
                     window.scrollTo({ top: 0, behavior: 'smooth' });
                 } else {
                     throw new Error(result.error || 'Submission failed');
@@ -746,11 +742,9 @@
                 window.scrollTo({ top: 0, behavior: 'smooth' });
             } finally {
                 submitBtn.disabled = false;
-                submitBtn.textContent = 'Submit Onboarding Form';
+                submitBtn.textContent = 'Submit Information';
             }
         });
-
-        // Dynamic cutoff time field requirement removed
     </script>
 </body>
 </html>

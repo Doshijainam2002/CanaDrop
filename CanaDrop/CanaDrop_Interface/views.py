@@ -12458,21 +12458,67 @@ def get_driver_details_admin(request, driver_id=None):
     except Exception as e:
         return JsonResponse({"success": False, "error": str(e)}, status=500)
 
-@csrf_exempt
+
+
+
+def validate_business_hours(business_hours: dict):
+    """
+    Validates business_hours JSON structure.
+    Expected:
+    {
+      "Mon": {"open": "09:00", "close": "18:00"} OR "closed",
+      ...
+    }
+    """
+    allowed_days = {"Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"}
+
+    if not isinstance(business_hours, dict):
+        raise ValueError("business_hours must be an object")
+
+    for day, value in business_hours.items():
+        if day not in allowed_days:
+            raise ValueError(f"Invalid day '{day}' in business_hours")
+
+        if value == "closed":
+            continue
+
+        if not isinstance(value, dict):
+            raise ValueError(f"{day} must be 'closed' or an object")
+
+        if "open" not in value or "close" not in value:
+            raise ValueError(f"{day} must contain 'open' and 'close'")
+
+        try:
+            datetime.strptime(value["open"], "%H:%M")
+            datetime.strptime(value["close"], "%H:%M")
+        except ValueError:
+            raise ValueError(f"{day} open/close must be in HH:MM format")
+
+
+@csrf_protect
+@admin_auth_required
+@require_http_methods(["POST"])
 def add_pharmacy(request):
-    if request.method != "POST":
-        return JsonResponse(
-            {"success": False, "message": "Only POST method is allowed."},
-            status=405,
-        )
+    """
+    PRODUCTION: Create Pharmacy (Admin Only)
+
+    - Secure (CSRF + Admin Auth)
+    - POST only
+    - Accepts optional business_hours
+    - Uses default business hours if not provided
+    - Password defaults to '123456' (hashed)
+    - Business hours are LOCAL TIME (no timezone conversion)
+    - Sends welcome email to pharmacy with login credentials
+    - Sends notification email to office
+    """
 
     try:
-        data = json.loads(request.body.decode("utf-8"))
+        payload = json.loads(request.body.decode("utf-8"))
     except json.JSONDecodeError:
-        return JsonResponse(
-            {"success": False, "message": "Invalid JSON payload."},
-            status=400,
-        )
+        return JsonResponse({
+            "success": False,
+            "error": "Invalid JSON payload"
+        }, status=400)
 
     # Required fields
     required_fields = [
@@ -12486,72 +12532,395 @@ def add_pharmacy(request):
         "email",
     ]
 
-    missing = [f for f in required_fields if not data.get(f)]
+    missing = [f for f in required_fields if not payload.get(f)]
     if missing:
-        return JsonResponse(
-            {
-                "success": False,
-                "message": "Missing required fields.",
-                "missing_fields": missing,
-            },
-            status=400,
-        )
+        return JsonResponse({
+            "success": False,
+            "error": "Missing required fields",
+            "missing_fields": missing
+        }, status=400)
+
+    # Business hours (optional)
+    business_hours = payload.get("business_hours")
+
+    try:
+        if business_hours:
+            validate_business_hours(business_hours)
+        else:
+            business_hours = default_business_hours()
+    except ValueError as e:
+        return JsonResponse({
+            "success": False,
+            "error": str(e)
+        }, status=400)
 
     try:
         pharmacy = Pharmacy.objects.create(
-            name=data.get("name").strip(),
-            store_address=data.get("store_address").strip(),
-            city=data.get("city").strip(),
-            province=data.get("province").strip(),
-            postal_code=data.get("postal_code").strip(),
-            country=data.get("country").strip(),
-            phone_number=data.get("phone_number").strip(),
-            email=data.get("email").strip(),
-            # password: will use default "123456"
-            # active: defaults to True (can override from payload if needed)
-            active=data.get("active", True),
+            name=payload["name"].strip(),
+            store_address=payload["store_address"].strip(),
+            city=payload["city"].strip(),
+            province=payload["province"].strip(),
+            postal_code=payload["postal_code"].strip(),
+            country=payload["country"].strip(),
+            phone_number=payload["phone_number"].strip(),
+            email=payload["email"].strip(),
+            password="123456",
+            active=payload.get("active", True),
+            business_hours=business_hours,
         )
 
-        # Build response without password
-        pharmacy_data = {
-            "id": pharmacy.id,
-            "name": pharmacy.name,
-            "store_address": pharmacy.store_address,
-            "city": pharmacy.city,
-            "province": pharmacy.province,
-            "postal_code": pharmacy.postal_code,
-            "country": pharmacy.country,
-            "phone_number": pharmacy.phone_number,
-            "email": pharmacy.email,
-            "active": pharmacy.active,
-            "created_at": pharmacy.created_at.strftime("%Y-%m-%d %H:%M:%S"),
-        }
+        # ---- Time handling (DB=UTC, Display=Local) ----
+        created_at_utc = timezone.now()  # DB truth (UTC)
+        try:
+            created_at_local = created_at_utc.astimezone(USER_TZ)
+        except Exception:
+            created_at_local = created_at_utc
+        
+        created_at = created_at_local.strftime("%b %d, %Y %H:%M %Z")
 
-        return JsonResponse(
-            {
-                "success": True,
-                "message": "Pharmacy created successfully.",
-                "pharmacy": pharmacy_data,
-            },
-            status=201,
-        )
+        # ---- Send welcome email to pharmacy ----
+        try:
+            brand_primary = settings.BRAND_COLORS['primary']
+            brand_primary_dark = settings.BRAND_COLORS['primary_dark']
+            brand_accent = settings.BRAND_COLORS['accent']
+            logo_url = settings.LOGO_URL
+
+            html = f"""\
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <title>Welcome to {settings.COMPANY_OPERATING_NAME} • Pharmacy Registration</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <style>
+      @media (prefers-color-scheme: dark) {{
+        body {{ background: #0b1220 !important; color: #e5e7eb !important; }}
+        .card {{ background: #0f172a !important; border-color: #1f2937 !important; }}
+        .muted {{ color: #94a3b8 !important; }}
+      }}
+    </style>
+  </head>
+  <body style="margin:0;padding:0;background:#f4f7f9;">
+    <div style="display:none;visibility:hidden;opacity:0;height:0;width:0;overflow:hidden;">
+      Registration confirmed — welcome to {settings.COMPANY_OPERATING_NAME} and the Cana Family by {settings.COMPANY_SUB_GROUP_NAME}.
+    </div>
+
+    <table role="presentation" width="100%" cellspacing="0" cellpadding="0" border="0" style="background:#f4f7f9;padding:24px 12px;">
+      <tr>
+        <td align="center">
+          <table role="presentation" width="100%" cellspacing="0" cellpadding="0" border="0" class="card" style="max-width:640px;background:#ffffff;border:1px solid #e5e7eb;border-radius:16px;overflow:hidden;">
+            <tr>
+            <td style="background:{brand_primary};padding:18px 20px;">
+                <table width="100%" cellspacing="0" cellpadding="0" border="0">
+                <tr>
+                    <td align="left">
+                    <img src="{logo_url}"
+                        alt="{settings.COMPANY_OPERATING_NAME}"
+                        width="64"
+                        height="64"
+                        style="display:block;border:0;outline:none;text-decoration:none;border-radius:50%;object-fit:cover;">
+                    </td>
+                    <td align="right" style="font:600 16px/1.2 system-ui,-apple-system,'Segoe UI',Roboto,Helvetica,Arial;color:#e6fffb;">
+                    Welcome to {settings.COMPANY_OPERATING_NAME}
+                    </td>
+                </tr>
+                </table>
+            </td>
+            </tr>
+
+
+            <tr>
+              <td style="padding:28px 24px 6px;">
+                <h1 style="margin:0 0 10px;font:800 24px/1.25 system-ui,-apple-system,'Segoe UI',Roboto,Helvetica,Arial;color:#0f172a;">
+                  Hi {pharmacy.name or "there"}, your pharmacy is all set 🎉
+                </h1>
+                <p style="margin:0 0 16px;font:400 14px/1.7 system-ui,-apple-system,'Segoe UI',Roboto,Helvetica,Arial;color:#475569;">
+                  Thanks for registering with <strong>{settings.COMPANY_OPERATING_NAME}</strong> an operating name of {settings.CORPORATION_NAME} and joining the <strong>Cana Family by {settings.COMPANY_SUB_GROUP_NAME}</strong>.
+                  We're excited to help your team coordinate secure, trackable, and timely deliveries with a dashboard
+                  designed for pharmacies.
+                </p>
+
+                <div style="margin:18px 0;background:#f0fdfa;border:1px solid {brand_primary};border-radius:12px;padding:16px 18px;">
+                  <ul style="margin:0;padding-left:18px;font:400 14px/1.8 system-ui,-apple-system,'Segoe UI',Roboto,Helvetica,Arial;color:#334155;">
+                    <li>Live order tracking with photo proof at each stage</li>
+                    <li>Professional Delivery Management System using Customer ID and Signature Verifications
+                    <li>Smart weekly invoices and transparent earnings</li>
+                    <li>Secure driver handover and delivery confirmations</li>
+                  </ul>
+                </div>
+
+                <div style="margin:20px 0;background:#fef3c7;border:1px solid #fbbf24;border-radius:12px;padding:16px 18px;">
+                  <h2 style="margin:0 0 12px;font:700 16px/1.3 system-ui,-apple-system,'Segoe UI',Roboto,Helvetica,Arial;color:#78350f;">
+                    🔐 Your Login Credentials
+                  </h2>
+                  <table width="100%" cellspacing="0" cellpadding="0" border="0" style="font:400 14px/1.6 system-ui,-apple-system,'Segoe UI',Roboto,Helvetica,Arial;">
+                    <tr>
+                      <td style="padding:6px 0;color:#78350f;font-weight:600;">Username:</td>
+                      <td style="padding:6px 0;color:#78350f;">{pharmacy.email}</td>
+                    </tr>
+                    <tr>
+                      <td style="padding:6px 0;color:#78350f;font-weight:600;">Password:</td>
+                      <td style="padding:6px 0;color:#78350f;font-family:monospace;font-weight:600;">123456</td>
+                    </tr>
+                  </table>
+                  <div style="margin-top:14px;padding-top:14px;border-top:1px solid #fbbf24;">
+                    <p style="margin:0;font:600 13px/1.6 system-ui,-apple-system,'Segoe UI',Roboto,Helvetica,Arial;color:#92400e;">
+                      ⚠️ <strong>Important Security Notice:</strong>
+                    </p>
+                    <p style="margin:6px 0 0;font:400 13px/1.6 system-ui,-apple-system,'Segoe UI',Roboto,Helvetica,Arial;color:#78350f;">
+                      For your security, please change your password immediately after logging in. Navigate to: <strong>My Profile → Security Settings → Change Password</strong>
+                    </p>
+                  </div>
+                </div>
+
+                <p style="margin:8px 0 0;font:400 12px/1.7 system-ui,-apple-system,'Segoe UI',Roboto,Helvetica,Arial;color:#64748b;">
+                  Registered on <strong style="color:{brand_primary_dark};">{created_at}</strong>.
+                </p>
+
+                <hr style="border:0;border-top:1px solid #e5e7eb;margin:24px 0;">
+                <p class="muted" style="margin:0;font:400 12px/1.7 system-ui,-apple-system,'Segoe UI',Roboto,Helvetica,Arial;color:#6b7280;">
+                  Questions or need a hand? Log in to the portal and raise a Support Ticket by contacting the Admin. Our team will be happy to assist you.
+                </p>
+              </td>
+            </tr>
+
+            <tr>
+              <td style="padding:0 24px 24px;">
+                <table width="100%" cellspacing="0" cellpadding="0" border="0" style="background:#f8fafc;border:1px dashed #e2e8f0;border-radius:12px;">
+                  <tr>
+                    <td style="padding:12px 16px;">
+                      <p style="margin:0;font:400 12px/1.6 system-ui,-apple-system,'Segoe UI',Roboto,Helvetica,Arial;color:#64748b;">
+                        Welcome aboard — we're thrilled to partner with you.
+                      </p>
+                    </td>
+                  </tr>
+                </table>
+              </td>
+            </tr>
+
+          </table>
+
+          <p style="margin:14px 0 0;font:400 12px/1.6 system-ui,-apple-system,'Segoe UI',Roboto,Helvetica,Arial;color:#94a3b8;">
+            © {created_at_local.year} {settings.COMPANY_OPERATING_NAME} - {settings.COMPANY_SUB_GROUP_NAME}. All rights reserved.
+          </p>
+        </td>
+      </tr>
+    </table>
+  </body>
+</html>
+"""
+            text = (
+                f"Welcome to {settings.COMPANY_OPERATING_NAME} and the Cana Family by {settings.COMPANY_SUB_GROUP_NAME}!\n\n"
+                f"Hi {pharmacy.name or 'there'}, your pharmacy registration is confirmed.\n"
+                "• Live order tracking with photo proof\n"
+                "• Weekly invoices and transparent earnings\n"
+                "• Secure handover and delivery confirmations\n\n"
+                "Your Login Credentials:\n"
+                f"Username: {pharmacy.email}\n"
+                "Password: 123456\n\n"
+                "IMPORTANT: For your security, please change your password immediately after logging in.\n"
+                "Navigate to: My Profile → Security Settings → Change Password\n\n"
+                "Questions? Just reply to this email.\n"
+            )
+
+            _send_html_email_help_desk(
+                subject=f"Welcome to {settings.COMPANY_OPERATING_NAME} • Pharmacy Registration Confirmed",
+                to_email=pharmacy.email,
+                html=html,
+                text_fallback=text,
+            )
+        except Exception:
+            logger.exception("Failed to send pharmacy registration email")
+        
+        # ---- Send office notification email ----
+        try:
+            brand_primary = settings.BRAND_COLORS['primary']
+            brand_primary_dark = settings.BRAND_COLORS['primary_dark']
+            logo_url = settings.LOGO_URL
+
+            office_html = f"""\
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <title>New Pharmacy Registration • {settings.COMPANY_OPERATING_NAME}</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <style>
+      @media (prefers-color-scheme: dark) {{
+        body {{ background: #0b1220 !important; color: #e5e7eb !important; }}
+        .card {{ background: #0f172a !important; border-color: #1f2937 !important; }}
+        .info-row {{ background: #1e293b !important; }}
+      }}
+    </style>
+  </head>
+  <body style="margin:0;padding:0;background:#f4f7f9;">
+    <table role="presentation" width="100%" cellspacing="0" cellpadding="0" border="0" style="background:#f4f7f9;padding:24px 12px;">
+      <tr>
+        <td align="center">
+          <table role="presentation" width="100%" cellspacing="0" cellpadding="0" border="0" class="card" style="max-width:640px;background:#ffffff;border:1px solid #e5e7eb;border-radius:16px;overflow:hidden;">
+            <tr>
+              <td style="background:{brand_primary};padding:18px 20px;">
+                <table width="100%" cellspacing="0" cellpadding="0" border="0">
+                  <tr>
+                    <td align="left">
+                      <img src="{logo_url}"
+                           alt="{settings.COMPANY_OPERATING_NAME}"
+                           width="64"
+                           height="64"
+                           style="display:block;border:0;outline:none;text-decoration:none;border-radius:50%;object-fit:cover;">
+                    </td>
+                    <td align="right" style="font:600 16px/1.2 system-ui,-apple-system,'Segoe UI',Roboto,Helvetica,Arial;color:#e6fffb;">
+                      New Pharmacy Registered
+                    </td>
+                  </tr>
+                </table>
+              </td>
+            </tr>
+
+            <tr>
+              <td style="padding:28px 24px 6px;">
+                <h1 style="margin:0 0 10px;font:800 24px/1.25 system-ui,-apple-system,'Segoe UI',Roboto,Helvetica,Arial;color:#0f172a;">
+                  New Pharmacy Registration
+                </h1>
+                <p style="margin:0 0 20px;font:400 14px/1.7 system-ui,-apple-system,'Segoe UI',Roboto,Helvetica,Arial;color:#475569;">
+                  A new pharmacy has been successfully added to the {settings.COMPANY_OPERATING_NAME} platform by an administrator.
+                </p>
+
+                <div style="margin:18px 0;background:#f8fafc;border:1px solid #e2e8f0;border-radius:12px;padding:0;overflow:hidden;">
+                  <table width="100%" cellspacing="0" cellpadding="0" border="0" style="font:400 14px/1.6 system-ui,-apple-system,'Segoe UI',Roboto,Helvetica,Arial;">
+                    <tr class="info-row" style="background:#f1f5f9;">
+                      <td style="padding:12px 18px;color:#64748b;font-weight:600;">Pharmacy Name</td>
+                      <td style="padding:12px 18px;color:#0f172a;font-weight:500;">{pharmacy.name}</td>
+                    </tr>
+                    <tr>
+                      <td style="padding:12px 18px;color:#64748b;font-weight:600;border-top:1px solid #e2e8f0;">Email</td>
+                      <td style="padding:12px 18px;color:#0f172a;border-top:1px solid #e2e8f0;">{pharmacy.email}</td>
+                    </tr>
+                    <tr class="info-row" style="background:#f1f5f9;">
+                      <td style="padding:12px 18px;color:#64748b;font-weight:600;border-top:1px solid #e2e8f0;">Phone</td>
+                      <td style="padding:12px 18px;color:#0f172a;border-top:1px solid #e2e8f0;">{pharmacy.phone_number}</td>
+                    </tr>
+                    <tr>
+                      <td style="padding:12px 18px;color:#64748b;font-weight:600;border-top:1px solid #e2e8f0;">Address</td>
+                      <td style="padding:12px 18px;color:#0f172a;border-top:1px solid #e2e8f0;">{pharmacy.store_address}</td>
+                    </tr>
+                    <tr class="info-row" style="background:#f1f5f9;">
+                      <td style="padding:12px 18px;color:#64748b;font-weight:600;border-top:1px solid #e2e8f0;">City</td>
+                      <td style="padding:12px 18px;color:#0f172a;border-top:1px solid #e2e8f0;">{pharmacy.city}</td>
+                    </tr>
+                    <tr>
+                      <td style="padding:12px 18px;color:#64748b;font-weight:600;border-top:1px solid #e2e8f0;">Province</td>
+                      <td style="padding:12px 18px;color:#0f172a;border-top:1px solid #e2e8f0;">{pharmacy.province}</td>
+                    </tr>
+                    <tr class="info-row" style="background:#f1f5f9;">
+                      <td style="padding:12px 18px;color:#64748b;font-weight:600;border-top:1px solid #e2e8f0;">Postal Code</td>
+                      <td style="padding:12px 18px;color:#0f172a;border-top:1px solid #e2e8f0;">{pharmacy.postal_code}</td>
+                    </tr>
+                    <tr>
+                      <td style="padding:12px 18px;color:#64748b;font-weight:600;border-top:1px solid #e2e8f0;">Country</td>
+                      <td style="padding:12px 18px;color:#0f172a;border-top:1px solid #e2e8f0;">{pharmacy.country}</td>
+                    </tr>
+                    <tr class="info-row" style="background:#f1f5f9;">
+                      <td style="padding:12px 18px;color:#64748b;font-weight:600;border-top:1px solid #e2e8f0;">Registration Time</td>
+                      <td style="padding:12px 18px;color:{brand_primary_dark};font-weight:500;border-top:1px solid #e2e8f0;">{created_at}</td>
+                    </tr>
+                    <tr>
+                      <td style="padding:12px 18px;color:#64748b;font-weight:600;border-top:1px solid #e2e8f0;">Pharmacy ID</td>
+                      <td style="padding:12px 18px;color:#0f172a;border-top:1px solid #e2e8f0;">{pharmacy.id}</td>
+                    </tr>
+                    <tr class="info-row" style="background:#f1f5f9;">
+                      <td style="padding:12px 18px;color:#64748b;font-weight:600;border-top:1px solid #e2e8f0;">Status</td>
+                      <td style="padding:12px 18px;color:#0f172a;border-top:1px solid #e2e8f0;">{"Active" if pharmacy.active else "Inactive"}</td>
+                    </tr>
+                    <tr>
+                      <td style="padding:12px 18px;color:#64748b;font-weight:600;border-top:1px solid #e2e8f0;">Default Password</td>
+                      <td style="padding:12px 18px;color:#0f172a;font-family:monospace;border-top:1px solid #e2e8f0;">123456</td>
+                    </tr>
+                  </table>
+                </div>
+
+                <div style="margin:20px 0;background:#f0fdf4;border:1px solid #86efac;border-radius:12px;padding:14px 18px;">
+                  <p style="margin:0;font:400 13px/1.6 system-ui,-apple-system,'Segoe UI',Roboto,Helvetica,Arial;color:#166534;">
+                    <strong>✓ Registration Complete</strong> — The pharmacy has been added to the system and received their welcome email with login credentials.
+                  </p>
+                </div>
+
+                <hr style="border:0;border-top:1px solid #e5e7eb;margin:24px 0;">
+                <p style="margin:0;font:400 12px/1.7 system-ui,-apple-system,'Segoe UI',Roboto,Helvetica,Arial;color:#64748b;">
+                  This is an automated notification from the {settings.COMPANY_OPERATING_NAME} registration system.
+                </p>
+              </td>
+            </tr>
+
+          </table>
+
+          <p style="margin:14px 0 0;font:400 12px/1.6 system-ui,-apple-system,'Segoe UI',Roboto,Helvetica,Arial;color:#94a3b8;">
+            © {created_at_local.year} {settings.COMPANY_OPERATING_NAME} - {settings.COMPANY_SUB_GROUP_NAME}. All rights reserved.
+          </p>
+        </td>
+      </tr>
+    </table>
+  </body>
+</html>
+"""
+            office_text = (
+                f"New Pharmacy Registration on {settings.COMPANY_OPERATING_NAME}\n\n"
+                f"Pharmacy Name: {pharmacy.name}\n"
+                f"Email: {pharmacy.email}\n"
+                f"Phone: {pharmacy.phone_number}\n"
+                f"Address: {pharmacy.store_address}\n"
+                f"City: {pharmacy.city}\n"
+                f"Province: {pharmacy.province}\n"
+                f"Postal Code: {pharmacy.postal_code}\n"
+                f"Country: {pharmacy.country}\n"
+                f"Registration Time: {created_at}\n"
+                f"Pharmacy ID: {pharmacy.id}\n"
+                f"Status: {'Active' if pharmacy.active else 'Inactive'}\n"
+                f"Default Password: 123456\n\n"
+                "The pharmacy has been added to the system and received their welcome email with login credentials.\n"
+            )
+
+            _send_html_email_help_desk(
+                subject=f"New Pharmacy Registration: {pharmacy.name}",
+                to_email=settings.EMAIL_ADMIN_OFFICE,
+                html=office_html,
+                text_fallback=office_text,
+            )
+        except Exception:
+            logger.exception("Failed to send office notification email for pharmacy registration")
+
+        return JsonResponse({
+            "success": True,
+            "message": "Pharmacy created successfully",
+            "pharmacy": {
+                "id": pharmacy.id,
+                "name": pharmacy.name,
+                "email": pharmacy.email,
+                "phone_number": pharmacy.phone_number,
+                "city": pharmacy.city,
+                "province": pharmacy.province,
+                "active": pharmacy.active,
+                "business_hours": pharmacy.business_hours,
+                "created_at_local": timezone.localtime(
+                    pharmacy.created_at,
+                    settings.USER_TIMEZONE
+                ).isoformat(),
+                "timezone": str(settings.USER_TIMEZONE),
+            }
+        }, status=201)
 
     except IntegrityError:
-        # Likely unique email constraint
-        return JsonResponse(
-            {
-                "success": False,
-                "message": "A pharmacy with this email already exists.",
-                "field": "email",
-            },
-            status=400,
-        )
-    except Exception as e:
-        return JsonResponse(
-            {"success": False, "message": "Something went wrong.", "error": str(e)},
-            status=500,
-        )
+        return JsonResponse({
+            "success": False,
+            "error": "A pharmacy with this email already exists"
+        }, status=400)
 
+    except Exception as e:
+        return JsonResponse({
+            "success": False,
+            "error": "Internal server error",
+            "details": str(e)
+        }, status=500)
 
 
 @csrf_exempt
@@ -13887,9 +14256,9 @@ def get_ticket_status_metrics(request):
 
 @csrf_exempt
 @require_http_methods(["POST"])
-def pharmacy_onboarding_api(request):
+def pharmacy_info_api(request):
     """
-    API endpoint to create a new pharmacy trial onboarding entry.
+    API endpoint to store pharmacy information for internal analytics and baseline tracking.
     """
     # Parse JSON data from request body
     try:
@@ -13906,7 +14275,7 @@ def pharmacy_onboarding_api(request):
         'address_line_1', 'city', 'postal_code', 'store_hours',
         'contact_name', 'contact_role', 'contact_phone', 'contact_email',
         'estimated_deliveries_per_day', 'preferred_delivery_type',
-        'delivery_radius_km', 'trial_start_date', 'trial_duration_days'
+        'delivery_radius_km'
     ]
     
     missing_fields = [field for field in required_fields if not data.get(field)]
@@ -13919,13 +14288,13 @@ def pharmacy_onboarding_api(request):
     # Validate consent
     if not data.get('consent_given'):
         return JsonResponse(
-            {"success": False, "error": "Consent must be given to proceed with onboarding"},
+            {"success": False, "error": "Consent must be given to proceed"},
             status=400
         )
     
-    # Create the pharmacy onboarding record
+    # Create the pharmacy info record
     try:
-        pharmacy_onboarding = PharmacyTrialOnboarding.objects.create(
+        pharmacy_info = PharmacyInfo.objects.create(
             pharmacy_name=data['pharmacy_name'],
             pharmacy_phone=data['pharmacy_phone'],
             pharmacy_email=data['pharmacy_email'],
@@ -13946,444 +14315,35 @@ def pharmacy_onboarding_api(request):
             estimated_deliveries_per_day=int(data['estimated_deliveries_per_day']),
             preferred_delivery_type=data['preferred_delivery_type'].strip().lower(),
 
-            same_day_cutoff_time=None,
-
             delivery_radius_km=int(data['delivery_radius_km']),
 
-            signature_required=True,
-            id_verification_required=False,
+            signature_required=bool(data.get('signature_required', True)),
+            id_verification_required=bool(data.get('id_verification_required', False)),
             special_delivery_instructions=data.get('special_delivery_instructions'),
-
-            trial_start_date=datetime.strptime(
-                data['trial_start_date'], "%Y-%m-%d"
-            ).date(),
-
-            trial_duration_days=int(data.get('trial_duration_days', 7)),
-
-            agreed_delivery_fee=0.00,
 
             consent_given=bool(data.get('consent_given')),
 
-            onboarding_notes=data.get('onboarding_notes'),
-            status="trial",
+            internal_notes=data.get('internal_notes'),
         )
     except Exception as e:
-        logger.exception("Failed to create pharmacy onboarding record")
+        logger.exception("Failed to create pharmacy info record")
         return JsonResponse(
             {"success": False, "error": str(e)},
             status=500
         )
-    
-    # Send welcome email
-    try:
-        # Calculate trial end date
-        trial_start = datetime.strptime(data['trial_start_date'], '%Y-%m-%d').date()
-        trial_end = trial_start + timedelta(days=int(data.get('trial_duration_days', 7)))
-        
-        brand_primary = settings.BRAND_COLORS['primary']
-        brand_primary_dark = settings.BRAND_COLORS['primary_dark']
-        brand_accent = settings.BRAND_COLORS['accent']
-        logo_url = settings.LOGO_URL
-        now_str = timezone.now().strftime("%b %d, %Y %H:%M %Z")
-        
-        delivery_type_map = {
-            'same_day': 'Same-day',
-            'next_day': 'Next-day',
-            'both': 'Both'
-        }
-        delivery_type_display = delivery_type_map.get(data['preferred_delivery_type'], data['preferred_delivery_type'])
-        
-        contact_role_display = data['contact_role'].replace('_', ' ').title()
-
-        html = f"""\
-<!doctype html>
-<html lang="en">
-  <head>
-    <meta charset="utf-8">
-    <title>Welcome to {settings.COMPANY_OPERATING_NAME} Trial Program</title>
-    <meta name="viewport" content="width=device-width, initial-scale=1">
-    <style>
-      @media (prefers-color-scheme: dark) {{
-        body {{ background: #0b1220 !important; color: #e5e7eb !important; }}
-        .card {{ background: #0f172a !important; border-color: #1f2937 !important; }}
-        .muted {{ color: #94a3b8 !important; }}
-        .info-row {{ background: #1e293b !important; }}
-      }}
-    </style>
-  </head>
-  <body style="margin:0;padding:0;background:#f4f7f9;">
-    <div style="display:none;visibility:hidden;opacity:0;height:0;width:0;overflow:hidden;">
-      Welcome to {settings.COMPANY_OPERATING_NAME} Trial Program — Start your pharmacy delivery journey with us.
-    </div>
-
-    <table role="presentation" width="100%" cellspacing="0" cellpadding="0" border="0" style="background:#f4f7f9;padding:24px 12px;">
-      <tr>
-        <td align="center">
-          <table role="presentation" width="100%" cellspacing="0" cellpadding="0" border="0" class="card" style="max-width:640px;background:#ffffff;border:1px solid #e5e7eb;border-radius:16px;overflow:hidden;">
-            <tr>
-              <td style="background:{brand_primary};padding:18px 20px;">
-                <table width="100%" cellspacing="0" cellpadding="0" border="0">
-                  <tr>
-                    <td align="left">
-                      <img src="{logo_url}"
-                           alt="{settings.COMPANY_OPERATING_NAME}"
-                           width="64"
-                           height="64"
-                           style="display:block;border:0;outline:none;text-decoration:none;border-radius:50%;object-fit:cover;">
-                    </td>
-                    <td align="right" style="font:600 16px/1.2 system-ui,-apple-system,'Segoe UI',Roboto,Helvetica,Arial;color:#e6fffb;">
-                      Trial Registration Confirmed
-                    </td>
-                  </tr>
-                </table>
-              </td>
-            </tr>
-
-            <tr>
-              <td style="padding:28px 24px 6px;">
-                <h1 style="margin:0 0 10px;font:800 26px/1.25 system-ui,-apple-system,'Segoe UI',Roboto,Helvetica,Arial;color:#0f172a;">
-                  Welcome to {settings.COMPANY_OPERATING_NAME}! 🎉
-                </h1>
-                <p style="margin:0 0 16px;font:400 15px/1.7 system-ui,-apple-system,'Segoe UI',Roboto,Helvetica,Arial;color:#475569;">
-                  Hi <strong>{data['contact_name']}</strong>,
-                </p>
-                <p style="margin:0 0 16px;font:400 15px/1.7 system-ui,-apple-system,'Segoe UI',Roboto,Helvetica,Arial;color:#475569;">
-                  Thank you for registering <strong>{data['pharmacy_name']}</strong> for our Trial Program! We're excited to partner with you and revolutionize your pharmacy delivery operations.
-                </p>
-
-                <div style="margin:20px 0;background:#d1fae5;border:1px solid #10b981;border-radius:12px;padding:14px 18px;">
-                  <p style="margin:0;font:500 14px/1.6 system-ui,-apple-system,'Segoe UI',Roboto,Helvetica,Arial;color:#065f46;">
-                    ✓ <strong>Registration Successful</strong> — Your trial account has been created and will be activated on <strong>{trial_start.strftime('%B %d, %Y')}</strong>.
-                  </p>
-                </div>
-
-                <h2 style="margin:28px 0 14px;font:700 20px/1.3 system-ui,-apple-system,'Segoe UI',Roboto,Helvetica,Arial;color:#0f172a;">
-                  Trial Period Details
-                </h2>
-
-                <div style="margin:18px 0;background:#f8fafc;border:1px solid #e2e8f0;border-radius:12px;padding:0;overflow:hidden;">
-                  <table width="100%" cellspacing="0" cellpadding="0" border="0" style="font:400 14px/1.6 system-ui,-apple-system,'Segoe UI',Roboto,Helvetica,Arial;">
-                    <tr class="info-row" style="background:#f1f5f9;">
-                      <td style="padding:12px 18px;color:#64748b;font-weight:600;">Trial Start Date</td>
-                      <td style="padding:12px 18px;color:#0f172a;font-weight:500;">{trial_start.strftime('%B %d, %Y')}</td>
-                    </tr>
-                    <tr>
-                      <td style="padding:12px 18px;color:#64748b;font-weight:600;border-top:1px solid #e2e8f0;">Trial End Date</td>
-                      <td style="padding:12px 18px;color:#0f172a;border-top:1px solid #e2e8f0;">{trial_end.strftime('%B %d, %Y')}</td>
-                    </tr>
-                    <tr class="info-row" style="background:#f1f5f9;">
-                      <td style="padding:12px 18px;color:#64748b;font-weight:600;border-top:1px solid #e2e8f0;">Duration</td>
-                      <td style="padding:12px 18px;color:#0f172a;border-top:1px solid #e2e8f0;">{data.get('trial_duration_days', 7)} days</td>
-                    </tr>
-                    <tr>
-                      <td style="padding:12px 18px;color:#64748b;font-weight:600;border-top:1px solid #e2e8f0;">Delivery Type</td>
-                      <td style="padding:12px 18px;color:#0f172a;border-top:1px solid #e2e8f0;">{delivery_type_display}</td>
-                    </tr>
-                    <tr class="info-row" style="background:#f1f5f9;">
-                      <td style="padding:12px 18px;color:#64748b;font-weight:600;border-top:1px solid #e2e8f0;">Delivery Radius</td>
-                      <td style="padding:12px 18px;color:#0f172a;border-top:1px solid #e2e8f0;">{data['delivery_radius_km']} km</td>
-                    </tr>
-                  </table>
-                </div>
-
-                <h2 style="margin:28px 0 14px;font:700 20px/1.3 system-ui,-apple-system,'Segoe UI',Roboto,Helvetica,Arial;color:#0f172a;">
-                  Key Features & Benefits
-                </h2>
-
-                <table width="100%" cellspacing="0" cellpadding="0" border="0" style="margin:18px 0;">
-                  <tr>
-                    <td style="padding:12px 0;">
-                      <table width="100%" cellspacing="0" cellpadding="0" border="0">
-                        <tr>
-                          <td style="width:32px;vertical-align:top;">
-                            <div style="width:28px;height:28px;background:#d1fae5;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:16px;">🚫</div>
-                          </td>
-                          <td style="padding-left:12px;">
-                            <p style="margin:0 0 4px;font:600 15px/1.4 system-ui,-apple-system,'Segoe UI',Roboto,Helvetica,Arial;color:#0f172a;">No In-House Delivery Setup Required</p>
-                            <p style="margin:0;font:400 13px/1.6 system-ui,-apple-system,'Segoe UI',Roboto,Helvetica,Arial;color:#64748b;">Focus on your pharmacy operations while we handle all delivery logistics.</p>
-                          </td>
-                        </tr>
-                      </table>
-                    </td>
-                  </tr>
-                  <tr>
-                    <td style="padding:12px 0;">
-                      <table width="100%" cellspacing="0" cellpadding="0" border="0">
-                        <tr>
-                          <td style="width:32px;vertical-align:top;">
-                            <div style="width:28px;height:28px;background:#dbeafe;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:16px;">💰</div>
-                          </td>
-                          <td style="padding-left:12px;">
-                            <p style="margin:0 0 4px;font:600 15px/1.4 system-ui,-apple-system,'Segoe UI',Roboto,Helvetica,Arial;color:#0f172a;">Pay Per Delivery</p>
-                            <p style="margin:0;font:400 13px/1.6 system-ui,-apple-system,'Segoe UI',Roboto,Helvetica,Arial;color:#64748b;">Only pay for successful deliveries — no hidden fees or upfront costs.</p>
-                          </td>
-                        </tr>
-                      </table>
-                    </td>
-                  </tr>
-                  <tr>
-                    <td style="padding:12px 0;">
-                      <table width="100%" cellspacing="0" cellpadding="0" border="0">
-                        <tr>
-                          <td style="width:32px;vertical-align:top;">
-                            <div style="width:28px;height:28px;background:#fef3c7;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:16px;">📸</div>
-                          </td>
-                          <td style="padding-left:12px;">
-                            <p style="margin:0 0 4px;font:600 15px/1.4 system-ui,-apple-system,'Segoe UI',Roboto,Helvetica,Arial;color:#0f172a;">Image Proof of Delivery</p>
-                            <p style="margin:0;font:400 13px/1.6 system-ui,-apple-system,'Segoe UI',Roboto,Helvetica,Arial;color:#64748b;">Photo verification for every delivery ensures accountability and peace of mind.</p>
-                          </td>
-                        </tr>
-                      </table>
-                    </td>
-                  </tr>
-                  <tr>
-                    <td style="padding:12px 0;">
-                      <table width="100%" cellspacing="0" cellpadding="0" border="0">
-                        <tr>
-                          <td style="width:32px;vertical-align:top;">
-                            <div style="width:28px;height:28px;background:#e0e7ff;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:16px;">🔐</div>
-                          </td>
-                          <td style="padding-left:12px;">
-                            <p style="margin:0 0 4px;font:600 15px/1.4 system-ui,-apple-system,'Segoe UI',Roboto,Helvetica,Arial;color:#0f172a;">Access to Secure Portal</p>
-                            <p style="margin:0;font:400 13px/1.6 system-ui,-apple-system,'Segoe UI',Roboto,Helvetica,Arial;color:#64748b;">Real-time tracking, order management, and detailed analytics at your fingertips.</p>
-                          </td>
-                        </tr>
-                      </table>
-                    </td>
-                  </tr>
-                  <tr>
-                    <td style="padding:12px 0;">
-                      <table width="100%" cellspacing="0" cellpadding="0" border="0">
-                        <tr>
-                          <td style="width:32px;vertical-align:top;">
-                            <div style="width:28px;height:28px;background:#fce7f3;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:16px;">📄</div>
-                          </td>
-                          <td style="padding-left:12px;">
-                            <p style="margin:0 0 4px;font:600 15px/1.4 system-ui,-apple-system,'Segoe UI',Roboto,Helvetica,Arial;color:#0f172a;">No Contracts</p>
-                            <p style="margin:0;font:400 13px/1.6 system-ui,-apple-system,'Segoe UI',Roboto,Helvetica,Arial;color:#64748b;">Flexible service with no long-term commitments or binding agreements.</p>
-                          </td>
-                        </tr>
-                      </table>
-                    </td>
-                  </tr>
-                  <tr>
-                    <td style="padding:12px 0;">
-                      <table width="100%" cellspacing="0" cellpadding="0" border="0">
-                        <tr>
-                          <td style="width:32px;vertical-align:top;">
-                            <div style="width:28px;height:28px;background:#dcfce7;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:16px;">🎁</div>
-                          </td>
-                          <td style="padding-left:12px;">
-                            <p style="margin:0 0 4px;font:600 15px/1.4 system-ui,-apple-system,'Segoe UI',Roboto,Helvetica,Arial;color:#0f172a;">Earn CC Points to Redeem</p>
-                            <p style="margin:0;font:400 13px/1.6 system-ui,-apple-system,'Segoe UI',Roboto,Helvetica,Arial;color:#64748b;">Earn points on every delivery and redeem them to sell products through our platform.</p>
-                          </td>
-                        </tr>
-                      </table>
-                    </td>
-                  </tr>
-                </table>
-
-                <h2 style="margin:28px 0 14px;font:700 20px/1.3 system-ui,-apple-system,'Segoe UI',Roboto,Helvetica,Arial;color:#0f172a;">
-                  Important Information
-                </h2>
-
-                <div style="margin:18px 0;background:#fef3c7;border:1px solid #fbbf24;border-radius:12px;padding:16px 18px;">
-                  <p style="margin:0 0 10px;font:600 14px/1.6 system-ui,-apple-system,'Segoe UI',Roboto,Helvetica,Arial;color:#92400e;">
-                    ⚠️ Return Policy
-                  </p>
-                  <p style="margin:0;font:400 13px/1.7 system-ui,-apple-system,'Segoe UI',Roboto,Helvetica,Arial;color:#78350f;">
-                    If a delivery is unsuccessful, medications will be safely returned to your pharmacy on the same day of the delivery attempt. You'll be required to place another order on the portal.
-                  </p>
-                </div>
-
-                <div style="margin:18px 0;background:#f1f5f9;border:1px solid #cbd5e1;border-radius:12px;padding:16px 18px;">
-                  <p style="margin:0 0 10px;font:600 14px/1.6 system-ui,-apple-system,'Segoe UI',Roboto,Helvetica,Arial;color:#334155;">
-                    ℹ️ Portal Access
-                  </p>
-                  <p style="margin:0;font:400 13px/1.7 system-ui,-apple-system,'Segoe UI',Roboto,Helvetica,Arial;color:#475569;">
-                    You'll receive separate login credentials for the {settings.COMPANY_OPERATING_NAME} portal before your trial start date. The portal allows you to manage orders, track deliveries in real-time and access support.
-                  </p>
-                </div>
-
-                <div style="margin:18px 0;background:#fef2f2;border:1px solid #fecaca;border-radius:12px;padding:16px 18px;">
-                  <p style="margin:0 0 10px;font:600 14px/1.6 system-ui,-apple-system,'Segoe UI',Roboto,Helvetica,Arial;color:#991b1b;">
-                    📋 Trial Disclaimer
-                  </p>
-                  <p style="margin:0;font:400 13px/1.7 system-ui,-apple-system,'Segoe UI',Roboto,Helvetica,Arial;color:#7f1d1d;">
-                    This is a trial period to evaluate our services. Either party may discontinue the service at the end of the trial period without penalty. All delivery operations will comply with applicable pharmacy regulations and privacy laws.
-                  </p>
-                </div>
-
-                <h2 style="margin:28px 0 14px;font:700 20px/1.3 system-ui,-apple-system,'Segoe UI',Roboto,Helvetica,Arial;color:#0f172a;">
-                  Your Registration Details
-                </h2>
-
-                <div style="margin:18px 0;background:#f8fafc;border:1px solid #e2e8f0;border-radius:12px;padding:0;overflow:hidden;">
-                  <table width="100%" cellspacing="0" cellpadding="0" border="0" style="font:400 14px/1.6 system-ui,-apple-system,'Segoe UI',Roboto,Helvetica,Arial;">
-                    <tr class="info-row" style="background:#f1f5f9;">
-                      <td style="padding:12px 18px;color:#64748b;font-weight:600;">Pharmacy Name</td>
-                      <td style="padding:12px 18px;color:#0f172a;font-weight:500;">{data['pharmacy_name']}</td>
-                    </tr>
-                    <tr>
-                      <td style="padding:12px 18px;color:#64748b;font-weight:600;border-top:1px solid #e2e8f0;">Contact Person</td>
-                      <td style="padding:12px 18px;color:#0f172a;border-top:1px solid #e2e8f0;">{data['contact_name']} ({contact_role_display})</td>
-                    </tr>
-                    <tr class="info-row" style="background:#f1f5f9;">
-                      <td style="padding:12px 18px;color:#64748b;font-weight:600;border-top:1px solid #e2e8f0;">Email</td>
-                      <td style="padding:12px 18px;color:#0f172a;border-top:1px solid #e2e8f0;">{data['pharmacy_email']}</td>
-                    </tr>
-                    <tr>
-                      <td style="padding:12px 18px;color:#64748b;font-weight:600;border-top:1px solid #e2e8f0;">Phone</td>
-                      <td style="padding:12px 18px;color:#0f172a;border-top:1px solid #e2e8f0;">{data['pharmacy_phone']}</td>
-                    </tr>
-                    <tr class="info-row" style="background:#f1f5f9;">
-                      <td style="padding:12px 18px;color:#64748b;font-weight:600;border-top:1px solid #e2e8f0;">Address</td>
-                      <td style="padding:12px 18px;color:#0f172a;border-top:1px solid #e2e8f0;">{data['address_line_1']}, {data['city']}, {data['postal_code']}</td>
-                    </tr>
-                    <tr>
-                      <td style="padding:12px 18px;color:#64748b;font-weight:600;border-top:1px solid #e2e8f0;">Store Hours</td>
-                      <td style="padding:12px 18px;color:#0f172a;border-top:1px solid #e2e8f0;">{data['store_hours']}</td>
-                    </tr>
-                  </table>
-                </div>
-
-                <h2 style="margin:28px 0 14px;font:700 20px/1.3 system-ui,-apple-system,'Segoe UI',Roboto,Helvetica,Arial;color:#0f172a;">
-                  Next Steps
-                </h2>
-
-                <div style="margin:18px 0;">
-                  <table width="100%" cellspacing="0" cellpadding="0" border="0">
-                    <tr>
-                      <td style="padding:8px 0;">
-                        <table width="100%" cellspacing="0" cellpadding="0" border="0">
-                          <tr>
-                            <td style="width:24px;vertical-align:top;font:700 14px/1.4 system-ui;color:{brand_primary};">1.</td>
-                            <td style="padding-left:8px;font:400 14px/1.7 system-ui,-apple-system,'Segoe UI',Roboto,Helvetica,Arial;color:#475569;">
-                              Watch for your portal login credentials (arriving before {trial_start.strftime('%B %d')})
-                            </td>
-                          </tr>
-                        </table>
-                      </td>
-                    </tr>
-                    <tr>
-                      <td style="padding:8px 0;">
-                        <table width="100%" cellspacing="0" cellpadding="0" border="0">
-                          <tr>
-                            <td style="width:24px;vertical-align:top;font:700 14px/1.4 system-ui;color:{brand_primary};">2.</td>
-                            <td style="padding-left:8px;font:400 14px/1.7 system-ui,-apple-system,'Segoe UI',Roboto,Helvetica,Arial;color:#475569;">
-                              Our team will contact you to schedule a brief onboarding call
-                            </td>
-                          </tr>
-                        </table>
-                      </td>
-                    </tr>
-                    <tr>
-                      <td style="padding:8px 0;">
-                        <table width="100%" cellspacing="0" cellpadding="0" border="0">
-                          <tr>
-                            <td style="width:24px;vertical-align:top;font:700 14px/1.4 system-ui;color:{brand_primary};">3.</td>
-                            <td style="padding-left:8px;font:400 14px/1.7 system-ui,-apple-system,'Segoe UI',Roboto,Helvetica,Arial;color:#475569;">
-                              Log in to the portal on {trial_start.strftime('%B %d')} and start processing deliveries
-                            </td>
-                          </tr>
-                        </table>
-                      </td>
-                    </tr>
-                  </table>
-                </div>
-
-                <hr style="border:0;border-top:1px solid #e5e7eb;margin:24px 0;">
-                <p class="muted" style="margin:0;font:400 13px/1.7 system-ui,-apple-system,'Segoe UI',Roboto,Helvetica,Arial;color:#6b7280;">
-                  Questions about your trial? Our support team is here to help! Reach out to us anytime, and we'll get back to you promptly.
-                </p>
-              </td>
-            </tr>
-
-            <tr>
-              <td style="padding:0 24px 24px;">
-                <table width="100%" cellspacing="0" cellpadding="0" border="0" style="background:linear-gradient(135deg, #f0fdf4 0%, #dcfce7 100%);border:1px solid #86efac;border-radius:12px;">
-                  <tr>
-                    <td style="padding:16px 18px;">
-                      <p style="margin:0 0 6px;font:600 14px/1.4 system-ui,-apple-system,'Segoe UI',Roboto,Helvetica,Arial;color:#166534;">
-                        🚀 Ready to Transform Your Delivery Operations?
-                      </p>
-                      <p style="margin:0;font:400 13px/1.6 system-ui,-apple-system,'Segoe UI',Roboto,Helvetica,Arial;color:#15803d;">
-                        We're excited to partner with you and show you how {settings.COMPANY_OPERATING_NAME} can streamline your pharmacy deliveries!
-                      </p>
-                    </td>
-                  </tr>
-                </table>
-              </td>
-            </tr>
-
-          </table>
-
-          <p style="margin:14px 0 0;font:400 12px/1.6 system-ui,-apple-system,'Segoe UI',Roboto,Helvetica,Arial;color:#94a3b8;">
-            © {timezone.now().year} {settings.COMPANY_OPERATING_NAME} - {settings.COMPANY_SUB_GROUP_NAME}. All rights reserved.
-          </p>
-        </td>
-      </tr>
-    </table>
-  </body>
-</html>
-"""
-
-        text = (
-            f"Welcome to {settings.COMPANY_OPERATING_NAME} Trial Program!\n\n"
-            f"Hi {data['contact_name']},\n\n"
-            f"Thank you for registering {data['pharmacy_name']} for our Trial Program!\n\n"
-            "TRIAL PERIOD DETAILS:\n"
-            f"Trial Start Date: {trial_start.strftime('%B %d, %Y')}\n"
-            f"Trial End Date: {trial_end.strftime('%B %d, %Y')}\n"
-            f"Duration: {data.get('trial_duration_days', 7)} days\n"
-            f"Delivery Type: {delivery_type_display}\n"
-            f"Delivery Radius: {data['delivery_radius_km']} km\n\n"
-            "KEY FEATURES & BENEFITS:\n"
-            "• No In-House Delivery Setup Required\n"
-            "• Pay Per Delivery — Only pay for successful deliveries\n"
-            "• Image Proof of Delivery — Photo verification for every delivery\n"
-            "• Access to Secure Portal — Real-time tracking and analytics\n"
-            "• No Contracts — Flexible service with no commitments\n"
-            "• Earn CC Points to Redeem — Earn points to sell products\n\n"
-            "IMPORTANT INFORMATION:\n"
-            "• Return Policy: Unsuccessful deliveries will be returned same day\n"
-            "• Portal Access: Login credentials will arrive before trial start\n"
-            "• Trial Disclaimer: Either party may discontinue after trial period\n\n"
-            "YOUR REGISTRATION DETAILS:\n"
-            f"Pharmacy: {data['pharmacy_name']}\n"
-            f"Contact: {data['contact_name']} ({contact_role_display})\n"
-            f"Email: {data['pharmacy_email']}\n"
-            f"Phone: {data['pharmacy_phone']}\n"
-            f"Address: {data['address_line_1']}, {data['city']}, {data['postal_code']}\n\n"
-            "NEXT STEPS:\n"
-            f"1. Watch for portal login credentials (arriving before {trial_start.strftime('%B %d')})\n"
-            "2. Our team will contact you for a brief onboarding call\n"
-            f"3. Log in on {trial_start.strftime('%B %d')} and start processing deliveries\n\n"
-            "Questions? Our support team is here to help!\n"
-        )
-
-        _send_html_email_admin_office(
-            subject=f"Welcome to {settings.COMPANY_OPERATING_NAME} Trial Program • {data['pharmacy_name']}",
-            to_email=data['pharmacy_email'],
-            html=html,
-            text_fallback=text,
-        )
-    except Exception:
-        logger.exception("Failed to send welcome email")
-        # Don't fail the registration if email fails
 
     return JsonResponse(
         {
             "success": True,
-            "message": f"Pharmacy '{pharmacy_onboarding.pharmacy_name}' onboarding submitted successfully!",
+            "message": f"Pharmacy information for '{pharmacy_info.pharmacy_name}' submitted successfully!",
             "pharmacy": {
-                "id": pharmacy_onboarding.id,
-                "pharmacy_name": pharmacy_onboarding.pharmacy_name,
-                "contact_name": pharmacy_onboarding.contact_name,
-                "trial_start_date": pharmacy_onboarding.trial_start_date.strftime('%Y-%m-%d'),
-                "trial_duration_days": pharmacy_onboarding.trial_duration_days,
-                "status": pharmacy_onboarding.status,
-                "created_at": pharmacy_onboarding.created_at.strftime("%Y-%m-%d %H:%M:%S"),
+                "id": pharmacy_info.id,
+                "pharmacy_name": pharmacy_info.pharmacy_name,
+                "contact_name": pharmacy_info.contact_name,
+                "city": pharmacy_info.city,
+                "estimated_deliveries_per_day": pharmacy_info.estimated_deliveries_per_day,
+                "preferred_delivery_type": pharmacy_info.preferred_delivery_type,
+                "created_at": pharmacy_info.created_at.strftime("%Y-%m-%d %H:%M:%S"),
             },
         },
         status=201
