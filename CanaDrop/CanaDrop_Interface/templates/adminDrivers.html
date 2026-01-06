@@ -399,6 +399,14 @@
     let currentDriverId = null;
     let currentDriverData = null;
 
+    function getCSRFToken() {
+        return document.cookie
+            .split('; ')
+            .find(row => row.startsWith('csrftoken='))
+            ?.split('=')[1];
+    }
+
+
     // Confirmation Modal
     function showConfirmation(title, message) {
       return new Promise((resolve) => {
@@ -460,22 +468,32 @@
       return `<span class="inline-flex px-3 py-1 text-xs font-medium rounded-full bg-${config.color}-500/20 text-${config.color}-400 border border-${config.color}-600/40">${config.label}</span>`;
     }
 
-    // Load All Drivers
-    async function loadDrivers() {
-      try {
-        const response = await fetch('/api/admin/driver/details/');
-        const data = await response.json();
-        
-        if (data.success) {
-          allDrivers = data.drivers;
-          applyFilters();
-        } else {
-          showNotification('Failed to load drivers', 'error');
-        }
-      } catch (error) {
-        showNotification('Error loading drivers: ' + error.message, 'error');
-      }
+// Load All Drivers (CSRF + credentials include)
+async function loadDrivers() {
+  try {
+    const csrfToken = getCSRFToken(); // ✅ your existing function
+
+    const response = await fetch("/api/admin/driver/details/", {
+      method: "GET",
+      credentials: "include", // ✅ send cookies (session/auth + csrftoken cookie)
+      headers: {
+        "Accept": "application/json",
+        "X-CSRFToken": csrfToken, // ✅ required when CSRF-protected
+      },
+    });
+
+    const data = await response.json();
+
+    if (data.success) {
+      allDrivers = data.drivers;
+      applyFilters();
+    } else {
+      showNotification(data.message || "Failed to load drivers", "error");
     }
+  } catch (error) {
+    showNotification("Error loading drivers: " + error.message, "error");
+  }
+}
 
     // Apply Filters
     function applyFilters() {

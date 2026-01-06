@@ -9369,53 +9369,6 @@ def admin_login(request):
 
 
 
-# @csrf_exempt
-# def admin_dashboard_stats(request):
-#     try:
-#         # 1️⃣ Total active pharmacies
-#         total_pharmacies = Pharmacy.objects.filter(active=True).count()
-
-#         # 2️⃣ Total active drivers
-#         total_drivers = Driver.objects.filter(active=True).count()
-
-#         # 3️⃣ Active orders: pending / accepted / inTransit / picked_up
-#         active_statuses = ['pending', 'accepted', 'inTransit', 'picked_up']
-#         active_orders = DeliveryOrder.objects.filter(status__in=active_statuses).count()
-
-#         # 4️⃣ Revenue this month (sum of rate for delivered)
-#         today = date.today()
-#         revenue_this_month = (
-#             DeliveryOrder.objects.filter(
-#                 status='delivered',
-#                 created_at__year=today.year,
-#                 created_at__month=today.month
-#             ).aggregate(total=Sum('rate'))['total'] or 0
-#         )
-
-#         # 5️⃣ Driver payouts this month
-#         # include invoices where start_date OR end_date is in current month
-#         driver_payout_this_month = (
-#             DriverInvoice.objects.filter(
-#                 Q(start_date__year=today.year, start_date__month=today.month)
-#                 | Q(end_date__year=today.year, end_date__month=today.month)
-#             ).aggregate(total=Sum('total_amount'))['total'] or 0
-#         )
-
-#         data = {
-#             "success": True,
-#             "metrics": {
-#                 "total_pharmacies": total_pharmacies,
-#                 "total_drivers": total_drivers,
-#                 "active_orders": active_orders,
-#                 "revenue_this_month": float(revenue_this_month),
-#                 "driver_payout_this_month": float(driver_payout_this_month),
-#             }
-#         }
-#         return JsonResponse(data, status=200)
-
-#     except Exception as e:
-#         return JsonResponse({"success": False, "error": str(e)}, status=500)
-
 @csrf_protect
 @admin_auth_required
 @require_http_methods(["GET"])
@@ -9527,491 +9480,404 @@ def admin_dashboard_stats(request):
 
 
 
-@csrf_exempt
+# @csrf_exempt
+# def recent_activity_feed(request):
+#     """
+#     Returns a unified feed of the most recent 8 activity items across
+#     Orders, Invoices, Drivers, Pharmacies, and Support Tickets.
+#     Ensures a balanced mix from different tables.
+#     """
+#     try:
+#         # Helper to safely slice even when fewer items exist
+#         def safe_slice(qs, n): 
+#             return list(qs[:n])
+
+#         # 1️⃣ Recent Orders
+#         orders = safe_slice(
+#             DeliveryOrder.objects.select_related("pharmacy", "driver")
+#             .order_by("-created_at"), 3
+#         )
+#         order_feed = [{
+#             "type": "Order",
+#             "title": f"Order #{o.id} ({o.status})",
+#             "description": f"Placed by {o.pharmacy.name}. "
+#                            f"Driver: {o.driver.name if o.driver else 'Unassigned'}",
+#             "timestamp": o.created_at,
+#         } for o in orders]
+
+#         # 2️⃣ Recent Pharmacy Invoices
+#         invoices = safe_slice(
+#             Invoice.objects.select_related("pharmacy")
+#             .order_by("-created_at"), 2
+#         )
+#         invoice_feed = [{
+#             "type": "Pharmacy Invoice",
+#             "title": f"Invoice #{inv.id} ({inv.status})",
+#             "description": f"Generated for {inv.pharmacy.name} "
+#                            f"(${inv.total_amount}, {inv.total_orders} orders)",
+#             "timestamp": inv.created_at,
+#         } for inv in invoices]
+
+#         # 3️⃣ Recent Driver Invoices
+#         driver_invoices = safe_slice(
+#             DriverInvoice.objects.select_related("driver")
+#             .order_by("-created_at"), 1
+#         )
+#         driver_invoice_feed = [{
+#             "type": "Driver Invoice",
+#             "title": f"Driver Invoice #{d.id} ({d.status})",
+#             "description": f"For driver {d.driver.name}, total ${d.total_amount}",
+#             "timestamp": d.created_at,
+#         } for d in driver_invoices]
+
+#         # 4️⃣ Recently Registered Pharmacies
+#         pharmacies = safe_slice(
+#             Pharmacy.objects.order_by("-created_at"), 1
+#         )
+#         pharmacy_feed = [{
+#             "type": "New Pharmacy",
+#             "title": f"{p.name} joined {settings.COMPANY_OPERATING_NAME}",
+#             "description": f"Located in {p.city}, {p.province}",
+#             "timestamp": p.created_at,
+#         } for p in pharmacies]
+
+#         # 5️⃣ Recently Registered Drivers
+#         drivers = safe_slice(
+#             Driver.objects.order_by("-created_at"), 1
+#         )
+#         driver_feed = [{
+#             "type": "New Driver",
+#             "title": f"{d.name} registered as driver",
+#             "description": f"Vehicle #{d.vehicle_number or 'N/A'}",
+#             "timestamp": d.created_at,
+#         } for d in drivers]
+
+#         # 6️⃣ Recent Support Tickets
+#         tickets = safe_slice(
+#             ContactAdmin.objects.select_related("pharmacy", "driver")
+#             .order_by("-created_at"), 2
+#         )
+#         ticket_feed = [{
+#             "type": "Support Ticket",
+#             "title": f"{t.get_subject_display()} ({t.status})",
+#             "description": f"From {t.pharmacy.name if t.pharmacy else t.driver.name if t.driver else 'Unknown'}",
+#             "timestamp": t.created_at,
+#         } for t in tickets]
+
+#         # Combine all feeds
+#         combined = list(chain(
+#             order_feed, invoice_feed, driver_invoice_feed,
+#             pharmacy_feed, driver_feed, ticket_feed
+#         ))
+
+#         # Sort by timestamp (latest first)
+#         combined.sort(key=lambda x: x["timestamp"], reverse=True)
+
+#         # Take only the most recent 8 items overall
+#         recent_8 = combined[:8]
+
+#         # Convert datetime to ISO
+#         for item in recent_8:
+#             item["timestamp"] = item["timestamp"].isoformat()
+
+#         return JsonResponse({
+#             "success": True,
+#             "recent_activity": recent_8,
+#             "count": len(recent_8),
+#             "generated_at": now().isoformat()
+#         })
+
+#     except Exception as e:
+#         return JsonResponse({"success": False, "error": str(e)}, status=500)
+
+
+@csrf_protect
+@admin_auth_required
+@require_http_methods(["GET"])
 def recent_activity_feed(request):
     """
-    Returns a unified feed of the most recent 8 activity items across
-    Orders, Invoices, Drivers, Pharmacies, and Support Tickets.
-    Ensures a balanced mix from different tables.
+    Admin Recent Activity (Event Feed)
+    - Secure (CSRF + Admin Auth)
+    - GET only
+    - Event-based (what just happened)
+    - Local timezone aware
+    - Balanced mix across business entities
     """
-    try:
-        # Helper to safely slice even when fewer items exist
-        def safe_slice(qs, n): 
-            return list(qs[:n])
 
-        # 1️⃣ Recent Orders
-        orders = safe_slice(
-            DeliveryOrder.objects.select_related("pharmacy", "driver")
-            .order_by("-created_at"), 3
-        )
-        order_feed = [{
+    user_tz = settings.USER_TIMEZONE
+    now_utc = timezone.now()
+    now_local = timezone.localtime(now_utc, user_tz)
+
+    MAX_ITEMS = 8
+
+    def to_local_iso(dt):
+        if not dt:
+            return None
+        return timezone.localtime(dt, user_tz).isoformat()
+
+    # Helper: fetch slightly more than needed to avoid ordering gaps
+    def fetch(qs, n):
+        return list(qs[:n])
+
+    feed_items = []
+
+    # 1️⃣ Order Placed events
+    orders = fetch(
+        DeliveryOrder.objects.select_related("pharmacy", "driver")
+        .order_by("-created_at"),
+        5
+    )
+    for o in orders:
+        feed_items.append({
+            "event": "order_created",
             "type": "Order",
-            "title": f"Order #{o.id} ({o.status})",
-            "description": f"Placed by {o.pharmacy.name}. "
-                           f"Driver: {o.driver.name if o.driver else 'Unassigned'}",
+            "title": f"Order #{o.id} placed",
+            "description": (
+                f"Placed by {o.pharmacy.name}. "
+                f"Driver: {o.driver.name if o.driver else 'Unassigned'}"
+            ),
             "timestamp": o.created_at,
-        } for o in orders]
+        })
 
-        # 2️⃣ Recent Pharmacy Invoices
-        invoices = safe_slice(
-            Invoice.objects.select_related("pharmacy")
-            .order_by("-created_at"), 2
-        )
-        invoice_feed = [{
+    # 2️⃣ Pharmacy Invoice Generated events
+    invoices = fetch(
+        Invoice.objects.select_related("pharmacy")
+        .order_by("-created_at"),
+        4
+    )
+    for inv in invoices:
+        feed_items.append({
+            "event": "invoice_generated",
             "type": "Pharmacy Invoice",
-            "title": f"Invoice #{inv.id} ({inv.status})",
-            "description": f"Generated for {inv.pharmacy.name} "
-                           f"(${inv.total_amount}, {inv.total_orders} orders)",
+            "title": f"Invoice #{inv.id} generated",
+            "description": (
+                f"For {inv.pharmacy.name} "
+                f"(${float(inv.total_amount):.2f}, {inv.total_orders} orders)"
+            ),
             "timestamp": inv.created_at,
-        } for inv in invoices]
+        })
 
-        # 3️⃣ Recent Driver Invoices
-        driver_invoices = safe_slice(
-            DriverInvoice.objects.select_related("driver")
-            .order_by("-created_at"), 1
-        )
-        driver_invoice_feed = [{
+    # 3️⃣ Driver Invoice Generated events
+    driver_invoices = fetch(
+        DriverInvoice.objects.select_related("driver")
+        .order_by("-created_at"),
+        3
+    )
+    for di in driver_invoices:
+        feed_items.append({
+            "event": "driver_invoice_generated",
             "type": "Driver Invoice",
-            "title": f"Driver Invoice #{d.id} ({d.status})",
-            "description": f"For driver {d.driver.name}, total ${d.total_amount}",
-            "timestamp": d.created_at,
-        } for d in driver_invoices]
+            "title": f"Driver invoice #{di.id} generated",
+            "description": (
+                f"For driver {di.driver.name}, "
+                f"amount ${float(di.total_amount):.2f}"
+            ),
+            "timestamp": di.created_at,
+        })
 
-        # 4️⃣ Recently Registered Pharmacies
-        pharmacies = safe_slice(
-            Pharmacy.objects.order_by("-created_at"), 1
-        )
-        pharmacy_feed = [{
-            "type": "New Pharmacy",
+    # 4️⃣ New Pharmacy Registered events
+    pharmacies = fetch(
+        Pharmacy.objects.order_by("-created_at"),
+        2
+    )
+    for p in pharmacies:
+        feed_items.append({
+            "event": "pharmacy_registered",
+            "type": "Pharmacy",
             "title": f"{p.name} joined {settings.COMPANY_OPERATING_NAME}",
             "description": f"Located in {p.city}, {p.province}",
             "timestamp": p.created_at,
-        } for p in pharmacies]
-
-        # 5️⃣ Recently Registered Drivers
-        drivers = safe_slice(
-            Driver.objects.order_by("-created_at"), 1
-        )
-        driver_feed = [{
-            "type": "New Driver",
-            "title": f"{d.name} registered as driver",
-            "description": f"Vehicle #{d.vehicle_number or 'N/A'}",
-            "timestamp": d.created_at,
-        } for d in drivers]
-
-        # 6️⃣ Recent Support Tickets
-        tickets = safe_slice(
-            ContactAdmin.objects.select_related("pharmacy", "driver")
-            .order_by("-created_at"), 2
-        )
-        ticket_feed = [{
-            "type": "Support Ticket",
-            "title": f"{t.get_subject_display()} ({t.status})",
-            "description": f"From {t.pharmacy.name if t.pharmacy else t.driver.name if t.driver else 'Unknown'}",
-            "timestamp": t.created_at,
-        } for t in tickets]
-
-        # Combine all feeds
-        combined = list(chain(
-            order_feed, invoice_feed, driver_invoice_feed,
-            pharmacy_feed, driver_feed, ticket_feed
-        ))
-
-        # Sort by timestamp (latest first)
-        combined.sort(key=lambda x: x["timestamp"], reverse=True)
-
-        # Take only the most recent 8 items overall
-        recent_8 = combined[:8]
-
-        # Convert datetime to ISO
-        for item in recent_8:
-            item["timestamp"] = item["timestamp"].isoformat()
-
-        return JsonResponse({
-            "success": True,
-            "recent_activity": recent_8,
-            "count": len(recent_8),
-            "generated_at": now().isoformat()
         })
 
-    except Exception as e:
-        return JsonResponse({"success": False, "error": str(e)}, status=500)
+    # 5️⃣ New Driver Registered events
+    drivers = fetch(
+        Driver.objects.order_by("-created_at"),
+        2
+    )
+    for d in drivers:
+        feed_items.append({
+            "event": "driver_registered",
+            "type": "Driver",
+            "title": f"{d.name} registered as a driver",
+            "description": f"Vehicle: {d.vehicle_number or 'N/A'}",
+            "timestamp": d.created_at,
+        })
+
+    # 6️⃣ Support Ticket Created events
+    tickets = fetch(
+        ContactAdmin.objects.select_related("pharmacy", "driver")
+        .order_by("-created_at"),
+        4
+    )
+    for t in tickets:
+        sender = (
+            t.pharmacy.name if t.pharmacy_id
+            else t.driver.name if t.driver_id
+            else "Unknown"
+        )
+        subject_display = (
+            t.other_subject if (t.subject == "other" and t.other_subject)
+            else t.get_subject_display()
+        )
+
+        feed_items.append({
+            "event": "support_ticket_created",
+            "type": "Support Ticket",
+            "title": f"{subject_display} ticket created",
+            "description": f"From {sender}",
+            "timestamp": t.created_at,
+        })
+
+    # ----------------------------
+    # Final ordering & shaping
+    # ----------------------------
+    feed_items.sort(key=lambda x: x["timestamp"], reverse=True)
+    recent_items = feed_items[:MAX_ITEMS]
+
+    # Convert timestamps to local ISO
+    for item in recent_items:
+        item["timestamp_local"] = to_local_iso(item.pop("timestamp"))
+
+    return JsonResponse(
+        {
+            "success": True,
+            "recent_activity": recent_items,
+            "count": len(recent_items),
+            "timezone": str(user_tz),
+            "generated_at_local": now_local.isoformat(),
+        },
+        status=200
+    )
 
 
 
-
-@csrf_exempt
+@csrf_protect
+@admin_auth_required
+@require_http_methods(["GET"])
 def order_tracking_overview(request):
     """
     Returns a detailed list of all delivery orders
     with their tracking history and proof images.
+
+    - Admin only
+    - Read-only
+    - All timestamps returned in LOCAL timezone
+    - Heavy API by design (FE handles pagination & filters)
     """
+
+    user_tz = settings.USER_TIMEZONE
+    now_utc = timezone.now()
+    now_local = timezone.localtime(now_utc, user_tz)
+
     try:
-        all_orders = DeliveryOrder.objects.select_related("pharmacy", "driver").order_by("-created_at")
+        all_orders = (
+            DeliveryOrder.objects
+            .select_related("pharmacy", "driver")
+            .order_by("-created_at")
+        )
 
         result = []
+
         for order in all_orders:
-            # Fetch all tracking events for this order
-            trackings = OrderTracking.objects.filter(order=order).select_related("driver", "pharmacy").order_by("timestamp")
+            # ----------------------------
+            # Tracking history
+            # ----------------------------
+            trackings = (
+                OrderTracking.objects
+                .filter(order=order)
+                .select_related("driver", "pharmacy")
+                .order_by("timestamp")
+            )
+
             tracking_history = []
             for t in trackings:
                 tracking_history.append({
                     "step": t.step,
-                    "performed_by": t.performed_by or (t.driver.name if t.driver else t.pharmacy.name if t.pharmacy else "Unknown"),
-                    "timestamp": t.timestamp.isoformat(),
+                    "performed_by": (
+                        t.performed_by
+                        or (t.driver.name if t.driver else t.pharmacy.name if t.pharmacy else "Unknown")
+                    ),
+                    "timestamp_local": timezone.localtime(
+                        t.timestamp, user_tz
+                    ).isoformat(),
                     "note": t.note or "",
                     "image_url": t.image_url or None
                 })
 
-            # Fetch proof images for this order
-            proof_images = OrderImage.objects.filter(order=order).order_by("uploaded_at")
+            # ----------------------------
+            # Proof images
+            # ----------------------------
+            proof_images = (
+                OrderImage.objects
+                .filter(order=order)
+                .order_by("uploaded_at")
+            )
+
             images = [{
                 "stage": img.stage,
                 "image_url": img.image_url,
-                "uploaded_at": img.uploaded_at.isoformat()
+                "uploaded_at_local": timezone.localtime(
+                    img.uploaded_at, user_tz
+                ).isoformat()
             } for img in proof_images]
 
+            # ----------------------------
+            # Order payload
+            # ----------------------------
             result.append({
                 "order_id": order.id,
                 "status": order.status,
                 "rate": float(order.rate),
                 "pickup_city": order.pickup_city,
                 "drop_city": order.drop_city,
-                "pickup_day": order.pickup_day.isoformat(),
+                "pickup_day": order.pickup_day.isoformat(),  # DateField (already local concept)
                 "customer_name": order.customer_name,
+
                 "pharmacy": {
                     "id": order.pharmacy.id,
                     "name": order.pharmacy.name,
                     "city": order.pharmacy.city,
                     "email": order.pharmacy.email,
                 },
-                "driver": ({
-                    "id": order.driver.id,
-                    "name": order.driver.name,
-                    "vehicle_number": order.driver.vehicle_number
-                } if order.driver else None),
+
+                "driver": (
+                    {
+                        "id": order.driver.id,
+                        "name": order.driver.name,
+                        "vehicle_number": order.driver.vehicle_number
+                    } if order.driver else None
+                ),
+
                 "tracking_history": tracking_history,
                 "proof_images": images,
-                "created_at": order.created_at.isoformat(),
-                "updated_at": order.updated_at.isoformat(),
+
+                "created_at_local": timezone.localtime(
+                    order.created_at, user_tz
+                ).isoformat(),
+
+                "updated_at_local": timezone.localtime(
+                    order.updated_at, user_tz
+                ).isoformat(),
+
+                "delivered_at_local": (
+                    timezone.localtime(order.delivered_at, user_tz).isoformat()
+                    if order.delivered_at else None
+                ),
             })
 
         return JsonResponse({
             "success": True,
+            "timezone": str(user_tz),
             "orders": result,
             "count": len(result),
-            "generated_at": now().isoformat()
-        })
+            "generated_at_local": now_local.isoformat()
+        }, status=200)
 
     except Exception as e:
-        return JsonResponse({"success": False, "error": str(e)}, status=500)
-
-
-
-# @csrf_exempt
-# def admin_alerts(request):
-#     """
-#     Incremental alert building with error isolation
-#     """
-#     alerts = {
-#         "operational": [],
-#         "financial": [],
-#         "support": []
-#     }
-    
-#     errors = []
-#     current_time = timezone.now()
-    
-#     # ----------------------------
-#     # 1️⃣ OPERATIONAL ALERTS
-#     # ----------------------------
-    
-#     # Test 1: Unassigned orders
-#     try:
-#         from canadrop_interface.models import DeliveryOrder
-        
-#         unassigned_orders = DeliveryOrder.objects.filter(
-#             driver__isnull=True,
-#             status__in=["pending", "accepted"]
-#         )[:20]
-        
-#         for order in unassigned_orders:
-#             pharmacy_name = "Unknown"
-#             try:
-#                 if order.pharmacy:
-#                     pharmacy_name = order.pharmacy.name
-#             except:
-#                 pass
-                
-#             alerts["operational"].append({
-#                 "type": "Unassigned Order",
-#                 "message": f"Order #{order.id} from {pharmacy_name} has no assigned driver.",
-#                 "order_id": order.id,
-#                 "timestamp": str(order.created_at) if order.created_at else ""
-#             })
-#     except Exception as e:
-#         errors.append(f"Unassigned orders error: {str(e)}")
-    
-#     # Test 2: Stuck orders
-#     try:
-#         from canadrop_interface.models import DeliveryOrder
-        
-#         two_hours_ago = current_time - timedelta(hours=2)
-#         stuck_orders = DeliveryOrder.objects.filter(
-#             status__in=["inTransit", "picked_up"],
-#             updated_at__lt=two_hours_ago
-#         )[:20]
-        
-#         for order in stuck_orders:
-#             pharmacy_name = "Unknown"
-#             try:
-#                 if order.pharmacy:
-#                     pharmacy_name = order.pharmacy.name
-#             except:
-#                 pass
-                
-#             alerts["operational"].append({
-#                 "type": "Stuck Order",
-#                 "message": f"Order #{order.id} by {pharmacy_name} is '{order.status}' for over 2 hours.",
-#                 "order_id": order.id,
-#                 "timestamp": str(order.updated_at) if order.updated_at else ""
-#             })
-#     except Exception as e:
-#         errors.append(f"Stuck orders error: {str(e)}")
-    
-#     # Test 3: Inactive drivers with orders
-#     try:
-#         from canadrop_interface.models import DeliveryOrder
-        
-#         orders_with_drivers = DeliveryOrder.objects.filter(
-#             driver__isnull=False,
-#             status__in=["pending", "accepted", "inTransit"]
-#         )[:50]
-        
-#         for order in orders_with_drivers:
-#             try:
-#                 if order.driver and hasattr(order.driver, 'active') and order.driver.active == False:
-#                     alerts["operational"].append({
-#                         "type": "Inactive Driver Assigned",
-#                         "message": f"Inactive driver {order.driver.name} still has order #{order.id}.",
-#                         "order_id": order.id,
-#                         "timestamp": str(order.updated_at) if order.updated_at else ""
-#                     })
-#             except:
-#                 pass
-#     except Exception as e:
-#         errors.append(f"Inactive driver orders error: {str(e)}")
-    
-#     # Test 4: Inactive pharmacy orders
-#     try:
-#         from canadrop_interface.models import DeliveryOrder
-        
-#         three_days_ago = current_time - timedelta(days=3)
-#         recent_orders = DeliveryOrder.objects.filter(
-#             pharmacy__isnull=False,
-#             created_at__gte=three_days_ago
-#         )[:50]
-        
-#         for order in recent_orders:
-#             try:
-#                 if order.pharmacy and hasattr(order.pharmacy, 'active') and order.pharmacy.active == False:
-#                     alerts["operational"].append({
-#                         "type": "Inactive Pharmacy Order",
-#                         "message": f"Inactive pharmacy {order.pharmacy.name} created order #{order.id}.",
-#                         "order_id": order.id,
-#                         "timestamp": str(order.created_at) if order.created_at else ""
-#                     })
-#             except:
-#                 pass
-#     except Exception as e:
-#         errors.append(f"Inactive pharmacy orders error: {str(e)}")
-    
-#     # ----------------------------
-#     # 2️⃣ FINANCIAL ALERTS
-#     # ----------------------------
-    
-#     # Test 5: Overdue invoices
-#     try:
-#         from canadrop_interface.models import Invoice
-        
-#         overdue_invoices = Invoice.objects.filter(status="past_due")[:20]
-        
-#         for inv in overdue_invoices:
-#             pharmacy_name = "Unknown"
-#             try:
-#                 if inv.pharmacy:
-#                     pharmacy_name = inv.pharmacy.name
-#             except:
-#                 pass
-            
-#             amount = 0
-#             try:
-#                 amount = float(inv.total_amount)
-#             except:
-#                 pass
-                
-#             alerts["financial"].append({
-#                 "type": "Overdue Invoice",
-#                 "message": f"Invoice #{inv.id} for {pharmacy_name} is past due (${amount:.2f}).",
-#                 "invoice_id": inv.id,
-#                 "timestamp": str(inv.due_date) if inv.due_date else ""
-#             })
-#     except Exception as e:
-#         errors.append(f"Overdue invoices error: {str(e)}")
-    
-#     # Test 6: Pending driver payouts
-#     try:
-#         from canadrop_interface.models import DriverInvoice
-        
-#         today = current_time.date()
-#         pending_driver_invoices = DriverInvoice.objects.filter(
-#             status="generated",
-#             due_date__lt=today
-#         )[:20]
-        
-#         for inv in pending_driver_invoices:
-#             driver_name = "Unknown"
-#             try:
-#                 if inv.driver:
-#                     driver_name = inv.driver.name
-#             except:
-#                 pass
-            
-#             amount = 0
-#             try:
-#                 amount = float(inv.total_amount)
-#             except:
-#                 pass
-                
-#             alerts["financial"].append({
-#                 "type": "Pending Driver Payout",
-#                 "message": f"Driver {driver_name}'s invoice #{inv.id} is pending (${amount:.2f}).",
-#                 "invoice_id": inv.id,
-#                 "timestamp": str(inv.due_date) if inv.due_date else ""
-#             })
-#     except Exception as e:
-#         errors.append(f"Pending driver invoices error: {str(e)}")
-    
-#     # ----------------------------
-#     # 3️⃣ SUPPORT ALERTS
-#     # ----------------------------
-    
-#     # Test 7: Old pending tickets
-#     try:
-#         from canadrop_interface.models import ContactAdmin
-        
-#         forty_eight_hours_ago = current_time - timedelta(hours=48)
-#         old_pending_tickets = ContactAdmin.objects.filter(
-#             status="pending",
-#             created_at__lt=forty_eight_hours_ago
-#         )[:20]
-        
-#         subject_map = {
-#             'account_creation': 'Account Creation Issue',
-#             'login_problem': 'Login / Authentication Problem',
-#             'password_reset': 'Password Reset Issue',
-#             'profile_update': 'Profile / Information Update Issue',
-#             'order_placement': 'Order Placement Issue',
-#             'order_cancellation': 'Order Cancellation Issue',
-#             'order_tracking': 'Order Tracking / Status Issue',
-#             'order_payment': 'Order Payment / Rate Issue',
-#             'pickup_issue': 'Pickup Issue by Driver',
-#             'delivery_delay': 'Delivery Delay',
-#             'delivery_incorrect': 'Incorrect Delivery / Item Issue',
-#             'driver_unavailable': 'Driver Unavailable / Assignment Issue',
-#             'invoice_generated': 'Invoice Generated Issue',
-#             'invoice_payment': 'Invoice Payment / Stripe Issue',
-#             'driver_invoice': 'Driver Invoice / Payment Issue',
-#             'technical_bug': 'Technical / App Bug',
-#             'cloud_storage': 'Cloud / Image Upload Issue',
-#             'notification': 'Notification / Alert Issue',
-#             'feedback': 'Feedback / Suggestion',
-#             'other': 'Other',
-#         }
-        
-#         for ticket in old_pending_tickets:
-#             sender = "Unknown"
-#             try:
-#                 if ticket.pharmacy:
-#                     sender = ticket.pharmacy.name
-#                 elif ticket.driver:
-#                     sender = ticket.driver.name
-#             except:
-#                 pass
-            
-#             subject_display = subject_map.get(ticket.subject, ticket.subject)
-#             if ticket.subject == 'other' and ticket.other_subject:
-#                 subject_display = ticket.other_subject
-                
-#             alerts["support"].append({
-#                 "type": "Old Pending Ticket",
-#                 "message": f"Ticket '{subject_display}' from {sender} pending > 48 hours.",
-#                 "ticket_id": ticket.id,
-#                 "timestamp": str(ticket.created_at) if ticket.created_at else ""
-#             })
-#     except Exception as e:
-#         errors.append(f"Old pending tickets error: {str(e)}")
-    
-#     # Test 8: Unresponded tickets
-#     try:
-#         from canadrop_interface.models import ContactAdmin
-        
-#         in_progress_tickets = ContactAdmin.objects.filter(status="in_progress")[:50]
-        
-#         subject_map = {
-#             'account_creation': 'Account Creation Issue',
-#             'login_problem': 'Login / Authentication Problem',
-#             'password_reset': 'Password Reset Issue',
-#             'profile_update': 'Profile / Information Update Issue',
-#             'order_placement': 'Order Placement Issue',
-#             'order_cancellation': 'Order Cancellation Issue',
-#             'order_tracking': 'Order Tracking / Status Issue',
-#             'order_payment': 'Order Payment / Rate Issue',
-#             'pickup_issue': 'Pickup Issue by Driver',
-#             'delivery_delay': 'Delivery Delay',
-#             'delivery_incorrect': 'Incorrect Delivery / Item Issue',
-#             'driver_unavailable': 'Driver Unavailable / Assignment Issue',
-#             'invoice_generated': 'Invoice Generated Issue',
-#             'invoice_payment': 'Invoice Payment / Stripe Issue',
-#             'driver_invoice': 'Driver Invoice / Payment Issue',
-#             'technical_bug': 'Technical / App Bug',
-#             'cloud_storage': 'Cloud / Image Upload Issue',
-#             'notification': 'Notification / Alert Issue',
-#             'feedback': 'Feedback / Suggestion',
-#             'other': 'Other',
-#         }
-        
-#         for ticket in in_progress_tickets:
-#             try:
-#                 if not ticket.admin_response or ticket.admin_response.strip() == "":
-#                     subject_display = subject_map.get(ticket.subject, ticket.subject)
-#                     if ticket.subject == 'other' and ticket.other_subject:
-#                         subject_display = ticket.other_subject
-                        
-#                     alerts["support"].append({
-#                         "type": "Unresponded Ticket",
-#                         "message": f"'{subject_display}' ticket has no admin response yet.",
-#                         "ticket_id": ticket.id,
-#                         "timestamp": str(ticket.updated_at) if ticket.updated_at else ""
-#                     })
-#             except:
-#                 pass
-#     except Exception as e:
-#         errors.append(f"Unresponded tickets error: {str(e)}")
-    
-#     # ----------------------------
-#     # ✅ Return Response
-#     # ----------------------------
-#     total_alerts = sum(len(v) for v in alerts.values())
-    
-#     return JsonResponse({
-#         "success": True,
-#         "total_alerts": total_alerts,
-#         "categories": {k: len(v) for k, v in alerts.items()},
-#         "alerts": alerts,
-#         "generated_at": str(current_time),
-#         "errors": errors if errors else None
-#     }, status=200)
+        return JsonResponse({
+            "success": False,
+            "error": str(e)
+        }, status=500)
 
 
 def _to_local_iso(dt):
@@ -10461,144 +10327,377 @@ def admin_alerts(request):
 
 
 
-@csrf_exempt
+# @csrf_exempt
+# def admin_order_list(request):
+#     """
+#     Returns all delivery orders - simple version with relative imports
+#     """
+#     try:
+#         orders = list(DeliveryOrder.objects.all().order_by("pickup_day").values(
+#             'id',
+#             'pharmacy_id',
+#             'driver_id', 
+#             'pickup_address',
+#             'pickup_city',
+#             'pickup_day',
+#             'drop_address',
+#             'drop_city',
+#             'status',
+#             'rate',
+#             'customer_name',
+#             'created_at',
+#             'updated_at'
+#         ))
+        
+#         result = []
+        
+#         for order in orders:
+#             # Get pharmacy info
+#             pharmacy_info = None
+#             if order.get('pharmacy_id'):
+#                 try:
+#                     p = Pharmacy.objects.filter(id=order['pharmacy_id']).values(
+#                         'id', 'name', 'email', 'phone_number', 
+#                         'city', 'province', 'postal_code', 'country', 
+#                         'active', 'created_at'
+#                     ).first()
+#                     if p:
+#                         pharmacy_info = {
+#                             "id": p['id'],
+#                             "name": p['name'],
+#                             "email": p['email'],
+#                             "phone_number": p['phone_number'],
+#                             "city": p['city'],
+#                             "province": p['province'],
+#                             "postal_code": p['postal_code'],
+#                             "country": p['country'],
+#                             "active": p['active'],
+#                             "created_at": str(p['created_at'])
+#                         }
+#                 except:
+#                     pass
+            
+#             # Get driver info
+#             driver_info = None
+#             if order.get('driver_id'):
+#                 try:
+#                     d = Driver.objects.filter(id=order['driver_id']).values(
+#                         'id', 'name', 'email', 'phone_number',
+#                         'vehicle_number', 'active', 'created_at'
+#                     ).first()
+#                     if d:
+#                         driver_info = {
+#                             "id": d['id'],
+#                             "name": d['name'],
+#                             "email": d['email'],
+#                             "phone_number": d['phone_number'],
+#                             "vehicle_number": d['vehicle_number'],
+#                             "active": d['active'],
+#                             "created_at": str(d['created_at'])
+#                         }
+#                 except:
+#                     pass
+            
+#             # Get tracking
+#             tracking_info = []
+#             try:
+#                 tracks = OrderTracking.objects.filter(order_id=order['id']).order_by('timestamp').values(
+#                     'step', 'performed_by', 'timestamp', 'note', 'image_url'
+#                 )
+#                 for t in tracks:
+#                     tracking_info.append({
+#                         "step": t['step'],
+#                         "performed_by": t['performed_by'] or "",
+#                         "timestamp": str(t['timestamp']),
+#                         "note": t['note'] or "",
+#                         "image_url": t['image_url'] or ""
+#                     })
+#             except:
+#                 pass
+            
+#             # Get images
+#             proof_images = []
+#             try:
+#                 imgs = OrderImage.objects.filter(order_id=order['id']).order_by('uploaded_at').values(
+#                     'stage', 'image_url', 'uploaded_at'
+#                 )
+#                 for img in imgs:
+#                     proof_images.append({
+#                         "stage": img['stage'],
+#                         "image_url": img['image_url'],
+#                         "uploaded_at": str(img['uploaded_at'])
+#                     })
+#             except:
+#                 pass
+            
+#             # Calculate commission
+#             rate = float(order['rate']) if order['rate'] else 0.0
+#             commission = round(rate * settings.DRIVER_COMMISSION_RATE, 2)  # ✅ FIXED
+#             net = round(rate - commission, 2)
+            
+#             result.append({
+#                 "order_id": order['id'],
+#                 "pharmacy": pharmacy_info,
+#                 "driver": driver_info,
+#                 "pickup_address": order['pickup_address'] or "",
+#                 "pickup_city": order['pickup_city'] or "",
+#                 "pickup_day": str(order['pickup_day']) if order['pickup_day'] else "",
+#                 "drop_address": order['drop_address'] or "",
+#                 "drop_city": order['drop_city'] or "",
+#                 "status": order['status'] or "",
+#                 "amount": rate,
+#                 "customer_name": order['customer_name'] or "",
+#                 "created_at": str(order['created_at']) if order['created_at'] else "",
+#                 "updated_at": str(order['updated_at']) if order['updated_at'] else "",
+#                 "tracking_history": tracking_info,
+#                 "proof_images": proof_images,
+#                 "commission_info": {
+#                     "commission_rate": f"{int(settings.DRIVER_COMMISSION_RATE * 100)}%",  
+#                     "commission_decimal": settings.DRIVER_COMMISSION_RATE,  
+#                     "commission_amount": commission,
+#                     "net_payout_driver": net
+#                 }
+#             })
+        
+#         return JsonResponse({
+#             "success": True,
+#             "total_orders": len(result),
+#             "orders": result
+#         }, safe=False)
+        
+#     except Exception as e:
+#         import traceback
+#         traceback.print_exc()
+#         return JsonResponse({
+#             "success": False,
+#             "error": str(e)
+#         }, status=500)
+
+
+from django.http import JsonResponse
+from django.views.decorators.csrf import csrf_protect
+from django.views.decorators.http import require_http_methods
+from django.utils import timezone
+from django.conf import settings
+from django.db.models import Sum
+from datetime import datetime
+import pytz
+
+# Prod helper: consistent local timezone formatting
+def _to_local_iso(dt):
+    if not dt:
+        return None
+    return timezone.localtime(dt, settings.USER_TIMEZONE).isoformat()
+
+@csrf_protect
+@admin_auth_required
+@require_http_methods(["GET"])
 def admin_order_list(request):
     """
-    Returns all delivery orders - simple version with relative imports
+    PRODUCTION: Admin Order List (heavy, FE does pagination/filtering)
+    - Secure (CSRF + Admin Auth)
+    - GET only
+    - Returns all datetime fields in settings.USER_TIMEZONE
+    - Includes ID/Signature requirements + verification fields + driver identity_url + signature_ack_url
     """
     try:
-        orders = list(DeliveryOrder.objects.all().order_by("pickup_day").values(
-            'id',
-            'pharmacy_id',
-            'driver_id', 
-            'pickup_address',
-            'pickup_city',
-            'pickup_day',
-            'drop_address',
-            'drop_city',
-            'status',
-            'rate',
-            'customer_name',
-            'created_at',
-            'updated_at'
-        ))
-        
+        user_tz = settings.USER_TIMEZONE
+
+        # Keep your approach (values + per-order queries), but add missing fields
+        orders = list(
+            DeliveryOrder.objects.all()
+            .order_by("pickup_day")
+            .values(
+                "id",
+                "pharmacy_id",
+                "driver_id",
+                "pickup_address",
+                "pickup_city",
+                "pickup_day",
+                "drop_address",
+                "drop_city",
+                "status",
+                "rate",
+                "customer_name",
+                "customer_phone",
+                "alternate_contact",
+                "delivery_notes",
+
+                # ✅ Missing business fields
+                "signature_required",
+                "id_verification_required",
+                "id_verified",
+                "signature_ack_url",
+                "is_delivered",
+                "delivered_at",
+
+                "created_at",
+                "updated_at",
+            )
+        )
+
         result = []
-        
+
         for order in orders:
-            # Get pharmacy info
+            order_id = order["id"]
+
+            # -----------------------
+            # Pharmacy info
+            # -----------------------
             pharmacy_info = None
-            if order.get('pharmacy_id'):
+            if order.get("pharmacy_id"):
                 try:
-                    p = Pharmacy.objects.filter(id=order['pharmacy_id']).values(
-                        'id', 'name', 'email', 'phone_number', 
-                        'city', 'province', 'postal_code', 'country', 
-                        'active', 'created_at'
+                    p = Pharmacy.objects.filter(id=order["pharmacy_id"]).values(
+                        "id", "name", "email", "phone_number",
+                        "city", "province", "postal_code", "country",
+                        "active", "created_at"
                     ).first()
                     if p:
                         pharmacy_info = {
-                            "id": p['id'],
-                            "name": p['name'],
-                            "email": p['email'],
-                            "phone_number": p['phone_number'],
-                            "city": p['city'],
-                            "province": p['province'],
-                            "postal_code": p['postal_code'],
-                            "country": p['country'],
-                            "active": p['active'],
-                            "created_at": str(p['created_at'])
+                            "id": p["id"],
+                            "name": p["name"],
+                            "email": p["email"],
+                            "phone_number": p["phone_number"],
+                            "city": p["city"],
+                            "province": p["province"],
+                            "postal_code": p["postal_code"],
+                            "country": p["country"],
+                            "active": p["active"],
+                            "created_at_local": _to_local_iso(p["created_at"]),
                         }
                 except:
                     pass
-            
-            # Get driver info
+
+            # -----------------------
+            # Driver info (include identity_url)
+            # -----------------------
             driver_info = None
-            if order.get('driver_id'):
+            if order.get("driver_id"):
                 try:
-                    d = Driver.objects.filter(id=order['driver_id']).values(
-                        'id', 'name', 'email', 'phone_number',
-                        'vehicle_number', 'active', 'created_at'
+                    d = Driver.objects.filter(id=order["driver_id"]).values(
+                        "id", "name", "email", "phone_number",
+                        "vehicle_number", "active", "created_at",
+                        "identity_url"
                     ).first()
                     if d:
                         driver_info = {
-                            "id": d['id'],
-                            "name": d['name'],
-                            "email": d['email'],
-                            "phone_number": d['phone_number'],
-                            "vehicle_number": d['vehicle_number'],
-                            "active": d['active'],
-                            "created_at": str(d['created_at'])
+                            "id": d["id"],
+                            "name": d["name"],
+                            "email": d["email"],
+                            "phone_number": d["phone_number"],
+                            "vehicle_number": d["vehicle_number"],
+                            "active": d["active"],
+                            "identity_url": d.get("identity_url"),
+                            "has_identity_uploaded": bool(d.get("identity_url")),
+                            "created_at_local": _to_local_iso(d["created_at"]),
                         }
                 except:
                     pass
-            
-            # Get tracking
+
+            # -----------------------
+            # Tracking history (local time)
+            # -----------------------
             tracking_info = []
             try:
-                tracks = OrderTracking.objects.filter(order_id=order['id']).order_by('timestamp').values(
-                    'step', 'performed_by', 'timestamp', 'note', 'image_url'
+                tracks = (
+                    OrderTracking.objects
+                    .filter(order_id=order_id)
+                    .order_by("timestamp")
+                    .values("step", "performed_by", "timestamp", "note", "image_url")
                 )
                 for t in tracks:
                     tracking_info.append({
-                        "step": t['step'],
-                        "performed_by": t['performed_by'] or "",
-                        "timestamp": str(t['timestamp']),
-                        "note": t['note'] or "",
-                        "image_url": t['image_url'] or ""
+                        "step": t["step"],
+                        "performed_by": t["performed_by"] or "",
+                        "timestamp_local": _to_local_iso(t["timestamp"]),
+                        "note": t["note"] or "",
+                        "image_url": t["image_url"] or None,
                     })
             except:
                 pass
-            
-            # Get images
+
+            # -----------------------
+            # Proof images (local time)
+            # -----------------------
             proof_images = []
             try:
-                imgs = OrderImage.objects.filter(order_id=order['id']).order_by('uploaded_at').values(
-                    'stage', 'image_url', 'uploaded_at'
+                imgs = (
+                    OrderImage.objects
+                    .filter(order_id=order_id)
+                    .order_by("uploaded_at")
+                    .values("stage", "image_url", "uploaded_at")
                 )
                 for img in imgs:
                     proof_images.append({
-                        "stage": img['stage'],
-                        "image_url": img['image_url'],
-                        "uploaded_at": str(img['uploaded_at'])
+                        "stage": img["stage"],
+                        "image_url": img["image_url"],
+                        "uploaded_at_local": _to_local_iso(img["uploaded_at"]),
                     })
             except:
                 pass
-            
-            # Calculate commission
-            rate = float(order['rate']) if order['rate'] else 0.0
-            commission = round(rate * settings.DRIVER_COMMISSION_RATE, 2)  # ✅ FIXED
+
+            # -----------------------
+            # Commission info (same logic)
+            # -----------------------
+            rate = float(order["rate"]) if order["rate"] else 0.0
+            commission = round(rate * settings.DRIVER_COMMISSION_RATE, 2)
             net = round(rate - commission, 2)
-            
+
+            # -----------------------
+            # Build response item (add missing business fields)
+            # -----------------------
             result.append({
-                "order_id": order['id'],
+                "order_id": order_id,
                 "pharmacy": pharmacy_info,
                 "driver": driver_info,
-                "pickup_address": order['pickup_address'] or "",
-                "pickup_city": order['pickup_city'] or "",
-                "pickup_day": str(order['pickup_day']) if order['pickup_day'] else "",
-                "drop_address": order['drop_address'] or "",
-                "drop_city": order['drop_city'] or "",
-                "status": order['status'] or "",
+
+                "pickup_address": order.get("pickup_address") or "",
+                "pickup_city": order.get("pickup_city") or "",
+                "pickup_day": str(order.get("pickup_day") or ""),
+
+                "drop_address": order.get("drop_address") or "",
+                "drop_city": order.get("drop_city") or "",
+
+                "status": order.get("status") or "",
                 "amount": rate,
-                "customer_name": order['customer_name'] or "",
-                "created_at": str(order['created_at']) if order['created_at'] else "",
-                "updated_at": str(order['updated_at']) if order['updated_at'] else "",
+
+                "customer_name": order.get("customer_name") or "",
+                "customer_phone": order.get("customer_phone") or "",
+                "alternate_contact": order.get("alternate_contact") or "",
+                "delivery_notes": order.get("delivery_notes") or "",
+
+                # ✅ ID + signature requirements / verification
+                "signature_required": bool(order.get("signature_required")),
+                "id_verification_required": bool(order.get("id_verification_required")),
+                "id_verified": bool(order.get("id_verified")),
+                "signature_ack_url": order.get("signature_ack_url") or None,
+
+                # ✅ delivery completion fields
+                "is_delivered": bool(order.get("is_delivered")),
+                "delivered_at_local": _to_local_iso(order.get("delivered_at")),
+
+                "created_at_local": _to_local_iso(order.get("created_at")),
+                "updated_at_local": _to_local_iso(order.get("updated_at")),
+
                 "tracking_history": tracking_info,
                 "proof_images": proof_images,
+
                 "commission_info": {
-                    "commission_rate": f"{int(settings.DRIVER_COMMISSION_RATE * 100)}%",  
-                    "commission_decimal": settings.DRIVER_COMMISSION_RATE,  
+                    "commission_rate": f"{int(settings.DRIVER_COMMISSION_RATE * 100)}%",
+                    "commission_decimal": settings.DRIVER_COMMISSION_RATE,
                     "commission_amount": commission,
                     "net_payout_driver": net
                 }
             })
-        
+
         return JsonResponse({
             "success": True,
+            "timezone": str(user_tz),
+            "generated_at_local": _to_local_iso(timezone.now()),
             "total_orders": len(result),
             "orders": result
-        }, safe=False)
-        
+        }, status=200)
+
     except Exception as e:
         import traceback
         traceback.print_exc()
@@ -10608,43 +10707,100 @@ def admin_order_list(request):
         }, status=500)
 
 
+# @csrf_exempt
+# def delivery_rates_list(request):
+#     """
+#     GET /api/deliveryRates/ -> returns all delivery distance rates.
+#     """
+#     if request.method != "GET":
+#         return JsonResponse({"success": False, "error": "Only GET allowed"}, status=405)
 
-@csrf_exempt
+#     try:
+#         from .models import DeliveryDistanceRate
+        
+#         rates = DeliveryDistanceRate.objects.all().order_by("min_distance_km")
+        
+#         data = []
+#         for r in rates:
+#             try:
+#                 min_km = float(r.min_distance_km) if r.min_distance_km else 0.0
+#             except:
+#                 min_km = 0.0
+            
+#             try:
+#                 max_km = float(r.max_distance_km) if r.max_distance_km else None
+#             except:
+#                 max_km = None
+            
+#             try:
+#                 rate_val = float(r.rate) if r.rate else 0.0
+#             except:
+#                 rate_val = 0.0
+            
+#             # Build label
+#             if max_km:
+#                 label = f"{min_km}-{max_km} km = ${rate_val}"
+#             else:
+#                 label = f"{min_km}+ km = ${rate_val}"
+            
+#             data.append({
+#                 "id": r.id,
+#                 "min_distance_km": min_km,
+#                 "max_distance_km": max_km,
+#                 "rate": rate_val,
+#                 "label": label
+#             })
+
+#         return JsonResponse({
+#             "success": True,
+#             "count": len(data),
+#             "rates": data
+#         }, status=200)
+
+#     except Exception as e:
+#         import traceback
+#         traceback.print_exc()
+#         return JsonResponse({
+#             "success": False,
+#             "error": str(e),
+#             "error_type": type(e).__name__
+#         }, status=500)
+
+
+@csrf_protect
+@admin_auth_required
+@require_http_methods(["GET"])
 def delivery_rates_list(request):
     """
-    GET /api/deliveryRates/ -> returns all delivery distance rates.
+    PRODUCTION: Delivery Rates List
+
+    GET /api/deliveryRates/
+
+    - Secure (CSRF protected)
+    - GET only
+    - Returns all delivery distance slabs
+    - Uses UTC for DB, local timezone for metadata
     """
-    if request.method != "GET":
-        return JsonResponse({"success": False, "error": "Only GET allowed"}, status=405)
+
+    user_tz = settings.USER_TIMEZONE
+    now_utc = timezone.now()
+    now_local = timezone.localtime(now_utc, user_tz)
 
     try:
-        from .models import DeliveryDistanceRate
-        
         rates = DeliveryDistanceRate.objects.all().order_by("min_distance_km")
-        
+
         data = []
         for r in rates:
-            try:
-                min_km = float(r.min_distance_km) if r.min_distance_km else 0.0
-            except:
-                min_km = 0.0
-            
-            try:
-                max_km = float(r.max_distance_km) if r.max_distance_km else None
-            except:
-                max_km = None
-            
-            try:
-                rate_val = float(r.rate) if r.rate else 0.0
-            except:
-                rate_val = 0.0
-            
-            # Build label
-            if max_km:
+            min_km = float(r.min_distance_km or 0)
+            max_km = float(r.max_distance_km) if r.max_distance_km is not None else None
+            rate_val = float(r.rate or 0)
+
+            # Human-friendly label
+            if max_km is not None:
                 label = f"{min_km}-{max_km} km = ${rate_val}"
             else:
                 label = f"{min_km}+ km = ${rate_val}"
-            
+
             data.append({
                 "id": r.id,
                 "min_distance_km": min_km,
@@ -10656,125 +10812,386 @@ def delivery_rates_list(request):
         return JsonResponse({
             "success": True,
             "count": len(data),
-            "rates": data
+            "rates": data,
+            "timezone": str(user_tz),
+            "generated_at_local": now_local.isoformat()
         }, status=200)
 
     except Exception as e:
-        import traceback
-        traceback.print_exc()
         return JsonResponse({
             "success": False,
             "error": str(e),
-            "error_type": type(e).__name__
+            "error_type": type(e).__name__,
+            "timezone": str(user_tz),
+            "generated_at_local": now_local.isoformat()
         }, status=500)
 
 
-
-
-@csrf_exempt
+@csrf_protect
+@admin_auth_required
+@require_http_methods(["PUT"])
 def edit_order(request, order_id):
     """
+    PRODUCTION: Admin Edit Order
     PUT /api/editOrder/<order_id>/
-    Updates allowed editable fields in DeliveryOrder.
+    
+    - Secure (CSRF + Admin Auth)
+    - PUT only
+    - Validates order status before driver reassignment
+    - Creates audit trail in OrderTracking for driver changes AND status changes
+    - Returns timestamps in settings.USER_TIMEZONE
+    - Stores data in UTC
+    
     Editable fields:
-      - pickup_address
-      - pickup_city
-      - drop_address
-      - drop_city
-      - rate
-      - status
-      - customer_name
-      - pickup_day
+      Core Delivery:
+        - pickup_address, pickup_city, pickup_day
+        - drop_address, drop_city
+      
+      Customer Info:
+        - customer_name, customer_phone, alternate_contact
+      
+      Delivery Instructions:
+        - delivery_notes, signature_required, id_verification_required
+      
+      Financial:
+        - rate
+      
+      Status & Assignment:
+        - status (with audit trail)
+        - driver_id (with status validation and audit trail)
     """
-    if request.method not in ["PUT", "POST"]:
-        return JsonResponse({"success": False, "error": "Only PUT or POST allowed"}, status=405)
-
+    
+    user_tz = settings.USER_TIMEZONE
+    now_utc = timezone.now()
+    
+    # Parse request body
     try:
         body = json.loads(request.body.decode("utf-8"))
     except json.JSONDecodeError:
-        return JsonResponse({"success": False, "error": "Invalid JSON body"}, status=400)
-
+        return JsonResponse({
+            "success": False, 
+            "error": "Invalid JSON body"
+        }, status=400)
+    
+    # Validate order exists
     try:
-        order = DeliveryOrder.objects.get(id=order_id)
+        order = DeliveryOrder.objects.select_related('pharmacy', 'driver').get(id=order_id)
     except DeliveryOrder.DoesNotExist:
-        return JsonResponse({"success": False, "error": f"Order ID {order_id} not found"}, status=404)
-
+        return JsonResponse({
+            "success": False, 
+            "error": f"Order #{order_id} not found"
+        }, status=404)
+    
+    # Track the original status before any changes
+    original_status = order.status
+    
+    # Define editable fields
     editable_fields = [
-        "pickup_address", "pickup_city", "drop_address", "drop_city",
-        "rate", "status", "customer_name", "pickup_day"
+        # Core delivery details
+        "pickup_address",
+        "pickup_city", 
+        "pickup_day",
+        "drop_address",
+        "drop_city",
+        
+        # Customer info
+        "customer_name",
+        "customer_phone",
+        "alternate_contact",
+        
+        # Delivery instructions
+        "delivery_notes",
+        "signature_required",
+        "id_verification_required",
+        
+        # Financial
+        "rate",
+        
+        # Status
+        "status",
     ]
-
-    # Apply updates if provided
-    for field in editable_fields:
-        if field in body and body[field] is not None:
+    
+    # Track changes for response
+    changes_made = []
+    
+    # Track if status was changed
+    status_changed = False
+    new_status = None
+    
+    # Special handling for driver_id (not in regular editable_fields)
+    driver_reassignment_note = None
+    if "driver_id" in body:
+        # Validate status allows driver reassignment
+        prohibited_statuses = ['picked_up', 'inTransit', 'delivered', 'cancelled']
+        if order.status in prohibited_statuses:
+            return JsonResponse({
+                "success": False,
+                "error": f"Cannot reassign driver when order status is '{order.status}'. Driver reassignment only allowed for 'pending' or 'accepted' orders."
+            }, status=400)
+        
+        # Validate new driver exists and is active
+        new_driver_id = body["driver_id"]
+        
+        # Allow null to unassign driver
+        if new_driver_id is None:
+            old_driver_name = order.driver.name if order.driver else "Unassigned"
+            order.driver = None
+            driver_reassignment_note = f"Driver unassigned (was: {old_driver_name})"
+            changes_made.append("driver_id (unassigned)")
+        else:
             try:
+                new_driver = Driver.objects.get(id=new_driver_id, active=True)
+            except Driver.DoesNotExist:
+                return JsonResponse({
+                    "success": False,
+                    "error": f"Driver #{new_driver_id} not found or inactive"
+                }, status=404)
+            
+            # Store old driver for audit trail
+            old_driver = order.driver
+            old_driver_name = old_driver.name if old_driver else "Unassigned"
+            
+            # Update driver
+            order.driver = new_driver
+            driver_reassignment_note = f"Driver reassigned from {old_driver_name} to {new_driver.name}"
+            changes_made.append(f"driver_id ({old_driver_name} → {new_driver.name})")
+    
+    # Apply updates for regular editable fields
+    for field in editable_fields:
+        if field in body:
+            old_value = getattr(order, field, None)
+            new_value = body[field]
+            
+            # Skip if no change
+            if old_value == new_value:
+                continue
+            
+            try:
+                # Type-specific parsing
                 if field == "pickup_day":
-                    order.pickup_day = parse_date(str(body[field]))
+                    parsed_date = parse_date(str(new_value))
+                    if not parsed_date:
+                        raise ValueError("Invalid date format")
+                    order.pickup_day = parsed_date
+                    changes_made.append(f"pickup_day ({old_value} → {new_value})")
+                
                 elif field == "rate":
-                    order.rate = float(body[field])
+                    order.rate = float(new_value)
+                    changes_made.append(f"rate (${old_value} → ${new_value})")
+                
+                elif field in ["signature_required", "id_verification_required"]:
+                    order.__dict__[field] = bool(new_value)
+                    changes_made.append(f"{field} ({old_value} → {new_value})")
+                
+                elif field == "status":
+                    # Track status change
+                    if old_value != new_value:
+                        status_changed = True
+                        new_status = new_value
+                    setattr(order, field, new_value)
+                    changes_made.append(f"status ({old_value} → {new_value})")
+                
                 else:
-                    setattr(order, field, body[field])
-            except Exception as e:
-                return JsonResponse({"success": False, "error": f"Invalid value for {field}: {str(e)}"}, status=400)
-
-    order.save()
-
-    # Build response
+                    setattr(order, field, new_value)
+                    changes_made.append(field)
+            
+            except (ValueError, TypeError) as e:
+                return JsonResponse({
+                    "success": False,
+                    "error": f"Invalid value for '{field}': {str(e)}"
+                }, status=400)
+    
+    # Validate: at least one field was updated
+    if not changes_made:
+        return JsonResponse({
+            "success": False,
+            "error": "No changes provided"
+        }, status=400)
+    
+    # Save order (triggers updated_at)
+    try:
+        order.save()
+    except Exception as e:
+        return JsonResponse({
+            "success": False,
+            "error": f"Failed to save order: {str(e)}"
+        }, status=500)
+    
+    # Create audit trail for driver reassignment
+    if driver_reassignment_note:
+        try:
+            OrderTracking.objects.create(
+                order=order,
+                driver=order.driver,  # New driver (or None)
+                pharmacy=order.pharmacy,
+                step=order.status,
+                performed_by='Admin',
+                timestamp=now_utc,  # Store in UTC
+                note=driver_reassignment_note
+            )
+        except Exception as e:
+            # Log error but don't fail the request
+            print(f"Warning: Failed to create tracking entry for driver change: {str(e)}")
+    
+    # Create audit trail for status change
+    if status_changed:
+        try:
+            OrderTracking.objects.create(
+                order=order,
+                driver=order.driver,
+                pharmacy=order.pharmacy,
+                step=new_status,
+                performed_by='Admin',
+                timestamp=now_utc,  # Store in UTC
+                note=f"Status changed from '{original_status}' to '{new_status}' by Admin"
+            )
+        except Exception as e:
+            # Log error but don't fail the request
+            print(f"Warning: Failed to create tracking entry for status change: {str(e)}")
+    
+    # Build response with local timezone
     updated_data = {
         "order_id": order.id,
+        
+        # Core delivery
         "pickup_address": order.pickup_address,
         "pickup_city": order.pickup_city,
+        "pickup_day": str(order.pickup_day),
         "drop_address": order.drop_address,
         "drop_city": order.drop_city,
-        "rate": float(order.rate),
-        "status": order.status,
+        
+        # Customer info
         "customer_name": order.customer_name,
-        "pickup_day": str(order.pickup_day),
-        "updated_at": str(order.updated_at),
+        "customer_phone": order.customer_phone,
+        "alternate_contact": order.alternate_contact or "",
+        
+        # Delivery instructions
+        "delivery_notes": order.delivery_notes or "",
+        "signature_required": order.signature_required,
+        "id_verification_required": order.id_verification_required,
+        
+        # Financial
+        "rate": float(order.rate),
+        
+        # Status
+        "status": order.status,
+        
+        # Driver info
+        "driver": {
+            "id": order.driver.id,
+            "name": order.driver.name,
+            "email": order.driver.email,
+        } if order.driver else None,
+        
+        # Timestamps (local timezone)
+        "updated_at_local": _to_local_iso(order.updated_at),
+        "created_at_local": _to_local_iso(order.created_at),
     }
+    
+    return JsonResponse({
+        "success": True,
+        "message": f"Order #{order_id} updated successfully",
+        "changes": changes_made,
+        "order": updated_data,
+        "timezone": str(user_tz),
+        "updated_at_server_local": _to_local_iso(now_utc)
+    }, status=200)
 
-    return JsonResponse({"success": True, "message": "Order updated successfully", "order": updated_data}, status=200)
 
-
-
-@csrf_exempt
+@csrf_protect
+@admin_auth_required
+@require_http_methods(["DELETE", "POST"])
 def cancel_order(request, order_id: int):
     """
-    Cancels an order (soft delete) by updating status='cancelled'
-    and always adds an OrderTracking entry for auditing.
-    Accepts DELETE or POST.
+    PRODUCTION: Cancel Order (Admin Only with Status Restrictions)
+    
+    DELETE/POST /api/orders/{order_id}/cancel/
+    
+    - Secure (CSRF + Admin Auth)
+    - DELETE or POST methods
+    - Status-based cancellation restrictions:
+      * pending: ✅ Allowed (no cost incurred)
+      * accepted: ✅ Allowed with logging (driver not started)
+      * picked_up: ⚠️ Controlled/Rare (chain of custody concerns)
+      * inTransit: ❌ Not allowed (operational + legal risk)
+      * delivered: ❌ Never allowed (financial + audit integrity)
+      * cancelled: 🚫 Already cancelled (terminal state)
+    - Soft delete by setting status='cancelled'
+    - Creates OrderTracking entry for audit trail
+    - Sends email notifications to pharmacy and driver
+    - Returns timestamps in settings.USER_TIMEZONE
+    - Stores data in UTC
     """
-    if request.method not in ("DELETE", "POST"):
-        return HttpResponseNotAllowed(["DELETE", "POST"])
-
+    
+    # Get user timezone from settings
+    user_tz = settings.USER_TIMEZONE
+    now_utc = timezone.now()
+    now_local = timezone.localtime(now_utc, user_tz)
+    
+    # Validate order exists
     try:
-        order = DeliveryOrder.objects.get(id=order_id)
+        order = DeliveryOrder.objects.select_related('pharmacy', 'driver').get(id=order_id)
     except DeliveryOrder.DoesNotExist:
-        return JsonResponse({"success": False, "error": "Order not found."}, status=404)
+        return JsonResponse({
+            "success": False, 
+            "error": "Order not found."
+        }, status=404)
 
     prev_status = order.status
 
-    # Prevent cancelling delivered orders if needed
+    # ============================================
+    # STATUS-BASED CANCELLATION RESTRICTIONS
+    # ============================================
+    
+    # ❌ Never allow cancellation of delivered orders (financial + audit integrity)
     if prev_status == "delivered":
         return JsonResponse({
             "success": False,
-            "error": "Delivered orders cannot be cancelled."
+            "error": "Delivered orders cannot be cancelled due to financial and audit integrity requirements."
         }, status=400)
+    
+    # 🚫 Already cancelled (terminal state)
+    if prev_status == "cancelled":
+        return JsonResponse({
+            "success": False,
+            "error": "Order is already cancelled."
+        }, status=400)
+    
+    # ❌ Not allowed for inTransit orders (operational + legal risk)
+    if prev_status == "inTransit":
+        return JsonResponse({
+            "success": False,
+            "error": "Orders in transit cannot be cancelled due to operational and legal risks. Please wait for delivery or contact operations."
+        }, status=400)
+    
+    # ⚠️ Controlled/Rare for picked_up orders (chain of custody concerns)
+    if prev_status == "picked_up":
+        return JsonResponse({
+            "success": False,
+            "error": "Orders that have been picked up cannot be cancelled due to chain of custody concerns. Please contact operations if cancellation is critical."
+        }, status=400)
+    
+    # ✅ Allowed for pending (no cost incurred)
+    # ✅ Allowed for accepted (driver not started, logged for audit)
+    
+    # Additional logging for accepted orders
+    if prev_status == "accepted":
+        print(f"[AUDIT] Admin cancelled accepted order #{order.id} - Driver: {order.driver.name if order.driver else 'None'}")
 
-    # Update order status and timestamp
+    # Update order status and timestamp (store in UTC)
     order.status = "cancelled"
-    order.updated_at = timezone.now()
+    order.updated_at = now_utc
     order.save(update_fields=["status", "updated_at"])
 
-    # Always add tracking entry
+    # Always add tracking entry (timestamp in UTC)
     OrderTracking.objects.create(
         order=order,
         driver=order.driver,
         pharmacy=order.pharmacy,
         step="cancelled",
         performed_by="admin_panel",
-        note="Order cancelled via Admin Dashboard.",
-        timestamp=timezone.now(),
+        note=f"Order cancelled via Admin Dashboard. Previous status: {prev_status}",
+        timestamp=now_utc,
     )
 
     # ---- Send cancellation email to pharmacy ----
@@ -10783,9 +11200,10 @@ def cancel_order(request, order_id: int):
             brand_primary = settings.BRAND_COLORS['primary']
             brand_primary_dark = settings.BRAND_COLORS['primary_dark']
             brand_accent = settings.BRAND_COLORS['accent']
-            now_str = timezone.now().strftime("%b %d, %Y %H:%M %Z")
             logo_url = settings.LOGO_URL
             
+            # Use local timezone for display
+            now_str = now_local.strftime("%b %d, %Y %H:%M %Z")
             pickup_date_str = order.pickup_day.strftime("%A, %B %d, %Y") if order.pickup_day else "N/A"
 
             pharmacy_html = f"""\
@@ -10939,7 +11357,7 @@ def cancel_order(request, order_id: int):
           </table>
           
           <p style="margin:14px 0 0;font:400 12px/1.6 system-ui,-apple-system,'Segoe UI',Roboto,Helvetica,Arial;color:#94a3b8;">
-            © {timezone.now().year} {settings.COMPANY_OPERATING_NAME} - {settings.COMPANY_SUB_GROUP_NAME}. All rights reserved.
+            © {now_local.year} {settings.COMPANY_OPERATING_NAME} - {settings.COMPANY_SUB_GROUP_NAME}. All rights reserved.
           </p>
         </td>
       </tr>
@@ -10983,9 +11401,10 @@ def cancel_order(request, order_id: int):
             brand_primary = settings.BRAND_COLORS['primary']
             brand_primary_dark = settings.BRAND_COLORS['primary_dark']
             brand_accent = settings.BRAND_COLORS['accent']
-            now_str = timezone.now().strftime("%b %d, %Y %H:%M %Z")
             logo_url = settings.LOGO_URL
             
+            # Use local timezone for display
+            now_str = now_local.strftime("%b %d, %Y %H:%M %Z")
             pickup_date_str = order.pickup_day.strftime("%A, %B %d, %Y") if order.pickup_day else "N/A"
 
             driver_html = f"""\
@@ -11156,7 +11575,7 @@ def cancel_order(request, order_id: int):
           </table>
           
           <p style="margin:14px 0 0;font:400 12px/1.6 system-ui,-apple-system,'Segoe UI',Roboto,Helvetica,Arial;color:#94a3b8;">
-            © {timezone.now().year} {settings.COMPANY_OPERATING_NAME} - {settings.COMPANY_SUB_GROUP_NAME}. All rights reserved.
+            © {now_local.year} {settings.COMPANY_OPERATING_NAME} - {settings.COMPANY_SUB_GROUP_NAME}. All rights reserved.
           </p>
         </td>
       </tr>
@@ -11199,24 +11618,24 @@ def cancel_order(request, order_id: int):
             import traceback
             traceback.print_exc()
 
+    # Return response with local timezone
     return JsonResponse({
         "success": True,
         "message": f"Order #{order.id} successfully cancelled.",
         "order_id": order.id,
         "previous_status": prev_status,
         "new_status": "cancelled",
-        "updated_at": order.updated_at.isoformat(),
+        "updated_at_local": timezone.localtime(order.updated_at, user_tz).isoformat(),
+        "cancelled_at_local": now_local.isoformat(),
+        "timezone": str(user_tz),
     }, status=200)
 
-
-
-
-
-@csrf_exempt
+@csrf_protect
 @require_http_methods(["POST"])
+@admin_auth_required
 def add_delivery_rate(request):
     """
-    Create a new DeliveryDistanceRate row.
+    Admin API to create a new DeliveryDistanceRate slab.
 
     Expected JSON body:
     {
@@ -11225,264 +11644,522 @@ def add_delivery_rate(request):
       "rate": number (required, >= 0)
     }
     """
+
+    # -------------------------------
+    # Parse JSON
+    # -------------------------------
     try:
         payload = json.loads(request.body.decode("utf-8"))
     except Exception:
-        return JsonResponse(
-            {"success": False, "error": "Invalid JSON body."},
-            status=400,
-        )
+        return JsonResponse({
+            "success": False,
+            "code": "INVALID_JSON",
+            "message": "Invalid JSON body."
+        }, status=400)
 
-    # Extract fields
-    min_km = payload.get("min_distance_km", None)
-    max_km = payload.get("max_distance_km", None)  # can be None
-    rate = payload.get("rate", None)
+    min_km = payload.get("min_distance_km")
+    max_km = payload.get("max_distance_km")
+    rate = payload.get("rate")
 
-    # Basic validation & decimal conversion
+    # -------------------------------
+    # Validation
+    # -------------------------------
     try:
         if min_km is None:
-            return JsonResponse({"success": False, "error": "min_distance_km is required."}, status=400)
+            return JsonResponse({
+                "success": False,
+                "code": "MIN_DISTANCE_REQUIRED",
+                "message": "min_distance_km is required."
+            }, status=400)
+
         if rate is None:
-            return JsonResponse({"success": False, "error": "rate is required."}, status=400)
+            return JsonResponse({
+                "success": False,
+                "code": "RATE_REQUIRED",
+                "message": "rate is required."
+            }, status=400)
 
         min_km = Decimal(str(min_km))
         rate = Decimal(str(rate))
 
         if min_km < 0:
-            return JsonResponse({"success": False, "error": "min_distance_km must be >= 0."}, status=400)
-        if rate < 0:
-            return JsonResponse({"success": False, "error": "rate must be >= 0."}, status=400)
+            return JsonResponse({
+                "success": False,
+                "code": "INVALID_MIN_DISTANCE",
+                "message": "min_distance_km must be >= 0."
+            }, status=400)
 
-        # max_km is optional (null means open-ended)
+        if rate < 0:
+            return JsonResponse({
+                "success": False,
+                "code": "INVALID_RATE",
+                "message": "rate must be >= 0."
+            }, status=400)
+
         if max_km is not None:
             max_km = Decimal(str(max_km))
             if max_km < min_km:
-                return JsonResponse({"success": False, "error": "max_distance_km must be >= min_distance_km."}, status=400)
+                return JsonResponse({
+                    "success": False,
+                    "code": "INVALID_MAX_DISTANCE",
+                    "message": "max_distance_km must be >= min_distance_km."
+                }, status=400)
         else:
             max_km = None
 
     except InvalidOperation:
-        return JsonResponse({"success": False, "error": "Distances/rate must be valid numbers."}, status=400)
+        return JsonResponse({
+            "success": False,
+            "code": "INVALID_NUMBER",
+            "message": "Distances and rate must be valid numbers."
+        }, status=400)
 
-    # (Optional) Simple overlap guard — comment out if you don't want it.
-    # This checks for any interval overlap with existing rows.
-    overlap_qs = DeliveryDistanceRate.objects.all()
-    for r in overlap_qs:
-        r_min = r.min_distance_km
-        r_max = r.max_distance_km  # can be None (open-ended)
-        # If both are ranges, overlap if (minA <= maxB or maxB is None) and (maxA is None or maxA >= minB)
-        if (max_km is None or r_min <= max_km) and (r_max is None or r_max >= min_km):
-            return JsonResponse(
-                {
-                    "success": False,
-                    "error": f"New range ({min_km}–{max_km if max_km is not None else '∞'}) overlaps existing range "
-                             f"({r_min}–{r_max if r_max is not None else '∞'}) [id={r.id}]."
-                },
-                status=409,
+    # -------------------------------
+    # Atomic creation + overlap guard
+    # -------------------------------
+    try:
+        with transaction.atomic():
+            existing_rates = DeliveryDistanceRate.objects.select_for_update()
+
+            for r in existing_rates:
+                r_min = r.min_distance_km
+                r_max = r.max_distance_km  # may be None
+
+                # overlap condition
+                if (
+                    (max_km is None or r_min <= max_km)
+                    and (r_max is None or r_max >= min_km)
+                ):
+                    return JsonResponse({
+                        "success": False,
+                        "code": "OVERLAPPING_RANGE",
+                        "message": (
+                            f"Range {min_km}–{max_km if max_km is not None else '∞'} "
+                            f"overlaps existing range {r_min}–{r_max if r_max is not None else '∞'}."
+                        )
+                    }, status=409)
+
+            new_rate = DeliveryDistanceRate.objects.create(
+                min_distance_km=min_km,
+                max_distance_km=max_km,
+                rate=rate,
             )
 
-    try:
-        new_rate = DeliveryDistanceRate.objects.create(
-            min_distance_km=min_km,
-            max_distance_km=max_km,
-            rate=rate,
-        )
+            # Optional audit log
+            # logger.info(
+            #     f"Admin {request.admin.id} added delivery rate "
+            #     f"{min_km}-{max_km or '∞'} @ {rate}"
+            # )
 
-        return JsonResponse(
-            {
-                "success": True,
-                "message": "Delivery rate added successfully.",
-                "rate": {
-                    "id": new_rate.id,
-                    "min_distance_km": float(new_rate.min_distance_km),
-                    "max_distance_km": float(new_rate.max_distance_km) if new_rate.max_distance_km is not None else None,
-                    "rate": float(new_rate.rate),
-                },
-            },
-            status=201,
-        )
+        return JsonResponse({
+            "success": True,
+            "message": "Delivery rate added successfully.",
+            "rate": {
+                "id": new_rate.id,
+                "min_distance_km": float(new_rate.min_distance_km),
+                "max_distance_km": (
+                    float(new_rate.max_distance_km)
+                    if new_rate.max_distance_km is not None else None
+                ),
+                "rate": float(new_rate.rate),
+            }
+        }, status=201)
+
     except Exception as e:
-        return JsonResponse({"success": False, "error": str(e)}, status=500)
+        return JsonResponse({
+            "success": False,
+            "code": "SERVER_ERROR",
+            "message": str(e)
+        }, status=500)
 
 
+# # ✏️ EDIT DELIVERY RATE
+# @csrf_exempt
+# @require_http_methods(["PUT", "POST"])  # Allow both PUT and POST for compatibility
+# def edit_delivery_rate(request, rate_id):
+#     """
+#     Edit an existing DeliveryDistanceRate entry.
+#     URL: /api/deliveryRates/<id>/edit/
+    
+#     Expected JSON body:
+#     {
+#       "min_distance_km": number (optional, >= 0),
+#       "max_distance_km": number|null (optional, >= min_distance_km),
+#       "rate": number (optional, >= 0)
+#     }
+#     """
+#     try:
+#         # Parse request body
+#         try:
+#             payload = json.loads(request.body.decode("utf-8"))
+#         except json.JSONDecodeError:
+#             return JsonResponse(
+#                 {"success": False, "error": "Invalid JSON payload."},
+#                 status=400
+#             )
+
+#         # Check if rate exists
+#         try:
+#             rate_obj = DeliveryDistanceRate.objects.get(id=rate_id)
+#         except DeliveryDistanceRate.DoesNotExist:
+#             return JsonResponse(
+#                 {"success": False, "error": f"Rate with ID {rate_id} not found."},
+#                 status=404
+#             )
+
+#         # Extract fields
+#         min_km = payload.get("min_distance_km")
+#         max_km = payload.get("max_distance_km")
+#         rate = payload.get("rate")
+
+#         # Track if any changes were made
+#         changes_made = False
+
+#         # Update min_distance_km
+#         if min_km is not None:
+#             try:
+#                 min_val = Decimal(str(min_km))
+#                 if min_val < 0:
+#                     return JsonResponse(
+#                         {"success": False, "error": "min_distance_km must be >= 0."},
+#                         status=400
+#                     )
+#                 rate_obj.min_distance_km = min_val
+#                 changes_made = True
+#             except (InvalidOperation, ValueError):
+#                 return JsonResponse(
+#                     {"success": False, "error": "Invalid min_distance_km value."},
+#                     status=400
+#                 )
+
+#         # Update max_distance_km
+#         if max_km is not None:
+#             if max_km == "" or max_km == "null":
+#                 rate_obj.max_distance_km = None
+#                 changes_made = True
+#             else:
+#                 try:
+#                     max_val = Decimal(str(max_km))
+#                     if max_val < rate_obj.min_distance_km:
+#                         return JsonResponse(
+#                             {"success": False, "error": "max_distance_km must be >= min_distance_km."},
+#                             status=400
+#                         )
+#                     rate_obj.max_distance_km = max_val
+#                     changes_made = True
+#                 except (InvalidOperation, ValueError):
+#                     return JsonResponse(
+#                         {"success": False, "error": "Invalid max_distance_km value."},
+#                         status=400
+#                     )
+
+#         # Update rate
+#         if rate is not None:
+#             try:
+#                 rate_val = Decimal(str(rate))
+#                 if rate_val < 0:
+#                     return JsonResponse(
+#                         {"success": False, "error": "rate must be >= 0."},
+#                         status=400
+#                     )
+#                 rate_obj.rate = rate_val
+#                 changes_made = True
+#             except (InvalidOperation, ValueError):
+#                 return JsonResponse(
+#                     {"success": False, "error": "Invalid rate value."},
+#                     status=400
+#                 )
+
+#         if not changes_made:
+#             return JsonResponse(
+#                 {"success": False, "message": "No fields were updated."},
+#                 status=400
+#             )
+
+#         # Save changes
+#         rate_obj.save()
+
+#         # Build response
+#         response_data = {
+#             "success": True,
+#             "message": "Delivery rate updated successfully.",
+#             "rate": {
+#                 "id": rate_obj.id,
+#                 "min_distance_km": float(rate_obj.min_distance_km) if rate_obj.min_distance_km else 0.0,
+#                 "max_distance_km": float(rate_obj.max_distance_km) if rate_obj.max_distance_km else None,
+#                 "rate": float(rate_obj.rate) if rate_obj.rate else 0.0,
+#             },
+#         }
+
+#         return JsonResponse(response_data, status=200)
+
+#     except Exception as e:
+#         import traceback
+#         traceback.print_exc()
+#         return JsonResponse({
+#             "success": False,
+#             "error": f"Internal server error: {str(e)}",
+#             "error_type": type(e).__name__
+#         }, status=500)
 
 
-
-# ✏️ EDIT DELIVERY RATE
-@csrf_exempt
-@require_http_methods(["PUT", "POST"])  # Allow both PUT and POST for compatibility
+@csrf_protect
+@admin_auth_required
+@require_http_methods(["PUT", "POST"])  # PUT preferred, POST allowed for compatibility
 def edit_delivery_rate(request, rate_id):
     """
-    Edit an existing DeliveryDistanceRate entry.
-    URL: /api/deliveryRates/<id>/edit/
-    
-    Expected JSON body:
+    PRODUCTION: Edit an existing DeliveryDistanceRate entry.
+
+    URL:
+      PUT /api/deliveryRates/<id>/edit/
+
+    Expected JSON body (all fields optional):
     {
-      "min_distance_km": number (optional, >= 0),
-      "max_distance_km": number|null (optional, >= min_distance_km),
-      "rate": number (optional, >= 0)
+      "min_distance_km": number (>= 0),
+      "max_distance_km": number | null (>= min_distance_km),
+      "rate": number (>= 0)
     }
+
+    Notes:
+    - Partial updates supported
+    - No time-based logic (pricing config)
+    - Does NOT affect historical orders
     """
+
+    # -----------------------------
+    # Parse JSON body
+    # -----------------------------
     try:
-        # Parse request body
+        payload = json.loads(request.body.decode("utf-8"))
+    except json.JSONDecodeError:
+        return JsonResponse(
+            {"success": False, "error": "Invalid JSON payload."},
+            status=400
+        )
+
+    # -----------------------------
+    # Validate rate exists
+    # -----------------------------
+    try:
+        rate_obj = DeliveryDistanceRate.objects.get(id=rate_id)
+    except DeliveryDistanceRate.DoesNotExist:
+        return JsonResponse(
+            {"success": False, "error": f"Rate with ID {rate_id} not found."},
+            status=404
+        )
+
+    # -----------------------------
+    # Extract fields
+    # -----------------------------
+    min_km = payload.get("min_distance_km")
+    max_km = payload.get("max_distance_km")
+    rate = payload.get("rate")
+
+    changes_made = False
+
+    # -----------------------------
+    # Update min_distance_km
+    # -----------------------------
+    if min_km is not None:
         try:
-            payload = json.loads(request.body.decode("utf-8"))
-        except json.JSONDecodeError:
+            min_val = Decimal(str(min_km))
+            if min_val < 0:
+                return JsonResponse(
+                    {"success": False, "error": "min_distance_km must be >= 0."},
+                    status=400
+                )
+            rate_obj.min_distance_km = min_val
+            changes_made = True
+        except (InvalidOperation, ValueError):
             return JsonResponse(
-                {"success": False, "error": "Invalid JSON payload."},
+                {"success": False, "error": "Invalid min_distance_km value."},
                 status=400
             )
 
-        # Check if rate exists
+    # -----------------------------
+    # Update max_distance_km
+    # -----------------------------
+    if max_km is not None:
+        if max_km in ("", "null"):
+            rate_obj.max_distance_km = None
+            changes_made = True
+        else:
+            try:
+                max_val = Decimal(str(max_km))
+                if max_val < rate_obj.min_distance_km:
+                    return JsonResponse(
+                        {"success": False, "error": "max_distance_km must be >= min_distance_km."},
+                        status=400
+                    )
+                rate_obj.max_distance_km = max_val
+                changes_made = True
+            except (InvalidOperation, ValueError):
+                return JsonResponse(
+                    {"success": False, "error": "Invalid max_distance_km value."},
+                    status=400
+                )
+
+    # -----------------------------
+    # Update rate
+    # -----------------------------
+    if rate is not None:
         try:
-            rate_obj = DeliveryDistanceRate.objects.get(id=rate_id)
-        except DeliveryDistanceRate.DoesNotExist:
-            return JsonResponse(
-                {"success": False, "error": f"Rate with ID {rate_id} not found."},
-                status=404
-            )
-
-        # Extract fields
-        min_km = payload.get("min_distance_km")
-        max_km = payload.get("max_distance_km")
-        rate = payload.get("rate")
-
-        # Track if any changes were made
-        changes_made = False
-
-        # Update min_distance_km
-        if min_km is not None:
-            try:
-                min_val = Decimal(str(min_km))
-                if min_val < 0:
-                    return JsonResponse(
-                        {"success": False, "error": "min_distance_km must be >= 0."},
-                        status=400
-                    )
-                rate_obj.min_distance_km = min_val
-                changes_made = True
-            except (InvalidOperation, ValueError):
+            rate_val = Decimal(str(rate))
+            if rate_val < 0:
                 return JsonResponse(
-                    {"success": False, "error": "Invalid min_distance_km value."},
+                    {"success": False, "error": "rate must be >= 0."},
                     status=400
                 )
-
-        # Update max_distance_km
-        if max_km is not None:
-            if max_km == "" or max_km == "null":
-                rate_obj.max_distance_km = None
-                changes_made = True
-            else:
-                try:
-                    max_val = Decimal(str(max_km))
-                    if max_val < rate_obj.min_distance_km:
-                        return JsonResponse(
-                            {"success": False, "error": "max_distance_km must be >= min_distance_km."},
-                            status=400
-                        )
-                    rate_obj.max_distance_km = max_val
-                    changes_made = True
-                except (InvalidOperation, ValueError):
-                    return JsonResponse(
-                        {"success": False, "error": "Invalid max_distance_km value."},
-                        status=400
-                    )
-
-        # Update rate
-        if rate is not None:
-            try:
-                rate_val = Decimal(str(rate))
-                if rate_val < 0:
-                    return JsonResponse(
-                        {"success": False, "error": "rate must be >= 0."},
-                        status=400
-                    )
-                rate_obj.rate = rate_val
-                changes_made = True
-            except (InvalidOperation, ValueError):
-                return JsonResponse(
-                    {"success": False, "error": "Invalid rate value."},
-                    status=400
-                )
-
-        if not changes_made:
+            rate_obj.rate = rate_val
+            changes_made = True
+        except (InvalidOperation, ValueError):
             return JsonResponse(
-                {"success": False, "message": "No fields were updated."},
+                {"success": False, "error": "Invalid rate value."},
                 status=400
             )
 
-        # Save changes
+    # -----------------------------
+    # No-op protection
+    # -----------------------------
+    if not changes_made:
+        return JsonResponse(
+            {"success": False, "message": "No fields were updated."},
+            status=400
+        )
+
+    # -----------------------------
+    # Save changes
+    # -----------------------------
+    try:
         rate_obj.save()
+    except Exception as e:
+        return JsonResponse(
+            {"success": False, "error": f"Failed to save rate: {str(e)}"},
+            status=500
+        )
 
-        # Build response
-        response_data = {
+    # -----------------------------
+    # Response
+    # -----------------------------
+    return JsonResponse(
+        {
             "success": True,
             "message": "Delivery rate updated successfully.",
             "rate": {
                 "id": rate_obj.id,
-                "min_distance_km": float(rate_obj.min_distance_km) if rate_obj.min_distance_km else 0.0,
+                "min_distance_km": float(rate_obj.min_distance_km),
                 "max_distance_km": float(rate_obj.max_distance_km) if rate_obj.max_distance_km else None,
-                "rate": float(rate_obj.rate) if rate_obj.rate else 0.0,
+                "rate": float(rate_obj.rate),
             },
-        }
-
-        return JsonResponse(response_data, status=200)
-
-    except Exception as e:
-        import traceback
-        traceback.print_exc()
-        return JsonResponse({
-            "success": False,
-            "error": f"Internal server error: {str(e)}",
-            "error_type": type(e).__name__
-        }, status=500)
+        },
+        status=200
+    )
 
 
 # 🗑️ DELETE DELIVERY RATE
-@csrf_exempt
-@require_http_methods(["DELETE", "POST"])  # Allow both DELETE and POST for compatibility
+# @csrf_exempt
+# @require_http_methods(["DELETE", "POST"])  # Allow both DELETE and POST for compatibility
+# def delete_delivery_rate(request, rate_id):
+#     """
+#     Hard delete a DeliveryDistanceRate entry.
+#     URL: /api/deliveryRates/<id>/delete/
+#     """
+#     try:
+#         # Check if rate exists
+#         try:
+#             rate_obj = DeliveryDistanceRate.objects.get(id=rate_id)
+#         except DeliveryDistanceRate.DoesNotExist:
+#             return JsonResponse(
+#                 {"success": False, "error": f"Rate with ID {rate_id} not found."},
+#                 status=404
+#             )
+
+#         # Store info before deletion for response
+#         rate_info = {
+#             "id": rate_obj.id,
+#             "min_distance_km": float(rate_obj.min_distance_km) if rate_obj.min_distance_km else 0.0,
+#             "max_distance_km": float(rate_obj.max_distance_km) if rate_obj.max_distance_km else None,
+#             "rate": float(rate_obj.rate) if rate_obj.rate else 0.0,
+#         }
+
+#         # Delete the rate
+#         rate_obj.delete()
+
+#         return JsonResponse({
+#             "success": True,
+#             "message": f"Rate ID {rate_id} deleted successfully.",
+#             "deleted_rate": rate_info
+#         }, status=200)
+
+#     except Exception as e:
+#         import traceback
+#         traceback.print_exc()
+#         return JsonResponse({
+#             "success": False,
+#             "error": f"Internal server error: {str(e)}",
+#             "error_type": type(e).__name__
+#         }, status=500)
+
+
+@csrf_protect
+@admin_auth_required
+@require_http_methods(["DELETE", "POST"])  # DELETE preferred, POST allowed for compatibility
 def delete_delivery_rate(request, rate_id):
     """
-    Hard delete a DeliveryDistanceRate entry.
-    URL: /api/deliveryRates/<id>/delete/
+    PRODUCTION: Hard delete a DeliveryDistanceRate entry.
+
+    URL:
+      DELETE /api/deliveryRates/<id>/delete/
+
+    Notes:
+    - Admin only
+    - Irreversible (hard delete)
+    - Does NOT affect historical orders (rates are copied at order creation)
     """
+
+    # -----------------------------
+    # Validate rate exists
+    # -----------------------------
     try:
-        # Check if rate exists
-        try:
-            rate_obj = DeliveryDistanceRate.objects.get(id=rate_id)
-        except DeliveryDistanceRate.DoesNotExist:
-            return JsonResponse(
-                {"success": False, "error": f"Rate with ID {rate_id} not found."},
-                status=404
-            )
+        rate_obj = DeliveryDistanceRate.objects.get(id=rate_id)
+    except DeliveryDistanceRate.DoesNotExist:
+        return JsonResponse(
+            {"success": False, "error": f"Rate with ID {rate_id} not found."},
+            status=404
+        )
 
-        # Store info before deletion for response
-        rate_info = {
-            "id": rate_obj.id,
-            "min_distance_km": float(rate_obj.min_distance_km) if rate_obj.min_distance_km else 0.0,
-            "max_distance_km": float(rate_obj.max_distance_km) if rate_obj.max_distance_km else None,
-            "rate": float(rate_obj.rate) if rate_obj.rate else 0.0,
-        }
+    # -----------------------------
+    # Store info before deletion
+    # -----------------------------
+    deleted_rate_info = {
+        "id": rate_obj.id,
+        "min_distance_km": float(rate_obj.min_distance_km),
+        "max_distance_km": float(rate_obj.max_distance_km) if rate_obj.max_distance_km else None,
+        "rate": float(rate_obj.rate),
+    }
 
-        # Delete the rate
+    # -----------------------------
+    # Perform deletion
+    # -----------------------------
+    try:
         rate_obj.delete()
+    except Exception as e:
+        return JsonResponse(
+            {"success": False, "error": f"Failed to delete rate: {str(e)}"},
+            status=500
+        )
 
-        return JsonResponse({
+    # -----------------------------
+    # Response
+    # -----------------------------
+    return JsonResponse(
+        {
             "success": True,
             "message": f"Rate ID {rate_id} deleted successfully.",
-            "deleted_rate": rate_info
-        }, status=200)
-
-    except Exception as e:
-        import traceback
-        traceback.print_exc()
-        return JsonResponse({
-            "success": False,
-            "error": f"Internal server error: {str(e)}",
-            "error_type": type(e).__name__
-        }, status=500)
-
-
+            "deleted_rate": deleted_rate_info,
+        },
+        status=200
+    )
 
 
 
@@ -11608,10 +12285,26 @@ def get_pharmacy_details_admin(request, pharmacy_id=None):
 
 
 
-@csrf_exempt
+@csrf_protect
+@admin_auth_required
+@require_http_methods(["GET"])
 def get_driver_details_admin(request, driver_id=None):
+    """
+    Admin-only Driver Details API
+    - Secure (CSRF + Admin auth)
+    - GET only
+    - All datetime fields returned in USER_TIMEZONE
+    """
+
+    user_tz = settings.USER_TIMEZONE
+
+    def to_local_iso(dt):
+        if not dt:
+            return None
+        return timezone.localtime(dt, user_tz).isoformat()
+
     try:
-        # 🟠 CASE 1: No ID → return ALL drivers (summary)
+        # 🟠 CASE 1: ALL drivers (summary)
         if driver_id is None:
             drivers = Driver.objects.all().order_by("name")
 
@@ -11621,11 +12314,16 @@ def get_driver_details_admin(request, driver_id=None):
                     driver=d
                 ).exclude(status="cancelled").count()
 
-                total_earnings = DriverInvoice.objects.filter(
-                    driver=d
-                ).exclude(status="paid").aggregate(
-                    total=Sum("total_amount")
-                )["total"] or 0
+                outstanding_amount = (
+                    DriverInvoice.objects.filter(driver=d)
+                    .exclude(status="paid")
+                    .aggregate(total=Sum("total_amount"))["total"] or 0
+                )
+
+                active_orders_count = DeliveryOrder.objects.filter(
+                    driver=d,
+                    status__in=["pending", "accepted", "inTransit", "picked_up"]
+                ).count()
 
                 driver_list.append({
                     "id": d.id,
@@ -11634,63 +12332,54 @@ def get_driver_details_admin(request, driver_id=None):
                     "email": d.email,
                     "vehicle_number": d.vehicle_number,
                     "active": d.active,
+                    "created_at_local": to_local_iso(d.created_at),
+
+                    # 🔹 NEW FIELDS
+                    "current_active_orders_count": active_orders_count,
+                    "has_identity_uploaded": bool(d.identity_url),
+
                     "total_completed_deliveries": total_deliveries,
-                    "total_outstanding_amount": float(total_earnings),
+                    "total_outstanding_amount": float(outstanding_amount),
                 })
 
             return JsonResponse({
                 "success": True,
+                "timezone": str(user_tz),
                 "drivers": driver_list,
+                "count": len(driver_list),
+                "generated_at_local": to_local_iso(timezone.now()),
             }, status=200)
 
-        # 🟢 CASE 2: ID provided → return SINGLE driver full info
+        # 🟢 CASE 2: SINGLE driver (full details)
         driver = Driver.objects.get(id=driver_id)
 
         total_deliveries = DeliveryOrder.objects.filter(
             driver=driver
         ).exclude(status="cancelled").count()
 
-        total_earnings = DriverInvoice.objects.filter(
-            driver=driver
-        ).exclude(status="paid").aggregate(
-            total=Sum("total_amount")
-        )["total"] or 0
+        outstanding_amount = (
+            DriverInvoice.objects.filter(driver=driver)
+            .exclude(status="paid")
+            .aggregate(total=Sum("total_amount"))["total"] or 0
+        )
 
-        # Fetch driver orders
-        orders_qs = DeliveryOrder.objects.filter(
-            driver=driver
-        ).order_by("-created_at")
+        active_orders_count = DeliveryOrder.objects.filter(
+            driver=driver,
+            status__in=["pending", "accepted", "inTransit", "picked_up"]
+        ).count()
 
+        # Orders
         orders = []
-        for o in orders_qs:
-            # Fetch order images
-            images = [
-                {
-                    "id": img.id,
-                    "stage": img.stage,
-                    "image_url": img.image_url,
-                    "uploaded_at": img.uploaded_at.strftime("%Y-%m-%d %H:%M:%S")
-                }
-                for img in o.images.all()
-            ]
-
-            # Fetch tracking entries
-            tracking_entries = [
-                {
-                    "id": t.id,
-                    "step": t.step,
-                    "timestamp": t.timestamp.strftime("%Y-%m-%d %H:%M:%S"),
-                    "performed_by": t.performed_by,
-                    "note": t.note,
-                    "image_url": t.image_url,
-                    "pharmacy": t.pharmacy.name if t.pharmacy else None,
-                }
-                for t in o.tracking_entries.all()
-            ]
-
+        for o in (
+            DeliveryOrder.objects
+            .filter(driver=driver)
+            .select_related("pharmacy")
+            .prefetch_related("images", "tracking_entries")
+            .order_by("-created_at")
+        ):
             orders.append({
-                "id": o.id,
-                "pharmacy": o.pharmacy.name,
+                "order_id": o.id,
+                "pharmacy": o.pharmacy.name if o.pharmacy else None,
                 "pickup_address": o.pickup_address,
                 "pickup_city": o.pickup_city,
                 "pickup_day": str(o.pickup_day),
@@ -11699,20 +12388,34 @@ def get_driver_details_admin(request, driver_id=None):
                 "status": o.status,
                 "rate": float(o.rate),
                 "customer_name": o.customer_name,
-                "created_at": o.created_at.strftime("%Y-%m-%d %H:%M:%S"),
-                "updated_at": o.updated_at.strftime("%Y-%m-%d %H:%M:%S"),
-                "images": images,
-                "tracking_entries": tracking_entries,
+                "created_at_local": to_local_iso(o.created_at),
+                "updated_at_local": to_local_iso(o.updated_at),
+                "delivered_at_local": to_local_iso(o.delivered_at),
+                "images": [
+                    {
+                        "id": img.id,
+                        "stage": img.stage,
+                        "image_url": img.image_url,
+                        "uploaded_at_local": to_local_iso(img.uploaded_at),
+                    }
+                    for img in o.images.all()
+                ],
+                "tracking_entries": [
+                    {
+                        "id": t.id,
+                        "step": t.step,
+                        "performed_by": t.performed_by,
+                        "note": t.note,
+                        "image_url": t.image_url,
+                        "pharmacy": t.pharmacy.name if t.pharmacy else None,
+                        "timestamp_local": to_local_iso(t.timestamp),
+                    }
+                    for t in o.tracking_entries.all().order_by("timestamp")
+                ],
             })
 
-        # Fetch driver invoices
-        invoice_qs = DriverInvoice.objects.filter(
-            driver=driver
-        ).order_by("-created_at")
-
-        invoices = []
-        for inv in invoice_qs:
-            invoices.append({
+        invoices = [
+            {
                 "invoice_id": inv.id,
                 "start_date": str(inv.start_date),
                 "end_date": str(inv.end_date),
@@ -11721,25 +12424,32 @@ def get_driver_details_admin(request, driver_id=None):
                 "due_date": str(inv.due_date),
                 "status": inv.status,
                 "pdf_url": inv.pdf_url,
-            })
-
-        driver_data = {
-            "id": driver.id,
-            "name": driver.name,
-            "phone_number": driver.phone_number,
-            "email": driver.email,
-            "vehicle_number": driver.vehicle_number,
-            "active": driver.active,
-            "created_at": driver.created_at.strftime("%Y-%m-%d %H:%M:%S"),
-        }
+                "created_at_local": to_local_iso(inv.created_at),
+            }
+            for inv in DriverInvoice.objects.filter(driver=driver).order_by("-created_at")
+        ]
 
         return JsonResponse({
             "success": True,
-            "driver": driver_data,
+            "timezone": str(user_tz),
+            "driver": {
+                "id": driver.id,
+                "name": driver.name,
+                "phone_number": driver.phone_number,
+                "email": driver.email,
+                "vehicle_number": driver.vehicle_number,
+                "active": driver.active,
+                "created_at_local": to_local_iso(driver.created_at),
+
+                # 🔹 NEW FIELDS
+                "current_active_orders_count": active_orders_count,
+                "has_identity_uploaded": bool(driver.identity_url),
+            },
             "total_completed_deliveries": total_deliveries,
-            "total_outstanding_amount": float(total_earnings),
+            "total_outstanding_amount": float(outstanding_amount),
             "orders": orders,
             "invoices": invoices,
+            "generated_at_local": to_local_iso(timezone.now()),
         }, status=200)
 
     except Driver.DoesNotExist:
@@ -11747,8 +12457,6 @@ def get_driver_details_admin(request, driver_id=None):
 
     except Exception as e:
         return JsonResponse({"success": False, "error": str(e)}, status=500)
-
-
 
 @csrf_exempt
 def add_pharmacy(request):
@@ -13979,7 +14687,7 @@ def generate_acknowledgement_pdf(order, signature_image_path):
     email_help_desk = settings.EMAIL_HELP_DESK
     
     # Company info
-    company_info = '''
+    company_info = f'''
     <para alignment="center">
     <font size="9" color="#64748B">{company_name} Delivery Services<br/>
     {company_subgroup_name} | Operating Name of {corporation_name}<br/>
@@ -14181,7 +14889,7 @@ def generate_acknowledgement_pdf(order, signature_image_path):
 
     
     
-    notice_text = '''
+    notice_text = f'''
     <para alignment="justify">
     <font size="9" color="#64748B">
     This acknowledgement serves as proof of delivery and confirmation that all medicines were 
