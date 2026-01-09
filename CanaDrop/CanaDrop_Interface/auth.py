@@ -84,7 +84,7 @@ def driver_auth_required(view_func):
             )
 
         try:
-            driver = Driver.objects.get(id=driver_id, active=True)
+            driver = Driver.objects.get(id=driver_id)  # ✅ REMOVED active=True
         except Driver.DoesNotExist:
             return JsonResponse(
                 {"success": False, "error": "Invalid user"},

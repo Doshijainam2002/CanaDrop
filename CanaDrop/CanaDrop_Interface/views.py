@@ -1623,11 +1623,95 @@ def upload_handover_image_api(request):
         }, status=500)
 
 
+# @require_POST
+# @csrf_protect
+# def driver_login(request):
+#     """
+#     Authenticates a driver and sets JWT in an HttpOnly secure cookie.
+#     """
+
+#     # 1️⃣ Parse request body
+#     try:
+#         data = json.loads(request.body)
+#         email = data.get("email")
+#         password = data.get("password")
+#     except Exception:
+#         return JsonResponse(
+#             {"success": False, "message": "Invalid JSON"},
+#             status=400
+#         )
+
+#     if not email or not password:
+#         return JsonResponse(
+#             {"success": False, "message": "Email and password required"},
+#             status=400
+#         )
+
+#     # 2️⃣ Fetch driver
+#     try:
+#         driver = Driver.objects.get(email=email, active=True)
+#     except Driver.DoesNotExist:
+#         return JsonResponse(
+#             {"success": False, "message": "Invalid credentials"},
+#             status=401
+#         )
+
+#     # 3️⃣ Verify password (hashed only)
+#     if not check_password(password, driver.password):
+#         return JsonResponse(
+#             {"success": False, "message": "Invalid credentials"},
+#             status=401
+#         )
+
+#     # 4️⃣ Create JWT payload
+#     issued_at = timezone.now()  # UTC
+#     expires_at = issued_at + timedelta(hours=settings.JWT_EXPIRY_HOURS)
+
+#     payload = {
+#         "driver_id": driver.id,
+#         "email": driver.email,
+#         "iat": int(issued_at.timestamp()),
+#         "exp": int(expires_at.timestamp()),
+#     }
+
+#     token = jwt.encode(
+#         payload,
+#         settings.JWT_SECRET_KEY,
+#         algorithm=settings.JWT_ALGORITHM
+#     )
+
+#     # 5️⃣ Build response (NO token in JSON)
+#     response = JsonResponse({
+#         "success": True,
+#         "id": driver.id,
+#         "expiresAt": timezone.localtime(
+#             expires_at,
+#             settings.USER_TIMEZONE
+#         ).isoformat(),
+#     })
+
+#     # 6️⃣ Set secure HttpOnly cookie
+#     response.set_cookie(
+#         key="authToken",
+#         value=token,
+#         max_age=settings.JWT_EXPIRY_HOURS * 60 * 60,
+#         httponly=True,                         # 🔐 JS cannot read
+#         secure=settings.SECURE_SSL_REDIRECT,  # 🔐 HTTPS only
+#         samesite="Lax",                        # 🛡 CSRF protection
+#         path="/",
+#     )
+
+#     return response
+
+
 @require_POST
 @csrf_protect
 def driver_login(request):
     """
     Authenticates a driver and sets JWT in an HttpOnly secure cookie.
+    
+    NOTE: Inactive drivers CAN login (to view their account/history)
+          but CANNOT accept new orders (enforced in assign_driver API).
     """
 
     # 1️⃣ Parse request body
@@ -1647,9 +1731,9 @@ def driver_login(request):
             status=400
         )
 
-    # 2️⃣ Fetch driver
+    # 2️⃣ Fetch driver (REMOVED active=True check)
     try:
-        driver = Driver.objects.get(email=email)
+        driver = Driver.objects.get(email=email)  # ✅ Allow both active and inactive
     except Driver.DoesNotExist:
         return JsonResponse(
             {"success": False, "message": "Invalid credentials"},
@@ -1663,13 +1747,14 @@ def driver_login(request):
             status=401
         )
 
-    # 4️⃣ Create JWT payload
+    # 4️⃣ Create JWT payload (include active status for frontend)
     issued_at = timezone.now()  # UTC
     expires_at = issued_at + timedelta(hours=settings.JWT_EXPIRY_HOURS)
 
     payload = {
         "driver_id": driver.id,
         "email": driver.email,
+        "active": driver.active,  # ✅ Include active status in JWT
         "iat": int(issued_at.timestamp()),
         "exp": int(expires_at.timestamp()),
     }
@@ -1680,10 +1765,11 @@ def driver_login(request):
         algorithm=settings.JWT_ALGORITHM
     )
 
-    # 5️⃣ Build response (NO token in JSON)
+    # 5️⃣ Build response (include active status)
     response = JsonResponse({
         "success": True,
         "id": driver.id,
+        "active": driver.active,  # ✅ Let frontend know if driver is inactive
         "expiresAt": timezone.localtime(
             expires_at,
             settings.USER_TIMEZONE
@@ -1703,6 +1789,7 @@ def driver_login(request):
 
     return response
 
+    
 @csrf_protect
 @require_http_methods(["POST"])
 @driver_auth_required
