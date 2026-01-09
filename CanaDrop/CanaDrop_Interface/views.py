@@ -1815,6 +1815,13 @@ def assign_driver(request):
             order = DeliveryOrder.objects.get(id=order_id)
             driver = Driver.objects.get(id=driver_id)
 
+            # ✅ CHECK IF DRIVER IS ACTIVE
+            if not driver.active:
+                return JsonResponse({
+                    "success": False,
+                    "error": f"Driver {driver.name} is currently inactive and cannot accept orders"
+                }, status=400)
+
             # Update order
             order.driver = driver
             order.status = "accepted"
