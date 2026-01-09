@@ -1649,7 +1649,7 @@ def driver_login(request):
 
     # 2️⃣ Fetch driver
     try:
-        driver = Driver.objects.get(email=email, active=True)
+        driver = Driver.objects.get(email=email)
     except Driver.DoesNotExist:
         return JsonResponse(
             {"success": False, "message": "Invalid credentials"},
