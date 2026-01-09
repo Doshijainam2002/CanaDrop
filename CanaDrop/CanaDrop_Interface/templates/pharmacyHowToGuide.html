@@ -143,7 +143,7 @@
                         </div>
                         <div class="ml-4">
                             <h2 class="text-2xl font-bold mb-2">Welcome to CanaLogistiX Delivery Services</h2>
-                            <p class="text-teal-50">Your local prescription and product delivery partner. This guide will help you navigate the platform from first login to invoicing.</p>
+                            <p class="text-teal-50">Your trusted and reliable delivery partner. This guide will help you navigate the platform from first login to invoicing.</p>
                         </div>
                     </div>
                 </div>
@@ -165,10 +165,20 @@
                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/>
                             </svg>
                         </button>
-                        <div id="section1" class="hidden px-6 pb-4">
-                            <p class="text-gray-600">Visit the Pharmacy Login Page and enter your registered email and temporary password provided by CanaLogistiX Delivery Services.</p>
-                        </div>
+                            <div id="section1" class="hidden px-6 pb-4">
+                                <ul class="list-disc list-inside text-gray-600 space-y-1">
+                                    <li>Navigate to the Pharmacy Login page.</li>
+                                    <li>Enter your registered email address.</li>
+                                    <li>Enter the temporary password provided by CanaLogistiX Delivery Services from the Registration Email.</li>
+                                    <li>Update your password upon your first successful login from "My Profile".</li>
+                                    <li>
+                                        <span class="font-semibold text-gray-800">Security Note:</span>
+                                        Your account is secured and accessible only to authorized pharmacy staff.
+                                    </li>
+                                </ul>
+                            </div>
                     </div>
+
 
                     <!-- Section 2: Understanding Dashboard -->
                     <div class="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden">
@@ -185,9 +195,35 @@
                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/>
                             </svg>
                         </button>
-                        <div id="section2" class="hidden px-6 pb-4">
-                            <p class="text-gray-600">Your dashboard displays active orders, order status, assigned drivers, delivery history, and invoices at a glance.</p>
-                        </div>
+                            <div id="section2" class="hidden px-6 pb-4">
+                                <p class="text-gray-600 mb-2">
+                                    Your dashboard provides a real-time summary of your order activity and billing information.
+                                </p>
+
+                                <ul class="list-disc list-inside text-gray-600 space-y-1">
+                                    <li>
+                                        <span class="font-medium text-gray-800">Total Orders:</span>
+                                        Total number of orders placed with CanaLogistiX Delivery Services.
+                                    </li>
+                                    <li>
+                                        <span class="font-medium text-gray-800">Pending Orders:</span>
+                                        Orders that have not yet been accepted by a delivery partner.
+                                    </li>
+                                    <li>
+                                        <span class="font-medium text-gray-800">Completed Orders:</span>
+                                        Orders that have been successfully delivered.
+                                    </li>
+                                    <li>
+                                        <span class="font-medium text-gray-800">Weekly Due:</span>
+                                        Estimated weekly charges for completed orders
+                                        <span class="text-sm text-gray-500">(refer to invoices for final amounts).</span>
+                                    </li>
+                                    <li>
+                                        <span class="font-medium text-gray-800">Recent Orders:</span>
+                                        A quick view of your most recent orders and their key details.
+                                    </li>
+                                </ul>
+                            </div>
                     </div>
 
                     <!-- Section 3: Placing Orders -->
@@ -205,9 +241,62 @@
                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/>
                             </svg>
                         </button>
-                        <div id="section3" class="hidden px-6 pb-4">
-                            <p class="text-gray-600">Click "Create New Order" and fill in customer name, phone, pickup address, drop address, and select compliance options like signature or ID verification.</p>
-                        </div>
+                            <div id="section3" class="hidden px-6 pb-4">
+                                <p class="text-gray-600 mb-2">
+                                    The order form includes <span class="font-medium text-gray-800">Required Fields</span> (must be completed to place an order) and
+                                    <span class="font-medium text-gray-800">Optional Fields</span> (can be provided if applicable).
+                                </p>
+
+                                <p class="text-gray-700 font-semibold mt-3 mb-1">Required Fields</p>
+                                <ul class="list-disc list-inside text-gray-600 space-y-1">
+                                    <li><span class="font-medium text-gray-800">Customer Name</span></li>
+                                    <li><span class="font-medium text-gray-800">Customer Phone</span></li>
+                                    <li>
+                                        <span class="font-medium text-gray-800">Pickup Address and Pickup City</span> are auto-populated based on your registered business address
+                                        <span class="text-sm text-gray-500">(can be updated if required)</span>
+                                    </li>
+                                    <li><span class="font-medium text-gray-800">Pickup Day</span></li>
+                                    <li><span class="font-medium text-gray-800">Drop City and Drop Address</span></li>
+                                    <li>
+                                        <span class="font-medium text-gray-800">Rate</span> is automatically calculated based on distance and other factors prior to submission
+                                    </li>
+                                </ul>
+
+                                <p class="text-gray-700 font-semibold mt-4 mb-1">Optional Fields</p>
+                                <ul class="list-disc list-inside text-gray-600 space-y-1">
+                                    <li>
+                                        <span class="font-medium text-gray-800">Signature Verification:</span>
+                                        Collects the customer’s signature and generates a signed acknowledgement PDF
+                                    </li>
+                                    <li>
+                                        <span class="font-medium text-gray-800">ID Verification:</span>
+                                        Requires the delivery partner to verify identification before handing over the medication
+                                    </li>
+                                    <li>
+                                        <span class="font-medium text-gray-800">Alternate Contact Number:</span>
+                                        Used if the primary phone number is not reachable
+                                    </li>
+                                    <li>
+                                        <span class="font-medium text-gray-800">Delivery Notes:</span>
+                                        Any special instructions for the delivery partner
+                                    </li>
+                                </ul>
+
+                                <div class="mt-4 rounded-lg border border-amber-200 bg-amber-50 p-3">
+                                    <p class="font-semibold text-amber-900 mb-1">Note</p>
+                                    <ul class="list-disc list-inside text-sm text-amber-800 space-y-1">
+                                        <li>Medications are handed directly to the customer and are not left at the door, reception, or with another individual.</li>
+                                        <li>
+                                            If a delivery is unsuccessful (for example, the customer is unavailable), the medications are returned to the pharmacy.
+                                            If the pharmacy is closed, the return is completed on the next business day.
+                                        </li>
+                                        <li>
+                                            If you are unable to create an order and receive an error indicating the pharmacy is inactive, contact an administrator.
+                                            A common reason is overdue invoice payment.
+                                        </li>
+                                    </ul>
+                                </div>
+                            </div>
                     </div>
 
                     <!-- Section 4: Handover Process -->
@@ -226,9 +315,51 @@
                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/>
                             </svg>
                         </button>
-                        <div id="section4" class="hidden px-6 pb-4">
-                            <p class="text-gray-600">When the driver arrives, verify their identity, hand over the package, and the driver will upload a handover photo for proof.</p>
-                        </div>
+                            <div id="section4" class="hidden px-6 pb-4">
+                                <ul class="list-disc list-inside text-gray-600 space-y-1">
+                                    <li>
+                                        The handover process begins once the order status changes to
+                                        <span class="font-medium text-gray-800">Accepted</span>
+                                        <span class="text-sm text-gray-500">(a delivery partner has accepted the order)</span>.
+                                    </li>
+                                    <li>
+                                        On the pickup day, request the delivery partner’s
+                                        <span class="font-medium text-gray-800">Driver ID</span>
+                                        and verify it against the
+                                        <span class="font-medium text-gray-800">Driver ID</span>
+                                        and
+                                        <span class="font-medium text-gray-800">Driver Image</span>
+                                        shown for the order on the Orders page.
+                                    </li>
+                                    <li>
+                                        Once verified, write the
+                                        <span class="font-medium text-gray-800">Order Number</span>
+                                        on the sealed package, take a clear front photo of the sealed packet for each order, and upload it under
+                                        <span class="font-medium text-gray-800">Pharmacy Handover</span>
+                                        in the order section on the Orders page. After the handover image is uploaded, the order status will update to
+                                        <span class="font-medium text-gray-800">Picked Up</span>.
+                                    </li>
+                                    <li>
+                                        After receiving the sealed package, the delivery partner will upload the
+                                        <span class="font-medium text-gray-800">Driver Pickup Image</span>,
+                                        which will be visible to the pharmacy on the Orders page. Once the driver pickup image is uploaded, the order status will update to
+                                        <span class="font-medium text-gray-800">In Transit</span>.
+                                    </li>
+                                    <li>
+                                        The delivery partner completes the delivery based on the order requirements and uploads the final
+                                        <span class="font-medium text-gray-800">Drop-off Image</span>,
+                                        which will be visible on the Orders page. If
+                                        <span class="font-medium text-gray-800">ID Verification</span>
+                                        is selected, the verification status will be shown. If
+                                        <span class="font-medium text-gray-800">Signature Verification</span>
+                                        is selected, the signed customer acknowledgement PDF will be available. At completion, the order will be marked as
+                                        <span class="font-medium text-gray-800">Delivered</span>.
+                                    </li>
+                                    <li>
+                                        Status timestamps are also displayed on the Orders page to show when each step was completed.
+                                    </li>
+                                </ul>
+                            </div>
                     </div>
 
                     <!-- Section 5: Tracking Deliveries -->
@@ -247,9 +378,48 @@
                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/>
                             </svg>
                         </button>
-                        <div id="section5" class="hidden px-6 pb-4">
-                            <p class="text-gray-600">Track every status change, who performed the action, timestamps, and proof images for patient follow-ups and compliance audits.</p>
-                        </div>
+                            <div id="section5" class="hidden px-6 pb-4">
+                                <ul class="list-disc list-inside text-gray-600 space-y-2">
+                                    <li>
+                                        Delivery tracking is available from the
+                                        <span class="font-medium text-gray-800">Orders page</span>
+                                        by opening the respective order view.
+                                    </li>
+
+                                    <li>
+                                        Each order displays a complete
+                                        <span class="font-medium text-gray-800">delivery timeline</span>
+                                        showing all status changes
+                                        <span class="text-sm text-gray-500">(Accepted, Picked Up, In Transit, Delivered)</span>
+                                        along with corresponding timestamps.
+                                    </li>
+
+                                    <li>
+                                        <span class="font-medium text-gray-800">Delivery proof images</span>
+                                        are available for review, including pharmacy handover images, driver pickup images, and final drop-off images.
+                                    </li>
+
+                                    <li>
+                                        If
+                                        <span class="font-medium text-gray-800">ID Verification</span>
+                                        is selected, the verification status is clearly shown within the order details.
+                                    </li>
+
+                                    <li>
+                                        If
+                                        <span class="font-medium text-gray-800">Signature Verification</span>
+                                        is selected, the
+                                        <span class="font-medium text-gray-800">signed customer acknowledgement (ACK) PDF</span>
+                                        is available for download directly from the order view.
+                                    </li>
+
+                                    <li>
+                                        This information supports
+                                        <span class="font-medium text-gray-800">compliance requirements, and audit reviews</span>
+                                        by providing full visibility into each delivery.
+                                    </li>
+                                </ul>
+                            </div>
                     </div>
 
                     <!-- Section 6: ID & Signature Verification -->
@@ -267,9 +437,40 @@
                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/>
                             </svg>
                         </button>
-                        <div id="section6" class="hidden px-6 pb-4">
-                            <p class="text-gray-600">Drivers may request customer ID and capture signature confirmation to meet regulatory requirements and pharmacy audit standards.</p>
-                        </div>
+                            <div id="section6" class="hidden px-6 pb-4">
+                                <ul class="list-disc list-inside text-gray-600 space-y-2">
+                                    <li>
+                                        <span class="font-medium text-gray-800">ID Verification</span>
+                                        ensures that medications are handed directly to the intended customer.
+                                    </li>
+
+                                    <li>
+                                        When ID Verification is selected, the delivery partner verifies the customer’s identification
+                                        <span class="text-sm text-gray-500">(without retaining personal ID details)</span>
+                                        before completing the delivery.
+                                    </li>
+
+                                    <li>
+                                        The verification status is recorded and displayed within the order details on the Orders page.
+                                    </li>
+
+                                    <li>
+                                        <span class="font-medium text-gray-800">Signature Verification</span>
+                                        requires the customer to provide a signature at the time of delivery.
+                                    </li>
+
+                                    <li>
+                                        When Signature Verification is selected, a
+                                        <span class="font-medium text-gray-800">signed customer acknowledgement (ACK) PDF</span>
+                                        is automatically generated and attached to the order.
+                                    </li>
+
+                                    <li>
+                                        Both verification methods support
+                                        <span class="font-medium text-gray-800">regulatory compliance, audit readiness, and delivery accountability</span>.
+                                    </li>
+                                </ul>
+                            </div>
                     </div>
 
                     <!-- Section 7: Cancelling Orders -->
@@ -287,9 +488,59 @@
                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/>
                             </svg>
                         </button>
-                        <div id="section7" class="hidden px-6 pb-4">
-                            <p class="text-gray-600">Orders can only be cancelled when in Pending or Accepted status. Once picked up or in transit, cancellation is not allowed due to chain of custody.</p>
-                        </div>
+                            <div id="section7" class="hidden px-6 pb-4">
+                                <ul class="list-disc list-inside text-gray-600 space-y-2">
+                                    <li>
+                                        An order can be cancelled only when its status is
+                                        <span class="font-medium text-gray-800">Pending</span>
+                                        or
+                                        <span class="font-medium text-gray-800">Accepted</span>.
+                                        Once the order progresses beyond this stage, cancellation is no longer permitted.
+                                    </li>
+
+                                    <li>
+                                        If an order was created with incorrect information, do not attempt to cancel the order.
+                                        Instead, request updates by raising a
+                                        <span class="font-medium text-gray-800">Contact Admin</span>
+                                        ticket to modify the order details.
+                                    </li>
+
+                                    <li>
+                                        Direct order cancellation is not available from the Orders page.
+                                        Cancellation requests must be initiated from the
+                                        <span class="font-medium text-gray-800">Contact Admin</span>
+                                        section and require a valid reason.
+                                    </li>
+
+                                    <li>
+                                        Upon submitting a cancellation request, an administrator will review and respond within
+                                        <span class="font-medium text-gray-800">24–48 hours</span>.
+                                        Orders will only be cancelled if they are still in
+                                        <span class="font-medium text-gray-800">Pending</span>
+                                        or
+                                        <span class="font-medium text-gray-800">Accepted</span>
+                                        status.
+                                    </li>
+
+                                    <li>
+                                        Once an order has been
+                                        <span class="font-medium text-gray-800">Picked Up</span>,
+                                        <span class="font-medium text-gray-800">In Transit</span>,
+                                        or
+                                        <span class="font-medium text-gray-800">Delivered</span>,
+                                        cancellation is not possible, even by an administrator, due to chain-of-custody and compliance requirements.
+                                    </li>
+
+                                    <li>
+                                        After an order moves beyond
+                                        <span class="font-medium text-gray-800">Pending</span>
+                                        and
+                                        <span class="font-medium text-gray-800">Accepted</span>,
+                                        charges may still apply even if the delivery is not completed due to pharmacy-side issues or non-compliance during the handover process.
+                                        In such cases, the order charges may still appear on the invoice.
+                                    </li>
+                                </ul>
+                            </div>
                     </div>
 
                     <!-- Section 8: Invoices & Payments -->
@@ -307,12 +558,45 @@
                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/>
                             </svg>
                         </button>
-                        <div id="section8" class="hidden px-6 pb-4">
-                            <p class="text-gray-600">Invoices are generated weekly (Monday–Sunday) with one consolidated invoice including total deliveries, per-delivery rate, and invoice PDF.</p>
-                        </div>
+                            <div id="section8" class="hidden px-6 pb-4">
+                                <ul class="list-disc list-inside text-gray-600 space-y-2">
+                                    <li>
+                                        Invoices are generated on a
+                                        <span class="font-medium text-gray-800">weekly basis</span>
+                                        and include only
+                                        <span class="font-medium text-gray-800">successfully delivered orders</span>
+                                        completed during that billing period.
+                                    </li>
+
+                                    <li>
+                                        It is the pharmacy’s responsibility to review the
+                                        <span class="font-medium text-gray-800">Invoices</span>
+                                        section each week to confirm when invoices are generated and to note the applicable
+                                        <span class="font-medium text-gray-800">due date</span>.
+                                    </li>
+
+                                    <li>
+                                        Once an invoice is generated, it will appear in the
+                                        <span class="font-medium text-gray-800">Invoices</span>
+                                        section along with a downloadable invoice document and the payment due date.
+                                    </li>
+
+                                    <li>
+                                        The recommended payment method is
+                                        <span class="font-medium text-gray-800">card payment through the portal</span>,
+                                        which is processed instantly. Other payment methods may also be available and are listed on the invoice.
+                                    </li>
+
+                                    <li>
+                                        If payment is not received by the invoice due date, the pharmacy account may be
+                                        <span class="font-medium text-gray-800">temporarily suspended</span>,
+                                        and new orders cannot be created until the outstanding balance is fully paid.
+                                    </li>
+                                </ul>
+                            </div>
                     </div>
 
-<!-- Section 9: Support & Help -->
+                    <!-- Section 9: Support & Help -->
                     <div class="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden">
                         <button onclick="toggleSection('section9')" class="w-full px-6 py-4 flex items-center justify-between hover:bg-gray-50 transition-colors">
                             <div class="flex items-center">
@@ -327,9 +611,33 @@
                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/>
                             </svg>
                         </button>
-                        <div id="section9" class="hidden px-6 pb-4">
-                            <p class="text-gray-600">Go to Support / Contact Admin, select a subject, and submit your message for order issues, delivery delays, invoice questions, or technical issues.</p>
-                        </div>
+                            <div id="section9" class="hidden px-6 pb-4">
+                                <ul class="list-disc list-inside text-gray-600 space-y-2">
+                                    <li>
+                                        For support, submit a
+                                        <span class="font-medium text-gray-800">Contact Admin</span>
+                                        ticket from the portal.
+                                    </li>
+
+                                    <li>
+                                        Select the appropriate
+                                        <span class="font-medium text-gray-800">issue category</span>,
+                                        provide a clear description of the problem, and submit the ticket.
+                                    </li>
+
+                                    <li>
+                                        Include relevant details such as the
+                                        <span class="font-medium text-gray-800">Order Number</span>,
+                                        current order status, and any related notes to help expedite resolution.
+                                    </li>
+
+                                    <li>
+                                        An administrator will review the request and respond within
+                                        <span class="font-medium text-gray-800">24–48 hours</span>
+                                        via your pharmacy’s registered email address.
+                                    </li>
+                                </ul>
+                            </div>
                     </div>
 
                     <!-- Section 10: Best Practices -->
@@ -347,9 +655,61 @@
                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/>
                             </svg>
                         </button>
-                        <div id="section10" class="hidden px-6 pb-4">
-                            <p class="text-gray-600">Prepare packages before driver arrival, clearly label patient name and address, and use ID verification for controlled medications.</p>
-                        </div>
+                            <div id="section10" class="hidden px-6 pb-4">
+                                <ul class="list-disc list-inside text-gray-600 space-y-2">
+                                    <li>
+                                        Ensure all orders are created with
+                                        <span class="font-medium text-gray-800">accurate customer and address details</span>
+                                        to avoid delays or failed deliveries.
+                                    </li>
+
+                                    <li>
+                                        Prepare and securely seal packages
+                                        <span class="font-medium text-gray-800">before the delivery partner arrives</span>,
+                                        and keep orders ready on the scheduled pickup day.
+                                    </li>
+
+                                    <li>
+                                        Clearly write the
+                                        <span class="font-medium text-gray-800">Order Number</span>
+                                        on each sealed package prior to handover.
+                                    </li>
+
+                                    <li>
+                                        Always verify the delivery partner’s
+                                        <span class="font-medium text-gray-800">Driver ID and Driver Image</span>
+                                        against the order details before handing over medications.
+                                    </li>
+
+                                    <li>
+                                        Use
+                                        <span class="font-medium text-gray-800">ID Verification</span>
+                                        and
+                                        <span class="font-medium text-gray-800">Signature Verification</span>
+                                        options where appropriate to meet compliance and audit requirements.
+                                    </li>
+
+                                    <li>
+                                        Regularly monitor the
+                                        <span class="font-medium text-gray-800">Orders</span>
+                                        and
+                                        <span class="font-medium text-gray-800">Invoices</span>
+                                        sections to track order status, verify delivery completion, and ensure timely payments.
+                                    </li>
+
+                                    <li>
+                                        Review invoices weekly and complete payments
+                                        <span class="font-medium text-gray-800">before the due date</span>
+                                        to avoid account suspension and service interruptions.
+                                    </li>
+
+                                    <li>
+                                        For any issues related to orders, billing, or account status, promptly raise a
+                                        <span class="font-medium text-gray-800">Contact Admin</span>
+                                        ticket with complete details to enable faster resolution.
+                                    </li>
+                                </ul>
+                            </div>
                     </div>
                 </div>
 
