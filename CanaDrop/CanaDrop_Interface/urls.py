@@ -26,6 +26,7 @@ urlpatterns = [
     path('api/pharmacy/<int:pharmacy_id>/cc-points/', views.get_pharmacy_cc_points, name='pharmacy_cc_points'), # Done
     path('api/getActivePaymentMethods/', views.get_active_payment_methods, name="RetrieveActivePaymentMethods"), # Done
     path('api/pharmacy/logout/', views.pharmacy_logout_api, name="PharmacyLogoutAPI"), # Done
+    path('pharmacyHowToGuide/', views.pharmacyHowToGuideView, name='PharmacyHowToGuidePage'), # Done
 
 
     path('driverLogin/', views.driverLoginView, name='DriverLoginPage'), # Done
@@ -77,12 +78,12 @@ urlpatterns = [
     path("api/deliveryRates/add/", views.add_delivery_rate, name="add_delivery_rate"), # Done
     path("api/deliveryRates/<int:rate_id>/edit/", views.edit_delivery_rate, name="edit_delivery_rate"), # Done
     path("api/deliveryRates/<int:rate_id>/delete/", views.delete_delivery_rate, name="delete_delivery_rate"), # Done
-    path("api/pharmacy/details/", views.get_pharmacy_details_admin, name="AdminPharmacyDetailsAll"),
-    path("api/pharmacy/details/<int:pharmacy_id>/", views.get_pharmacy_details_admin, name="AdminPharmacyDetails"),
-    path("pharmacy/add/", views.add_pharmacy, name="AdminAddPharmacy"),
-    path("pharmacy/edit/<int:pharmacy_id>/", views.edit_pharmacy, name="AdminEditPharmacy"),
-    path("pharmacy/toggle-status/<int:pharmacy_id>/", views.toggle_pharmacy_status, name="AdminTogglePharmacyStatus"),
-    path("pharmacy/reset-password/<int:pharmacy_id>/", views.reset_pharmacy_password, name = "AdminResetCredentials"),
+    path("api/pharmacy/details/", views.get_pharmacy_details_admin, name="AdminPharmacyDetailsAll"), # Done
+    path("api/pharmacy/details/<int:pharmacy_id>/", views.get_pharmacy_details_admin, name="AdminPharmacyDetails"), # Done
+    path("pharmacy/add/", views.add_pharmacy, name="AdminAddPharmacy"), # Done
+    path("pharmacy/edit/<int:pharmacy_id>/", views.edit_pharmacy, name="AdminEditPharmacy"),# Done
+    path("pharmacy/toggle-status/<int:pharmacy_id>/", views.toggle_pharmacy_status, name="AdminTogglePharmacyStatus"), # Done
+    path("pharmacy/reset-password/<int:pharmacy_id>/", views.reset_pharmacy_password, name = "AdminResetCredentials"), # Done
     path("api/admin/driver/details/", views.get_driver_details_admin, name="AdminDriverDetailsAll"),
     path("api/admin/driver/details/<int:driver_id>/", views.get_driver_details_admin, name="AdminDriverDetails"),
     path("api/driver/add/", views.add_driver, name="AdminAddDriver"),

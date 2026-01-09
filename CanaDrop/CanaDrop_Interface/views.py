@@ -165,6 +165,10 @@ def pharmacyCCPointsView(request):
     return render(request, 'pharmacyCCPoints.html')
 
 @pharmacy_auth_required
+def pharmacyHowToGuideView(request):
+    return render(request, 'pharmacyHowToGuide.html')
+
+@pharmacy_auth_required
 def pharmacyProfileView(request):
     return render(
         request,
@@ -584,6 +588,10 @@ def create_delivery_order(request):
                 {"success": False, "error": "Unauthorized pharmacy"},
                 status=403
             )
+        
+        if not pharmacy.active:
+          logger.warning("create_delivery_order: inactive pharmacy attempted order | pharmacy_id=%s",pharmacy.id,)
+          return JsonResponse({"success": False, "error": "Your pharmacy account is currently inactive. Please contact support."}, status=403)
 
         # -----------------------------
         # Distance calculation
@@ -12165,10 +12173,132 @@ def delete_delivery_rate(request, rate_id):
 
 
 
-@csrf_exempt
+# @csrf_exempt
+# def get_pharmacy_details_admin(request, pharmacy_id=None):
+#     try:
+#         # 🟠 CASE 1: No ID → return ALL pharmacies (summary)
+#         if pharmacy_id is None:
+#             pharmacies = Pharmacy.objects.all().order_by("name")
+
+#             pharmacy_list = []
+#             for p in pharmacies:
+#                 total_orders = DeliveryOrder.objects.filter(
+#                     pharmacy=p
+#                 ).exclude(status="cancelled").count()
+
+#                 total_outstanding = Invoice.objects.filter(
+#                     pharmacy=p
+#                 ).exclude(status="paid").aggregate(
+#                     total=Sum("total_amount")
+#                 )["total"] or 0
+
+#                 pharmacy_list.append({
+#                     "id": p.id,
+#                     "name": p.name,
+#                     "store_address" : p.store_address,
+#                     "city": p.city,
+#                     "postal_code" : p.postal_code,
+#                     "province": p.province,
+#                     "phone_number": p.phone_number,
+#                     "email": p.email,
+#                     "active": p.active,
+#                     "total_valid_orders": total_orders,
+#                     "total_outstanding_amount": float(total_outstanding),
+#                 })
+
+#             return JsonResponse({
+#                 "success": True,
+#                 "pharmacies": pharmacy_list,
+#             }, status=200)
+
+#         # 🟢 CASE 2: ID provided → return SINGLE pharmacy with full info
+#         pharmacy = Pharmacy.objects.get(id=pharmacy_id)
+
+#         total_orders = DeliveryOrder.objects.filter(
+#             pharmacy=pharmacy
+#         ).exclude(status="cancelled").count()
+
+#         total_outstanding = Invoice.objects.filter(
+#             pharmacy=pharmacy
+#         ).exclude(status="paid").aggregate(
+#             total=Sum("total_amount")
+#         )["total"] or 0
+
+#         orders_qs = DeliveryOrder.objects.filter(
+#             pharmacy=pharmacy
+#         ).order_by("-created_at")
+
+#         orders = []
+#         for o in orders_qs:
+#             orders.append({
+#                 "id": o.id,
+#                 "pickup_address": o.pickup_address,
+#                 "pickup_city": o.pickup_city,
+#                 "pickup_day": str(o.pickup_day),
+#                 "drop_address": o.drop_address,
+#                 "drop_city": o.drop_city,
+#                 "status": o.status,
+#                 "rate": float(o.rate),
+#                 "customer_name": o.customer_name,
+#                 "driver": o.driver.name if o.driver else None,
+#                 "created_at": o.created_at.strftime("%Y-%m-%d %H:%M:%S"),
+#                 "updated_at": o.updated_at.strftime("%Y-%m-%d %H:%M:%S"),
+#             })
+
+#         invoice_qs = Invoice.objects.filter(
+#             pharmacy=pharmacy
+#         ).order_by("-created_at")
+
+#         invoices = []
+#         for inv in invoice_qs:
+#             invoices.append({
+#                 "invoice_id": inv.id,
+#                 "start_date": str(inv.start_date),
+#                 "end_date": str(inv.end_date),
+#                 "total_orders": inv.total_orders,
+#                 "total_amount": float(inv.total_amount),
+#                 "due_date": str(inv.due_date),
+#                 "status": inv.status,
+#                 "pdf_url": inv.pdf_url,
+#                 "stripe_payment_id": inv.stripe_payment_id,
+#             })
+
+#         pharmacy_data = {
+#             "id": pharmacy.id,
+#             "name": pharmacy.name,
+#             "store_address": pharmacy.store_address,
+#             "city": pharmacy.city,
+#             "province": pharmacy.province,
+#             "postal_code": pharmacy.postal_code,
+#             "country": pharmacy.country,
+#             "phone_number": pharmacy.phone_number,
+#             "email": pharmacy.email,
+#             "active": pharmacy.active,
+#             "created_at": pharmacy.created_at.strftime("%Y-%m-%d %H:%M:%S"),
+#         }
+
+#         return JsonResponse({
+#             "success": True,
+#             "pharmacy": pharmacy_data,
+#             "total_valid_orders": total_orders,
+#             "total_outstanding_amount": float(total_outstanding),
+#             "orders": orders,
+#             "invoices": invoices,
+#         }, status=200)
+
+#     except Pharmacy.DoesNotExist:
+#         return JsonResponse({"success": False, "message": "Pharmacy not found"}, status=404)
+#     except Exception as e:
+#         return JsonResponse({"success": False, "error": str(e)}, status=500)
+
+@csrf_protect
+@admin_auth_required
+@require_http_methods(["GET"])
 def get_pharmacy_details_admin(request, pharmacy_id=None):
     try:
-        # 🟠 CASE 1: No ID → return ALL pharmacies (summary)
+        # =========================================================
+        # 🟠 CASE 1: ALL PHARMACIES (SUMMARY VIEW)
+        # =========================================================
         if pharmacy_id is None:
             pharmacies = Pharmacy.objects.all().order_by("name")
 
@@ -12176,7 +12306,7 @@ def get_pharmacy_details_admin(request, pharmacy_id=None):
             for p in pharmacies:
                 total_orders = DeliveryOrder.objects.filter(
                     pharmacy=p
-                ).exclude(status="cancelled").count()
+                ).count()  # ✅ includes cancelled
 
                 total_outstanding = Invoice.objects.filter(
                     pharmacy=p
@@ -12184,31 +12314,53 @@ def get_pharmacy_details_admin(request, pharmacy_id=None):
                     total=Sum("total_amount")
                 )["total"] or 0
 
+                # ✅ CC POINTS (INLINE)
+                try:
+                    cc_points_balance = p.cc_points.points_balance
+                except Exception:
+                    cc_points_balance = 0
+
                 pharmacy_list.append({
                     "id": p.id,
                     "name": p.name,
-                    "store_address" : p.store_address,
+                    "store_address": p.store_address,
                     "city": p.city,
-                    "postal_code" : p.postal_code,
                     "province": p.province,
+                    "postal_code": p.postal_code,
+                    "country": p.country,
                     "phone_number": p.phone_number,
                     "email": p.email,
                     "active": p.active,
-                    "total_valid_orders": total_orders,
+
+                    # ✅ Business hours
+                    "business_hours": p.business_hours,
+
+                    # ✅ CC Points
+                    "cc_points_balance": cc_points_balance,
+
+                    # KPIs
+                    "total_orders": total_orders,
                     "total_outstanding_amount": float(total_outstanding),
+
+                    # Time (LOCAL)
+                    "created_at_local": _to_local_iso(p.created_at),
                 })
 
             return JsonResponse({
                 "success": True,
+                "count": len(pharmacy_list),
                 "pharmacies": pharmacy_list,
+                "timezone": str(settings.USER_TIMEZONE),
             }, status=200)
 
-        # 🟢 CASE 2: ID provided → return SINGLE pharmacy with full info
+        # =========================================================
+        # 🟢 CASE 2: SINGLE PHARMACY (FULL ADMIN VIEW)
+        # =========================================================
         pharmacy = Pharmacy.objects.get(id=pharmacy_id)
 
         total_orders = DeliveryOrder.objects.filter(
             pharmacy=pharmacy
-        ).exclude(status="cancelled").count()
+        ).count()  # ✅ includes cancelled
 
         total_outstanding = Invoice.objects.filter(
             pharmacy=pharmacy
@@ -12216,33 +12368,90 @@ def get_pharmacy_details_admin(request, pharmacy_id=None):
             total=Sum("total_amount")
         )["total"] or 0
 
-        orders_qs = DeliveryOrder.objects.filter(
-            pharmacy=pharmacy
-        ).order_by("-created_at")
+        # ✅ CC POINTS (INLINE)
+        try:
+            cc_points_balance = pharmacy.cc_points.points_balance
+        except Exception:
+            cc_points_balance = 0
+
+        # =========================================================
+        # Orders (FULL MODEL COVERAGE)
+        # =========================================================
+        orders_qs = (
+            DeliveryOrder.objects
+            .select_related("driver", "pharmacy")
+            .filter(pharmacy=pharmacy)
+            .order_by("-created_at")
+        )
 
         orders = []
         for o in orders_qs:
             orders.append({
                 "id": o.id,
+
+                # Pharmacy snapshot
+                "pharmacy": {
+                    "id": pharmacy.id,
+                    "name": pharmacy.name,
+                    "city": pharmacy.city,
+                    "province": pharmacy.province,
+                    "phone_number": pharmacy.phone_number,
+                    "email": pharmacy.email,
+                    "active": pharmacy.active,
+                    "business_hours": pharmacy.business_hours,
+                },
+
+                # Pickup / Drop
                 "pickup_address": o.pickup_address,
                 "pickup_city": o.pickup_city,
                 "pickup_day": str(o.pickup_day),
                 "drop_address": o.drop_address,
                 "drop_city": o.drop_city,
-                "status": o.status,
-                "rate": float(o.rate),
+
+                # Customer
                 "customer_name": o.customer_name,
-                "driver": o.driver.name if o.driver else None,
-                "created_at": o.created_at.strftime("%Y-%m-%d %H:%M:%S"),
-                "updated_at": o.updated_at.strftime("%Y-%m-%d %H:%M:%S"),
+                "customer_phone": o.customer_phone,
+                "alternate_contact": o.alternate_contact or "",
+
+                # Instructions
+                "delivery_notes": o.delivery_notes or "",
+                "signature_required": o.signature_required,
+                "id_verification_required": o.id_verification_required,
+
+                # Proof / Verification
+                "signature_ack_url": o.signature_ack_url,
+                "id_verified": o.id_verified,
+                "is_delivered": o.is_delivered,
+
+                # Financial
+                "rate": float(o.rate),
+
+                # Status
+                "status": o.status,
+
+                # Driver (FULL ADMIN VIEW)
+                "driver": ({
+                    "id": o.driver.id,
+                    "name": o.driver.name,
+                    "email": o.driver.email,
+                    "phone_number": o.driver.phone_number,
+                    "vehicle_number": o.driver.vehicle_number,
+                    "active": o.driver.active,
+                    "identity_url": o.driver.identity_url,
+                    "created_at_local": _to_local_iso(o.driver.created_at),
+                } if o.driver else None),
+
+                # Timestamps (LOCAL)
+                "created_at_local": _to_local_iso(o.created_at),
+                "updated_at_local": _to_local_iso(o.updated_at),
+                "delivered_at_local": _to_local_iso(o.delivered_at),
             })
 
-        invoice_qs = Invoice.objects.filter(
-            pharmacy=pharmacy
-        ).order_by("-created_at")
-
+        # =========================================================
+        # Invoices
+        # =========================================================
         invoices = []
-        for inv in invoice_qs:
+        for inv in Invoice.objects.filter(pharmacy=pharmacy).order_by("-created_at"):
             invoices.append({
                 "invoice_id": inv.id,
                 "start_date": str(inv.start_date),
@@ -12253,35 +12462,52 @@ def get_pharmacy_details_admin(request, pharmacy_id=None):
                 "status": inv.status,
                 "pdf_url": inv.pdf_url,
                 "stripe_payment_id": inv.stripe_payment_id,
+                "created_at_local": _to_local_iso(inv.created_at),
             })
 
-        pharmacy_data = {
-            "id": pharmacy.id,
-            "name": pharmacy.name,
-            "store_address": pharmacy.store_address,
-            "city": pharmacy.city,
-            "province": pharmacy.province,
-            "postal_code": pharmacy.postal_code,
-            "country": pharmacy.country,
-            "phone_number": pharmacy.phone_number,
-            "email": pharmacy.email,
-            "active": pharmacy.active,
-            "created_at": pharmacy.created_at.strftime("%Y-%m-%d %H:%M:%S"),
-        }
-
+        # =========================================================
+        # Final Response
+        # =========================================================
         return JsonResponse({
             "success": True,
-            "pharmacy": pharmacy_data,
-            "total_valid_orders": total_orders,
+            "pharmacy": {
+                "id": pharmacy.id,
+                "name": pharmacy.name,
+                "store_address": pharmacy.store_address,
+                "city": pharmacy.city,
+                "province": pharmacy.province,
+                "postal_code": pharmacy.postal_code,
+                "country": pharmacy.country,
+                "phone_number": pharmacy.phone_number,
+                "email": pharmacy.email,
+                "active": pharmacy.active,
+                "business_hours": pharmacy.business_hours,
+
+                # ✅ CC Points (FULL VIEW)
+                "cc_points": {
+                    "points_balance": cc_points_balance
+                },
+
+                "created_at_local": _to_local_iso(pharmacy.created_at),
+            },
+            "total_orders": total_orders,
             "total_outstanding_amount": float(total_outstanding),
             "orders": orders,
             "invoices": invoices,
+            "timezone": str(settings.USER_TIMEZONE),
         }, status=200)
 
     except Pharmacy.DoesNotExist:
-        return JsonResponse({"success": False, "message": "Pharmacy not found"}, status=404)
+        return JsonResponse({
+            "success": False,
+            "error": "Pharmacy not found"
+        }, status=404)
+
     except Exception as e:
-        return JsonResponse({"success": False, "error": str(e)}, status=500)
+        return JsonResponse({
+            "success": False,
+            "error": str(e)
+        }, status=500)
 
 
 
@@ -13006,29 +13232,120 @@ def add_driver(request):
 
 
 
-@csrf_exempt
-def edit_pharmacy(request, pharmacy_id):
-    if request.method != "PUT":
-        return JsonResponse(
-            {"success": False, "message": "Only PUT method is allowed."},
-            status=405,
-        )
+# @csrf_exempt
+# def edit_pharmacy(request, pharmacy_id):
+#     if request.method != "PUT":
+#         return JsonResponse(
+#             {"success": False, "message": "Only PUT method is allowed."},
+#             status=405,
+#         )
 
+#     try:
+#         pharmacy = Pharmacy.objects.get(id=pharmacy_id)
+#     except Pharmacy.DoesNotExist:
+#         return JsonResponse(
+#             {"success": False, "message": "Pharmacy not found."},
+#             status=404,
+#         )
+
+#     try:
+#         data = json.loads(request.body.decode("utf-8"))
+#     except json.JSONDecodeError:
+#         return JsonResponse(
+#             {"success": False, "message": "Invalid JSON payload."},
+#             status=400,
+#         )
+
+#     # Editable fields
+#     editable_fields = [
+#         "name",
+#         "store_address",
+#         "city",
+#         "province",
+#         "postal_code",
+#         "country",
+#         "phone_number",
+#         "email",
+#         "active",
+#     ]
+
+#     # Update only provided fields
+#     for field in editable_fields:
+#         if field in data:
+#             setattr(pharmacy, field, data[field].strip() if isinstance(data[field], str) else data[field])
+
+#     try:
+#         pharmacy.save()
+
+#         updated_data = {
+#             "id": pharmacy.id,
+#             "name": pharmacy.name,
+#             "store_address": pharmacy.store_address,
+#             "city": pharmacy.city,
+#             "province": pharmacy.province,
+#             "postal_code": pharmacy.postal_code,
+#             "country": pharmacy.country,
+#             "phone_number": pharmacy.phone_number,
+#             "email": pharmacy.email,
+#             "active": pharmacy.active,
+#             "created_at": pharmacy.created_at.strftime("%Y-%m-%d %H:%M:%S"),
+#         }
+
+#         return JsonResponse(
+#             {
+#                 "success": True,
+#                 "message": "Pharmacy updated successfully.",
+#                 "pharmacy": updated_data,
+#             },
+#             status=200,
+#         )
+
+#     except IntegrityError:
+#         return JsonResponse(
+#             {
+#                 "success": False,
+#                 "message": "A pharmacy with this email already exists.",
+#                 "field": "email",
+#             },
+#             status=400,
+#         )
+
+#     except Exception as e:
+#         return JsonResponse(
+#             {"success": False, "message": "Something went wrong.", "error": str(e)},
+#             status=500,
+#         )
+
+
+@csrf_protect
+@admin_auth_required
+@require_http_methods(["PUT"])
+def edit_pharmacy(request, pharmacy_id):
+    """
+    PRODUCTION: Edit Pharmacy (Admin Only)
+
+    - Secure (CSRF + Admin Auth)
+    - PUT only
+    - Accepts optional business_hours
+    - Validates business_hours if provided
+    - Does NOT modify password or active status (use separate endpoints)
+    """
+    
     try:
         pharmacy = Pharmacy.objects.get(id=pharmacy_id)
     except Pharmacy.DoesNotExist:
-        return JsonResponse(
-            {"success": False, "message": "Pharmacy not found."},
-            status=404,
-        )
+        return JsonResponse({
+            "success": False,
+            "error": "Pharmacy not found"
+        }, status=404)
 
     try:
-        data = json.loads(request.body.decode("utf-8"))
+        payload = json.loads(request.body.decode("utf-8"))
     except json.JSONDecodeError:
-        return JsonResponse(
-            {"success": False, "message": "Invalid JSON payload."},
-            status=400,
-        )
+        return JsonResponse({
+            "success": False,
+            "error": "Invalid JSON payload"
+        }, status=400)
 
     # Editable fields
     editable_fields = [
@@ -13040,55 +13357,75 @@ def edit_pharmacy(request, pharmacy_id):
         "country",
         "phone_number",
         "email",
-        "active",
     ]
 
-    # Update only provided fields
+    # Update basic fields
     for field in editable_fields:
-        if field in data:
-            setattr(pharmacy, field, data[field].strip() if isinstance(data[field], str) else data[field])
+        if field in payload:
+            value = payload[field]
+            if isinstance(value, str):
+                value = value.strip()
+            setattr(pharmacy, field, value)
+
+    # Handle business_hours separately (optional)
+    if "business_hours" in payload:
+        business_hours = payload["business_hours"]
+        try:
+            validate_business_hours(business_hours)
+            pharmacy.business_hours = business_hours
+        except ValueError as e:
+            return JsonResponse({
+                "success": False,
+                "error": str(e)
+            }, status=400)
 
     try:
         pharmacy.save()
 
-        updated_data = {
-            "id": pharmacy.id,
-            "name": pharmacy.name,
-            "store_address": pharmacy.store_address,
-            "city": pharmacy.city,
-            "province": pharmacy.province,
-            "postal_code": pharmacy.postal_code,
-            "country": pharmacy.country,
-            "phone_number": pharmacy.phone_number,
-            "email": pharmacy.email,
-            "active": pharmacy.active,
-            "created_at": pharmacy.created_at.strftime("%Y-%m-%d %H:%M:%S"),
-        }
+        # ---- Time handling (DB=UTC, Display=Local) ----
+        updated_at_utc = timezone.now()
+        try:
+            updated_at_local = updated_at_utc.astimezone(settings.USER_TIMEZONE)
+        except Exception:
+            updated_at_local = updated_at_utc
 
-        return JsonResponse(
-            {
-                "success": True,
-                "message": "Pharmacy updated successfully.",
-                "pharmacy": updated_data,
-            },
-            status=200,
-        )
+        return JsonResponse({
+            "success": True,
+            "message": "Pharmacy updated successfully",
+            "pharmacy": {
+                "id": pharmacy.id,
+                "name": pharmacy.name,
+                "store_address": pharmacy.store_address,
+                "city": pharmacy.city,
+                "province": pharmacy.province,
+                "postal_code": pharmacy.postal_code,
+                "country": pharmacy.country,
+                "phone_number": pharmacy.phone_number,
+                "email": pharmacy.email,
+                "active": pharmacy.active,
+                "business_hours": pharmacy.business_hours,
+                "created_at_local": timezone.localtime(
+                    pharmacy.created_at,
+                    settings.USER_TIMEZONE
+                ).isoformat(),
+                "updated_at_local": updated_at_local.isoformat(),
+                "timezone": str(settings.USER_TIMEZONE),
+            }
+        }, status=200)
 
     except IntegrityError:
-        return JsonResponse(
-            {
-                "success": False,
-                "message": "A pharmacy with this email already exists.",
-                "field": "email",
-            },
-            status=400,
-        )
+        return JsonResponse({
+            "success": False,
+            "error": "A pharmacy with this email already exists"
+        }, status=400)
 
     except Exception as e:
-        return JsonResponse(
-            {"success": False, "message": "Something went wrong.", "error": str(e)},
-            status=500,
-        )
+        logger.exception(f"Error updating pharmacy {pharmacy_id}")
+        return JsonResponse({
+            "success": False,
+            "error": "Internal server error",
+            "details": str(e)
+        }, status=500)
 
 
 
@@ -13173,53 +13510,159 @@ def edit_driver(request, driver_id):
         )
 
 
-@csrf_exempt
-def toggle_pharmacy_status(request, pharmacy_id):
-    if request.method not in ["POST", "PATCH"]:
-        return JsonResponse(
-            {"success": False, "message": "Only POST or PATCH method is allowed."},
-            status=405,
-        )
+# @csrf_exempt
+# def toggle_pharmacy_status(request, pharmacy_id):
+#     if request.method not in ["POST", "PATCH"]:
+#         return JsonResponse(
+#             {"success": False, "message": "Only POST or PATCH method is allowed."},
+#             status=405,
+#         )
 
+#     try:
+#         pharmacy = Pharmacy.objects.get(id=pharmacy_id)
+#     except Pharmacy.DoesNotExist:
+#         return JsonResponse(
+#             {"success": False, "message": "Pharmacy not found."},
+#             status=404,
+#         )
+
+#     # Try to read JSON body (optional)
+#     new_status = None
+#     try:
+#         if request.body:
+#             data = json.loads(request.body.decode("utf-8"))
+#             if "active" in data:
+#                 new_status = bool(data["active"])
+#     except json.JSONDecodeError:
+#         # Ignore bad JSON, we’ll just toggle instead
+#         pass
+
+#     # If active explicitly provided → set it, else toggle
+#     if new_status is not None:
+#         pharmacy.active = new_status
+#     else:
+#         pharmacy.active = not pharmacy.active
+
+#     pharmacy.save()
+
+#     return JsonResponse(
+#         {
+#             "success": True,
+#             "message": "Pharmacy activated." if pharmacy.active else "Pharmacy deactivated.",
+#             "pharmacy": {
+#                 "id": pharmacy.id,
+#                 "name": pharmacy.name,
+#                 "active": pharmacy.active,
+#             },
+#         },
+#         status=200,
+#     )
+
+
+
+@csrf_protect
+@admin_auth_required
+@require_http_methods(["PATCH"])
+def toggle_pharmacy_status(request, pharmacy_id):
+    """
+    PRODUCTION: Toggle / Set Pharmacy Active Status (Admin Only)
+
+    PATCH /api/admin/pharmacies/<pharmacy_id>/status/
+
+    Behavior:
+    - If request body contains {"active": true/false} → explicitly set
+    - If no body or no "active" field → toggle current value
+
+    Security:
+    - CSRF protected
+    - Admin only
+
+    Time handling:
+    - Stored in UTC
+    - Returned in settings.USER_TIMEZONE
+    """
+
+    user_tz = settings.USER_TIMEZONE
+    now_utc = timezone.now()
+    now_local = timezone.localtime(now_utc, user_tz)
+
+    # -------------------------------------------------
+    # Validate pharmacy exists
+    # -------------------------------------------------
     try:
         pharmacy = Pharmacy.objects.get(id=pharmacy_id)
     except Pharmacy.DoesNotExist:
-        return JsonResponse(
-            {"success": False, "message": "Pharmacy not found."},
-            status=404,
-        )
+        return JsonResponse({
+            "success": False,
+            "error": "Pharmacy not found"
+        }, status=404)
 
-    # Try to read JSON body (optional)
+    previous_status = pharmacy.active
+
+    # -------------------------------------------------
+    # Parse optional JSON body
+    # -------------------------------------------------
     new_status = None
     try:
         if request.body:
-            data = json.loads(request.body.decode("utf-8"))
-            if "active" in data:
-                new_status = bool(data["active"])
+            payload = json.loads(request.body.decode("utf-8"))
+            if "active" in payload:
+                new_status = bool(payload["active"])
     except json.JSONDecodeError:
-        # Ignore bad JSON, we’ll just toggle instead
+        return JsonResponse({
+            "success": False,
+            "error": "Invalid JSON payload"
+        }, status=400)
+
+    # -------------------------------------------------
+    # Apply status change
+    # -------------------------------------------------
+    if new_status is None:
+        # Toggle
+        pharmacy.active = not pharmacy.active
+        action_type = "toggled"
+    else:
+        # Explicit set
+        pharmacy.active = new_status
+        action_type = "set"
+
+    pharmacy.save(update_fields=["active"])
+
+    # -------------------------------------------------
+    # Optional audit logging (recommended)
+    # -------------------------------------------------
+    try:
+        OrderTracking.objects.create(
+            order=None,  # or use a separate AdminAudit model later
+            pharmacy=pharmacy,
+            step="status_change",
+            performed_by="admin_panel",
+            timestamp=now_utc,
+            note=f"Pharmacy status {action_type}: {previous_status} → {pharmacy.active}"
+        )
+    except Exception:
+        # Never fail the API because of audit logging
         pass
 
-    # If active explicitly provided → set it, else toggle
-    if new_status is not None:
-        pharmacy.active = new_status
-    else:
-        pharmacy.active = not pharmacy.active
-
-    pharmacy.save()
-
-    return JsonResponse(
-        {
-            "success": True,
-            "message": "Pharmacy activated." if pharmacy.active else "Pharmacy deactivated.",
-            "pharmacy": {
-                "id": pharmacy.id,
-                "name": pharmacy.name,
-                "active": pharmacy.active,
-            },
+    # -------------------------------------------------
+    # Response
+    # -------------------------------------------------
+    return JsonResponse({
+        "success": True,
+        "message": (
+            "Pharmacy activated successfully."
+            if pharmacy.active else
+            "Pharmacy deactivated successfully."
+        ),
+        "pharmacy": {
+            "id": pharmacy.id,
+            "name": pharmacy.name,
+            "previous_active": previous_status,
+            "current_active": pharmacy.active,
         },
-        status=200,
-    )
+        "updated_at_local": now_local.isoformat(),
+        "timezone": str(user_tz),
+    }, status=200)
 
 
 
@@ -13273,41 +13716,55 @@ def toggle_driver_status(request, driver_id):
 
 
 
-
-@csrf_exempt
+@csrf_protect
+@admin_auth_required
+@require_http_methods(["POST", "PATCH"])
 def reset_pharmacy_password(request, pharmacy_id):
-    if request.method not in ["POST", "PATCH"]:
-        return JsonResponse(
-            {"success": False, "message": "Only POST or PATCH method is allowed."},
-            status=405,
-        )
+    """
+    PRODUCTION: Reset Pharmacy Password (Admin Only)
+
+    POST / PATCH /api/pharmacy/<id>/reset-password/
+
+    - Admin only
+    - CSRF protected
+    - Resets password to system default
+    - Password hashing handled by model save()
+    """
 
     try:
         pharmacy = Pharmacy.objects.get(id=pharmacy_id)
     except Pharmacy.DoesNotExist:
         return JsonResponse(
-            {"success": False, "message": "Pharmacy not found."},
+            {
+                "success": False,
+                "error": "Pharmacy not found."
+            },
             status=404,
         )
 
-    # Reset password to default — your model will hash it automatically
-    pharmacy.password = "123456"
-    pharmacy.save()
+    # 🔐 Reset password to default (hashed automatically in model.save)
+    DEFAULT_PASSWORD = "123456"
+    pharmacy.password = DEFAULT_PASSWORD
+    pharmacy.save(update_fields=["password"])
 
     return JsonResponse(
         {
             "success": True,
-            "message": "Password reset successfully.",
+            "message": "Pharmacy password reset successfully.",
             "pharmacy": {
                 "id": pharmacy.id,
                 "name": pharmacy.name,
                 "email": pharmacy.email,
                 "active": pharmacy.active,
+                "updated_at_local": timezone.localtime(
+                    pharmacy.updated_at if hasattr(pharmacy, "updated_at") else timezone.now(),
+                    settings.USER_TIMEZONE
+                ).isoformat(),
             },
+            "timezone": str(settings.USER_TIMEZONE),
         },
         status=200,
     )
-
 
 
 @csrf_exempt
@@ -14350,32 +14807,7 @@ def pharmacy_info_api(request):
     )
 
 
-# @csrf_exempt
-# @require_http_methods(["GET"])
-# def get_pharmacy_cc_points(request, pharmacy_id):
-#     try:
-#         # 1) Delivered orders count (actual)
-#         delivered_orders_count = DeliveryOrder.objects.filter(
-#             pharmacy_id=pharmacy_id,
-#             status="delivered"
-#         ).count()
 
-#         # 2) Points from CCPointsAccount table (no multiplication)
-#         points_obj = CCPointsAccount.objects.filter(pharmacy_id=pharmacy_id).first()
-#         cc_points = points_obj.points_balance if points_obj else 0
-
-#         return JsonResponse({
-#             "success": True,
-#             "pharmacy_id": pharmacy_id,
-#             "delivered_orders": delivered_orders_count,
-#             "cc_points": cc_points
-#         })
-
-#     except Exception as e:
-#         return JsonResponse({
-#             "success": False,
-#             "error": str(e)
-#         }, status=400)
 
 
 

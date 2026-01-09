@@ -430,6 +430,77 @@
                 class="bg-neutral-900 border border-neutral-700 rounded-lg px-3 py-2 text-neutral-200 text-sm focus:ring-2 focus:ring-orange-500"/>
             </div>
 
+            <!-- Business Hours Section -->
+            <div class="mt-6 border-t border-neutral-700 pt-4">
+              <h3 class="text-sm font-semibold text-white mb-3">Business Hours</h3>
+              <p class="text-xs text-neutral-400 mb-4">Update pharmacy operating hours</p>
+              
+              <div class="space-y-3 max-h-64 overflow-y-auto custom-scrollbar">
+                <!-- Monday -->
+                <div class="grid grid-cols-12 gap-2 items-center">
+                  <label class="col-span-2 text-sm text-neutral-300">Mon</label>
+                  <input type="checkbox" id="editPhMon" checked class="col-span-1" onchange="toggleDay('editPhMon')">
+                  <input type="time" id="editPhMonOpen" value="09:00" class="col-span-4 bg-neutral-900 border border-neutral-700 rounded px-2 py-1 text-xs text-neutral-200">
+                  <span class="col-span-1 text-center text-neutral-500">to</span>
+                  <input type="time" id="editPhMonClose" value="18:00" class="col-span-4 bg-neutral-900 border border-neutral-700 rounded px-2 py-1 text-xs text-neutral-200">
+                </div>
+                
+                <!-- Tuesday -->
+                <div class="grid grid-cols-12 gap-2 items-center">
+                  <label class="col-span-2 text-sm text-neutral-300">Tue</label>
+                  <input type="checkbox" id="editPhTue" checked class="col-span-1" onchange="toggleDay('editPhTue')">
+                  <input type="time" id="editPhTueOpen" value="09:00" class="col-span-4 bg-neutral-900 border border-neutral-700 rounded px-2 py-1 text-xs text-neutral-200">
+                  <span class="col-span-1 text-center text-neutral-500">to</span>
+                  <input type="time" id="editPhTueClose" value="18:00" class="col-span-4 bg-neutral-900 border border-neutral-700 rounded px-2 py-1 text-xs text-neutral-200">
+                </div>
+                
+                <!-- Wednesday -->
+                <div class="grid grid-cols-12 gap-2 items-center">
+                  <label class="col-span-2 text-sm text-neutral-300">Wed</label>
+                  <input type="checkbox" id="editPhWed" checked class="col-span-1" onchange="toggleDay('editPhWed')">
+                  <input type="time" id="editPhWedOpen" value="09:00" class="col-span-4 bg-neutral-900 border border-neutral-700 rounded px-2 py-1 text-xs text-neutral-200">
+                  <span class="col-span-1 text-center text-neutral-500">to</span>
+                  <input type="time" id="editPhWedClose" value="18:00" class="col-span-4 bg-neutral-900 border border-neutral-700 rounded px-2 py-1 text-xs text-neutral-200">
+                </div>
+                
+                <!-- Thursday -->
+                <div class="grid grid-cols-12 gap-2 items-center">
+                  <label class="col-span-2 text-sm text-neutral-300">Thu</label>
+                  <input type="checkbox" id="editPhThu" checked class="col-span-1" onchange="toggleDay('editPhThu')">
+                  <input type="time" id="editPhThuOpen" value="09:00" class="col-span-4 bg-neutral-900 border border-neutral-700 rounded px-2 py-1 text-xs text-neutral-200">
+                  <span class="col-span-1 text-center text-neutral-500">to</span>
+                  <input type="time" id="editPhThuClose" value="18:00" class="col-span-4 bg-neutral-900 border border-neutral-700 rounded px-2 py-1 text-xs text-neutral-200">
+                </div>
+                
+                <!-- Friday -->
+                <div class="grid grid-cols-12 gap-2 items-center">
+                  <label class="col-span-2 text-sm text-neutral-300">Fri</label>
+                  <input type="checkbox" id="editPhFri" checked class="col-span-1" onchange="toggleDay('editPhFri')">
+                  <input type="time" id="editPhFriOpen" value="09:00" class="col-span-4 bg-neutral-900 border border-neutral-700 rounded px-2 py-1 text-xs text-neutral-200">
+                  <span class="col-span-1 text-center text-neutral-500">to</span>
+                  <input type="time" id="editPhFriClose" value="18:00" class="col-span-4 bg-neutral-900 border border-neutral-700 rounded px-2 py-1 text-xs text-neutral-200">
+                </div>
+                
+                <!-- Saturday -->
+                <div class="grid grid-cols-12 gap-2 items-center">
+                  <label class="col-span-2 text-sm text-neutral-300">Sat</label>
+                  <input type="checkbox" id="editPhSat" class="col-span-1" onchange="toggleDay('editPhSat')">
+                  <input type="time" id="editPhSatOpen" value="09:00" disabled class="col-span-4 bg-neutral-900 border border-neutral-700 rounded px-2 py-1 text-xs text-neutral-500">
+                  <span class="col-span-1 text-center text-neutral-500">to</span>
+                  <input type="time" id="editPhSatClose" value="18:00" disabled class="col-span-4 bg-neutral-900 border border-neutral-700 rounded px-2 py-1 text-xs text-neutral-500">
+                </div>
+                
+                <!-- Sunday -->
+                <div class="grid grid-cols-12 gap-2 items-center">
+                  <label class="col-span-2 text-sm text-neutral-300">Sun</label>
+                  <input type="checkbox" id="editPhSun" class="col-span-1" onchange="toggleDay('editPhSun')">
+                  <input type="time" id="editPhSunOpen" value="09:00" disabled class="col-span-4 bg-neutral-900 border border-neutral-700 rounded px-2 py-1 text-xs text-neutral-500">
+                  <span class="col-span-1 text-center text-neutral-500">to</span>
+                  <input type="time" id="editPhSunClose" value="18:00" disabled class="col-span-4 bg-neutral-900 border border-neutral-700 rounded px-2 py-1 text-xs text-neutral-500">
+                </div>
+              </div>
+            </div>
+
           </div>
 
           <div class="mt-6 flex justify-end space-x-3">
@@ -613,15 +684,33 @@ async function viewPharmacy(id) {
   }
 }
 
-// Display pharmacy details
 function displayPharmacyDetails(data) {
-  const { pharmacy, total_valid_orders, total_outstanding_amount, orders, invoices } = data;
+  const { pharmacy, total_orders, total_outstanding_amount, orders, invoices } = data;
   
   // Show details section
   document.getElementById("pharmacyDetailsSection").classList.remove("hidden");
   
   // Populate profile
   const profileContent = document.getElementById("pharmacyProfileContent");
+
+  // Format business hours
+  let businessHoursHTML = '';
+  if (pharmacy.business_hours && typeof pharmacy.business_hours === 'object') {
+    const days = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
+    businessHoursHTML = '<div class="mt-3 p-3 bg-neutral-900/50 rounded border border-neutral-700"><p class="text-neutral-400 text-xs mb-2">Business Hours:</p>';
+    
+    days.forEach(day => {
+      const hours = pharmacy.business_hours[day];
+      if (hours && hours !== 'closed') {
+        businessHoursHTML += `<p class="text-xs text-neutral-300">${day}: ${hours.open} - ${hours.close}</p>`;
+      } else {
+        businessHoursHTML += `<p class="text-xs text-neutral-500">${day}: Closed</p>`;
+      }
+    });
+    
+    businessHoursHTML += '</div>';
+  }
+
   profileContent.innerHTML = `
     <p><span class="text-neutral-400">Name:</span> <span class="text-neutral-100 font-medium">${pharmacy.name}</span></p>
     <p><span class="text-neutral-400">Email:</span> ${pharmacy.email}</p>
@@ -631,9 +720,11 @@ function displayPharmacyDetails(data) {
     <p><span class="text-neutral-400">Status:</span> 
       <span class="${pharmacy.active ? 'text-green-400' : 'text-red-400'}">${pharmacy.active ? 'Active' : 'Inactive'}</span>
     </p>
-    <p><span class="text-neutral-400">Joined:</span> ${new Date(pharmacy.created_at).toLocaleDateString()}</p>
-    <p><span class="text-neutral-400">Total Orders:</span> <span class="text-orange-400 font-semibold">${total_valid_orders}</span></p>
+    ${pharmacy.cc_points ? `<p><span class="text-neutral-400">CC Points Balance:</span> <span class="text-orange-400 font-semibold">${pharmacy.cc_points.points_balance}</span></p>` : ''}
+    <p><span class="text-neutral-400">Joined:</span> ${new Date(pharmacy.created_at_local).toLocaleDateString()}</p>
+    <p><span class="text-neutral-400">Total Orders:</span> <span class="text-orange-400 font-semibold">${total_orders}</span></p>
     <p><span class="text-neutral-400">Outstanding:</span> <span class="text-orange-400 font-semibold">$${total_outstanding_amount.toFixed(2)}</span></p>
+    ${businessHoursHTML}
   `;
   
   // Populate invoices
@@ -653,7 +744,6 @@ function displayPharmacyDetails(data) {
         </td>
         <td class="px-4 py-3 space-x-2">
           ${inv.pdf_url ? `<a href="${inv.pdf_url}" target="_blank" class="text-xs text-orange-400 border border-orange-600/40 px-2 py-1 rounded hover:bg-orange-600/20">View PDF</a>` : '<span class="text-xs text-neutral-500">No PDF</span>'}
-
         </td>
       </tr>
     `).join("");
@@ -722,7 +812,7 @@ function editPharmacy(id) {
 
   editingPharmacyId = id;
 
-  // Pre-fill modal
+  // Pre-fill basic fields
   document.getElementById("editPhName").value = pharmacy.name;
   document.getElementById("editPhAddress").value = pharmacy.store_address;
   document.getElementById("editPhCity").value = pharmacy.city;
@@ -733,6 +823,56 @@ function editPharmacy(id) {
   // Province & country are fixed already
   document.getElementById("editPhProvince").value = "Ontario";
   document.getElementById("editPhCountry").value = "Canada";
+
+  // Populate business hours if available
+  if (pharmacy.business_hours && typeof pharmacy.business_hours === 'object') {
+    const days = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
+    
+    days.forEach(day => {
+      const hours = pharmacy.business_hours[day];
+      const checkbox = document.getElementById('editPh' + day);
+      const openInput = document.getElementById('editPh' + day + 'Open');
+      const closeInput = document.getElementById('editPh' + day + 'Close');
+      
+      if (hours && hours !== 'closed' && hours.open && hours.close) {
+        checkbox.checked = true;
+        openInput.value = hours.open;
+        closeInput.value = hours.close;
+        openInput.disabled = false;
+        closeInput.disabled = false;
+        openInput.classList.remove('text-neutral-500');
+        closeInput.classList.remove('text-neutral-500');
+        openInput.classList.add('text-neutral-200');
+        closeInput.classList.add('text-neutral-200');
+      } else {
+        checkbox.checked = false;
+        openInput.disabled = true;
+        closeInput.disabled = true;
+        openInput.classList.add('text-neutral-500');
+        closeInput.classList.add('text-neutral-500');
+        openInput.classList.remove('text-neutral-200');
+        closeInput.classList.remove('text-neutral-200');
+      }
+    });
+  } else {
+    // Set default hours if no business hours exist
+    const weekdays = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri'];
+    const weekend = ['Sat', 'Sun'];
+    
+    weekdays.forEach(day => {
+      document.getElementById('editPh' + day).checked = true;
+      document.getElementById('editPh' + day + 'Open').value = '09:00';
+      document.getElementById('editPh' + day + 'Close').value = '18:00';
+      document.getElementById('editPh' + day + 'Open').disabled = false;
+      document.getElementById('editPh' + day + 'Close').disabled = false;
+    });
+    
+    weekend.forEach(day => {
+      document.getElementById('editPh' + day).checked = false;
+      document.getElementById('editPh' + day + 'Open').disabled = true;
+      document.getElementById('editPh' + day + 'Close').disabled = true;
+    });
+  }
 
   document.getElementById("editPharmacyModal").classList.remove("hidden");
 }
@@ -817,7 +957,7 @@ function resetCredentials() {
   btn.onclick = async function() {
     try {
       const res = await fetch(`/pharmacy/reset-password/${pharmacyId}/`, {
-        method: "POST",
+        method: "PATCH",
         headers: { 
           "Content-Type": "application/json",
           "X-CSRFToken": getCSRFToken()
@@ -849,81 +989,141 @@ function resetCredentials() {
 
 
 
-// View orders modal
 async function viewOrders(pharmacyId) {
-  if (!currentPharmacy || !currentPharmacy.orders) {
-    showNotification("❌ No order data available", "error");
-    return;
-  }
+  try {
+    // Fetch fresh data with full details
+    const res = await fetch(`/api/pharmacy/details/${pharmacyId}/`, {
+      method: "GET",
+      credentials: "include",
+      headers: {
+        "X-CSRFToken": getCSRFToken()
+      }
+    });
+    
+    const data = await res.json();
+    
+    if (!data.success) {
+      showNotification("❌ Failed to load orders", "error");
+      return;
+    }
 
-  const orders = currentPharmacy.orders;
-  const pharmacy = currentPharmacy.pharmacy;
-  
-  document.getElementById("ordersModalTitle").textContent = `${pharmacy.name} - Orders (${orders.length})`;
-  
-  const modalContent = document.getElementById("ordersModalContent");
-  
-  if (orders.length === 0) {
-    modalContent.innerHTML = `
-      <div class="text-center text-neutral-500 py-8">
-        <svg class="w-16 h-16 mx-auto mb-4 text-neutral-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20 13V6a2 2 0 00-2-2H6a2 2 0 00-2 2v7m16 0v5a2 2 0 01-2 2H6a2 2 0 01-2-2v-5m16 0h-2.586a1 1 0 00-.707.293l-2.414 2.414a1 1 0 01-.707.293h-3.172a1 1 0 01-.707-.293l-2.414-2.414A1 1 0 006.586 13H4"/>
-        </svg>
-        <p class="text-lg">No orders found for this pharmacy</p>
-      </div>
-    `;
-  } else {
-    modalContent.innerHTML = `
-      <div class="space-y-4">
-        ${orders.map(order => `
-          <div class="bg-neutral-900/50 rounded-lg p-4 border border-neutral-700">
-            <div class="flex justify-between items-start mb-3">
-              <div>
-                <h4 class="text-lg font-semibold text-white">Order #${order.id}</h4>
-                <p class="text-sm text-neutral-400">Customer: ${order.customer_name || "N/A"}</p>
-              </div>
-              <span class="inline-flex px-3 py-1 text-xs font-medium rounded-full ${getOrderStatusColor(order.status)}">
-                ${formatOrderStatus(order.status)}
-              </span>
-            </div>
-            
-            <div class="grid grid-cols-2 gap-4 text-sm">
-              <div>
-                <p class="text-neutral-400">Pickup:</p>
-                <p class="text-neutral-200">${order.pickup_address}</p>
-                <p class="text-neutral-300 text-xs">${order.pickup_city}</p>
-                <p class="text-neutral-400 text-xs mt-1">Date: ${new Date(order.pickup_day).toLocaleDateString()}</p>
+    const orders = data.orders;
+    const pharmacy = data.pharmacy;
+    
+    document.getElementById("ordersModalTitle").textContent = `${pharmacy.name} - Orders (${orders.length})`;
+    
+    const modalContent = document.getElementById("ordersModalContent");
+    
+    if (orders.length === 0) {
+      modalContent.innerHTML = `
+        <div class="text-center text-neutral-500 py-8">
+          <svg class="w-16 h-16 mx-auto mb-4 text-neutral-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20 13V6a2 2 0 00-2-2H6a2 2 0 00-2 2v7m16 0v5a2 2 0 01-2 2H6a2 2 0 01-2-2v-5m16 0h-2.586a1 1 0 00-.707.293l-2.414 2.414a1 1 0 01-.707.293h-3.172a1 1 0 01-.707-.293l-2.414-2.414A1 1 0 006.586 13H4"/>
+          </svg>
+          <p class="text-lg">No orders found for this pharmacy</p>
+        </div>
+      `;
+    } else {
+      modalContent.innerHTML = `
+        <div class="space-y-4">
+          ${orders.map(order => `
+            <div class="bg-neutral-900/50 rounded-lg p-4 border border-neutral-700">
+              <div class="flex justify-between items-start mb-3">
+                <div>
+                  <h4 class="text-lg font-semibold text-white">Order #${order.id}</h4>
+                  <p class="text-sm text-neutral-400">Customer: ${order.customer_name || "N/A"}</p>
+                  <p class="text-xs text-neutral-500">Phone: ${order.customer_phone || "N/A"}</p>
+                  ${order.alternate_contact ? `<p class="text-xs text-neutral-500">Alt Contact: ${order.alternate_contact}</p>` : ''}
+                </div>
+                <span class="inline-flex px-3 py-1 text-xs font-medium rounded-full ${getOrderStatusColor(order.status)}">
+                  ${formatOrderStatus(order.status)}
+                </span>
               </div>
               
-              <div>
-                <p class="text-neutral-400">Delivery:</p>
-                <p class="text-neutral-200">${order.drop_address}</p>
-                <p class="text-neutral-300 text-xs">${order.drop_city}</p>
+              ${order.delivery_notes ? `
+                <div class="mb-3 p-2 bg-neutral-800/50 rounded border-l-2 border-orange-500">
+                  <p class="text-xs text-neutral-400">Delivery Notes:</p>
+                  <p class="text-sm text-neutral-200">${order.delivery_notes}</p>
+                </div>
+              ` : ''}
+              
+              <div class="grid grid-cols-2 gap-4 text-sm mb-3">
+                <div>
+                  <p class="text-neutral-400">Pickup:</p>
+                  <p class="text-neutral-200">${order.pickup_address}</p>
+                  <p class="text-neutral-300 text-xs">${order.pickup_city}</p>
+                  <p class="text-neutral-400 text-xs mt-1">Date: ${new Date(order.pickup_day).toLocaleDateString()}</p>
+                </div>
+                
+                <div>
+                  <p class="text-neutral-400">Delivery:</p>
+                  <p class="text-neutral-200">${order.drop_address}</p>
+                  <p class="text-neutral-300 text-xs">${order.drop_city}</p>
+                </div>
+              </div>
+              
+              ${order.signature_required || order.id_verification_required ? `
+                <div class="mb-3 flex gap-2 flex-wrap">
+                  ${order.signature_required ? `
+                    <button 
+                      onclick="window.open('${order.signature_ack_url || '#'}', '_blank')" 
+                      class="inline-flex items-center px-2 py-1 text-xs bg-blue-500/20 text-blue-400 border border-blue-600/40 rounded hover:bg-blue-600/30 transition ${!order.signature_ack_url ? 'opacity-50 cursor-not-allowed' : 'cursor-pointer'}"
+                      ${!order.signature_ack_url ? 'disabled' : ''}
+                    >
+                      📝 Signature ${order.signature_ack_url ? 'Required (View)' : 'Required (Pending)'}
+                    </button>
+                  ` : ''}
+                  ${order.id_verification_required ? '<span class="inline-flex px-2 py-1 text-xs bg-purple-500/20 text-purple-400 border border-purple-600/40 rounded">ID Verification Required</span>' : ''}
+                  ${order.id_verified ? '<span class="inline-flex px-2 py-1 text-xs bg-green-500/20 text-green-400 border border-green-600/40 rounded">✓ ID Verified</span>' : ''}
+                </div>
+              ` : ''}
+              
+              ${order.driver ? `
+                <div class="mb-3 p-2 bg-neutral-800/50 rounded">
+                  <p class="text-xs text-neutral-400 mb-1">Driver Information:</p>
+                  <div class="flex justify-between items-start">
+                    <div>
+                      <p class="text-sm text-neutral-200">${order.driver.name}</p>
+                      <p class="text-xs text-neutral-400">Phone: ${order.driver.phone_number}</p>
+                      <p class="text-xs text-neutral-400">Vehicle: ${order.driver.vehicle_number || 'N/A'}</p>
+                    </div>
+                    ${order.driver.identity_url ? `
+                      <button 
+                        onclick="window.open('${order.driver.identity_url}', '_blank')" 
+                        class="text-xs text-orange-400 border border-orange-600/40 px-2 py-1 rounded hover:bg-orange-600/20 transition"
+                      >
+                        View Driver ID
+                      </button>
+                    ` : ''}
+                  </div>
+                </div>
+              ` : '<p class="text-sm text-yellow-400 mb-3">⚠ No driver assigned</p>'}
+              
+              <div class="pt-3 border-t border-neutral-700 flex justify-between items-center">
+                <div class="text-sm">
+                  <span class="text-neutral-400">Rate:</span>
+                  <span class="text-orange-400 font-semibold ml-2">$${order.rate.toFixed(2)}</span>
+                </div>
+                <div class="text-right text-xs text-neutral-500">
+                  ${order.is_delivered ? '<span class="text-green-400">✓ Delivered</span>' : ''}
+                </div>
+              </div>
+              
+              <div class="mt-2 text-xs text-neutral-500">
+                Created: ${new Date(order.created_at_local).toLocaleString()} ${order.delivered_at_local ? `• Delivered: ${new Date(order.delivered_at_local).toLocaleString()}` : ''}
               </div>
             </div>
-            
-            <div class="mt-3 pt-3 border-t border-neutral-700 flex justify-between items-center">
-              <div class="text-sm">
-                <span class="text-neutral-400">Driver:</span> 
-                <span class="text-neutral-200">${order.driver || "Unassigned"}</span>
-              </div>
-              <div class="text-right">
-                <span class="text-neutral-400 text-sm">Rate:</span>
-                <span class="text-orange-400 font-semibold ml-2">${order.rate.toFixed(2)}</span>
-              </div>
-            </div>
-            
-            <div class="mt-2 text-xs text-neutral-500">
-              Created: ${new Date(order.created_at).toLocaleString()} • 
-              Updated: ${new Date(order.updated_at).toLocaleString()}
-            </div>
-          </div>
-        `).join("")}
-      </div>
-    `;
+          `).join("")}
+        </div>
+      `;
+    }
+    
+    document.getElementById("viewOrdersModal").classList.remove("hidden");
+    
+  } catch (err) {
+    console.error("Error loading orders:", err);
+    showNotification("❌ Failed to load orders", "error");
   }
-  
-  document.getElementById("viewOrdersModal").classList.remove("hidden");
 }
 
 function getOrderStatusColor(status) {
@@ -964,7 +1164,7 @@ function addViewOrdersButton() {
   }
 }
 
-// Toggle business hours day
+// Toggle business hours day - works for both add and edit modals
 function toggleDay(dayPrefix) {
   const checkbox = document.getElementById(dayPrefix);
   const openInput = document.getElementById(dayPrefix + 'Open');
@@ -987,16 +1187,16 @@ function toggleDay(dayPrefix) {
   }
 }
 
-// Build business hours object from form
-function getBusinessHoursFromForm() {
+// Build business hours object from edit form
+function getBusinessHoursFromEditForm() {
   const days = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
   const businessHours = {};
   
   days.forEach(day => {
-    const checkbox = document.getElementById('ph' + day);
+    const checkbox = document.getElementById('editPh' + day);
     if (checkbox.checked) {
-      const open = document.getElementById('ph' + day + 'Open').value;
-      const close = document.getElementById('ph' + day + 'Close').value;
+      const open = document.getElementById('editPh' + day + 'Open').value;
+      const close = document.getElementById('editPh' + day + 'Close').value;
       businessHours[day] = { open, close };
     } else {
       businessHours[day] = "closed";
@@ -1086,7 +1286,14 @@ async function submitEditPharmacy() {
     country: document.getElementById("editPhCountry").value.trim(),
     phone_number: document.getElementById("editPhPhone").value.trim(),
     email: document.getElementById("editPhEmail").value.trim(),
+    business_hours: getBusinessHoursFromEditForm() // Add business hours
   };
+
+  // Validate required fields
+  if (!payload.name || !payload.store_address || !payload.city || !payload.postal_code || !payload.phone_number || !payload.email) {
+    showNotification("⚠️ All fields are required", "error");
+    return;
+  }
 
   try {
     const res = await fetch(`/pharmacy/edit/${editingPharmacyId}/`, {
@@ -1120,7 +1327,7 @@ async function submitEditPharmacy() {
     showNotification("❌ Failed to update pharmacy", "error");
   }
 }
-
+// Toggle status confirmation handler
 // Toggle status confirmation handler
 document.getElementById("toggleStatusConfirmBtn").onclick = async function () {
   if (!togglingPharmacyId) {
@@ -1130,21 +1337,19 @@ document.getElementById("toggleStatusConfirmBtn").onclick = async function () {
 
   try {
     const res = await fetch(`/pharmacy/toggle-status/${togglingPharmacyId}/`, {
-      method: "POST",
+      method: "PATCH",
       headers: { 
         "Content-Type": "application/json",
         "X-CSRFToken": getCSRFToken()
       },
-      credentials: "include",
-      body: JSON.stringify({
-        active: togglingAction === "activate" ? true : false
-      })
+      credentials: "include"
+      // No body needed - API will toggle automatically
     });
 
     const data = await res.json();
 
     if (!data.success) {
-      showNotification("❌ " + data.message, "error");
+      showNotification("❌ " + (data.error || data.message), "error");
       return;
     }
 
