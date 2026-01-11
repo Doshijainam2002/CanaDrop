@@ -12652,6 +12652,7 @@ def get_driver_details_admin(request, driver_id=None):
                     "email": d.email,
                     "vehicle_number": d.vehicle_number,
                     "active": d.active,
+                    "identity_url": d.identity_url,
                     "created_at_local": to_local_iso(d.created_at),
 
                     # 🔹 NEW FIELDS
@@ -12759,6 +12760,7 @@ def get_driver_details_admin(request, driver_id=None):
                 "email": driver.email,
                 "vehicle_number": driver.vehicle_number,
                 "active": driver.active,
+                "identity_url": driver.identity_url,
                 "created_at_local": to_local_iso(driver.created_at),
 
                 # 🔹 NEW FIELDS
@@ -13243,51 +13245,386 @@ def add_pharmacy(request):
         }, status=500)
 
 
-@csrf_exempt
-def add_driver(request):
-    if request.method != "POST":
-        return JsonResponse(
-            {"success": False, "message": "Only POST method is allowed."},
-            status=405,
-        )
 
-    # Parse JSON
+@require_http_methods(["POST"])
+@csrf_protect
+@admin_auth_required
+def add_driver(request):
+    """
+    Admin-only API to create a new driver.
+    - Stores timestamps in UTC
+    - Returns responses in settings.USER_TIMEZONE
+    - Sends welcome email to driver with login credentials
+    - Sends notification email to office
+    """
+
+    # 1️⃣ Parse JSON payload
     try:
         data = json.loads(request.body.decode("utf-8"))
-    except json.JSONDecodeError:
+    except (json.JSONDecodeError, UnicodeDecodeError):
         return JsonResponse(
             {"success": False, "message": "Invalid JSON payload."},
             status=400,
         )
 
-    # Required fields
-    required_fields = [
-        "name",
-        "phone_number",
-        "email",
-    ]
+    # 2️⃣ Required fields validation
+    required_fields = ["name", "phone_number", "email"]
+    missing_fields = [f for f in required_fields if not data.get(f)]
 
-    missing = [f for f in required_fields if not data.get(f)]
-    if missing:
+    if missing_fields:
         return JsonResponse(
             {
                 "success": False,
                 "message": "Missing required fields.",
-                "missing_fields": missing,
+                "missing_fields": missing_fields,
             },
             status=400,
         )
 
+    # 3️⃣ Normalize inputs
+    name = data.get("name", "").strip()
+    phone_number = data.get("phone_number", "").strip()
+    email = data.get("email", "").strip().lower()
+    vehicle_number = data.get("vehicle_number", "").strip()
+    active = data.get("active", True)
+
     try:
+        # 4️⃣ Create driver (password auto-hashed in model save())
         driver = Driver.objects.create(
-            name=data.get("name").strip(),
-            phone_number=data.get("phone_number").strip(),
-            email=data.get("email").strip(),
-            vehicle_number=data.get("vehicle_number", "").strip(),
-            # Password auto defaults to "123456"
-            # Active defaults to True unless provided
-            active=data.get("active", True),
+            name=name,
+            phone_number=phone_number,
+            email=email,
+            vehicle_number=vehicle_number,
+            active=active,
+            # identity_url intentionally left empty (allowed)
         )
+
+        # 5️⃣ Convert UTC → USER_TIMEZONE for response
+        local_created_at = timezone.localtime(
+            driver.created_at, settings.USER_TIMEZONE
+        )
+
+        # ---- Time handling (DB=UTC, Display=Local) ----
+        created_at_utc = timezone.now()  # DB truth (UTC)
+        try:
+            created_at_local = created_at_utc.astimezone(settings.USER_TIMEZONE)
+        except Exception:
+            created_at_local = created_at_utc
+        
+        created_at = created_at_local.strftime("%b %d, %Y %H:%M %Z")
+
+        # ---- Send welcome email to driver ----
+        try:
+            brand_primary = settings.BRAND_COLORS['primary']
+            brand_primary_dark = settings.BRAND_COLORS['primary_dark']
+            brand_accent = settings.BRAND_COLORS['accent']
+            logo_url = settings.LOGO_URL
+
+            html = f"""\
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <title>Welcome to {settings.COMPANY_OPERATING_NAME} • Driver Registration</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <style>
+      @media (prefers-color-scheme: dark) {{
+        body {{ background: #0b1220 !important; color: #e5e7eb !important; }}
+        .card {{ background: #0f172a !important; border-color: #1f2937 !important; }}
+        .muted {{ color: #94a3b8 !important; }}
+      }}
+    </style>
+  </head>
+  <body style="margin:0;padding:0;background:#f4f7f9;">
+    <div style="display:none;visibility:hidden;opacity:0;height:0;width:0;overflow:hidden;">
+      Registration confirmed — welcome to {settings.COMPANY_OPERATING_NAME} and the Cana Family by {settings.COMPANY_SUB_GROUP_NAME}.
+    </div>
+
+    <table role="presentation" width="100%" cellspacing="0" cellpadding="0" border="0" style="background:#f4f7f9;padding:24px 12px;">
+      <tr>
+        <td align="center">
+          <table role="presentation" width="100%" cellspacing="0" cellpadding="0" border="0" class="card" style="max-width:640px;background:#ffffff;border:1px solid #e5e7eb;border-radius:16px;overflow:hidden;">
+            <tr>
+            <td style="background:{brand_primary};padding:18px 20px;">
+                <table width="100%" cellspacing="0" cellpadding="0" border="0">
+                <tr>
+                    <td align="left">
+                    <img src="{logo_url}"
+                        alt="{settings.COMPANY_OPERATING_NAME}"
+                        width="64"
+                        height="64"
+                        style="display:block;border:0;outline:none;text-decoration:none;border-radius:50%;object-fit:cover;">
+                    </td>
+                    <td align="right" style="font:600 16px/1.2 system-ui,-apple-system,'Segoe UI',Roboto,Helvetica,Arial;color:#e6fffb;">
+                    Welcome to {settings.COMPANY_OPERATING_NAME}
+                    </td>
+                </tr>
+                </table>
+            </td>
+            </tr>
+
+
+            <tr>
+              <td style="padding:28px 24px 6px;">
+                <h1 style="margin:0 0 10px;font:800 24px/1.25 system-ui,-apple-system,'Segoe UI',Roboto,Helvetica,Arial;color:#0f172a;">
+                  Hi {driver.name or "there"}, you're all set 🎉
+                </h1>
+                <p style="margin:0 0 16px;font:400 14px/1.7 system-ui,-apple-system,'Segoe UI',Roboto,Helvetica,Arial;color:#475569;">
+                  Thanks for joining <strong>{settings.COMPANY_OPERATING_NAME}</strong> an operating name of {settings.CORPORATION_NAME} and the <strong>Cana Family by {settings.COMPANY_SUB_GROUP_NAME}</strong>.
+                  We're excited to have you on the team! Your driver account has been created and you can now access the delivery platform.
+                </p>
+
+                <div style="margin:18px 0;background:#f0fdfa;border:1px solid {brand_primary};border-radius:12px;padding:16px 18px;">
+                  <ul style="margin:0;padding-left:18px;font:400 14px/1.8 system-ui,-apple-system,'Segoe UI',Roboto,Helvetica,Arial;color:#334155;">
+                    <li>Real-time delivery assignments and route optimization</li>
+                    <li>Photo proof capture at pickup and delivery stages</li>
+                    <li>Customer ID and signature verification system</li>
+                    <li>Transparent earnings tracking and weekly payouts</li>
+                    <li>Secure communication with pharmacies and support</li>
+                  </ul>
+                </div>
+
+                <div style="margin:20px 0;background:#fef3c7;border:1px solid #fbbf24;border-radius:12px;padding:16px 18px;">
+                  <h2 style="margin:0 0 12px;font:700 16px/1.3 system-ui,-apple-system,'Segoe UI',Roboto,Helvetica,Arial;color:#78350f;">
+                    🔐 Your Login Credentials
+                  </h2>
+                  <table width="100%" cellspacing="0" cellpadding="0" border="0" style="font:400 14px/1.6 system-ui,-apple-system,'Segoe UI',Roboto,Helvetica,Arial;">
+                    <tr>
+                      <td style="padding:6px 0;color:#78350f;font-weight:600;">Username:</td>
+                      <td style="padding:6px 0;color:#78350f;">{driver.email}</td>
+                    </tr>
+                    <tr>
+                      <td style="padding:6px 0;color:#78350f;font-weight:600;">Password:</td>
+                      <td style="padding:6px 0;color:#78350f;font-family:monospace;font-weight:600;">123456</td>
+                    </tr>
+                  </table>
+                  <div style="margin-top:14px;padding-top:14px;border-top:1px solid #fbbf24;">
+                    <p style="margin:0;font:600 13px/1.6 system-ui,-apple-system,'Segoe UI',Roboto,Helvetica,Arial;color:#92400e;">
+                      ⚠️ <strong>Important Security Notice:</strong>
+                    </p>
+                    <p style="margin:6px 0 0;font:400 13px/1.6 system-ui,-apple-system,'Segoe UI',Roboto,Helvetica,Arial;color:#78350f;">
+                      For your security, please change your password immediately after logging in. Navigate to: <strong>My Profile → Security Settings → Change Password</strong>
+                    </p>
+                  </div>
+                </div>
+
+                <div style="margin:20px 0;background:#e0f2fe;border:1px solid #0ea5e9;border-radius:12px;padding:16px 18px;">
+                  <h2 style="margin:0 0 12px;font:700 16px/1.3 system-ui,-apple-system,'Segoe UI',Roboto,Helvetica,Arial;color:#075985;">
+                    📸 Next Step: Add Your Front-Facing Photo
+                  </h2>
+                  <p style="margin:0;font:400 13px/1.6 system-ui,-apple-system,'Segoe UI',Roboto,Helvetica,Arial;color:#075985;">
+                    After changing your password, please upload a clear front-facing photo of yourself in the <strong>My Identity</strong> section. This photo is required for successful deliveries and package handovers to ensure security and accountability.
+                  </p>
+                  <p style="margin:10px 0 0;font:600 13px/1.6 system-ui,-apple-system,'Segoe UI',Roboto,Helvetica,Arial;color:#0c4a6e;">
+                    Navigate to: <strong>My Profile → My Identity → Upload Photo</strong>
+                  </p>
+                </div>
+
+                <p style="margin:8px 0 0;font:400 12px/1.7 system-ui,-apple-system,'Segoe UI',Roboto,Helvetica,Arial;color:#64748b;">
+                  Registered on <strong style="color:{brand_primary_dark};">{created_at}</strong>.
+                </p>
+
+                <hr style="border:0;border-top:1px solid #e5e7eb;margin:24px 0;">
+                <p class="muted" style="margin:0;font:400 12px/1.7 system-ui,-apple-system,'Segoe UI',Roboto,Helvetica,Arial;color:#6b7280;">
+                  Questions or need a hand? Log in to the portal and raise a Support Ticket by contacting the Admin. Our team will be happy to assist you.
+                </p>
+              </td>
+            </tr>
+
+            <tr>
+              <td style="padding:0 24px 24px;">
+                <table width="100%" cellspacing="0" cellpadding="0" border="0" style="background:#f8fafc;border:1px dashed #e2e8f0;border-radius:12px;">
+                  <tr>
+                    <td style="padding:12px 16px;">
+                      <p style="margin:0;font:400 12px/1.6 system-ui,-apple-system,'Segoe UI',Roboto,Helvetica,Arial;color:#64748b;">
+                        Welcome aboard — we're thrilled to have you on the team.
+                      </p>
+                    </td>
+                  </tr>
+                </table>
+              </td>
+            </tr>
+
+          </table>
+
+          <p style="margin:14px 0 0;font:400 12px/1.6 system-ui,-apple-system,'Segoe UI',Roboto,Helvetica,Arial;color:#94a3b8;">
+            © {created_at_local.year} {settings.COMPANY_OPERATING_NAME} - {settings.COMPANY_SUB_GROUP_NAME}. All rights reserved.
+          </p>
+        </td>
+      </tr>
+    </table>
+  </body>
+</html>
+"""
+            text = (
+                f"Welcome to {settings.COMPANY_OPERATING_NAME} and the Cana Family by {settings.COMPANY_SUB_GROUP_NAME}!\n\n"
+                f"Hi {driver.name or 'there'}, your driver registration is confirmed.\n"
+                "• Real-time delivery assignments and route optimization\n"
+                "• Photo proof capture at pickup and delivery\n"
+                "• Customer ID and signature verification\n"
+                "• Transparent earnings tracking and weekly payouts\n\n"
+                "Your Login Credentials:\n"
+                f"Username: {driver.email}\n"
+                "Password: 123456\n\n"
+                "IMPORTANT: For your security, please change your password immediately after logging in.\n"
+                "Navigate to: My Profile → Security Settings → Change Password\n\n"
+                "NEXT STEP: After changing your password, please upload a clear front-facing photo in the My Identity section.\n"
+                "This photo is required for successful deliveries and package handovers.\n"
+                "Navigate to: My Profile → My Identity → Upload Photo\n\n"
+                "Questions? Just reply to this email.\n"
+            )
+
+            _send_html_email_help_desk(
+                subject=f"Welcome to {settings.COMPANY_OPERATING_NAME} • Driver Registration Confirmed",
+                to_email=driver.email,
+                html=html,
+                text_fallback=text,
+            )
+        except Exception:
+            logger.exception("Failed to send driver registration email")
+        
+        # ---- Send office notification email ----
+        try:
+            brand_primary = settings.BRAND_COLORS['primary']
+            brand_primary_dark = settings.BRAND_COLORS['primary_dark']
+            logo_url = settings.LOGO_URL
+
+            office_html = f"""\
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <title>New Driver Registration • {settings.COMPANY_OPERATING_NAME}</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <style>
+      @media (prefers-color-scheme: dark) {{
+        body {{ background: #0b1220 !important; color: #e5e7eb !important; }}
+        .card {{ background: #0f172a !important; border-color: #1f2937 !important; }}
+        .info-row {{ background: #1e293b !important; }}
+      }}
+    </style>
+  </head>
+  <body style="margin:0;padding:0;background:#f4f7f9;">
+    <table role="presentation" width="100%" cellspacing="0" cellpadding="0" border="0" style="background:#f4f7f9;padding:24px 12px;">
+      <tr>
+        <td align="center">
+          <table role="presentation" width="100%" cellspacing="0" cellpadding="0" border="0" class="card" style="max-width:640px;background:#ffffff;border:1px solid #e5e7eb;border-radius:16px;overflow:hidden;">
+            <tr>
+              <td style="background:{brand_primary};padding:18px 20px;">
+                <table width="100%" cellspacing="0" cellpadding="0" border="0">
+                  <tr>
+                    <td align="left">
+                      <img src="{logo_url}"
+                           alt="{settings.COMPANY_OPERATING_NAME}"
+                           width="64"
+                           height="64"
+                           style="display:block;border:0;outline:none;text-decoration:none;border-radius:50%;object-fit:cover;">
+                    </td>
+                    <td align="right" style="font:600 16px/1.2 system-ui,-apple-system,'Segoe UI',Roboto,Helvetica,Arial;color:#e6fffb;">
+                      New Driver Registered
+                    </td>
+                  </tr>
+                </table>
+              </td>
+            </tr>
+
+            <tr>
+              <td style="padding:28px 24px 6px;">
+                <h1 style="margin:0 0 10px;font:800 24px/1.25 system-ui,-apple-system,'Segoe UI',Roboto,Helvetica,Arial;color:#0f172a;">
+                  New Driver Registration
+                </h1>
+                <p style="margin:0 0 20px;font:400 14px/1.7 system-ui,-apple-system,'Segoe UI',Roboto,Helvetica,Arial;color:#475569;">
+                  A new driver has been successfully added to the {settings.COMPANY_OPERATING_NAME} platform by an administrator.
+                </p>
+
+                <div style="margin:18px 0;background:#f8fafc;border:1px solid #e2e8f0;border-radius:12px;padding:0;overflow:hidden;">
+                  <table width="100%" cellspacing="0" cellpadding="0" border="0" style="font:400 14px/1.6 system-ui,-apple-system,'Segoe UI',Roboto,Helvetica,Arial;">
+                    <tr class="info-row" style="background:#f1f5f9;">
+                      <td style="padding:12px 18px;color:#64748b;font-weight:600;">Driver Name</td>
+                      <td style="padding:12px 18px;color:#0f172a;font-weight:500;">{driver.name}</td>
+                    </tr>
+                    <tr>
+                      <td style="padding:12px 18px;color:#64748b;font-weight:600;border-top:1px solid #e2e8f0;">Email</td>
+                      <td style="padding:12px 18px;color:#0f172a;border-top:1px solid #e2e8f0;">{driver.email}</td>
+                    </tr>
+                    <tr class="info-row" style="background:#f1f5f9;">
+                      <td style="padding:12px 18px;color:#64748b;font-weight:600;border-top:1px solid #e2e8f0;">Phone</td>
+                      <td style="padding:12px 18px;color:#0f172a;border-top:1px solid #e2e8f0;">{driver.phone_number}</td>
+                    </tr>
+                    <tr>
+                      <td style="padding:12px 18px;color:#64748b;font-weight:600;border-top:1px solid #e2e8f0;">Vehicle Number</td>
+                      <td style="padding:12px 18px;color:#0f172a;border-top:1px solid #e2e8f0;">{driver.vehicle_number if driver.vehicle_number else "Not provided"}</td>
+                    </tr>
+                    <tr class="info-row" style="background:#f1f5f9;">
+                      <td style="padding:12px 18px;color:#64748b;font-weight:600;border-top:1px solid #e2e8f0;">Registration Time</td>
+                      <td style="padding:12px 18px;color:{brand_primary_dark};font-weight:500;border-top:1px solid #e2e8f0;">{created_at}</td>
+                    </tr>
+                    <tr>
+                      <td style="padding:12px 18px;color:#64748b;font-weight:600;border-top:1px solid #e2e8f0;">Driver ID</td>
+                      <td style="padding:12px 18px;color:#0f172a;border-top:1px solid #e2e8f0;">{driver.id}</td>
+                    </tr>
+                    <tr class="info-row" style="background:#f1f5f9;">
+                      <td style="padding:12px 18px;color:#64748b;font-weight:600;border-top:1px solid #e2e8f0;">Status</td>
+                      <td style="padding:12px 18px;color:#0f172a;border-top:1px solid #e2e8f0;">{"Active" if driver.active else "Inactive"}</td>
+                    </tr>
+                    <tr>
+                      <td style="padding:12px 18px;color:#64748b;font-weight:600;border-top:1px solid #e2e8f0;">Default Password</td>
+                      <td style="padding:12px 18px;color:#0f172a;font-family:monospace;border-top:1px solid #e2e8f0;">123456</td>
+                    </tr>
+                    <tr class="info-row" style="background:#f1f5f9;">
+                      <td style="padding:12px 18px;color:#64748b;font-weight:600;border-top:1px solid #e2e8f0;">Identity Photo</td>
+                      <td style="padding:12px 18px;color:#0f172a;border-top:1px solid #e2e8f0;">Pending upload</td>
+                    </tr>
+                  </table>
+                </div>
+
+                <div style="margin:20px 0;background:#f0fdf4;border:1px solid #86efac;border-radius:12px;padding:14px 18px;">
+                  <p style="margin:0;font:400 13px/1.6 system-ui,-apple-system,'Segoe UI',Roboto,Helvetica,Arial;color:#166534;">
+                    <strong>✓ Registration Complete</strong> — The driver has been added to the system and received their welcome email with login credentials. They will need to upload their identity photo before starting deliveries.
+                  </p>
+                </div>
+
+                <hr style="border:0;border-top:1px solid #e5e7eb;margin:24px 0;">
+                <p style="margin:0;font:400 12px/1.7 system-ui,-apple-system,'Segoe UI',Roboto,Helvetica,Arial;color:#64748b;">
+                  This is an automated notification from the {settings.COMPANY_OPERATING_NAME} registration system.
+                </p>
+              </td>
+            </tr>
+
+          </table>
+
+          <p style="margin:14px 0 0;font:400 12px/1.6 system-ui,-apple-system,'Segoe UI',Roboto,Helvetica,Arial;color:#94a3b8;">
+            © {created_at_local.year} {settings.COMPANY_OPERATING_NAME} - {settings.COMPANY_SUB_GROUP_NAME}. All rights reserved.
+          </p>
+        </td>
+      </tr>
+    </table>
+  </body>
+</html>
+"""
+            office_text = (
+                f"New Driver Registration on {settings.COMPANY_OPERATING_NAME}\n\n"
+                f"Driver Name: {driver.name}\n"
+                f"Email: {driver.email}\n"
+                f"Phone: {driver.phone_number}\n"
+                f"Vehicle Number: {driver.vehicle_number if driver.vehicle_number else 'Not provided'}\n"
+                f"Registration Time: {created_at}\n"
+                f"Driver ID: {driver.id}\n"
+                f"Status: {'Active' if driver.active else 'Inactive'}\n"
+                f"Default Password: 123456\n"
+                f"Identity Photo: Pending upload\n\n"
+                "The driver has been added to the system and received their welcome email with login credentials.\n"
+                "They will need to upload their identity photo before starting deliveries.\n"
+            )
+
+            _send_html_email_help_desk(
+                subject=f"New Driver Registration: {driver.name}",
+                to_email=settings.EMAIL_ADMIN_OFFICE,
+                html=office_html,
+                text_fallback=office_text,
+            )
+        except Exception:
+            logger.exception("Failed to send office notification email for driver registration")
 
         driver_data = {
             "id": driver.id,
@@ -13296,7 +13633,7 @@ def add_driver(request):
             "email": driver.email,
             "vehicle_number": driver.vehicle_number,
             "active": driver.active,
-            "created_at": driver.created_at.strftime("%Y-%m-%d %H:%M:%S"),
+            "created_at": local_created_at.strftime("%Y-%m-%d %H:%M:%S"),
         }
 
         return JsonResponse(
@@ -13309,7 +13646,7 @@ def add_driver(request):
         )
 
     except IntegrityError:
-        # Unique email violation
+        # Unique constraint violation (email)
         return JsonResponse(
             {
                 "success": False,
@@ -13318,9 +13655,14 @@ def add_driver(request):
             },
             status=400,
         )
-    except Exception as e:
+
+    except Exception:
+        # Do NOT leak internal errors in prod
         return JsonResponse(
-            {"success": False, "message": "Something went wrong.", "error": str(e)},
+            {
+                "success": False,
+                "message": "Something went wrong while creating the driver.",
+            },
             status=500,
         )
 
@@ -13522,15 +13864,18 @@ def edit_pharmacy(request, pharmacy_id):
         }, status=500)
 
 
-
-@csrf_exempt
+@require_http_methods(["PUT"])
+@csrf_protect
+@admin_auth_required
 def edit_driver(request, driver_id):
-    if request.method != "PUT":
-        return JsonResponse(
-            {"success": False, "message": "Only PUT method is allowed."},
-            status=405,
-        )
+    """
+    Admin-only API to update an existing driver.
+    - Partial updates supported
+    - DB stores UTC
+    - Responses return settings.USER_TIMEZONE
+    """
 
+    # 1️⃣ Fetch driver
     try:
         driver = Driver.objects.get(id=driver_id)
     except Driver.DoesNotExist:
@@ -13539,34 +13884,45 @@ def edit_driver(request, driver_id):
             status=404,
         )
 
+    # 2️⃣ Parse JSON payload
     try:
         data = json.loads(request.body.decode("utf-8"))
-    except json.JSONDecodeError:
+    except (json.JSONDecodeError, UnicodeDecodeError):
         return JsonResponse(
             {"success": False, "message": "Invalid JSON payload."},
             status=400,
         )
 
-    # Editable fields for Driver
-    editable_fields = [
-        "name",
-        "phone_number",
-        "email",
-        "vehicle_number",
-        "active",
-    ]
+    # 3️⃣ Allowed editable fields
+    editable_fields = {
+        "name": str,
+        "phone_number": str,
+        "email": str,
+        "vehicle_number": str,
+        "active": bool,
+        # identity_url intentionally excluded
+    }
 
-    # Update only provided fields
-    for field in editable_fields:
+    # 4️⃣ Apply updates (only provided fields)
+    for field, field_type in editable_fields.items():
         if field in data:
-            setattr(
-                driver,
-                field,
-                data[field].strip() if isinstance(data[field], str) else data[field],
-            )
+            value = data[field]
+
+            if field_type is str:
+                value = value.strip()
+                if field == "email":
+                    value = value.lower()
+
+            setattr(driver, field, value)
 
     try:
+        # 5️⃣ Save updates
         driver.save()
+
+        # 6️⃣ Convert UTC → USER_TIMEZONE for response
+        local_created_at = timezone.localtime(
+            driver.created_at, settings.USER_TIMEZONE
+        )
 
         updated_data = {
             "id": driver.id,
@@ -13575,7 +13931,7 @@ def edit_driver(request, driver_id):
             "email": driver.email,
             "vehicle_number": driver.vehicle_number,
             "active": driver.active,
-            "created_at": driver.created_at.strftime("%Y-%m-%d %H:%M:%S"),
+            "created_at": local_created_at.strftime("%Y-%m-%d %H:%M:%S"),
         }
 
         return JsonResponse(
@@ -13588,6 +13944,7 @@ def edit_driver(request, driver_id):
         )
 
     except IntegrityError:
+        # Unique email constraint
         return JsonResponse(
             {
                 "success": False,
@@ -13597,60 +13954,16 @@ def edit_driver(request, driver_id):
             status=400,
         )
 
-    except Exception as e:
+    except Exception:
+        # Do not leak internals in prod
         return JsonResponse(
-            {"success": False, "message": "Something went wrong.", "error": str(e)},
+            {
+                "success": False,
+                "message": "Something went wrong while updating the driver.",
+            },
             status=500,
         )
 
-
-# @csrf_exempt
-# def toggle_pharmacy_status(request, pharmacy_id):
-#     if request.method not in ["POST", "PATCH"]:
-#         return JsonResponse(
-#             {"success": False, "message": "Only POST or PATCH method is allowed."},
-#             status=405,
-#         )
-
-#     try:
-#         pharmacy = Pharmacy.objects.get(id=pharmacy_id)
-#     except Pharmacy.DoesNotExist:
-#         return JsonResponse(
-#             {"success": False, "message": "Pharmacy not found."},
-#             status=404,
-#         )
-
-#     # Try to read JSON body (optional)
-#     new_status = None
-#     try:
-#         if request.body:
-#             data = json.loads(request.body.decode("utf-8"))
-#             if "active" in data:
-#                 new_status = bool(data["active"])
-#     except json.JSONDecodeError:
-#         # Ignore bad JSON, we’ll just toggle instead
-#         pass
-
-#     # If active explicitly provided → set it, else toggle
-#     if new_status is not None:
-#         pharmacy.active = new_status
-#     else:
-#         pharmacy.active = not pharmacy.active
-
-#     pharmacy.save()
-
-#     return JsonResponse(
-#         {
-#             "success": True,
-#             "message": "Pharmacy activated." if pharmacy.active else "Pharmacy deactivated.",
-#             "pharmacy": {
-#                 "id": pharmacy.id,
-#                 "name": pharmacy.name,
-#                 "active": pharmacy.active,
-#             },
-#         },
-#         status=200,
-#     )
 
 
 
@@ -13759,15 +14072,18 @@ def toggle_pharmacy_status(request, pharmacy_id):
     }, status=200)
 
 
-
-@csrf_exempt
+@require_http_methods(["POST", "PATCH"])
+@csrf_protect
+@admin_auth_required
 def toggle_driver_status(request, driver_id):
-    if request.method not in ["POST", "PATCH"]:
-        return JsonResponse(
-            {"success": False, "message": "Only POST or PATCH method is allowed."},
-            status=405,
-        )
+    """
+    Admin-only API to activate/deactivate a driver.
+    - Supports explicit active flag OR toggle
+    - Stores UTC in DB
+    - Returns timestamps in settings.USER_TIMEZONE
+    """
 
+    # 1️⃣ Fetch driver
     try:
         driver = Driver.objects.get(id=driver_id)
     except Driver.DoesNotExist:
@@ -13776,24 +14092,31 @@ def toggle_driver_status(request, driver_id):
             status=404,
         )
 
-    # Try to read JSON body (optional)
+    # 2️⃣ Parse JSON body (optional)
     new_status = None
-    try:
-        if request.body:
+    if request.body:
+        try:
             data = json.loads(request.body.decode("utf-8"))
             if "active" in data:
                 new_status = bool(data["active"])
-    except json.JSONDecodeError:
-        # Ignore bad JSON, we'll just toggle instead
-        pass
+        except (json.JSONDecodeError, UnicodeDecodeError):
+            return JsonResponse(
+                {"success": False, "message": "Invalid JSON payload."},
+                status=400,
+            )
 
-    # If active explicitly provided → set it, else toggle
+    # 3️⃣ Apply status change
     if new_status is not None:
         driver.active = new_status
     else:
         driver.active = not driver.active
 
     driver.save()
+
+    # 4️⃣ Convert UTC → USER_TIMEZONE (for consistency)
+    local_created_at = timezone.localtime(
+        driver.created_at, settings.USER_TIMEZONE
+    )
 
     return JsonResponse(
         {
@@ -13803,6 +14126,7 @@ def toggle_driver_status(request, driver_id):
                 "id": driver.id,
                 "name": driver.name,
                 "active": driver.active,
+                "created_at": local_created_at.strftime("%Y-%m-%d %H:%M:%S"),
             },
         },
         status=200,
@@ -13861,14 +14185,53 @@ def reset_pharmacy_password(request, pharmacy_id):
     )
 
 
-@csrf_exempt
-def reset_driver_password(request, driver_id):
-    if request.method not in ["POST", "PATCH"]:
-        return JsonResponse(
-            {"success": False, "message": "Only POST or PATCH method is allowed."},
-            status=405,
-        )
+# @csrf_exempt
+# def reset_driver_password(request, driver_id):
+#     if request.method not in ["POST", "PATCH"]:
+#         return JsonResponse(
+#             {"success": False, "message": "Only POST or PATCH method is allowed."},
+#             status=405,
+#         )
 
+#     try:
+#         driver = Driver.objects.get(id=driver_id)
+#     except Driver.DoesNotExist:
+#         return JsonResponse(
+#             {"success": False, "message": "Driver not found."},
+#             status=404,
+#         )
+
+#     # Reset password to default — model will hash it automatically
+#     driver.password = "123456"
+#     driver.save()
+
+#     return JsonResponse(
+#         {
+#             "success": True,
+#             "message": "Password reset successfully.",
+#             "driver": {
+#                 "id": driver.id,
+#                 "name": driver.name,
+#                 "email": driver.email,
+#                 "active": driver.active,
+#             },
+#         },
+#         status=200,
+#     )
+
+
+@require_http_methods(["POST", "PATCH"])
+@csrf_protect
+@admin_auth_required
+def reset_driver_password(request, driver_id):
+    """
+    Admin-only API to reset a driver's password.
+    - Resets password to default
+    - Password hashing handled by model save()
+    - DB stores UTC, responses use settings.USER_TIMEZONE
+    """
+
+    # 1️⃣ Fetch driver
     try:
         driver = Driver.objects.get(id=driver_id)
     except Driver.DoesNotExist:
@@ -13877,9 +14240,14 @@ def reset_driver_password(request, driver_id):
             status=404,
         )
 
-    # Reset password to default — model will hash it automatically
+    # 2️⃣ Reset password (model hashes automatically)
     driver.password = "123456"
     driver.save()
+
+    # 3️⃣ Convert UTC → USER_TIMEZONE for response consistency
+    local_created_at = timezone.localtime(
+        driver.created_at, settings.USER_TIMEZONE
+    )
 
     return JsonResponse(
         {
@@ -13890,6 +14258,7 @@ def reset_driver_password(request, driver_id):
                 "name": driver.name,
                 "email": driver.email,
                 "active": driver.active,
+                "created_at": local_created_at.strftime("%Y-%m-%d %H:%M:%S"),
             },
         },
         status=200,
