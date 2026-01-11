@@ -3,3 +3,5 @@ gcp_key.json
 CanaDrop/gcp_key.json
 __pycache__/
 *.pyc
+.DS_Store
+CanaDrop/.DS_Store
