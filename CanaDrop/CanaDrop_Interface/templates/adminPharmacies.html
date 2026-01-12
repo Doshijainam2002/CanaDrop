@@ -1208,6 +1208,25 @@ function getBusinessHoursFromEditForm() {
   return businessHours;
 }
 
+// Build business hours object from add form
+function getBusinessHoursFromForm() {
+  const days = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
+  const businessHours = {};
+  
+  days.forEach(day => {
+    const checkbox = document.getElementById('ph' + day);
+    if (checkbox.checked) {
+      const open = document.getElementById('ph' + day + 'Open').value;
+      const close = document.getElementById('ph' + day + 'Close').value;
+      businessHours[day] = { open, close };
+    } else {
+      businessHours[day] = "closed";
+    }
+  });
+  
+  return businessHours;
+}
+
 async function submitAddPharmacy() {
   const name = document.getElementById("phName").value.trim();
   const store_address = document.getElementById("phAddress").value.trim();
