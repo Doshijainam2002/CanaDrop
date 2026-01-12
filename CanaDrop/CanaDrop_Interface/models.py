@@ -250,6 +250,7 @@ class DriverInvoice(models.Model):
     status = models.CharField(max_length=20, choices=STATUS_CHOICES, default="generated")
     created_at = models.DateTimeField(auto_now_add=True)
     pdf_url = models.URLField(blank=True, null=True)  # generated invoice PDF link
+    payment_reference_id = models.CharField(max_length=150, blank=True, null=True, db_index=True)
 
     def __str__(self):
         return f"Invoice {self.id} for Driver {self.driver.name}"

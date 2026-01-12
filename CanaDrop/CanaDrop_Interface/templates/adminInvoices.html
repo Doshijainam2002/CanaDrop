@@ -9,13 +9,36 @@
   <link rel="apple-touch-icon" href="/favicon-512.png">
   <script src="https://cdn.tailwindcss.com"></script>
   <style>
-    body { font-family: 'Inter', sans-serif; }
-    .logistics-bg {
-      background:
-        linear-gradient(135deg, rgba(255,255,255,0.04) 25%, rgba(0,0,0,0) 25%) 0 0/28px 28px,
-        linear-gradient(135deg, rgba(0,0,0,0) 75%, rgba(255,255,255,0.04) 75%) 0 0/28px 28px;
-      box-shadow: inset 0 0 120px rgba(0,0,0,0.35);
+  body { font-family: 'Inter', sans-serif; }
+  .logistics-bg {
+    background:
+      linear-gradient(135deg, rgba(255,255,255,0.04) 25%, rgba(0,0,0,0) 25%) 0 0/28px 28px,
+      linear-gradient(135deg, rgba(0,0,0,0) 75%, rgba(255,255,255,0.04) 75%) 0 0/28px 28px;
+    box-shadow: inset 0 0 120px rgba(0,0,0,0.35);
+  }
+  
+  /* Toast Notification Animations */
+  @keyframes slideIn {
+    from {
+      transform: translateX(400px);
+      opacity: 0;
     }
+    to {
+      transform: translateX(0);
+      opacity: 1;
+    }
+  }
+  
+  @keyframes slideOut {
+    from {
+      transform: translateX(0);
+      opacity: 1;
+    }
+    to {
+      transform: translateX(400px);
+      opacity: 0;
+    }
+  }
   </style>
 </head>
 <body class="min-h-screen bg-neutral-900 text-neutral-100 logistics-bg">
@@ -125,6 +148,7 @@
                   <th class="px-6 py-3 text-left text-neutral-400 uppercase tracking-wider">Pharmacy</th>
                   <th class="px-6 py-3 text-left text-neutral-400 uppercase tracking-wider">Period</th>
                   <th class="px-6 py-3 text-left text-neutral-400 uppercase tracking-wider">Total ($)</th>
+                  <th class="px-6 py-3 text-left text-neutral-400 uppercase tracking-wider">Reference ID</th>
                   <th class="px-6 py-3 text-left text-neutral-400 uppercase tracking-wider">Status</th>
                   <th class="px-6 py-3 text-left text-neutral-400 uppercase tracking-wider">Actions</th>
                 </tr>
@@ -194,6 +218,7 @@
                   <th class="px-6 py-3 text-left text-neutral-400 uppercase tracking-wider">Driver</th>
                   <th class="px-6 py-3 text-left text-neutral-400 uppercase tracking-wider">Period</th>
                   <th class="px-6 py-3 text-left text-neutral-400 uppercase tracking-wider">Total ($)</th>
+                  <th class="px-6 py-3 text-left text-neutral-400 uppercase tracking-wider">Reference ID</th>
                   <th class="px-6 py-3 text-left text-neutral-400 uppercase tracking-wider">Status</th>
                   <th class="px-6 py-3 text-left text-neutral-400 uppercase tracking-wider">Actions</th>
                 </tr>
@@ -278,34 +303,109 @@
 
 
 
-      <!-- Revenue Reports -->
-      <section class="px-4 sm:px-6 pb-8 sm:pb-10">
-        <div class="bg-neutral-800/80 border border-neutral-700 rounded-xl p-6">
-          <h2 class="text-lg font-semibold text-white mb-4">Revenue Reports</h2>
+<!-- Revenue Reports -->
+<section class="px-4 sm:px-6 pb-8 sm:pb-10">
+  <div class="bg-neutral-800/80 border border-neutral-700 rounded-xl p-6">
+    <h2 class="text-lg font-semibold text-white mb-4">Revenue Reports</h2>
 
-          <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4 sm:gap-6 text-center">
+    <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4 sm:gap-6 text-center">
 
-            <!-- Revenue -->
-            <div class="bg-neutral-900 border border-neutral-700 rounded-xl p-4 sm:p-5">
-              <p class="text-sm text-neutral-400 mb-1">Total Revenue (This Month)</p>
-              <p id="revThisMonth" class="text-2xl font-bold text-green-400">$0.00</p>
+      <!-- Revenue -->
+      <div class="bg-neutral-900 border border-neutral-700 rounded-xl p-4 sm:p-5 relative group">
+        <div class="flex items-center justify-center gap-2 mb-1">
+          <p class="text-sm text-neutral-400">Total Revenue (This Month)</p>
+          <div class="relative">
+            <svg class="w-4 h-4 text-neutral-500 cursor-help" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+            </svg>
+            <!-- Tooltip -->
+            <div class="absolute bottom-full left-1/2 transform -translate-x-1/2 mb-2 w-64 p-3 bg-neutral-700 text-neutral-100 text-xs rounded-lg shadow-lg opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-200 z-10 pointer-events-none">
+              <p class="font-semibold mb-1">Total Revenue</p>
+              <p>Sum of all delivery fees from orders marked as "delivered" this month. This represents gross income before driver payouts.</p>
+              <div class="absolute top-full left-1/2 transform -translate-x-1/2 -mt-1">
+                <div class="border-4 border-transparent border-t-neutral-700"></div>
+              </div>
             </div>
-
-            <!-- Driver Payout -->
-            <div class="bg-neutral-900 border border-neutral-700 rounded-xl p-4 sm:p-5">
-              <p class="text-sm text-neutral-400 mb-1">Driver Payouts (This Month)</p>
-              <p id="payoutThisMonth" class="text-2xl font-bold text-orange-400">$0.00</p>
-            </div>
-
-            <!-- Net Commission -->
-            <div class="bg-neutral-900 border border-neutral-700 rounded-xl p-4 sm:p-5">
-              <p class="text-sm text-neutral-400 mb-1">Net Commission Margin</p>
-              <p id="netCommission" class="text-2xl font-bold text-blue-400">0% ($0.00)</p>
-            </div>
-
           </div>
         </div>
-      </section>
+        <p id="revThisMonth" class="text-2xl font-bold text-green-400">$0.00</p>
+      </div>
+
+      <!-- Driver Payout -->
+      <div class="bg-neutral-900 border border-neutral-700 rounded-xl p-4 sm:p-5 relative group">
+        <div class="flex items-center justify-center gap-2 mb-1">
+          <p class="text-sm text-neutral-400">Driver Payouts (This Month)</p>
+          <div class="relative">
+            <svg class="w-4 h-4 text-neutral-500 cursor-help" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+            </svg>
+            <!-- Tooltip -->
+            <div class="absolute bottom-full left-1/2 transform -translate-x-1/2 mb-2 w-64 p-3 bg-neutral-700 text-neutral-100 text-xs rounded-lg shadow-lg opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-200 z-10 pointer-events-none">
+              <p class="font-semibold mb-1">Driver Payouts</p>
+              <p>Total amount owed to drivers this month of the total revenue. This is the driver's share of each delivery fee.</p>
+              <div class="absolute top-full left-1/2 transform -translate-x-1/2 -mt-1">
+                <div class="border-4 border-transparent border-t-neutral-700"></div>
+              </div>
+            </div>
+          </div>
+        </div>
+        <p id="payoutThisMonth" class="text-2xl font-bold text-orange-400">$0.00</p>
+      </div>
+
+      <!-- Net Commission -->
+      <div class="bg-neutral-900 border border-neutral-700 rounded-xl p-4 sm:p-5 relative group">
+        <div class="flex items-center justify-center gap-2 mb-1">
+          <p class="text-sm text-neutral-400">Net Commission Margin</p>
+          <div class="relative">
+            <svg class="w-4 h-4 text-neutral-500 cursor-help" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+            </svg>
+            <!-- Tooltip -->
+            <div class="absolute bottom-full left-1/2 transform -translate-x-1/2 mb-2 w-64 p-3 bg-neutral-700 text-neutral-100 text-xs rounded-lg shadow-lg opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-200 z-10 pointer-events-none">
+              <p class="font-semibold mb-1">Net Commission</p>
+              <p>Company's earnings after driver payouts of the total revenue. This covers platform operations and represents net profit.</p>
+              <div class="absolute top-full left-1/2 transform -translate-x-1/2 -mt-1">
+                <div class="border-4 border-transparent border-t-neutral-700"></div>
+              </div>
+            </div>
+          </div>
+        </div>
+        <p id="netCommission" class="text-2xl font-bold text-blue-400">0% ($0.00)</p>
+      </div>
+
+    </div>
+  </div>
+</section>
+
+<!-- Mark Paid Modal -->
+<div id="markPaidModal" class="hidden fixed inset-0 bg-black/70 z-50 flex items-center justify-center p-4">
+  <div class="bg-neutral-800 border border-neutral-700 rounded-xl max-w-md w-full p-6">
+    <h3 id="modalTitle" class="text-lg font-semibold text-white mb-4">Mark Invoice as Paid</h3>
+    <p id="modalDescription" class="text-sm text-neutral-400 mb-4">Enter the payment reference ID to mark this invoice as paid.</p>
+    
+    <input 
+      type="text" 
+      id="paymentReferenceInput" 
+      placeholder="e.g., pi_3xyz123 or TRANSFER-2024-001" 
+      class="w-full px-4 py-2 bg-neutral-900 border border-neutral-600 rounded-lg text-sm text-neutral-100 focus:outline-none focus:border-orange-500 mb-4"
+    />
+    
+    <div class="flex gap-3">
+      <button 
+        id="cancelMarkPaid" 
+        class="flex-1 px-4 py-2 border border-neutral-600 rounded-lg text-sm text-neutral-300 hover:bg-neutral-700 transition"
+      >
+        Cancel
+      </button>
+      <button 
+        id="confirmMarkPaid" 
+        class="flex-1 px-4 py-2 bg-gradient-to-r from-green-600 to-green-500 rounded-lg text-sm text-white font-medium hover:from-green-500 hover:to-green-400 transition"
+      >
+        Confirm Payment
+      </button>
+    </div>
+  </div>
+</div>
 
 
       <script>
@@ -323,11 +423,22 @@
 });
 
 
+        function getCSRFToken() {
+            return document.cookie
+                .split('; ')
+                .find(row => row.startsWith('csrftoken='))
+                ?.split('=')[1];
+        }
+
+
 // Pagination state
 let pharmacyPage = 1;
 let driverPage = 1;
 let alertsPage = 1;
 const itemsPerPage = 10;
+
+let currentInvoiceId = null;
+let currentInvoiceType = null;
 
 // Filter state
 let pharmacyAllData = [];
@@ -337,6 +448,97 @@ let alertsAllData = [];
 // ADD THESE NEW VARIABLES - Store filtered data
 let pharmacyFilteredData = [];
 let driverFilteredData = [];
+
+
+
+// Custom Toast Notification System
+function showNotification(message, type = 'info') {
+  // Remove any existing notification
+  const existingNotification = document.getElementById('customNotification');
+  if (existingNotification) {
+    existingNotification.remove();
+  }
+
+  // Determine colors and icon based on type
+  let bgColor, borderColor, textColor, icon;
+  
+  switch(type) {
+    case 'success':
+      bgColor = 'bg-green-600';
+      borderColor = 'border-green-500';
+      textColor = 'text-green-100';
+      icon = `
+        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path>
+        </svg>
+      `;
+      break;
+    case 'error':
+      bgColor = 'bg-red-600';
+      borderColor = 'border-red-500';
+      textColor = 'text-red-100';
+      icon = `
+        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
+        </svg>
+      `;
+      break;
+    case 'warning':
+      bgColor = 'bg-yellow-600';
+      borderColor = 'border-yellow-500';
+      textColor = 'text-yellow-100';
+      icon = `
+        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"></path>
+        </svg>
+      `;
+      break;
+    default: // info
+      bgColor = 'bg-blue-600';
+      borderColor = 'border-blue-500';
+      textColor = 'text-blue-100';
+      icon = `
+        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+        </svg>
+      `;
+  }
+
+  // Create notification element
+  const notification = document.createElement('div');
+  notification.id = 'customNotification';
+  notification.className = `fixed top-4 right-4 z-[9999] ${bgColor} ${textColor} border ${borderColor} rounded-lg shadow-lg p-4 flex items-center gap-3 min-w-[300px] max-w-[500px] animate-slideIn`;
+  notification.style.animation = 'slideIn 0.3s ease-out';
+  
+  notification.innerHTML = `
+    <div class="flex-shrink-0">
+      ${icon}
+    </div>
+    <div class="flex-1 text-sm font-medium">
+      ${message}
+    </div>
+    <button onclick="this.parentElement.remove()" class="flex-shrink-0 ml-2 hover:opacity-75 transition">
+      <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
+      </svg>
+    </button>
+  `;
+
+  // Add to document
+  document.body.appendChild(notification);
+
+  // Auto-remove after 5 seconds
+  setTimeout(() => {
+    if (notification && notification.parentElement) {
+      notification.style.animation = 'slideOut 0.3s ease-in';
+      setTimeout(() => {
+        if (notification && notification.parentElement) {
+          notification.remove();
+        }
+      }, 300);
+    }
+  }, 5000);
+}
 
 
 // Pharmacy filters
@@ -366,7 +568,7 @@ function filterAndRenderPharmacy() {
   pharmacyFilteredData = pharmacyAllData.filter(inv => {
     const matchesSearch = 
       inv.pharmacy_name.toLowerCase().includes(searchTerm) ||
-      `INV-P-${inv.invoice_id}`.toLowerCase().includes(searchTerm);
+      `INV-${inv.invoice_id}`.toLowerCase().includes(searchTerm);
     const matchesStatus = !statusFilter || inv.status === statusFilter;
     
     return matchesSearch && matchesStatus;
@@ -385,7 +587,7 @@ function filterAndRenderDriver() {
   driverFilteredData = driverAllData.filter(inv => {
     const matchesSearch = 
       inv.driver_name.toLowerCase().includes(searchTerm) ||
-      `INV-D-${inv.invoice_id}`.toLowerCase().includes(searchTerm);
+      `INV-${inv.invoice_id}`.toLowerCase().includes(searchTerm);
     const matchesStatus = !statusFilter || inv.status === statusFilter;
     
     return matchesSearch && matchesStatus;
@@ -461,8 +663,8 @@ function renderAlertsPaginated() {
     // Friendly label
     const entityType = alert.type === "pharmacy" ? "Pharmacy" : "Driver";
     const invoiceCode = alert.type === "pharmacy" 
-                        ? `INV-P-${alert.invoice_id}` 
-                        : `INV-D-${alert.invoice_id}`;
+                        ? `INV-${alert.invoice_id}` 
+                        : `INV-${alert.invoice_id}`;
 
     const periodText = `Due: ${alert.due_date} (${alert.days_left} days left)`;
 
@@ -525,7 +727,7 @@ function getInvoiceStatusBadge(status) {
   `;
 }
 
-// Render invoices into the table with pagination
+// Render pharmacy invoices into the table with pagination
 function renderPharmacyInvoices(invoices, page = 1) {
   const tbody = document.getElementById('pharmacyInvoicesBody');
   if (!tbody) return;
@@ -533,7 +735,7 @@ function renderPharmacyInvoices(invoices, page = 1) {
   if (!invoices || invoices.length === 0) {
     tbody.innerHTML = `
       <tr>
-        <td colspan="6" class="px-6 py-6 text-center text-neutral-400">
+        <td colspan="7" class="px-6 py-6 text-center text-neutral-400">
           No invoices found
         </td>
       </tr>
@@ -548,13 +750,20 @@ function renderPharmacyInvoices(invoices, page = 1) {
   const paginatedInvoices = invoices.slice(start, end);
 
   tbody.innerHTML = paginatedInvoices.map(inv => {
-    const invoiceCode = `INV-P-${inv.invoice_id}`;
+    const invoiceCode = `INV-${inv.invoice_id}`;
     const periodText = `${inv.period.start_date} – ${inv.period.end_date}`;
-    const totalFormatted = inv.total_amount.toFixed(2);
+    const totalFormatted = parseFloat(inv.total_amount).toFixed(2);
+    const stripePaymentId = inv.stripe_payment_id || '<span class="text-neutral-500">N/A</span>';
 
     const viewPdfButton = inv.pdf_url
       ? `<button onclick="window.open('${inv.pdf_url}', '_blank')" class="text-xs text-orange-400 border border-orange-600/40 px-3 py-1 rounded hover:bg-orange-600/20">View PDF</button>`
       : `<span class="text-xs text-neutral-500">No PDF</span>`;
+
+    const markPaidButton = inv.status !== 'paid'
+      ? `<button onclick="markPharmacyInvoicePaid(${inv.invoice_id})" class="text-xs text-green-400 border border-green-600/40 px-3 py-1 rounded hover:bg-green-600/20 whitespace-nowrap">
+          Mark Paid
+        </button>`
+      : `<span class="text-xs text-neutral-500">Already Paid</span>`;
 
     return `
       <tr class="hover:bg-neutral-700/50 transition">
@@ -562,15 +771,14 @@ function renderPharmacyInvoices(invoices, page = 1) {
         <td class="px-4 sm:px-6 py-3 sm:py-4 text-neutral-300">${inv.pharmacy_name}</td>
         <td class="px-4 sm:px-6 py-3 sm:py-4 text-neutral-300">${periodText}</td>
         <td class="px-4 sm:px-6 py-3 sm:py-4 text-neutral-100 font-semibold">$${totalFormatted}</td>
+        <td class="px-4 sm:px-6 py-3 sm:py-4 text-neutral-300 text-xs break-all max-w-[200px]">${stripePaymentId}</td>
         <td class="px-4 sm:px-6 py-3 sm:py-4">
           ${getInvoiceStatusBadge(inv.status)}
         </td>
         <td class="px-4 sm:px-6 py-3 sm:py-4">
           <div class="flex flex-col sm:flex-row gap-2">
             ${viewPdfButton}
-            <button onclick="..." class="text-xs text-green-400 border border-green-600/40 px-3 py-1 rounded hover:bg-green-600/20 whitespace-nowrap">
-              Mark Paid
-            </button>
+            ${markPaidButton}
           </div>
         </td>
       </tr>
@@ -581,10 +789,16 @@ function renderPharmacyInvoices(invoices, page = 1) {
   updatePaginationControls('pharmacy', pharmacyAllData.length, invoices.length);
 }
 
-// Placeholder for Mark Paid (hook real API later)
-function markInvoicePaid(invoiceId) {
-  // TODO: Call a "mark paid" API when you create it
-  showNotification(`Mark Paid for Invoice ID ${invoiceId} - feature coming soon!`, 'success');
+
+// Mark Pharmacy Invoice as Paid
+function markPharmacyInvoicePaid(invoiceId) {
+  currentInvoiceId = invoiceId;
+  currentInvoiceType = 'pharmacy';
+  document.getElementById('modalTitle').textContent = 'Mark Pharmacy Invoice as Paid';
+  document.getElementById('modalDescription').textContent = 'Enter the Stripe payment ID to mark this invoice as paid.';
+  document.getElementById('paymentReferenceInput').placeholder = 'e.g., pi_3xyz123abc';
+  document.getElementById('paymentReferenceInput').value = '';
+  document.getElementById('markPaidModal').classList.remove('hidden');
 }
 
 // Load invoices from the API
@@ -593,7 +807,7 @@ async function loadPharmacyInvoices() {
   if (tbody) {
     tbody.innerHTML = `
       <tr>
-        <td colspan="6" class="px-6 py-6 text-center text-neutral-400">
+        <td colspan="7" class="px-6 py-6 text-center text-neutral-400">
           Loading invoices...
         </td>
       </tr>
@@ -601,7 +815,13 @@ async function loadPharmacyInvoices() {
   }
 
   try {
-    const res = await fetch('/api/admin/invoices/all/');
+    const res = await fetch('/api/admin/invoices/all/', {
+      method: 'GET',
+      credentials: 'include', // ✅ send authToken cookie
+      headers: {
+        'X-CSRFToken': getCSRFToken() // ✅ CSRF token
+      }
+    });
 
     if (!res.ok) {
       const text = await res.text();
@@ -638,6 +858,7 @@ async function loadPharmacyInvoices() {
   }
 }
 
+
 // Helper: status badge for driver invoices
 function getDriverInvoiceStatusBadge(status) {
   // API statuses: "generated", "paid"
@@ -665,7 +886,7 @@ function renderDriverInvoices(invoices, page = 1) {
   if (!invoices || invoices.length === 0) {
     tbody.innerHTML = `
       <tr>
-        <td colspan="6" class="px-6 py-6 text-center text-neutral-400">
+        <td colspan="7" class="px-6 py-6 text-center text-neutral-400">
           No driver invoices found
         </td>
       </tr>
@@ -681,13 +902,21 @@ function renderDriverInvoices(invoices, page = 1) {
 
   tbody.innerHTML = paginatedInvoices
     .map((inv) => {
-      const invoiceCode = `INV-D-${inv.invoice_id}`;
+      const invoiceCode = `INV-${inv.invoice_id}`;
       const periodText = `${inv.start_date} – ${inv.end_date}`;
       const totalFormatted = inv.total_amount.toFixed(2);
+      const paymentReferenceId = inv.payment_reference_id || '<span class="text-neutral-500">N/A</span>';
 
       const viewPdfButton = inv.pdf_url
         ? `<button onclick="window.open('${inv.pdf_url}', '_blank')" class="text-xs text-orange-400 border border-orange-600/40 px-3 py-1 rounded hover:bg-orange-600/20">View PDF</button>`
         : `<span class="text-xs text-neutral-500">No PDF</span>`;
+
+      // Only show Mark Paid button if status is not already paid
+      const markPaidButton = inv.status !== 'paid'
+        ? `<button onclick="markDriverInvoicePaid(${inv.invoice_id})" class="text-xs text-green-400 border border-green-600/40 px-3 py-1 rounded hover:bg-green-600/20 whitespace-nowrap">
+            Mark Paid
+          </button>`
+        : `<span class="text-xs text-neutral-500">Already Paid</span>`;
 
       return `
         <tr class="hover:bg-neutral-700/50 transition">
@@ -695,15 +924,14 @@ function renderDriverInvoices(invoices, page = 1) {
           <td class="px-4 sm:px-6 py-3 sm:py-4 text-neutral-300">${inv.driver_name}</td>
           <td class="px-4 sm:px-6 py-3 sm:py-4 text-neutral-300">${periodText}</td>
           <td class="px-4 sm:px-6 py-3 sm:py-4 text-neutral-100 font-semibold">$${totalFormatted}</td>
+          <td class="px-4 sm:px-6 py-3 sm:py-4 text-neutral-300 text-xs break-all max-w-[200px]">${paymentReferenceId}</td>
           <td class="px-4 sm:px-6 py-3 sm:py-4">
             ${getDriverInvoiceStatusBadge(inv.status)}
           </td>
           <td class="px-4 sm:px-6 py-3 sm:py-4">
             <div class="flex flex-col sm:flex-row gap-2">
               ${viewPdfButton}
-              <button onclick="markDriverInvoicePaid(${inv.invoice_id})" class="text-xs text-green-400 border border-green-600/40 px-3 py-1 rounded hover:bg-green-600/20 whitespace-nowrap">
-                Mark Paid
-              </button>
+              ${markPaidButton}
             </div>
           </td>
         </tr>
@@ -717,9 +945,87 @@ function renderDriverInvoices(invoices, page = 1) {
 
 // Placeholder for Mark Paid – to be wired when you have the API
 function markDriverInvoicePaid(invoiceId) {
-  // TODO: Call "mark paid" driver invoice API when you build it
-  showNotification(`Mark Paid for Driver Invoice ID ${invoiceId} - feature coming soon!`, "success");
+  currentInvoiceId = invoiceId;
+  currentInvoiceType = 'driver'; // ADD THIS LINE
+  document.getElementById('modalTitle').textContent = 'Mark Driver Invoice as Paid'; // ADD THIS LINE
+  document.getElementById('modalDescription').textContent = 'Enter the payment reference ID to mark this invoice as paid.'; // ADD THIS LINE
+  document.getElementById('paymentReferenceInput').placeholder = 'e.g., TRANSFER-2024-001'; // ADD THIS LINE
+  document.getElementById('paymentReferenceInput').value = '';
+  document.getElementById('markPaidModal').classList.remove('hidden');
 }
+
+// Handle modal close
+// Handle modal close
+document.getElementById('cancelMarkPaid')?.addEventListener('click', () => {
+  document.getElementById('markPaidModal').classList.add('hidden');
+  currentInvoiceId = null;
+  currentInvoiceType = null; // ADD THIS LINE
+});
+
+// Handle confirm payment
+// Handle confirm payment
+document.getElementById('confirmMarkPaid')?.addEventListener('click', async () => {
+  const referenceId = document.getElementById('paymentReferenceInput').value.trim();
+  
+  if (!referenceId) {
+    showNotification('Please enter a payment reference ID', 'error');
+    return;
+  }
+  
+  if (!currentInvoiceId || !currentInvoiceType) {
+    showNotification('No invoice selected', 'error');
+    return;
+  }
+  
+  // Store invoice type before clearing it
+  const invoiceType = currentInvoiceType;
+  
+  // Determine API endpoint and field name based on invoice type
+  const apiUrl = invoiceType === 'pharmacy' 
+    ? `/api/admin/pharmacy-invoices/${currentInvoiceId}/mark-paid/`
+    : `/api/admin/driver-invoices/${currentInvoiceId}/mark-paid/`;
+  
+  const fieldName = invoiceType === 'pharmacy' 
+    ? 'stripe_payment_id' 
+    : 'payment_reference_id';
+  
+  try {
+    const response = await fetch(apiUrl, {
+      method: 'POST',
+      credentials: 'include',
+      headers: {
+        'Content-Type': 'application/json',
+        'X-CSRFToken': getCSRFToken()
+      },
+      body: JSON.stringify({
+        [fieldName]: referenceId
+      })
+    });
+    
+    const data = await response.json();
+    
+    if (data.success) {
+      showNotification('Invoice marked as paid successfully!', 'success');
+      document.getElementById('markPaidModal').classList.add('hidden');
+      
+      // Clear state
+      currentInvoiceId = null;
+      currentInvoiceType = null;
+      
+      // Reload the appropriate invoice list
+      if (invoiceType === 'pharmacy') {
+        await loadPharmacyInvoices();
+      } else {
+        await loadDriverInvoices();
+      }
+    } else {
+      showNotification(data.message || 'Failed to mark invoice as paid', 'error');
+    }
+  } catch (err) {
+    console.error('Error marking invoice as paid:', err);
+    showNotification('Error marking invoice as paid: ' + err.message, 'error');
+  }
+});
 
 // Load driver invoices from API
 async function loadDriverInvoices() {
@@ -727,7 +1033,7 @@ async function loadDriverInvoices() {
   if (tbody) {
     tbody.innerHTML = `
       <tr>
-        <td colspan="6" class="px-6 py-6 text-center text-neutral-400">
+        <td colspan="7" class="px-6 py-6 text-center text-neutral-400">
           Loading driver invoices...
         </td>
       </tr>
@@ -735,7 +1041,13 @@ async function loadDriverInvoices() {
   }
 
   try {
-    const res = await fetch("/api/admin/driver-invoices/all/");
+    const res = await fetch("/api/admin/driver-invoices/all/", {
+      method: "GET",
+      credentials: "include", // ✅ send auth cookies
+      headers: {
+        "X-CSRFToken": getCSRFToken(), // ✅ CSRF token
+      },
+    });
 
     if (!res.ok) {
       const text = await res.text();
@@ -773,13 +1085,20 @@ async function loadDriverInvoices() {
 }
 
 
+
 // Load Payment Alerts
 async function loadPaymentAlerts() {
   const list = document.getElementById("paymentAlertsList");
   list.innerHTML = `<li class="text-neutral-400">Loading alerts...</li>`;
 
   try {
-    const response = await fetch("/api/admin/payment-alerts/");
+    const response = await fetch("/api/admin/payment-alerts/", {
+      method: "GET",
+      credentials: "include", // ✅ send auth cookies
+      headers: {
+        "X-CSRFToken": getCSRFToken(), // ✅ CSRF token
+      },
+    });
 
     if (!response.ok) {
       list.innerHTML = `<li class="text-red-400">❌ Failed to load alerts</li>`;
@@ -805,9 +1124,16 @@ async function loadPaymentAlerts() {
   }
 }
 
+
 async function loadFinancialMetrics() {
   try {
-    const response = await fetch("/api/admin/financials/month/");
+    const response = await fetch("/api/admin/financials/month/", {
+      method: "GET",
+      credentials: "include", // ✅ send auth cookies
+      headers: {
+        "X-CSRFToken": getCSRFToken(), // ✅ CSRF token
+      },
+    });
 
     if (!response.ok) {
       showNotification(`Error fetching financial metrics: ${response.status}`, "error");
@@ -843,6 +1169,7 @@ async function loadFinancialMetrics() {
     showNotification("Failed to load revenue metrics", "error");
   }
 }
+
 
 // Mobile menu toggle
 const menuToggle = document.getElementById('menuToggle');

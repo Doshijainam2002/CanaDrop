@@ -14266,73 +14266,234 @@ def reset_driver_password(request, driver_id):
 
 
 
-@csrf_exempt
+
+@require_http_methods(["GET"])
+@csrf_protect
+@admin_auth_required
 def get_all_pharmacy_invoices(request):
     """
-    Returns ALL pharmacy invoices with full details.
+    Admin-only: Returns pharmacy invoices with pharmacy details.
+    - DB stores UTC
+    - Responses use settings.USER_TIMEZONE (created_at)
+    - Supports pagination + basic filtering
+        Query params:
+          - limit (default 100, max 500)
+          - offset (default 0)
+          - status (optional: generated|paid|past_due)
+          - pharmacy_id (optional int)
     """
-    if request.method != "GET":
+
+    # ---------- Query params (safe defaults) ----------
+    try:
+        limit = int(request.GET.get("limit", 100))
+    except ValueError:
         return JsonResponse(
-            {"success": False, "message": "Only GET method is allowed."},
-            status=405,
+            {"success": False, "message": "Invalid limit. Must be an integer."},
+            status=400,
         )
 
     try:
-        # Fetch all invoices with related pharmacy details
+        offset = int(request.GET.get("offset", 0))
+    except ValueError:
+        return JsonResponse(
+            {"success": False, "message": "Invalid offset. Must be an integer."},
+            status=400,
+        )
+
+    if limit < 1:
+        limit = 1
+    if limit > 500:
+        limit = 500
+    if offset < 0:
+        offset = 0
+
+    status_filter = request.GET.get("status")
+    pharmacy_id = request.GET.get("pharmacy_id")
+
+    # ---------- Build queryset ----------
+    try:
         invoices_qs = Invoice.objects.select_related("pharmacy").order_by("-created_at")
 
+        if status_filter:
+            allowed_statuses = {s for (s, _) in Invoice.STATUS_CHOICES}
+            if status_filter not in allowed_statuses:
+                return JsonResponse(
+                    {
+                        "success": False,
+                        "message": "Invalid status filter.",
+                        "allowed": sorted(list(allowed_statuses)),
+                    },
+                    status=400,
+                )
+            invoices_qs = invoices_qs.filter(status=status_filter)
+
+        if pharmacy_id:
+            try:
+                pharmacy_id_int = int(pharmacy_id)
+            except ValueError:
+                return JsonResponse(
+                    {
+                        "success": False,
+                        "message": "Invalid pharmacy_id. Must be an integer.",
+                    },
+                    status=400,
+                )
+            invoices_qs = invoices_qs.filter(pharmacy_id=pharmacy_id_int)
+
+        total_count = invoices_qs.count()
+
+        invoices_page = invoices_qs[offset : offset + limit]
+
         invoices_list = []
-        for inv in invoices_qs:
-            invoices_list.append({
-                "invoice_id": inv.id,
-                "pharmacy_id": inv.pharmacy.id,
-                "pharmacy_name": inv.pharmacy.name,
+        for inv in invoices_page:
+            # Convert UTC -> USER_TIMEZONE for response consistency
+            local_created_at = timezone.localtime(inv.created_at, settings.USER_TIMEZONE)
 
-                "period": {
-                    "start_date": str(inv.start_date),
-                    "end_date": str(inv.end_date),
-                },
+            # Money: avoid float rounding issues; return as string (recommended)
+            total_amount_str = (
+                str(inv.total_amount) if isinstance(inv.total_amount, Decimal) else str(inv.total_amount)
+            )
 
-                "total_orders": inv.total_orders,
-                "total_amount": float(inv.total_amount),
-                "due_date": str(inv.due_date),
-                "status": inv.status,
-                "created_at": inv.created_at.strftime("%Y-%m-%d %H:%M:%S"),
-
-                "pdf_url": inv.pdf_url,
-                "stripe_payment_id": inv.stripe_payment_id,
-            })
+            invoices_list.append(
+                {
+                    "invoice_id": inv.id,
+                    "pharmacy_id": inv.pharmacy.id,
+                    "pharmacy_name": inv.pharmacy.name,
+                    "period": {
+                        "start_date": inv.start_date.isoformat(),
+                        "end_date": inv.end_date.isoformat(),
+                    },
+                    "total_orders": inv.total_orders,
+                    "total_amount": total_amount_str,
+                    "due_date": inv.due_date.isoformat(),
+                    "status": inv.status,
+                    "created_at": local_created_at.strftime("%Y-%m-%d %H:%M:%S"),
+                    "pdf_url": inv.pdf_url,
+                    "stripe_payment_id": inv.stripe_payment_id,
+                }
+            )
 
         return JsonResponse(
             {
                 "success": True,
                 "invoices": invoices_list,
                 "count": len(invoices_list),
+                "total_count": total_count,
+                "limit": limit,
+                "offset": offset,
             },
             status=200,
         )
 
-    except Exception as e:
+    except Exception:
+        # Do not leak internals in production
         return JsonResponse(
-            {"success": False, "message": "Something went wrong.", "error": str(e)},
+            {"success": False, "message": "Something went wrong while fetching invoices."},
             status=500,
         )
 
 
+@require_http_methods(["POST"])
+@csrf_protect
+@admin_auth_required
+def mark_pharmacy_invoice_paid(request, invoice_id):
+    """
+    Admin-only API to mark a pharmacy invoice as PAID
+    and store the Stripe payment reference ID.
+    """
 
-@csrf_exempt
-def get_all_driver_invoices(request):
-    if request.method != "GET":
+    # 1️⃣ Fetch invoice
+    try:
+        invoice = Invoice.objects.select_related("pharmacy").get(id=invoice_id)
+    except Invoice.DoesNotExist:
         return JsonResponse(
-            {"success": False, "message": "Only GET method is allowed."},
-            status=405,
+            {"success": False, "message": "Invoice not found."},
+            status=404,
         )
 
+    # 2️⃣ Parse JSON payload
     try:
-        invoices = DriverInvoice.objects.select_related("driver").order_by("-created_at")
+        data = json.loads(request.body.decode("utf-8"))
+    except (json.JSONDecodeError, UnicodeDecodeError):
+        return JsonResponse(
+            {"success": False, "message": "Invalid JSON payload."},
+            status=400,
+        )
+
+    stripe_payment_id = data.get("stripe_payment_id")
+
+    if not stripe_payment_id:
+        return JsonResponse(
+            {
+                "success": False,
+                "message": "stripe_payment_id is required.",
+            },
+            status=400,
+        )
+
+    # 3️⃣ Prevent double payment
+    if invoice.status == "paid":
+        return JsonResponse(
+            {
+                "success": False,
+                "message": "Invoice is already marked as paid.",
+            },
+            status=400,
+        )
+
+    # 4️⃣ Update invoice
+    invoice.status = "paid"
+    invoice.stripe_payment_id = stripe_payment_id.strip()
+    invoice.save()
+
+    # 5️⃣ Convert UTC → USER_TIMEZONE for response
+    local_created_at = timezone.localtime(
+        invoice.created_at, settings.USER_TIMEZONE
+    )
+
+    return JsonResponse(
+        {
+            "success": True,
+            "message": "Invoice marked as paid.",
+            "invoice": {
+                "invoice_id": invoice.id,
+                "pharmacy_id": invoice.pharmacy.id,
+                "pharmacy_name": invoice.pharmacy.name,
+                "status": invoice.status,
+                "stripe_payment_id": invoice.stripe_payment_id,
+                "created_at": local_created_at.strftime("%Y-%m-%d %H:%M:%S"),
+            },
+        },
+        status=200,
+    )
+
+
+@require_http_methods(["GET"])
+@csrf_protect
+@admin_auth_required
+def get_all_driver_invoices(request):
+    """
+    Admin-only: Returns all driver invoices.
+    - DB stores UTC
+    - API responses use settings.USER_TIMEZONE
+    - Response format intentionally unchanged
+    """
+
+    try:
+        invoices = (
+            DriverInvoice.objects
+            .select_related("driver")
+            .order_by("-created_at")
+        )
 
         invoice_list = []
         for inv in invoices:
+            # Convert UTC -> USER_TIMEZONE for response
+            local_created_at = timezone.localtime(
+                inv.created_at,
+                settings.USER_TIMEZONE
+            )
+
             invoice_list.append({
                 "invoice_id": inv.id,
                 "driver_id": inv.driver.id,
@@ -14352,25 +14513,111 @@ def get_all_driver_invoices(request):
                 # Status + PDF
                 "status": inv.status,
                 "pdf_url": inv.pdf_url,
+                "payment_reference_id" : inv.payment_reference_id,
 
                 # Meta
-                "created_at": inv.created_at.strftime("%Y-%m-%d %H:%M:%S"),
+                "created_at": local_created_at.strftime("%Y-%m-%d %H:%M:%S"),
             })
 
         return JsonResponse(
-            {"success": True, "invoices": invoice_list},
+            {
+                "success": True,
+                "invoices": invoice_list,
+            },
             status=200
         )
 
-    except Exception as e:
+    except Exception:
+        # Do not leak internal errors in production
         return JsonResponse(
-            {"success": False, "message": "Something went wrong.", "error": str(e)},
+            {
+                "success": False,
+                "message": "Something went wrong while fetching driver invoices.",
+            },
             status=500
         )
 
 
+@require_http_methods(["POST"])
+@csrf_protect
+@admin_auth_required
+def mark_driver_invoice_paid(request, invoice_id):
+    """
+    Admin-only API to mark a driver invoice as PAID
+    and store the payment reference ID.
+    """
 
-@csrf_exempt
+    # 1️⃣ Fetch invoice
+    try:
+        invoice = DriverInvoice.objects.select_related("driver").get(id=invoice_id)
+    except DriverInvoice.DoesNotExist:
+        return JsonResponse(
+            {"success": False, "message": "Driver invoice not found."},
+            status=404,
+        )
+
+    # 2️⃣ Parse JSON payload
+    try:
+        data = json.loads(request.body.decode("utf-8"))
+    except (json.JSONDecodeError, UnicodeDecodeError):
+        return JsonResponse(
+            {"success": False, "message": "Invalid JSON payload."},
+            status=400,
+        )
+
+    payment_reference_id = data.get("payment_reference_id")
+
+    if not payment_reference_id:
+        return JsonResponse(
+            {
+                "success": False,
+                "message": "payment_reference_id is required.",
+            },
+            status=400,
+        )
+
+    # 3️⃣ Prevent double payment
+    if invoice.status == "paid":
+        return JsonResponse(
+            {
+                "success": False,
+                "message": "Invoice is already marked as paid.",
+            },
+            status=400,
+        )
+
+    # 4️⃣ Update invoice
+    invoice.status = "paid"
+    invoice.payment_reference_id = payment_reference_id.strip()
+    invoice.save()
+
+    # 5️⃣ Convert UTC → USER_TIMEZONE
+    local_created_at = timezone.localtime(
+        invoice.created_at, settings.USER_TIMEZONE
+    )
+
+    return JsonResponse(
+        {
+            "success": True,
+            "message": "Driver invoice marked as paid.",
+            "invoice": {
+                "invoice_id": invoice.id,
+                "driver_id": invoice.driver.id,
+                "driver_name": invoice.driver.name,
+                "status": invoice.status,
+                "payment_reference_id": invoice.payment_reference_id,
+                "created_at": local_created_at.strftime("%Y-%m-%d %H:%M:%S"),
+            },
+        },
+        status=200,
+    )
+
+
+
+
+@require_http_methods(["GET"])
+@csrf_protect
+@admin_auth_required
 def get_payment_alerts(request):
     """
     Returns all payment alerts from:
@@ -14379,7 +14626,11 @@ def get_payment_alerts(request):
     """
 
     try:
-        today = timezone.now().date()
+        # ✅ Use USER_TIMEZONE for business-correct date logic
+        today = timezone.localtime(
+            timezone.now(), settings.USER_TIMEZONE
+        ).date()
+
         upcoming_limit = today + timedelta(days=3)
 
         alerts = []
@@ -14394,7 +14645,7 @@ def get_payment_alerts(request):
                 "total_amount": float(inv.total_amount),
                 "status": inv.status,
                 "due_date": str(inv.due_date),
-                "days_left": (inv.due_date - today).days,  # negative
+                "days_left": (inv.due_date - today).days,
                 "pdf_url": inv.pdf_url,
             })
 
@@ -14416,7 +14667,7 @@ def get_payment_alerts(request):
                 "pdf_url": inv.pdf_url,
             })
 
-        # 🔶 3. Driver Invoices — Overdue (generated & due_date < today)
+        # 🔶 3. Driver Invoices — Overdue
         driver_overdue = DriverInvoice.objects.filter(
             status="generated",
             due_date__lt=today
@@ -14427,7 +14678,7 @@ def get_payment_alerts(request):
                 "invoice_id": inv.id,
                 "entity_name": inv.driver.name,
                 "total_amount": float(inv.total_amount),
-                "status": "past_due",  # marking via business logic
+                "status": "past_due",  # business-level status
                 "due_date": str(inv.due_date),
                 "days_left": (inv.due_date - today).days,
                 "pdf_url": inv.pdf_url,
@@ -14451,81 +14702,106 @@ def get_payment_alerts(request):
                 "pdf_url": inv.pdf_url,
             })
 
-        # 🔽 Sort by urgency — overdue first, then soonest
+        # 🔽 Sort by urgency (overdue first)
         alerts.sort(key=lambda x: x["days_left"])
 
-        return JsonResponse({
-            "success": True,
-            "count": len(alerts),
-            "alerts": alerts
-        }, status=200)
+        return JsonResponse(
+            {
+                "success": True,
+                "count": len(alerts),
+                "alerts": alerts
+            },
+            status=200,
+        )
 
     except Exception as e:
-        return JsonResponse({
-            "success": False,
-            "error": str(e)
-        }, status=500)
+        return JsonResponse(
+            {
+                "success": False,
+                "error": str(e)
+            },
+            status=500,
+        )
 
 
-@csrf_exempt
+@require_http_methods(["GET"])
+@csrf_protect
+@admin_auth_required
 def get_monthly_financials(request):
     """
-    Returns 3 financial metrics:
+    Monthly financial summary (USER_TIMEZONE):
     - revenue_this_month
-    - driver_payout_this_month
-    - net_commission (value + % of revenue)
+    - driver_payout_this_month (60%)
+    - net_commission (40%)
     """
+
     try:
-        today = date.today()
-
-        # 1️⃣ Revenue this month → sum of order rate for delivered orders this month
-        revenue_this_month = (
-            DeliveryOrder.objects.filter(
-                status='delivered',
-                created_at__year=today.year,
-                created_at__month=today.month
-            ).aggregate(total=Sum('rate'))['total'] or 0
+        # ✅ Local-time month boundaries
+        now_local = timezone.localtime(timezone.now(), settings.USER_TIMEZONE)
+        month_start_local = now_local.replace(
+            day=1, hour=0, minute=0, second=0, microsecond=0
         )
 
-        # 2️⃣ Driver payout this month → sum of driver invoices with start OR end in this month
-        driver_payout_this_month = (
-            DriverInvoice.objects.filter(
-                Q(start_date__year=today.year, start_date__month=today.month) |
-                Q(end_date__year=today.year, end_date__month=today.month)
-            ).aggregate(total=Sum('total_amount'))['total'] or 0
-        )
-
-        # Convert to float
-        revenue_float = float(revenue_this_month)
-        payout_float = float(driver_payout_this_month)
-
-        # 3️⃣ Net commission → Revenue - Payout
-        net_commission_value = revenue_float - payout_float
-
-        # % of revenue (avoid divide-by-zero)
-        if revenue_float > 0:
-            net_commission_percentage = (net_commission_value / revenue_float) * 100
+        if month_start_local.month == 12:
+            next_month_start_local = month_start_local.replace(
+                year=month_start_local.year + 1, month=1
+            )
         else:
-            net_commission_percentage = 0.0
+            next_month_start_local = month_start_local.replace(
+                month=month_start_local.month + 1
+            )
+
+        # Convert to UTC for DB filtering
+        month_start_utc = month_start_local.astimezone(timezone.utc)
+        next_month_start_utc = next_month_start_local.astimezone(timezone.utc)
+
+        # 1️⃣ Revenue — delivered orders THIS MONTH
+        revenue = (
+            DeliveryOrder.objects.filter(
+                status="delivered",
+                delivered_at__isnull=False,
+                delivered_at__gte=month_start_utc,
+                delivered_at__lt=next_month_start_utc,
+            )
+            .aggregate(total=Sum("rate"))["total"]
+            or 0
+        )
+
+        revenue_float = float(revenue)
+
+        # 2️⃣ Commission & payout (policy-based)
+        company_commission_rate = float(
+            getattr(settings, "DRIVER_COMMISSION_RATE", 0.40)
+        )
+        driver_payout_rate = 1 - company_commission_rate
+
+        driver_payout_value = revenue_float * driver_payout_rate
+        net_commission_value = revenue_float * company_commission_rate
 
         return JsonResponse(
             {
                 "success": True,
                 "financials": {
                     "revenue_this_month": revenue_float,
-                    "driver_payout_this_month": payout_float,
+                    "driver_payout_this_month": driver_payout_value,
                     "net_commission": {
                         "value": net_commission_value,
-                        "percentage_of_revenue": net_commission_percentage,
+                        "percentage_of_revenue": company_commission_rate * 100,
                     },
-                }
+                },
             },
             status=200,
         )
 
-    except Exception as e:
-        return JsonResponse({"success": False, "error": str(e)}, status=500)
-
+    except Exception:
+        # Prod-safe error
+        return JsonResponse(
+            {
+                "success": False,
+                "error": "Something went wrong while calculating financial metrics."
+            },
+            status=500,
+        )
 
 @csrf_exempt
 def get_contact_ticket_details(request, ticket_id=None):
