@@ -98,9 +98,22 @@
       <!-- Ticket Filters -->
       <section class="px-4 sm:px-6 py-6 bg-neutral-900">
         <div class="bg-neutral-800/80 border border-neutral-700 rounded-xl p-4 sm:p-6">
-          <h2 class="text-lg font-semibold text-white mb-4">Search & Filters</h2>
-          <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+          <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3 mb-4">
+            <h2 class="text-lg font-semibold text-white">Search & Filters</h2>
+            <button id="clearFiltersBtn" class="px-4 py-2 text-xs sm:text-sm bg-neutral-700 hover:bg-neutral-600 text-neutral-200 rounded-lg transition-colors flex items-center gap-2">
+              <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
+              </svg>
+              Clear Filters
+            </button>
+          </div>
+          <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
             <input type="text" placeholder="Search by Ticket ID or Sender" class="bg-neutral-900 border border-neutral-700 rounded-lg px-3 py-2 text-sm w-full focus:ring-2 focus:ring-orange-500 focus:outline-none"/>
+            <select id="entityTypeFilter" class="bg-neutral-900 border border-neutral-700 rounded-lg px-3 py-2 text-sm text-neutral-300 focus:ring-2 focus:ring-orange-500 focus:outline-none">
+              <option value="">Entity Type (All)</option>
+              <option value="pharmacy">Pharmacy</option>
+              <option value="driver">Driver</option>
+            </select>
             <select class="bg-neutral-900 border border-neutral-700 rounded-lg px-3 py-2 text-sm text-neutral-300 focus:ring-2 focus:ring-orange-500 focus:outline-none">
               <option value="">Status (All)</option>
               <option value="pending">Pending</option>
@@ -108,13 +121,12 @@
               <option value="resolved">Resolved</option>
             </select>
             <select class="bg-neutral-900 border border-neutral-700 rounded-lg px-3 py-2 text-sm text-neutral-300 focus:ring-2 focus:ring-orange-500 focus:outline-none">
-              <option>Subject (All)</option>
-              <option>Order</option>
-              <option>Invoice</option>
-              <option>Technical</option>
-              <option>Other</option>
+              <option value="">Subject (All)</option>
+              <option value="order">Order</option>
+              <option value="invoice">Invoice</option>
+              <option value="technical">Technical</option>
+              <option value="other">Other</option>
             </select>
-
           </div>
         </div>
       </section>
@@ -217,6 +229,13 @@ const itemsPerPage = 10;
 let selectedTicketId = null;
 let currentTicketStatus = null;
 
+        function getCSRFToken() {
+            return document.cookie
+                .split('; ')
+                .find(row => row.startsWith('csrftoken='))
+                ?.split('=')[1];
+        }
+
 // ==================== NOTIFICATION SYSTEM ====================
 function showNotification(message, type = 'info') {
   // Remove existing notification if any
@@ -304,9 +323,9 @@ const subjectOptions = {
 
 // ==================== DOM ELEMENTS ====================
 const searchInput = document.querySelector('input[placeholder="Search by Ticket ID or Sender"]');
-const statusFilter = document.querySelectorAll('select')[0];
-const subjectFilter = document.querySelectorAll('select')[1];
-const applyFiltersBtn = document.querySelector('button');
+const entityTypeFilter = document.getElementById('entityTypeFilter');
+const statusFilter = document.querySelectorAll('select')[1];
+const subjectFilter = document.querySelectorAll('select')[2];
 const ticketsTableBody = document.querySelector('tbody');
 
 // ==================== POPULATE SUBJECT DROPDOWN ====================
@@ -323,7 +342,13 @@ function populateSubjectFilter() {
 // ==================== LOAD ALL TICKETS ====================
 async function loadAllTickets() {
   try {
-    const response = await fetch('/api/admin/support/tickets/');
+    const response = await fetch('/api/admin/support/tickets/', {
+    method: 'GET',
+    credentials: 'include',
+    headers: {
+      'X-CSRFToken': getCSRFToken(),
+    }
+  });
     
     if (!response.ok) {
       throw new Error(`HTTP error! status: ${response.status}`);
@@ -352,26 +377,55 @@ async function loadAllTickets() {
 // ==================== FILTER TICKETS ====================
 function filterTickets() {
   const searchTerm = searchInput.value.toLowerCase().trim();
+  const entityTypeValue = entityTypeFilter.value.toLowerCase();
   const statusValue = statusFilter.value.toLowerCase();
   const subjectValue = subjectFilter.value;
   
   filteredTickets = allTickets.filter(ticket => {
+    // Search filter: matches ticket ID or sender name
     const matchesSearch = searchTerm === '' || 
       `TCK-${ticket.ticket_id}`.toLowerCase().includes(searchTerm) ||
       (ticket.sender?.name || '').toLowerCase().includes(searchTerm);
     
+    // Entity type filter: matches sender_type
+    const matchesEntityType = entityTypeValue === '' || 
+      ticket.sender_type === entityTypeValue;
+    
+    // Status filter
     const matchesStatus = statusValue === 'status (all)' || statusValue === '' ||
       ticket.status === statusValue;
     
+    // Subject filter
     const matchesSubject = subjectValue === '' ||
       ticket.subject_key === subjectValue;
     
-    return matchesSearch && matchesStatus && matchesSubject;
+    // All filters must match (stackable)
+    return matchesSearch && matchesEntityType && matchesStatus && matchesSubject;
   });
   
   currentPage = 1;
   renderTickets();
   updatePagination();
+}
+
+// ==================== CLEAR ALL FILTERS ====================
+function clearAllFilters() {
+  // Reset all filter inputs
+  searchInput.value = '';
+  entityTypeFilter.value = '';
+  statusFilter.value = '';
+  subjectFilter.value = '';
+  
+  // Reset filtered tickets to show all
+  filteredTickets = [...allTickets];
+  currentPage = 1;
+  
+  // Re-render
+  renderTickets();
+  updatePagination();
+  
+  // Show notification
+  showNotification('All filters cleared', 'info');
 }
 
 // ==================== RENDER TICKETS ====================
@@ -393,14 +447,26 @@ function renderTickets() {
       ? ticket.message.substring(0, 50) + '...' 
       : ticket.message;
     
+    // Entity type badge
+    const entityTypeBadge = ticket.sender_type === 'pharmacy' 
+      ? '<span class="inline-flex items-center px-2 py-0.5 text-xs font-medium rounded bg-blue-500/20 text-blue-400 border border-blue-600/40">Pharmacy</span>'
+      : ticket.sender_type === 'driver'
+      ? '<span class="inline-flex items-center px-2 py-0.5 text-xs font-medium rounded bg-purple-500/20 text-purple-400 border border-purple-600/40">Driver</span>'
+      : '<span class="inline-flex items-center px-2 py-0.5 text-xs font-medium rounded bg-gray-500/20 text-gray-400 border border-gray-600/40">Unknown</span>';
+    
     return `
       <tr class="hover:bg-neutral-700/50 transition">
-          <td class="px-4 sm:px-6 py-3 sm:py-4 text-neutral-100 font-medium">${ticketId}</td>
-          <td class="px-4 sm:px-6 py-3 sm:py-4 text-neutral-300">${senderName}</td>
-          <td class="px-4 sm:px-6 py-3 sm:py-4 text-neutral-300">${ticket.subject}</td>
-          <td class="px-4 sm:px-6 py-3 sm:py-4 text-neutral-400 truncate max-w-xs" title="${ticket.message}">${truncatedMessage}</td>
-          <td class="px-4 sm:px-6 py-3 sm:py-4">${statusBadge}</td>
-          <td class="px-4 sm:px-6 py-3 sm:py-4 space-x-2">
+        <td class="px-4 sm:px-6 py-3 sm:py-4 text-neutral-100 font-medium">${ticketId}</td>
+        <td class="px-4 sm:px-6 py-3 sm:py-4">
+          <div class="flex flex-col gap-1">
+            <span class="text-neutral-300">${senderName}</span>
+            ${entityTypeBadge}
+          </div>
+        </td>
+        <td class="px-4 sm:px-6 py-3 sm:py-4 text-neutral-300">${ticket.subject}</td>
+        <td class="px-4 sm:px-6 py-3 sm:py-4 text-neutral-400 truncate max-w-xs" title="${ticket.message}">${truncatedMessage}</td>
+        <td class="px-4 sm:px-6 py-3 sm:py-4">${statusBadge}</td>
+        <td class="px-4 sm:px-6 py-3 sm:py-4 space-x-2">
           <button onclick="viewTicketDetails(${ticket.ticket_id})" class="text-xs text-orange-400 border border-orange-600/40 px-3 py-1 rounded hover:bg-orange-600/20">
             View
           </button>
@@ -490,7 +556,13 @@ function updatePagination() {
 // ==================== VIEW TICKET DETAILS ====================
 async function viewTicketDetails(ticketId) {
   try {
-    const response = await fetch(`/api/admin/support/tickets/${ticketId}/`);
+    const response = await fetch(`/api/admin/support/tickets/${ticketId}/`, {
+    method: 'GET',
+    credentials: 'include',
+    headers: {
+      'X-CSRFToken': getCSRFToken(),
+    }
+  });
     
     if (!response.ok) {
       throw new Error(`HTTP error! status: ${response.status}`);
@@ -540,22 +612,62 @@ function displayTicketDetails(ticket) {
   
   detailsSection.innerHTML = `
     <h2 class="text-lg font-semibold text-white mb-4">Ticket Details</h2>
-    <div class="space-y-2 text-sm">
-      <p><span class="text-neutral-400">Ticket ID:</span> TCK-${ticket.ticket_id}</p>
-      <p><span class="text-neutral-400">Sender:</span> ${senderName} (${senderType})</p>
-      <p><span class="text-neutral-400">Email:</span> ${senderEmail}</p>
+    
+    <!-- Ticket Info -->
+    <div class="space-y-2 text-sm mb-4 pb-4 border-b border-neutral-700">
+      <p><span class="text-neutral-400">Ticket ID:</span> <span class="font-medium">TCK-${ticket.ticket_id}</span></p>
       <p><span class="text-neutral-400">Subject:</span> ${ticket.subject}</p>
-      <p><span class="text-neutral-400">Status:</span> ${ticket.status.replace('_', ' ').toUpperCase()}</p>
+      <p><span class="text-neutral-400">Status:</span> ${getStatusBadge(ticket.status)}</p>
       <p><span class="text-neutral-400">Created:</span> ${ticket.created_at}</p>
+      <p><span class="text-neutral-400">Updated:</span> ${ticket.updated_at}</p>
     </div>
-    <div class="mt-4 bg-neutral-900 border border-neutral-700 rounded-lg p-3 text-sm h-40 overflow-y-auto">
-      <p class="text-neutral-300 mb-2"><span class="text-orange-400 font-medium">User:</span> ${ticket.message}</p>
+    
+    <!-- Sender Info -->
+    <div class="mb-4">
+      <h3 class="text-sm font-semibold text-orange-400 mb-2">Sender Information (${senderType})</h3>
+      <div class="space-y-1.5 text-sm bg-neutral-900 border border-neutral-700 rounded-lg p-3">
+        <p><span class="text-neutral-400">Name:</span> ${senderName}</p>
+        <p><span class="text-neutral-400">Email:</span> ${senderEmail}</p>
+        <p><span class="text-neutral-400">Phone:</span> ${ticket.sender?.phone_number || 'N/A'}</p>
+        ${ticket.sender_type === 'pharmacy' ? `
+          <p><span class="text-neutral-400">City:</span> ${ticket.sender?.city || 'N/A'}</p>
+          <p><span class="text-neutral-400">Address:</span> ${ticket.sender?.store_address || 'N/A'}</p>
+          <p><span class="text-neutral-400">Active:</span> ${ticket.sender?.active ? '✓ Yes' : '✗ No'}</p>
+          <p><span class="text-neutral-400">Open Now:</span> ${ticket.sender?.is_open_now ? '🟢 Open' : '🔴 Closed'}</p>
+          <p><span class="text-neutral-400">Total Orders:</span> ${ticket.sender?.total_orders || 0}</p>
+          <p><span class="text-neutral-400">Pending Invoices:</span> ${ticket.sender?.pending_invoices || 0}</p>
+          <p><span class="text-neutral-400">Total Tickets:</span> ${ticket.sender?.total_contact_tickets || 0}</p>
+        ` : ''}
+        ${ticket.sender_type === 'driver' ? `
+          <p><span class="text-neutral-400">Vehicle:</span> ${ticket.sender?.vehicle_number || 'N/A'}</p>
+          <p><span class="text-neutral-400">Active:</span> ${ticket.sender?.active ? '✓ Yes' : '✗ No'}</p>
+          <p><span class="text-neutral-400">Total Deliveries:</span> ${ticket.sender?.total_deliveries || 0}</p>
+          <p><span class="text-neutral-400">Pending Orders:</span> ${ticket.sender?.pending_orders || 0}</p>
+          <p><span class="text-neutral-400">Total Invoices:</span> ${ticket.sender?.total_invoices || 0}</p>
+          <p><span class="text-neutral-400">Total Tickets:</span> ${ticket.sender?.total_contact_tickets || 0}</p>
+          ${ticket.sender?.identity_url ? `
+            <p><span class="text-neutral-400">ID Document:</span> 
+              <a href="${ticket.sender.identity_url}" target="_blank" class="text-orange-400 hover:underline">View Document</a>
+            </p>
+          ` : ''}
+        ` : ''}
+        <p><span class="text-neutral-400">Member Since:</span> ${ticket.sender?.created_at || 'N/A'}</p>
+      </div>
+    </div>
+    
+    <!-- Message Exchange -->
+    <div class="mt-4 bg-neutral-900 border border-neutral-700 rounded-lg p-3 text-sm max-h-48 overflow-y-auto">
+      <p class="text-neutral-300 mb-2"><span class="text-orange-400 font-medium">User Message:</span><br/>${ticket.message}</p>
       ${adminResponseHtml}
     </div>
+    
+    <!-- Response Input -->
     <div>
       <textarea id="adminResponseTextarea" placeholder="${textareaDisabled ? (isResolved ? 'Ticket is resolved' : 'Change status to In Progress to respond') : 'Type admin response...'}" class="mt-4 bg-neutral-900 border border-neutral-700 rounded-lg w-full text-sm p-2 text-neutral-200 focus:ring-2 focus:ring-orange-500 focus:outline-none disabled:opacity-50 disabled:cursor-not-allowed" rows="3" ${textareaDisabled ? 'disabled' : ''}></textarea>
       ${helperText}
     </div>
+    
+    <!-- Actions -->
     <div class="flex justify-between mt-3">
       ${!isResolved ? `
         <button id="sendResponseBtn" onclick="sendAdminResponse()" class="px-3 py-2 bg-gradient-to-r from-orange-600 to-orange-500 text-white text-xs rounded-lg hover:from-orange-500 hover:to-orange-400 disabled:opacity-50 disabled:cursor-not-allowed" ${ticket.admin_response ? 'disabled' : ''}>
@@ -588,8 +700,10 @@ async function updateTicketStatus() {
   try {
     const response = await fetch(`/api/admin/support/tickets/${selectedTicketId}/status/`, {
       method: 'POST',
+      credentials: 'include',
       headers: {
         'Content-Type': 'application/json',
+        'X-CSRFToken': getCSRFToken(),
       },
       body: JSON.stringify({
         status: newStatus
@@ -645,8 +759,10 @@ async function sendAdminResponse() {
   try {
     const response = await fetch(`/api/admin/support/tickets/${selectedTicketId}/respond/`, {
       method: 'POST',
+      credentials: 'include',
       headers: {
         'Content-Type': 'application/json',
+        'X-CSRFToken': getCSRFToken(),
       },
       body: JSON.stringify({
         admin_response: responseText
@@ -682,8 +798,14 @@ async function sendAdminResponse() {
 // ==================== LOAD TICKET ANALYTICS ====================
 async function loadTicketAnalytics() {
   try {
-    const response = await fetch('/api/admin/support/tickets/metrics/');
-    
+    const response = await fetch('/api/admin/support/tickets/metrics/', {
+    method: 'GET',
+    credentials: 'include',
+    headers: {
+      'X-CSRFToken': getCSRFToken(),
+    }
+  });
+      
     if (!response.ok) {
       throw new Error(`HTTP error! status: ${response.status}`);
     }
@@ -731,10 +853,11 @@ sidebarOverlay?.addEventListener('click', () => {
 });
 
 // ==================== EVENT LISTENERS ====================
-applyFiltersBtn.addEventListener('click', filterTickets);
 searchInput.addEventListener('input', filterTickets);
+entityTypeFilter.addEventListener('change', filterTickets);
 statusFilter.addEventListener('change', filterTickets);
 subjectFilter.addEventListener('change', filterTickets);
+document.getElementById('clearFiltersBtn').addEventListener('click', clearAllFilters);
 
 // ==================== INITIALIZATION ====================
 populateSubjectFilter();
@@ -745,6 +868,7 @@ loadTicketAnalytics();
 window.viewTicketDetails = viewTicketDetails;
 window.updateTicketStatus = updateTicketStatus;
 window.sendAdminResponse = sendAdminResponse;
+window.clearAllFilters = clearAllFilters;
 </script>
     </main>
   </div>

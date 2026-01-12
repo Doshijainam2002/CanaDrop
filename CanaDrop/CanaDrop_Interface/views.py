@@ -14803,15 +14803,79 @@ def get_monthly_financials(request):
             status=500,
         )
 
-@csrf_exempt
+
+@csrf_protect
+@admin_auth_required
+@require_http_methods(["GET"])
 def get_contact_ticket_details(request, ticket_id=None):
+    """
+    Admin-only API.
+
+    - If ticket_id is None: returns ALL tickets (latest first)
+    - If ticket_id is provided: returns SINGLE ticket
+
+    Timezone rule:
+    - DB stores UTC
+    - Responses return timestamps in settings.USER_TIMEZONE
+    """
     try:
+        def fmt_dt(dt):
+            if not dt:
+                return None
+            # ✅ Convert to local time for response
+            local_dt = timezone.localtime(dt, settings.USER_TIMEZONE)
+            return local_dt.strftime("%Y-%m-%d %H:%M:%S")
+
+        def build_pharmacy_info(pharmacy):
+            """Build comprehensive pharmacy information"""
+            return {
+                "id": pharmacy.id,
+                "name": pharmacy.name,
+                "email": pharmacy.email,
+                "phone_number": pharmacy.phone_number,
+                "store_address": pharmacy.store_address,
+                "city": pharmacy.city,
+                "province": pharmacy.province,
+                "postal_code": pharmacy.postal_code,
+                "country": pharmacy.country,
+                "active": pharmacy.active,
+                "business_hours": pharmacy.business_hours,
+                "is_open_now": pharmacy.is_open_now(),
+                "created_at": fmt_dt(pharmacy.created_at),
+                # Statistics
+                "total_orders": pharmacy.orders.count(),
+                "pending_invoices": pharmacy.invoices.filter(status__in=['generated', 'past_due']).count(),
+                "total_contact_tickets": pharmacy.contacts.count(),
+            }
+
+        def build_driver_info(driver):
+            """Build comprehensive driver information"""
+            return {
+                "id": driver.id,
+                "name": driver.name,
+                "email": driver.email,
+                "phone_number": driver.phone_number,
+                "vehicle_number": driver.vehicle_number,
+                "active": driver.active,
+                "identity_url": driver.identity_url,
+                "created_at": fmt_dt(driver.created_at),
+                # Statistics
+                "total_deliveries": driver.orders.filter(status='delivered').count(),
+                "pending_orders": driver.orders.filter(status__in=['accepted', 'inTransit', 'picked_up']).count(),
+                "total_invoices": driver.invoices.count(),
+                "total_contact_tickets": driver.contacts.count(),
+            }
+
         # --------------------------------------------------
         # 1️⃣ CASE: RETURN ALL TICKETS
         # --------------------------------------------------
         if ticket_id is None:
-
-            tickets = ContactAdmin.objects.all().order_by("-created_at")
+            tickets = (
+                ContactAdmin.objects
+                .select_related("pharmacy", "driver")
+                .all()
+                .order_by("-created_at")
+            )
 
             ticket_list = []
 
@@ -14820,23 +14884,9 @@ def get_contact_ticket_details(request, ticket_id=None):
 
                 sender_info = None
                 if t.pharmacy:
-                    sender_info = {
-                        "id": t.pharmacy.id,
-                        "name": t.pharmacy.name,
-                        "email": t.pharmacy.email,
-                        "phone_number": t.pharmacy.phone_number,
-                        "city": t.pharmacy.city,
-                        "active": t.pharmacy.active,
-                    }
+                    sender_info = build_pharmacy_info(t.pharmacy)
                 elif t.driver:
-                    sender_info = {
-                        "id": t.driver.id,
-                        "name": t.driver.name,
-                        "email": t.driver.email,
-                        "phone_number": t.driver.phone_number,
-                        "vehicle_number": t.driver.vehicle_number,
-                        "active": t.driver.active,
-                    }
+                    sender_info = build_driver_info(t.driver)
 
                 ticket_list.append({
                     "ticket_id": t.id,
@@ -14847,8 +14897,8 @@ def get_contact_ticket_details(request, ticket_id=None):
                     "admin_response": t.admin_response,
                     "sender_type": sender_type,
                     "sender": sender_info,
-                    "created_at": t.created_at.strftime("%Y-%m-%d %H:%M:%S"),
-                    "updated_at": t.updated_at.strftime("%Y-%m-%d %H:%M:%S")
+                    "created_at": fmt_dt(t.created_at),
+                    "updated_at": fmt_dt(t.updated_at),
                 })
 
             return JsonResponse({"success": True, "tickets": ticket_list}, status=200)
@@ -14856,29 +14906,19 @@ def get_contact_ticket_details(request, ticket_id=None):
         # --------------------------------------------------
         # 2️⃣ CASE: RETURN SINGLE TICKET
         # --------------------------------------------------
-        ticket = ContactAdmin.objects.get(id=ticket_id)
+        ticket = (
+            ContactAdmin.objects
+            .select_related("pharmacy", "driver")
+            .get(id=ticket_id)
+        )
 
         sender_type = "pharmacy" if ticket.pharmacy else "driver" if ticket.driver else "unknown"
 
         # sender info details
         if ticket.pharmacy:
-            sender_info = {
-                "id": ticket.pharmacy.id,
-                "name": ticket.pharmacy.name,
-                "email": ticket.pharmacy.email,
-                "phone_number": ticket.pharmacy.phone_number,
-                "city": ticket.pharmacy.city,
-                "active": ticket.pharmacy.active,
-            }
+            sender_info = build_pharmacy_info(ticket.pharmacy)
         elif ticket.driver:
-            sender_info = {
-                "id": ticket.driver.id,
-                "name": ticket.driver.name,
-                "email": ticket.driver.email,
-                "phone_number": ticket.driver.phone_number,
-                "vehicle_number": ticket.driver.vehicle_number,
-                "active": ticket.driver.active,
-            }
+            sender_info = build_driver_info(ticket.driver)
         else:
             sender_info = None
 
@@ -14891,8 +14931,8 @@ def get_contact_ticket_details(request, ticket_id=None):
             "admin_response": ticket.admin_response,
             "sender_type": sender_type,
             "sender": sender_info,
-            "created_at": ticket.created_at.strftime("%Y-%m-%d %H:%M:%S"),
-            "updated_at": ticket.updated_at.strftime("%Y-%m-%d %H:%M:%S"),
+            "created_at": fmt_dt(ticket.created_at),
+            "updated_at": fmt_dt(ticket.updated_at),
         }
 
         return JsonResponse({"success": True, "ticket": ticket_data}, status=200)
@@ -14905,106 +14945,358 @@ def get_contact_ticket_details(request, ticket_id=None):
 
 
 
-@csrf_exempt
+# @csrf_exempt
+# def update_ticket_status(request, ticket_id):
+#     """
+#     Update the status of a ContactAdmin ticket.
+
+#     Expects JSON body:
+#     {
+#         "status": "pending" | "in_progress" | "resolved"
+#     }
+#     """
+#     if request.method not in ["POST", "PATCH"]:
+#         return JsonResponse(
+#             {"success": False, "message": "Only POST or PATCH method is allowed."},
+#             status=405,
+#         )
+
+#     # 1️⃣ Fetch ticket
+#     try:
+#         ticket = ContactAdmin.objects.get(id=ticket_id)
+#     except ContactAdmin.DoesNotExist:
+#         return JsonResponse(
+#             {"success": False, "message": "Ticket not found."},
+#             status=404,
+#         )
+
+#     # 2️⃣ Parse JSON body
+#     try:
+#         data = json.loads(request.body.decode("utf-8"))
+#     except json.JSONDecodeError:
+#         return JsonResponse(
+#             {"success": False, "message": "Invalid JSON payload."},
+#             status=400,
+#         )
+
+#     new_status = data.get("status")
+#     if not new_status:
+#         return JsonResponse(
+#             {"success": False, "message": "Missing 'status' in request body."},
+#             status=400,
+#         )
+
+#     # 3️⃣ Validate status
+#     valid_statuses = [choice[0] for choice in ContactAdmin.STATUS_CHOICES]
+#     if new_status not in valid_statuses:
+#         return JsonResponse(
+#             {
+#                 "success": False,
+#                 "message": "Invalid status value.",
+#                 "allowed_values": valid_statuses,
+#             },
+#             status=400,
+#         )
+
+#     # 4️⃣ Update & save
+#     old_status = ticket.status
+#     ticket.status = new_status
+#     ticket.save()
+
+#     # 5️⃣ Send email notification to ticket raiser
+#     try:
+#         # Get ticket raiser info
+#         user_email = None
+#         user_name = None
+#         user_type = None
+        
+#         if ticket.pharmacy:
+#             user_email = ticket.pharmacy.email
+#             user_name = ticket.pharmacy.name
+#             user_type = "Pharmacy"
+#         elif ticket.driver:
+#             user_email = ticket.driver.email
+#             user_name = ticket.driver.name
+#             user_type = "Driver"
+        
+#         if user_email:
+#             brand_primary = settings.BRAND_COLORS['primary']
+#             brand_primary_dark = settings.BRAND_COLORS['primary_dark']
+#             brand_accent = settings.BRAND_COLORS['accent']
+#             now_str = timezone.now().strftime("%b %d, %Y %H:%M %Z")
+#             logo_url = settings.LOGO_URL
+            
+#             # Format subject for display
+#             subject_display = ticket.other_subject if ticket.subject == 'other' else ticket.get_subject_display()
+            
+#             # Status color mapping
+#             status_colors = {
+#                 'pending': '#f59e0b',
+#                 'in_progress': '#3b82f6',
+#                 'resolved': '#10b981'
+#             }
+#             status_bg_colors = {
+#                 'pending': '#fff7ed',
+#                 'in_progress': '#eff6ff',
+#                 'resolved': '#f0fdf4'
+#             }
+#             status_text = new_status.replace('_', ' ').title()
+#             status_color = status_colors.get(new_status, '#6b7280')
+#             status_bg = status_bg_colors.get(new_status, '#f8fafc')
+
+#             html = f"""\
+# <!doctype html>
+# <html lang="en">
+#   <head>
+#     <meta charset="utf-8">
+#     <title>Ticket Status Updated • {settings.COMPANY_OPERATING_NAME}</title>
+#     <meta name="viewport" content="width=device-width, initial-scale=1">
+#     <style>
+#       @media (prefers-color-scheme: dark) {{
+#         body {{ background: #0b1220 !important; color: #e5e7eb !important; }}
+#         .card {{ background: #0f172a !important; border-color: #1f2937 !important; }}
+#         .muted {{ color: #94a3b8 !important; }}
+#       }}
+#     </style>
+#   </head>
+#   <body style="margin:0;padding:0;background:#f4f7f9;">
+#     <div style="display:none;visibility:hidden;opacity:0;height:0;width:0;overflow:hidden;">
+#       Your support ticket status has been updated.
+#     </div>
+
+#     <table role="presentation" width="100%" cellspacing="0" cellpadding="0" border="0" style="background:#f4f7f9;padding:24px 12px;">
+#       <tr>
+#         <td align="center">
+#           <table role="presentation" width="100%" cellspacing="0" cellpadding="0" border="0" class="card" style="max-width:640px;background:#ffffff;border:1px solid #e5e7eb;border-radius:16px;overflow:hidden;">
+#             <tr>
+#               <td style="background:{brand_primary};padding:18px 20px;">
+#                 <table width="100%" cellspacing="0" cellpadding="0" border="0">
+#                   <tr>
+#                     <td align="left">
+#                       <img src="{logo_url}"
+#                            alt="{settings.COMPANY_OPERATING_NAME}"
+#                            width="64"
+#                            height="64"
+#                            style="display:block;border:0;outline:none;text-decoration:none;border-radius:50%;object-fit:cover;">
+#                     </td>
+#                     <td align="right" style="font:600 16px/1.2 system-ui,-apple-system,'Segoe UI',Roboto,Helvetica,Arial;color:#e6fffb;">
+#                       Ticket Status Updated
+#                     </td>
+#                   </tr>
+#                 </table>
+#               </td>
+#             </tr>
+
+#             <tr>
+#               <td style="padding:28px 24px 6px;">
+#                 <h1 style="margin:0 0 10px;font:800 24px/1.25 system-ui,-apple-system,'Segoe UI',Roboto,Helvetica,Arial;color:#0f172a;">
+#                   Hi {user_name}, your ticket status changed
+#                 </h1>
+#                 <p style="margin:0 0 16px;font:400 14px/1.7 system-ui,-apple-system,'Segoe UI',Roboto,Helvetica,Arial;color:#475569;">
+#                   Your support ticket <strong>#{ticket.id}</strong> status has been updated by our admin team.
+#                 </p>
+
+#                 <div style="margin:18px 0;background:{status_bg};border:1px solid {status_color};border-radius:12px;padding:16px 18px;">
+#                   <p style="margin:0 0 8px;font:600 13px/1.4 system-ui,-apple-system,'Segoe UI',Roboto,Helvetica,Arial;color:#0f172a;">
+#                     Ticket Status:
+#                   </p>
+#                   <p style="margin:0;font:700 18px/1.4 system-ui,-apple-system,'Segoe UI',Roboto,Helvetica,Arial;color:{status_color};text-transform:uppercase;">
+#                     {status_text}
+#                   </p>
+#                 </div>
+
+#                 <div style="margin:18px 0;background:#f8fafc;border:1px solid #e2e8f0;border-radius:12px;padding:0;overflow:hidden;">
+#                   <table width="100%" cellspacing="0" cellpadding="0" border="0" style="font:400 14px/1.6 system-ui,-apple-system,'Segoe UI',Roboto,Helvetica,Arial;">
+#                     <tr style="background:#f1f5f9;">
+#                       <td style="padding:12px 18px;color:#64748b;font-weight:600;">Ticket ID</td>
+#                       <td style="padding:12px 18px;color:#0f172a;font-weight:500;">#{ticket.id}</td>
+#                     </tr>
+#                     <tr>
+#                       <td style="padding:12px 18px;color:#64748b;font-weight:600;border-top:1px solid #e2e8f0;">Subject</td>
+#                       <td style="padding:12px 18px;color:#0f172a;border-top:1px solid #e2e8f0;">{subject_display}</td>
+#                     </tr>
+#                     <tr style="background:#f1f5f9;">
+#                       <td style="padding:12px 18px;color:#64748b;font-weight:600;border-top:1px solid #e2e8f0;">Updated On</td>
+#                       <td style="padding:12px 18px;color:{brand_primary_dark};font-weight:500;border-top:1px solid #e2e8f0;">{now_str}</td>
+#                     </tr>
+#                   </table>
+#                 </div>
+
+#                 <hr style="border:0;border-top:1px solid #e5e7eb;margin:24px 0;">
+#                 <p class="muted" style="margin:0;font:400 12px/1.7 system-ui,-apple-system,'Segoe UI',Roboto,Helvetica,Arial;color:#6b7280;">
+#                   You'll receive another notification when our team responds to your ticket. If you have additional questions, login to the portal and raise another Support Ticket by contacting the Admin.
+#                 </p>
+#               </td>
+#             </tr>
+
+#             <tr>
+#               <td style="padding:0 24px 24px;">
+#                 <table width="100%" cellspacing="0" cellpadding="0" border="0" style="background:#f8fafc;border:1px dashed #e2e8f0;border-radius:12px;">
+#                   <tr>
+#                     <td style="padding:12px 16px;">
+#                       <p style="margin:0;font:400 12px/1.6 system-ui,-apple-system,'Segoe UI',Roboto,Helvetica,Arial;color:#64748b;">
+#                         Thank you for your patience — we're working on your request.
+#                       </p>
+#                     </td>
+#                   </tr>
+#                 </table>
+#               </td>
+#             </tr>
+
+#           </table>
+
+#           <p style="margin:14px 0 0;font:400 12px/1.6 system-ui,-apple-system,'Segoe UI',Roboto,Helvetica,Arial;color:#94a3b8;">
+#             © {timezone.now().year} {settings.COMPANY_OPERATING_NAME} - {settings.COMPANY_SUB_GROUP_NAME}. All rights reserved.
+#           </p>
+#         </td>
+#       </tr>
+#     </table>
+#   </body>
+# </html>
+# """
+#             text = (
+#                 f"Ticket Status Updated - {settings.COMPANY_OPERATING_NAME}\n\n"
+#                 f"Hi {user_name},\n\n"
+#                 f"Your support ticket #{ticket.id} status has been updated.\n\n"
+#                 f"Ticket ID: #{ticket.id}\n"
+#                 f"Subject: {subject_display}\n"
+#                 f"New Status: {status_text}\n"
+#                 f"Updated On: {now_str}\n\n"
+#                 "You'll receive another notification when our team responds to your ticket.\n"
+#             )
+
+#             _send_html_email_admin_office(
+#                 subject=f"Ticket #{ticket.id} Status Updated: {status_text}",
+#                 to_email=user_email,
+#                 html=html,
+#                 text_fallback=text,
+#             )
+#     except Exception:
+#         logger.exception("Failed to send ticket status update email")
+
+#     # 6️⃣ Build response
+#     return JsonResponse(
+#         {
+#             "success": True,
+#             "message": "Ticket status updated successfully.",
+#             "ticket": {
+#                 "ticket_id": ticket.id,
+#                 "status": ticket.status,
+#                 "subject_key": ticket.subject,
+#                 "subject": ticket.get_subject_display() if ticket.subject != "other" else ticket.other_subject,
+#                 "updated_at": ticket.updated_at.strftime("%Y-%m-%d %H:%M:%S"),
+#             },
+#         },
+#         status=200,
+#     )
+
+
+@csrf_protect
+@admin_auth_required
+@require_http_methods(["POST", "PATCH"])
 def update_ticket_status(request, ticket_id):
     """
-    Update the status of a ContactAdmin ticket.
+    Admin-only API to update the status of a ContactAdmin ticket.
 
     Expects JSON body:
     {
         "status": "pending" | "in_progress" | "resolved"
     }
+    
+    Timezone rule:
+    - DB stores UTC
+    - Email timestamps use settings.USER_TIMEZONE
+    - Response timestamps use settings.USER_TIMEZONE
     """
-    if request.method not in ["POST", "PATCH"]:
-        return JsonResponse(
-            {"success": False, "message": "Only POST or PATCH method is allowed."},
-            status=405,
-        )
-
-    # 1️⃣ Fetch ticket
     try:
-        ticket = ContactAdmin.objects.get(id=ticket_id)
-    except ContactAdmin.DoesNotExist:
-        return JsonResponse(
-            {"success": False, "message": "Ticket not found."},
-            status=404,
-        )
+        # 1️⃣ Fetch ticket
+        try:
+            ticket = ContactAdmin.objects.select_related("pharmacy", "driver").get(id=ticket_id)
+        except ContactAdmin.DoesNotExist:
+            return JsonResponse(
+                {"success": False, "message": "Ticket not found."},
+                status=404,
+            )
 
-    # 2️⃣ Parse JSON body
-    try:
-        data = json.loads(request.body.decode("utf-8"))
-    except json.JSONDecodeError:
-        return JsonResponse(
-            {"success": False, "message": "Invalid JSON payload."},
-            status=400,
-        )
+        # 2️⃣ Parse JSON body
+        try:
+            data = json.loads(request.body.decode("utf-8"))
+        except json.JSONDecodeError:
+            return JsonResponse(
+                {"success": False, "message": "Invalid JSON payload."},
+                status=400,
+            )
 
-    new_status = data.get("status")
-    if not new_status:
-        return JsonResponse(
-            {"success": False, "message": "Missing 'status' in request body."},
-            status=400,
-        )
+        new_status = data.get("status")
+        if not new_status:
+            return JsonResponse(
+                {"success": False, "message": "Missing 'status' in request body."},
+                status=400,
+            )
 
-    # 3️⃣ Validate status
-    valid_statuses = [choice[0] for choice in ContactAdmin.STATUS_CHOICES]
-    if new_status not in valid_statuses:
-        return JsonResponse(
-            {
-                "success": False,
-                "message": "Invalid status value.",
-                "allowed_values": valid_statuses,
-            },
-            status=400,
-        )
+        # 3️⃣ Validate status
+        valid_statuses = [choice[0] for choice in ContactAdmin.STATUS_CHOICES]
+        if new_status not in valid_statuses:
+            return JsonResponse(
+                {
+                    "success": False,
+                    "message": "Invalid status value.",
+                    "allowed_values": valid_statuses,
+                },
+                status=400,
+            )
 
-    # 4️⃣ Update & save
-    old_status = ticket.status
-    ticket.status = new_status
-    ticket.save()
+        # 4️⃣ Update & save
+        old_status = ticket.status
+        ticket.status = new_status
+        ticket.save()
 
-    # 5️⃣ Send email notification to ticket raiser
-    try:
-        # Get ticket raiser info
-        user_email = None
-        user_name = None
-        user_type = None
-        
-        if ticket.pharmacy:
-            user_email = ticket.pharmacy.email
-            user_name = ticket.pharmacy.name
-            user_type = "Pharmacy"
-        elif ticket.driver:
-            user_email = ticket.driver.email
-            user_name = ticket.driver.name
-            user_type = "Driver"
-        
-        if user_email:
-            brand_primary = settings.BRAND_COLORS['primary']
-            brand_primary_dark = settings.BRAND_COLORS['primary_dark']
-            brand_accent = settings.BRAND_COLORS['accent']
-            now_str = timezone.now().strftime("%b %d, %Y %H:%M %Z")
-            logo_url = settings.LOGO_URL
+        # 5️⃣ Send email notification to ticket raiser
+        try:
+            # Get ticket raiser info
+            user_email = None
+            user_name = None
+            user_type = None
             
-            # Format subject for display
-            subject_display = ticket.other_subject if ticket.subject == 'other' else ticket.get_subject_display()
+            if ticket.pharmacy:
+                user_email = ticket.pharmacy.email
+                user_name = ticket.pharmacy.name
+                user_type = "Pharmacy"
+            elif ticket.driver:
+                user_email = ticket.driver.email
+                user_name = ticket.driver.name
+                user_type = "Driver"
             
-            # Status color mapping
-            status_colors = {
-                'pending': '#f59e0b',
-                'in_progress': '#3b82f6',
-                'resolved': '#10b981'
-            }
-            status_bg_colors = {
-                'pending': '#fff7ed',
-                'in_progress': '#eff6ff',
-                'resolved': '#f0fdf4'
-            }
-            status_text = new_status.replace('_', ' ').title()
-            status_color = status_colors.get(new_status, '#6b7280')
-            status_bg = status_bg_colors.get(new_status, '#f8fafc')
+            if user_email:
+                brand_primary = settings.BRAND_COLORS['primary']
+                brand_primary_dark = settings.BRAND_COLORS['primary_dark']
+                brand_accent = settings.BRAND_COLORS['accent']
+                
+                # ✅ Convert UTC to local timezone for email display
+                now_local = timezone.localtime(timezone.now(), settings.USER_TIMEZONE)
+                now_str = now_local.strftime("%b %d, %Y %H:%M %Z")
+                
+                logo_url = settings.LOGO_URL
+                
+                # Format subject for display
+                subject_display = ticket.other_subject if ticket.subject == 'other' else ticket.get_subject_display()
+                
+                # Status color mapping
+                status_colors = {
+                    'pending': '#f59e0b',
+                    'in_progress': '#3b82f6',
+                    'resolved': '#10b981'
+                }
+                status_bg_colors = {
+                    'pending': '#fff7ed',
+                    'in_progress': '#eff6ff',
+                    'resolved': '#f0fdf4'
+                }
+                status_text = new_status.replace('_', ' ').title()
+                status_color = status_colors.get(new_status, '#6b7280')
+                status_bg = status_bg_colors.get(new_status, '#f8fafc')
 
-            html = f"""\
+                html = f"""\
 <!doctype html>
 <html lang="en">
   <head>
@@ -15106,7 +15398,7 @@ def update_ticket_status(request, ticket_id):
           </table>
 
           <p style="margin:14px 0 0;font:400 12px/1.6 system-ui,-apple-system,'Segoe UI',Roboto,Helvetica,Arial;color:#94a3b8;">
-            © {timezone.now().year} {settings.COMPANY_OPERATING_NAME} - {settings.COMPANY_SUB_GROUP_NAME}. All rights reserved.
+            © {now_local.year} {settings.COMPANY_OPERATING_NAME} - {settings.COMPANY_SUB_GROUP_NAME}. All rights reserved.
           </p>
         </td>
       </tr>
@@ -15114,124 +15406,402 @@ def update_ticket_status(request, ticket_id):
   </body>
 </html>
 """
-            text = (
-                f"Ticket Status Updated - {settings.COMPANY_OPERATING_NAME}\n\n"
-                f"Hi {user_name},\n\n"
-                f"Your support ticket #{ticket.id} status has been updated.\n\n"
-                f"Ticket ID: #{ticket.id}\n"
-                f"Subject: {subject_display}\n"
-                f"New Status: {status_text}\n"
-                f"Updated On: {now_str}\n\n"
-                "You'll receive another notification when our team responds to your ticket.\n"
-            )
+                text = (
+                    f"Ticket Status Updated - {settings.COMPANY_OPERATING_NAME}\n\n"
+                    f"Hi {user_name},\n\n"
+                    f"Your support ticket #{ticket.id} status has been updated.\n\n"
+                    f"Ticket ID: #{ticket.id}\n"
+                    f"Subject: {subject_display}\n"
+                    f"New Status: {status_text}\n"
+                    f"Updated On: {now_str}\n\n"
+                    "You'll receive another notification when our team responds to your ticket.\n"
+                )
 
-            _send_html_email_admin_office(
-                subject=f"Ticket #{ticket.id} Status Updated: {status_text}",
-                to_email=user_email,
-                html=html,
-                text_fallback=text,
-            )
-    except Exception:
-        logger.exception("Failed to send ticket status update email")
+                _send_html_email_admin_office(
+                    subject=f"Ticket #{ticket.id} Status Updated: {status_text}",
+                    to_email=user_email,
+                    html=html,
+                    text_fallback=text,
+                )
+        except Exception:
+            logger.exception("Failed to send ticket status update email")
 
-    # 6️⃣ Build response
-    return JsonResponse(
-        {
-            "success": True,
-            "message": "Ticket status updated successfully.",
-            "ticket": {
-                "ticket_id": ticket.id,
-                "status": ticket.status,
-                "subject_key": ticket.subject,
-                "subject": ticket.get_subject_display() if ticket.subject != "other" else ticket.other_subject,
-                "updated_at": ticket.updated_at.strftime("%Y-%m-%d %H:%M:%S"),
+        # 6️⃣ Build response with local timezone
+        def fmt_dt(dt):
+            if not dt:
+                return None
+            # ✅ Convert to local time for response
+            local_dt = timezone.localtime(dt, settings.USER_TIMEZONE)
+            return local_dt.strftime("%Y-%m-%d %H:%M:%S")
+
+        return JsonResponse(
+            {
+                "success": True,
+                "message": "Ticket status updated successfully.",
+                "ticket": {
+                    "ticket_id": ticket.id,
+                    "status": ticket.status,
+                    "subject_key": ticket.subject,
+                    "subject": ticket.get_subject_display() if ticket.subject != "other" else ticket.other_subject,
+                    "updated_at": fmt_dt(ticket.updated_at),
+                },
             },
-        },
-        status=200,
-    )
+            status=200,
+        )
+
+    except Exception as e:
+        logger.exception("Error updating ticket status")
+        return JsonResponse(
+            {"success": False, "error": str(e)},
+            status=500
+        )
 
 
-@csrf_exempt
+# @csrf_exempt
+# def add_admin_response(request, ticket_id):
+#     """
+#     Adds an admin response to a ticket.
+#     Automatically sets the status to 'resolved' if not already resolved.
+
+#     Expected JSON body:
+#     {
+#         "admin_response": "Your issue has been resolved..."
+#     }
+#     """
+#     if request.method not in ["POST", "PATCH"]:
+#         return JsonResponse(
+#             {"success": False, "message": "Only POST or PATCH allowed."},
+#             status=405
+#         )
+
+#     # 1️⃣ Fetch ticket
+#     try:
+#         ticket = ContactAdmin.objects.get(id=ticket_id)
+#     except ContactAdmin.DoesNotExist:
+#         return JsonResponse(
+#             {"success": False, "message": "Ticket not found."},
+#             status=404
+#         )
+
+#     # 2️⃣ Parse JSON
+#     try:
+#         data = json.loads(request.body.decode("utf-8"))
+#     except json.JSONDecodeError:
+#         return JsonResponse(
+#             {"success": False, "message": "Invalid JSON payload."},
+#             status=400
+#         )
+
+#     admin_response = data.get("admin_response")
+#     if not admin_response:
+#         return JsonResponse(
+#             {"success": False, "message": "Missing 'admin_response'."},
+#             status=400
+#         )
+
+#     # 3️⃣ Update fields
+#     ticket.admin_response = admin_response
+
+#     # Auto-resolve if not resolved
+#     if ticket.status != "resolved":
+#         ticket.status = "resolved"
+
+#     ticket.save()
+
+#     # 4️⃣ Send email notification to ticket raiser
+#     try:
+#         # Get ticket raiser info
+#         user_email = None
+#         user_name = None
+#         user_type = None
+        
+#         if ticket.pharmacy:
+#             user_email = ticket.pharmacy.email
+#             user_name = ticket.pharmacy.name
+#             user_type = "Pharmacy"
+#         elif ticket.driver:
+#             user_email = ticket.driver.email
+#             user_name = ticket.driver.name
+#             user_type = "Driver"
+        
+#         if user_email:
+#             brand_primary = settings.BRAND_COLORS['primary']
+#             brand_primary_dark = settings.BRAND_COLORS['primary_dark']
+#             brand_accent = settings.BRAND_COLORS['accent']
+#             now_str = timezone.now().strftime("%b %d, %Y %H:%M %Z")
+#             logo_url = settings.LOGO_URL
+            
+#             # Format subject for display
+#             subject_display = ticket.other_subject if ticket.subject == 'other' else ticket.get_subject_display()
+            
+#             # Truncate original message for context (first 100 chars)
+#             message_context = ticket.message[:100] + "..." if len(ticket.message) > 100 else ticket.message
+
+#             html = f"""\
+# <!doctype html>
+# <html lang="en">
+#   <head>
+#     <meta charset="utf-8">
+#     <title>Admin Response • {settings.COMPANY_OPERATING_NAME}</title>
+#     <meta name="viewport" content="width=device-width, initial-scale=1">
+#     <style>
+#       @media (prefers-color-scheme: dark) {{
+#         body {{ background: #0b1220 !important; color: #e5e7eb !important; }}
+#         .card {{ background: #0f172a !important; border-color: #1f2937 !important; }}
+#         .muted {{ color: #94a3b8 !important; }}
+#       }}
+#     </style>
+#   </head>
+#   <body style="margin:0;padding:0;background:#f4f7f9;">
+#     <div style="display:none;visibility:hidden;opacity:0;height:0;width:0;overflow:hidden;">
+#       Admin response received for your support ticket.
+#     </div>
+
+#     <table role="presentation" width="100%" cellspacing="0" cellpadding="0" border="0" style="background:#f4f7f9;padding:24px 12px;">
+#       <tr>
+#         <td align="center">
+#           <table role="presentation" width="100%" cellspacing="0" cellpadding="0" border="0" class="card" style="max-width:640px;background:#ffffff;border:1px solid #e5e7eb;border-radius:16px;overflow:hidden;">
+#             <tr>
+#               <td style="background:{brand_primary};padding:18px 20px;">
+#                 <table width="100%" cellspacing="0" cellpadding="0" border="0">
+#                   <tr>
+#                     <td align="left">
+#                       <img src="{logo_url}"
+#                            alt="{settings.COMPANY_OPERATING_NAME}"
+#                            width="64"
+#                            height="64"
+#                            style="display:block;border:0;outline:none;text-decoration:none;border-radius:50%;object-fit:cover;">
+#                     </td>
+#                     <td align="right" style="font:600 16px/1.2 system-ui,-apple-system,'Segoe UI',Roboto,Helvetica,Arial;color:#e6fffb;">
+#                       Admin Response Received
+#                     </td>
+#                   </tr>
+#                 </table>
+#               </td>
+#             </tr>
+
+#             <tr>
+#               <td style="padding:28px 24px 6px;">
+#                 <h1 style="margin:0 0 10px;font:800 24px/1.25 system-ui,-apple-system,'Segoe UI',Roboto,Helvetica,Arial;color:#0f172a;">
+#                   Hi {user_name}, we've responded to your ticket ✓
+#                 </h1>
+#                 <p style="margin:0 0 16px;font:400 14px/1.7 system-ui,-apple-system,'Segoe UI',Roboto,Helvetica,Arial;color:#475569;">
+#                   Our admin team has reviewed and responded to your support ticket <strong>#{ticket.id}</strong>.
+#                 </p>
+
+#                 <div style="margin:18px 0;background:#f0fdf4;border:1px solid #86efac;border-radius:12px;padding:16px 18px;">
+#                   <p style="margin:0 0 8px;font:600 13px/1.4 system-ui,-apple-system,'Segoe UI',Roboto,Helvetica,Arial;color:#166534;">
+#                     ✓ Ticket Status: <span style="font-weight:700;">RESOLVED</span>
+#                   </p>
+#                 </div>
+
+#                 <div style="margin:18px 0;background:#f8fafc;border:1px solid #e2e8f0;border-radius:12px;padding:0;overflow:hidden;">
+#                   <table width="100%" cellspacing="0" cellpadding="0" border="0" style="font:400 14px/1.6 system-ui,-apple-system,'Segoe UI',Roboto,Helvetica,Arial;">
+#                     <tr style="background:#f1f5f9;">
+#                       <td style="padding:12px 18px;color:#64748b;font-weight:600;">Ticket ID</td>
+#                       <td style="padding:12px 18px;color:#0f172a;font-weight:500;">#{ticket.id}</td>
+#                     </tr>
+#                     <tr>
+#                       <td style="padding:12px 18px;color:#64748b;font-weight:600;border-top:1px solid #e2e8f0;">Subject</td>
+#                       <td style="padding:12px 18px;color:#0f172a;border-top:1px solid #e2e8f0;">{subject_display}</td>
+#                     </tr>
+#                     <tr style="background:#f1f5f9;">
+#                       <td style="padding:12px 18px;color:#64748b;font-weight:600;border-top:1px solid #e2e8f0;">Responded On</td>
+#                       <td style="padding:12px 18px;color:{brand_primary_dark};font-weight:500;border-top:1px solid #e2e8f0;">{now_str}</td>
+#                     </tr>
+#                   </table>
+#                 </div>
+
+#                 <div style="margin:20px 0;background:#fffbeb;border-left:3px solid {brand_accent};border-radius:8px;padding:16px 18px;">
+#                   <p style="margin:0 0 8px;font:600 13px/1.4 system-ui,-apple-system,'Segoe UI',Roboto,Helvetica,Arial;color:#78350f;">
+#                     YOUR ORIGINAL MESSAGE:
+#                   </p>
+#                   <p style="margin:0;font:400 13px/1.6 system-ui,-apple-system,'Segoe UI',Roboto,Helvetica,Arial;color:#451a03;">
+#                     {message_context}
+#                   </p>
+#                 </div>
+
+#                 <div style="margin:20px 0;background:#f0fdfa;border-left:3px solid {brand_primary};border-radius:8px;padding:16px 18px;">
+#                   <p style="margin:0 0 8px;font:600 13px/1.4 system-ui,-apple-system,'Segoe UI',Roboto,Helvetica,Arial;color:#0f172a;">
+#                     ADMIN RESPONSE:
+#                   </p>
+#                   <p style="margin:0;font:400 14px/1.7 system-ui,-apple-system,'Segoe UI',Roboto,Helvetica,Arial;color:#0f172a;white-space:pre-wrap;">
+# {admin_response}
+#                   </p>
+#                 </div>
+
+#                 <hr style="border:0;border-top:1px solid #e5e7eb;margin:24px 0;">
+#                 <p class="muted" style="margin:0;font:400 12px/1.7 system-ui,-apple-system,'Segoe UI',Roboto,Helvetica,Arial;color:#6b7280;">
+#                   If you have further questions or need additional assistance, please login to the portal and raise another Support Ticket by mentioning current Ticket ID. <strong>#{ticket.id}</strong>.
+#                 </p>
+#               </td>
+#             </tr>
+
+#             <tr>
+#               <td style="padding:0 24px 24px;">
+#                 <table width="100%" cellspacing="0" cellpadding="0" border="0" style="background:#f8fafc;border:1px dashed #e2e8f0;border-radius:12px;">
+#                   <tr>
+#                     <td style="padding:12px 16px;">
+#                       <p style="margin:0;font:400 12px/1.6 system-ui,-apple-system,'Segoe UI',Roboto,Helvetica,Arial;color:#64748b;">
+#                         Thank you for contacting {settings.COMPANY_OPERATING_NAME} support. We're here to help!
+#                       </p>
+#                     </td>
+#                   </tr>
+#                 </table>
+#               </td>
+#             </tr>
+
+#           </table>
+
+#           <p style="margin:14px 0 0;font:400 12px/1.6 system-ui,-apple-system,'Segoe UI',Roboto,Helvetica,Arial;color:#94a3b8;">
+#             © {timezone.now().year} {settings.COMPANY_OPERATING_NAME} - {settings.COMPANY_SUB_GROUP_NAME}. All rights reserved.
+#           </p>
+#         </td>
+#       </tr>
+#     </table>
+#   </body>
+# </html>
+# """
+#             text = (
+#                 f"Admin Response Received - {settings.COMPANY_OPERATING_NAME}\n\n"
+#                 f"Hi {user_name},\n\n"
+#                 f"Our admin team has responded to your support ticket #{ticket.id}.\n\n"
+#                 f"Ticket ID: #{ticket.id}\n"
+#                 f"Subject: {subject_display}\n"
+#                 f"Status: RESOLVED\n"
+#                 f"Responded On: {now_str}\n\n"
+#                 "YOUR ORIGINAL MESSAGE:\n"
+#                 f"{message_context}\n\n"
+#                 "ADMIN RESPONSE:\n"
+#                 f"{admin_response}\n\n"
+#                 f"If you have further questions, reply to this email with your ticket ID #{ticket.id}.\n"
+#             )
+
+#             _send_html_email_admin_office(
+#                 subject=f"Response to Ticket #{ticket.id}: {subject_display}",
+#                 to_email=user_email,
+#                 html=html,
+#                 text_fallback=text,
+#             )
+#     except Exception:
+#         logger.exception("Failed to send admin response email")
+
+#     # Build sender info
+#     sender_type = "Pharmacy" if ticket.pharmacy else "Driver"
+#     sender_info = {
+#         "type": sender_type,
+#         "id": ticket.pharmacy.id if ticket.pharmacy else ticket.driver.id,
+#         "name": ticket.pharmacy.name if ticket.pharmacy else ticket.driver.name,
+#         "email": ticket.pharmacy.email if ticket.pharmacy else ticket.driver.email,
+#     }
+
+#     return JsonResponse(
+#         {
+#             "success": True,
+#             "message": "Response added and ticket resolved.",
+#             "ticket": {
+#                 "ticket_id": ticket.id,
+#                 "subject_key": ticket.subject,
+#                 "subject": ticket.other_subject if ticket.subject == "other" else ticket.get_subject_display(),
+#                 "message": ticket.message,
+#                 "admin_response": ticket.admin_response,
+#                 "status": ticket.status,
+#                 "sender": sender_info,
+#                 "created_at": ticket.created_at.strftime("%Y-%m-%d %H:%M:%S"),
+#                 "updated_at": ticket.updated_at.strftime("%Y-%m-%d %H:%M:%S"),
+#             },
+#         },
+#         status=200
+#     )
+
+
+@csrf_protect
+@admin_auth_required
+@require_http_methods(["POST", "PATCH"])
 def add_admin_response(request, ticket_id):
     """
-    Adds an admin response to a ticket.
+    Admin-only API to add an admin response to a ticket.
     Automatically sets the status to 'resolved' if not already resolved.
 
     Expected JSON body:
     {
         "admin_response": "Your issue has been resolved..."
     }
+    
+    Timezone rule:
+    - DB stores UTC
+    - Email timestamps use settings.USER_TIMEZONE
+    - Response timestamps use settings.USER_TIMEZONE
     """
-    if request.method not in ["POST", "PATCH"]:
-        return JsonResponse(
-            {"success": False, "message": "Only POST or PATCH allowed."},
-            status=405
-        )
-
-    # 1️⃣ Fetch ticket
     try:
-        ticket = ContactAdmin.objects.get(id=ticket_id)
-    except ContactAdmin.DoesNotExist:
-        return JsonResponse(
-            {"success": False, "message": "Ticket not found."},
-            status=404
-        )
+        # 1️⃣ Fetch ticket
+        try:
+            ticket = ContactAdmin.objects.select_related("pharmacy", "driver").get(id=ticket_id)
+        except ContactAdmin.DoesNotExist:
+            return JsonResponse(
+                {"success": False, "message": "Ticket not found."},
+                status=404
+            )
 
-    # 2️⃣ Parse JSON
-    try:
-        data = json.loads(request.body.decode("utf-8"))
-    except json.JSONDecodeError:
-        return JsonResponse(
-            {"success": False, "message": "Invalid JSON payload."},
-            status=400
-        )
+        # 2️⃣ Parse JSON
+        try:
+            data = json.loads(request.body.decode("utf-8"))
+        except json.JSONDecodeError:
+            return JsonResponse(
+                {"success": False, "message": "Invalid JSON payload."},
+                status=400
+            )
 
-    admin_response = data.get("admin_response")
-    if not admin_response:
-        return JsonResponse(
-            {"success": False, "message": "Missing 'admin_response'."},
-            status=400
-        )
+        admin_response = data.get("admin_response")
+        if not admin_response or not admin_response.strip():
+            return JsonResponse(
+                {"success": False, "message": "Missing or empty 'admin_response'."},
+                status=400
+            )
 
-    # 3️⃣ Update fields
-    ticket.admin_response = admin_response
+        # 3️⃣ Update fields
+        ticket.admin_response = admin_response.strip()
 
-    # Auto-resolve if not resolved
-    if ticket.status != "resolved":
-        ticket.status = "resolved"
+        # Auto-resolve if not resolved
+        if ticket.status != "resolved":
+            ticket.status = "resolved"
 
-    ticket.save()
+        ticket.save()
 
-    # 4️⃣ Send email notification to ticket raiser
-    try:
-        # Get ticket raiser info
-        user_email = None
-        user_name = None
-        user_type = None
-        
-        if ticket.pharmacy:
-            user_email = ticket.pharmacy.email
-            user_name = ticket.pharmacy.name
-            user_type = "Pharmacy"
-        elif ticket.driver:
-            user_email = ticket.driver.email
-            user_name = ticket.driver.name
-            user_type = "Driver"
-        
-        if user_email:
-            brand_primary = settings.BRAND_COLORS['primary']
-            brand_primary_dark = settings.BRAND_COLORS['primary_dark']
-            brand_accent = settings.BRAND_COLORS['accent']
-            now_str = timezone.now().strftime("%b %d, %Y %H:%M %Z")
-            logo_url = settings.LOGO_URL
+        # 4️⃣ Send email notification to ticket raiser
+        try:
+            # Get ticket raiser info
+            user_email = None
+            user_name = None
+            user_type = None
             
-            # Format subject for display
-            subject_display = ticket.other_subject if ticket.subject == 'other' else ticket.get_subject_display()
+            if ticket.pharmacy:
+                user_email = ticket.pharmacy.email
+                user_name = ticket.pharmacy.name
+                user_type = "Pharmacy"
+            elif ticket.driver:
+                user_email = ticket.driver.email
+                user_name = ticket.driver.name
+                user_type = "Driver"
             
-            # Truncate original message for context (first 100 chars)
-            message_context = ticket.message[:100] + "..." if len(ticket.message) > 100 else ticket.message
+            if user_email:
+                brand_primary = settings.BRAND_COLORS['primary']
+                brand_primary_dark = settings.BRAND_COLORS['primary_dark']
+                brand_accent = settings.BRAND_COLORS['accent']
+                
+                # ✅ Convert UTC to local timezone for email display
+                now_local = timezone.localtime(timezone.now(), settings.USER_TIMEZONE)
+                now_str = now_local.strftime("%b %d, %Y %H:%M %Z")
+                
+                logo_url = settings.LOGO_URL
+                
+                # Format subject for display
+                subject_display = ticket.other_subject if ticket.subject == 'other' else ticket.get_subject_display()
+                
+                # Truncate original message for context (first 100 chars)
+                message_context = ticket.message[:100] + "..." if len(ticket.message) > 100 else ticket.message
 
-            html = f"""\
+                html = f"""\
 <!doctype html>
 <html lang="en">
   <head>
@@ -15348,7 +15918,7 @@ def add_admin_response(request, ticket_id):
           </table>
 
           <p style="margin:14px 0 0;font:400 12px/1.6 system-ui,-apple-system,'Segoe UI',Roboto,Helvetica,Arial;color:#94a3b8;">
-            © {timezone.now().year} {settings.COMPANY_OPERATING_NAME} - {settings.COMPANY_SUB_GROUP_NAME}. All rights reserved.
+            © {now_local.year} {settings.COMPANY_OPERATING_NAME} - {settings.COMPANY_SUB_GROUP_NAME}. All rights reserved.
           </p>
         </td>
       </tr>
@@ -15356,95 +15926,165 @@ def add_admin_response(request, ticket_id):
   </body>
 </html>
 """
-            text = (
-                f"Admin Response Received - {settings.COMPANY_OPERATING_NAME}\n\n"
-                f"Hi {user_name},\n\n"
-                f"Our admin team has responded to your support ticket #{ticket.id}.\n\n"
-                f"Ticket ID: #{ticket.id}\n"
-                f"Subject: {subject_display}\n"
-                f"Status: RESOLVED\n"
-                f"Responded On: {now_str}\n\n"
-                "YOUR ORIGINAL MESSAGE:\n"
-                f"{message_context}\n\n"
-                "ADMIN RESPONSE:\n"
-                f"{admin_response}\n\n"
-                f"If you have further questions, reply to this email with your ticket ID #{ticket.id}.\n"
-            )
+                text = (
+                    f"Admin Response Received - {settings.COMPANY_OPERATING_NAME}\n\n"
+                    f"Hi {user_name},\n\n"
+                    f"Our admin team has responded to your support ticket #{ticket.id}.\n\n"
+                    f"Ticket ID: #{ticket.id}\n"
+                    f"Subject: {subject_display}\n"
+                    f"Status: RESOLVED\n"
+                    f"Responded On: {now_str}\n\n"
+                    "YOUR ORIGINAL MESSAGE:\n"
+                    f"{message_context}\n\n"
+                    "ADMIN RESPONSE:\n"
+                    f"{admin_response}\n\n"
+                    f"If you have further questions, reply to this email with your ticket ID #{ticket.id}.\n"
+                )
 
-            _send_html_email_admin_office(
-                subject=f"Response to Ticket #{ticket.id}: {subject_display}",
-                to_email=user_email,
-                html=html,
-                text_fallback=text,
-            )
-    except Exception:
-        logger.exception("Failed to send admin response email")
+                _send_html_email_admin_office(
+                    subject=f"Response to Ticket #{ticket.id}: {subject_display}",
+                    to_email=user_email,
+                    html=html,
+                    text_fallback=text,
+                )
+        except Exception:
+            logger.exception("Failed to send admin response email")
 
-    # Build sender info
-    sender_type = "Pharmacy" if ticket.pharmacy else "Driver"
-    sender_info = {
-        "type": sender_type,
-        "id": ticket.pharmacy.id if ticket.pharmacy else ticket.driver.id,
-        "name": ticket.pharmacy.name if ticket.pharmacy else ticket.driver.name,
-        "email": ticket.pharmacy.email if ticket.pharmacy else ticket.driver.email,
-    }
+        # Build sender info with proper timezone conversion
+        def fmt_dt(dt):
+            if not dt:
+                return None
+            # ✅ Convert to local time for response
+            local_dt = timezone.localtime(dt, settings.USER_TIMEZONE)
+            return local_dt.strftime("%Y-%m-%d %H:%M:%S")
 
-    return JsonResponse(
-        {
-            "success": True,
-            "message": "Response added and ticket resolved.",
-            "ticket": {
-                "ticket_id": ticket.id,
-                "subject_key": ticket.subject,
-                "subject": ticket.other_subject if ticket.subject == "other" else ticket.get_subject_display(),
-                "message": ticket.message,
-                "admin_response": ticket.admin_response,
-                "status": ticket.status,
-                "sender": sender_info,
-                "created_at": ticket.created_at.strftime("%Y-%m-%d %H:%M:%S"),
-                "updated_at": ticket.updated_at.strftime("%Y-%m-%d %H:%M:%S"),
+        sender_type = "pharmacy" if ticket.pharmacy else "driver" if ticket.driver else "unknown"
+        sender_info = None
+        
+        if ticket.pharmacy:
+            sender_info = {
+                "type": "Pharmacy",
+                "id": ticket.pharmacy.id,
+                "name": ticket.pharmacy.name,
+                "email": ticket.pharmacy.email,
+            }
+        elif ticket.driver:
+            sender_info = {
+                "type": "Driver",
+                "id": ticket.driver.id,
+                "name": ticket.driver.name,
+                "email": ticket.driver.email,
+            }
+
+        return JsonResponse(
+            {
+                "success": True,
+                "message": "Response added and ticket resolved.",
+                "ticket": {
+                    "ticket_id": ticket.id,
+                    "subject_key": ticket.subject,
+                    "subject": ticket.other_subject if ticket.subject == "other" else ticket.get_subject_display(),
+                    "message": ticket.message,
+                    "admin_response": ticket.admin_response,
+                    "status": ticket.status,
+                    "sender_type": sender_type,
+                    "sender": sender_info,
+                    "created_at": fmt_dt(ticket.created_at),
+                    "updated_at": fmt_dt(ticket.updated_at),
+                },
             },
-        },
-        status=200
-    )
+            status=200
+        )
+
+    except Exception as e:
+        logger.exception("Error adding admin response")
+        return JsonResponse(
+            {"success": False, "error": str(e)},
+            status=500
+        )
 
 
-@csrf_exempt
+# @csrf_exempt
+# def get_ticket_status_metrics(request):
+#     """
+#     Returns counts of tickets by status:
+#     - pending
+#     - in_progress
+#     - resolved
+#     """
+#     if request.method != "GET":
+#         return JsonResponse(
+#             {"success": False, "message": "Only GET method is allowed."},
+#             status=405,
+#         )
+
+#     try:
+#         pending_count = ContactAdmin.objects.filter(status="pending").count()
+#         in_progress_count = ContactAdmin.objects.filter(status="in_progress").count()
+#         resolved_count = ContactAdmin.objects.filter(status="resolved").count()
+#         total_count = pending_count + in_progress_count + resolved_count
+
+#         return JsonResponse(
+#             {
+#                 "success": True,
+#                 "metrics": {
+#                     "pending_tickets": pending_count,
+#                     "in_progress_tickets": in_progress_count,
+#                     "resolved_tickets": resolved_count,
+#                     "total_tickets": total_count,
+#                 },
+#             },
+#             status=200,
+#         )
+
+#     except Exception as e:
+#         return JsonResponse(
+#             {"success": False, "message": "Something went wrong.", "error": str(e)},
+#             status=500,
+#         )
+
+
+@csrf_protect
+@admin_auth_required
+@require_http_methods(["GET"])
 def get_ticket_status_metrics(request):
     """
+    Admin-only API to get ticket metrics by status.
+    
     Returns counts of tickets by status:
     - pending
     - in_progress
     - resolved
+    - total
     """
-    if request.method != "GET":
-        return JsonResponse(
-            {"success": False, "message": "Only GET method is allowed."},
-            status=405,
-        )
-
     try:
-        pending_count = ContactAdmin.objects.filter(status="pending").count()
-        in_progress_count = ContactAdmin.objects.filter(status="in_progress").count()
-        resolved_count = ContactAdmin.objects.filter(status="resolved").count()
-        total_count = pending_count + in_progress_count + resolved_count
+        # ✅ Optimized: Single query using aggregation instead of 3 separate queries
+        from django.db.models import Count, Q
+        
+        status_counts = ContactAdmin.objects.aggregate(
+            pending_tickets=Count('id', filter=Q(status='pending')),
+            in_progress_tickets=Count('id', filter=Q(status='in_progress')),
+            resolved_tickets=Count('id', filter=Q(status='resolved')),
+            total_tickets=Count('id')
+        )
 
         return JsonResponse(
             {
                 "success": True,
                 "metrics": {
-                    "pending_tickets": pending_count,
-                    "in_progress_tickets": in_progress_count,
-                    "resolved_tickets": resolved_count,
-                    "total_tickets": total_count,
+                    "pending_tickets": status_counts['pending_tickets'],
+                    "in_progress_tickets": status_counts['in_progress_tickets'],
+                    "resolved_tickets": status_counts['resolved_tickets'],
+                    "total_tickets": status_counts['total_tickets'],
                 },
             },
             status=200,
         )
 
     except Exception as e:
+        logger.exception("Error fetching ticket status metrics")
         return JsonResponse(
-            {"success": False, "message": "Something went wrong.", "error": str(e)},
+            {"success": False, "error": str(e)},
             status=500,
         )
 
