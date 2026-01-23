@@ -1238,7 +1238,8 @@ def upload_handover_image_api(request):
         # Create filename
         safe_pharmacy_name = "".join(c for c in pharmacy.name if c.isalnum() or c in ('-', '_')).strip()
         filename = f"{order_number}_{pharmacy_id}_{safe_pharmacy_name}_handover{file_extension}"
-        blob_name = f"Proof/{filename}"
+        # blob_name = f"Proof/{filename}"
+        blob_name = f"{settings.GCP_PROOF_FOLDER.rstrip('/')}/{filename}"
         
         logger.info(f"Generated blob path: {blob_name}")
         
@@ -2574,7 +2575,8 @@ def driver_pickup_proof(request):
 
         safe_pharmacy_name = pharmacy.name.replace(" ", "_")
         filename = f"{driver_id}_{order_id}_{safe_pharmacy_name}_driverpickup.jpg"
-        blob_name = f"Proof/{filename}"
+        # blob_name = f"Proof/{filename}"
+        blob_name = f"{settings.GCP_PROOF_FOLDER.rstrip('/')}/{filename}"
         blob = bucket.blob(blob_name)
         blob.upload_from_file(image_file, content_type=image_file.content_type)
 
@@ -2929,7 +2931,8 @@ def driver_delivery_proof(request):
 
         safe_pharmacy_name = pharmacy.name.replace(" ", "_")
         filename = f"{driver_id}_{order_id}_{safe_pharmacy_name}_delivered.jpg"
-        blob_name = f"Proof/{filename}"
+        # blob_name = f"Proof/{filename}"
+        blob_name = f"{settings.GCP_PROOF_FOLDER.rstrip('/')}/{filename}"
         blob = bucket.blob(blob_name)
         blob.upload_from_file(image_file, content_type=image_file.content_type)
 
