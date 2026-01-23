@@ -165,6 +165,7 @@ class DeliveryOrder(models.Model):
     id_verification_required = models.BooleanField(default=False)
     alternate_contact = models.CharField(max_length=20, blank=True, null=True)
     delivery_notes = models.TextField(blank=True, null=True)
+    driver_notes = models.TextField(blank=True, null=True)
     status = models.CharField(max_length=20, choices=STATUS_CHOICES, default='pending')
     rate = models.DecimalField(max_digits=8, decimal_places=2, default=0)  # Filled from DeliveryLocationRate
     customer_name = models.CharField(max_length=150, default="John Doe")
