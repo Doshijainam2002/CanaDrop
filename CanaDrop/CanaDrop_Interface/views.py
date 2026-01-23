@@ -49,7 +49,7 @@ from django.core.mail import EmailMessage, EmailMultiAlternatives, get_connectio
 from django.core.signing import BadSignature, SignatureExpired, dumps, loads
 from django.core.validators import validate_email
 from django.db import IntegrityError, transaction, connection
-from django.db.models import Count, Sum, Q, Exists, OuterRef
+from django.db.models import Avg, Count, Sum, Q, Exists, OuterRef
 from django.http import (
     HttpRequest, HttpResponse, HttpResponseBadRequest,
     HttpResponseNotAllowed, JsonResponse
@@ -270,6 +270,10 @@ def adminPaymentInformationView(request):
 @admin_auth_required
 def adminPharmacyInformationView(request):
     return render(request, 'adminPharmacyInformation.html')
+
+@admin_auth_required
+def adminCCPointsView(request):
+    return render(request, 'adminCCPoints.html')
 
 # ----------------------------
 # General Page Logins
@@ -16865,3 +16869,268 @@ def get_active_payment_methods(request):
             },
             status=500
         )
+
+
+@csrf_protect
+@admin_auth_required
+@require_http_methods(["GET"])
+def get_pharmacy_analytics_overview(request):
+    """
+    Pharmacy Analytics & Insights API
+    All time calculations respect settings.USER_TIMEZONE
+    """
+
+    user_tz = settings.USER_TIMEZONE
+
+    # -----------------------------
+    # Time window (last 30 days)
+    # -----------------------------
+    now_local = timezone.localtime(timezone.now(), user_tz)
+    last_30_days_start = now_local - timedelta(days=30)
+
+    # Convert back to UTC for DB filtering
+    last_30_days_start_utc = last_30_days_start.astimezone(timezone.utc)
+
+    # -----------------------------
+    # Base QuerySets
+    # -----------------------------
+    all_pharmacies_qs = PharmacyInfo.objects.all()
+
+    recent_submissions_qs = PharmacyInfo.objects.filter(
+        created_at__gte=last_30_days_start_utc
+    )
+
+    total_pharmacies = all_pharmacies_qs.count()
+
+    # -----------------------------
+    # Metric 1: Total submissions (last 30 days)
+    # -----------------------------
+    total_submissions_last_30_days = recent_submissions_qs.count()
+
+    # -----------------------------
+    # Metric 2: Avg deliveries/day per pharmacy
+    # -----------------------------
+    avg_deliveries_per_day = (
+        all_pharmacies_qs.aggregate(
+            avg=Avg("estimated_deliveries_per_day")
+        )["avg"] or 0
+    )
+
+    # -----------------------------
+    # Metric 3: Avg delivery radius (km)
+    # -----------------------------
+    avg_delivery_radius_km = (
+        all_pharmacies_qs.aggregate(
+            avg=Avg("delivery_radius_km")
+        )["avg"] or 0
+    )
+
+    # -----------------------------
+    # Metric 4: Consent rate (%)
+    # -----------------------------
+    consented_count = all_pharmacies_qs.filter(consent_given=True).count()
+    consent_rate_percentage = (
+        round((consented_count / total_pharmacies) * 100, 2)
+        if total_pharmacies else 0
+    )
+
+    # -----------------------------
+    # Metric 5: Delivery type preference counts & %
+    # -----------------------------
+    delivery_type_counts = all_pharmacies_qs.values(
+        "preferred_delivery_type"
+    ).annotate(count=Count("id"))
+
+    delivery_type_summary = {
+        "same_day": {"count": 0, "percentage": 0},
+        "next_day": {"count": 0, "percentage": 0},
+        "both": {"count": 0, "percentage": 0},
+    }
+
+    for row in delivery_type_counts:
+        key = row["preferred_delivery_type"]
+        count = row["count"]
+
+        if key in delivery_type_summary:
+            delivery_type_summary[key]["count"] = count
+            delivery_type_summary[key]["percentage"] = (
+                round((count / total_pharmacies) * 100, 2)
+                if total_pharmacies else 0
+            )
+
+    # -----------------------------
+    # Metric 6: Signature required count
+    # -----------------------------
+    signature_required_count = all_pharmacies_qs.filter(
+        signature_required=True
+    ).count()
+
+    # -----------------------------
+    # Metric 7: ID verification required count
+    # -----------------------------
+    id_verification_required_count = all_pharmacies_qs.filter(
+        id_verification_required=True
+    ).count()
+
+    # -----------------------------
+    # Metric 8: Pharmacies offering delivery
+    # -----------------------------
+    currently_offering_delivery_count = all_pharmacies_qs.filter(
+        currently_offers_delivery=True
+    ).count()
+
+    # -----------------------------
+    # Metric 9: All pharmacy info records
+    # -----------------------------
+    pharmacy_info_list = list(
+        all_pharmacies_qs.values(
+            "id",
+            "pharmacy_name",
+            "pharmacy_phone",
+            "pharmacy_email",
+            "address_line_1",
+            "city",
+            "postal_code",
+            "store_hours",
+            "contact_name",
+            "contact_role",
+            "contact_phone",
+            "contact_email",
+            "currently_offers_delivery",
+            "estimated_deliveries_per_day",
+            "preferred_delivery_type",
+            "delivery_radius_km",
+            "signature_required",
+            "id_verification_required",
+            "special_delivery_instructions",
+            "consent_given",
+            "internal_notes",
+            "created_at",
+            "updated_at",
+        )
+    )
+
+    # Convert timestamps to USER_TIMEZONE for response
+    for pharmacy in pharmacy_info_list:
+        pharmacy["created_at"] = timezone.localtime(
+            pharmacy["created_at"], user_tz
+        )
+        pharmacy["updated_at"] = timezone.localtime(
+            pharmacy["updated_at"], user_tz
+        )
+
+    # -----------------------------
+    # Final Response
+    # -----------------------------
+    return JsonResponse(
+        {
+            "success": True,
+            "timezone": str(user_tz),
+            "metrics": {
+                "total_submissions_last_30_days": total_submissions_last_30_days,
+                "average_deliveries_per_day": round(avg_deliveries_per_day, 2),
+                "average_delivery_radius_km": round(avg_delivery_radius_km, 2),
+                "consent_rate_percentage": consent_rate_percentage,
+                "delivery_type_preferences": delivery_type_summary,
+                "signature_required_count": signature_required_count,
+                "id_verification_required_count": id_verification_required_count,
+                "currently_offering_delivery_count": currently_offering_delivery_count,
+            },
+            "pharmacies": pharmacy_info_list,
+        },
+        status=200,
+    )
+
+
+@csrf_protect
+@admin_auth_required
+@require_http_methods(["PATCH", "PUT"])
+def edit_pharmacy_info(request, pharmacy_info_id):
+    """
+    Admin API to edit PharmacyInfo entries.
+    Supports FULL (PUT) and PARTIAL (PATCH) updates.
+    Timezone-aware (settings.USER_TIMEZONE).
+    """
+
+    pharmacy_info = get_object_or_404(
+        PharmacyInfo,
+        id=pharmacy_info_id
+    )
+
+    try:
+        payload = json.loads(request.body.decode("utf-8"))
+    except json.JSONDecodeError:
+        return JsonResponse(
+            {"success": False, "message": "Invalid JSON payload"},
+            status=400
+        )
+
+    # Fields allowed to be updated
+    ALLOWED_FIELDS = {
+        # Pharmacy Info
+        "pharmacy_name",
+        "pharmacy_phone",
+        "pharmacy_email",
+        "address_line_1",
+        "city",
+        "postal_code",
+        "store_hours",
+
+        # Contact
+        "contact_name",
+        "contact_role",
+        "contact_phone",
+        "contact_email",
+
+        # Delivery Preferences
+        "currently_offers_delivery",
+        "estimated_deliveries_per_day",
+        "preferred_delivery_type",
+        "delivery_radius_km",
+
+        # Compliance
+        "signature_required",
+        "id_verification_required",
+        "special_delivery_instructions",
+
+        # Consent & Internal
+        "consent_given",
+        "internal_notes",
+    }
+
+    updated_fields = []
+
+    for field, value in payload.items():
+        if field not in ALLOWED_FIELDS:
+            continue  # silently ignore unknown / unsafe fields
+
+        setattr(pharmacy_info, field, value)
+        updated_fields.append(field)
+
+    if not updated_fields:
+        return JsonResponse(
+            {
+                "success": False,
+                "message": "No valid fields provided for update"
+            },
+            status=400
+        )
+
+    # Ensure timezone-aware updated_at
+    pharmacy_info.updated_at = timezone.now().astimezone(settings.USER_TIMEZONE)
+    pharmacy_info.save(update_fields=updated_fields + ["updated_at"])
+
+    return JsonResponse(
+        {
+            "success": True,
+            "message": "Pharmacy information updated successfully",
+            "data": {
+                "id": pharmacy_info.id,
+                "pharmacy_name": pharmacy_info.pharmacy_name,
+                "city": pharmacy_info.city,
+                "updated_fields": updated_fields,
+                "updated_at": pharmacy_info.updated_at.isoformat(),
+            }
+        },
+        status=200
+    )

@@ -1,0 +1,741 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>CC Points Manager • CanaLogistiX</title>
+  <link rel="icon" type="image/png" sizes="512x512" href="/favicon-512.png">
+  <link rel="apple-touch-icon" href="/favicon-512.png">
+  <script src="https://cdn.tailwindcss.com"></script>
+  <style>
+    .logistics-bg {
+      background:
+        linear-gradient(135deg, rgba(255,255,255,0.04) 25%, rgba(0,0,0,0) 25%) 0 0/28px 28px,
+        linear-gradient(135deg, rgba(0,0,0,0) 75%, rgba(255,255,255,0.04) 75%) 0 0/28px 28px;
+      box-shadow: inset 0 0 120px rgba(0,0,0,0.35);
+    }
+  </style>
+</head>
+<body class="min-h-screen bg-neutral-900 text-neutral-100 font-inter logistics-bg">
+
+  <div class="flex h-screen overflow-hidden">
+    <!-- Sidebar -->
+    <aside id="sidebar" class="w-64 bg-neutral-800 border-r border-neutral-700 flex flex-col fixed lg:static inset-y-0 left-0 z-40 transform -translate-x-full lg:translate-x-0 transition-transform duration-300 overflow-y-auto">
+      <div class="flex items-center h-16 border-b border-neutral-700 px-6">
+        <img src="https://canalogistix.s3.us-east-2.amazonaws.com/Logo/CanaLogistiX_Logo_BG.png" alt="CanaLogistiX Logo" class="h-12 w-12 rounded-full object-cover"/>
+        <span class="ml-2 text-lg font-semibold text-white">CanaLogistiX</span>
+      </div>
+
+      <!-- Navigation -->
+      <nav class="flex-1 p-4 space-y-2 text-sm overflow-y-auto">
+        <a href="/adminDashboard/" class="flex items-center px-3 py-2 rounded-lg text-neutral-300 hover:bg-neutral-700 transition">
+          <svg class="w-5 h-5 mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 12l2-2m0 0l7-7 7 7M13 5v6h6"/></svg>
+          Dashboard
+        </a>
+        <a href="/adminOrders/" class="flex items-center px-3 py-2 rounded-lg text-neutral-300 hover:bg-neutral-700 transition">
+          <svg class="w-5 h-5 mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 17v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm6 0v-8a2 2 0 00-2-2h-2a2 2 0 00-2 2v8m6 0a2 2 0 002 2h2a2 2 0 002-2"/></svg>
+          Orders
+        </a>
+        <a href="/adminPharmacies/" class="flex items-center px-3 py-2 rounded-lg text-neutral-300 hover:bg-neutral-700 transition">
+          <svg class="w-5 h-5 mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 11V5a3 3 0 00-3-3H7a3 3 0 00-3 3v6m12 0v6a3 3 0 01-3 3H7a3 3 0 01-3-3v-6m12 0H4"/></svg>
+          Pharmacies
+        </a>
+        <a href="/adminDrivers/" class="flex items-center px-3 py-2 rounded-lg text-neutral-300 hover:bg-neutral-700 transition">
+          <svg class="w-5 h-5 mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/></svg>
+          Drivers
+        </a>
+        <a href="/adminInvoices/" class="flex items-center px-3 py-2 rounded-lg text-neutral-300 hover:bg-neutral-700 transition">
+          <svg class="w-5 h-5 mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 4H7a2 2 0 01-2-2V6a2 2 0 012-2h7l5 5v9a2 2 0 01-2 2z"/></svg>
+          Invoices
+        </a>
+        <a href="/adminAnalyticsAndReports/" class="flex items-center px-3 py-2 rounded-lg text-neutral-300 hover:bg-neutral-700 transition">
+          <svg class="w-5 h-5 mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                  d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"/>
+          </svg>
+          Analytics &amp; Reports
+        </a>
+        <a href="/adminPharmacyInformation/" class="flex items-center px-3 py-2 rounded-lg text-neutral-300 hover:bg-neutral-700 transition">
+          <svg class="w-5 h-5 mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                  d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4"/>
+          </svg>
+          Pharmacy Information
+        </a>
+        <a href="/adminPaymentInformation/" class="flex items-center px-3 py-2 rounded-lg text-neutral-300 hover:bg-neutral-700 transition">
+          <svg class="w-5 h-5 mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                  d="M3 10h18M7 15h1m4 0h1m-7 4h12a3 3 0 003-3V8a3 3 0 00-3-3H6a3 3 0 00-3 3v8a3 3 0 003 3z"/>
+          </svg>
+          Payment Information
+        </a>
+        <a href="/adminCCPoints/" class="flex items-center px-3 py-2 rounded-lg bg-gradient-to-r from-orange-600 to-orange-500 text-white font-medium">
+          <svg class="w-5 h-5 mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/>
+          </svg>
+          CC Points
+        </a>
+        <a href="/adminSupport/" class="flex items-center px-3 py-2 rounded-lg text-neutral-300 hover:bg-neutral-700 transition">
+          <svg class="w-5 h-5 mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 10h.01M12 10h.01M16 10h.01M21 12c0 4.418-4.03 8-9 8s-9-3.582-9-8 4.03-8 9-8 9 3.582 9 8zM12 14v-4m0 4h.01"/></svg>
+          Support
+        </a>
+        <a href="#" id="logoutBtn" class="flex items-center px-3 py-2 rounded-lg text-neutral-300 hover:bg-neutral-700 transition">
+          <svg class="w-5 h-5 mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                  d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a2 2 0 01-2 2H5a2 2 0 01-2-2V7a2 2 0 012-2h6a2 2 0 012 2v1" />
+          </svg>
+          Logout
+        </a>
+      </nav>
+
+      <!-- Profile -->
+      <div class="p-4 border-t border-neutral-700">
+        <div class="flex items-center">
+          <div class="flex-shrink-0 w-9 h-9 bg-gradient-to-r from-orange-600 to-orange-500 rounded-full flex items-center justify-center text-sm font-semibold">A</div>
+          <div class="ml-3">
+            <p class="text-sm font-medium text-neutral-100">Admin</p>
+            <p class="text-xs text-neutral-400">admin@canadrop.ca</p>
+          </div>
+        </div>
+      </div>
+    </aside>
+
+    <div id="sidebarOverlay" class="hidden lg:hidden fixed inset-0 bg-black/50 z-30"></div>
+
+    <!-- Main Content -->
+    <main class="flex-1 flex flex-col overflow-y-auto lg:ml-0">
+      <!-- Header -->
+      <header class="bg-neutral-800 border-b border-neutral-700 px-4 sm:px-6 py-4 flex items-center justify-between gap-4">
+        <button id="menuToggle" class="lg:hidden text-white p-2 flex-shrink-0">
+          <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16"/>
+          </svg>
+        </button>
+        <div class="flex-1 min-w-0">
+          <h1 class="text-xl sm:text-2xl font-bold text-white truncate">CC Points Manager</h1>
+          <p class="text-sm text-neutral-400">Manage credit card points rewards for pharmacies and drivers</p>
+        </div>
+      </header>
+
+      <!-- Summary Cards -->
+      <section class="px-4 sm:px-6 py-6">
+        <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+          <!-- Total Pharmacy Points -->
+          <div class="bg-neutral-800/80 border border-neutral-700 p-4 rounded-xl shadow relative group">
+            <div class="flex items-center justify-between mb-2">
+              <p class="text-xs sm:text-sm text-neutral-400">Total Pharmacy Points</p>
+              <svg class="w-4 h-4 text-neutral-500 cursor-help" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/>
+              </svg>
+              <div class="absolute top-full mt-1 right-0 w-48 sm:w-56 bg-neutral-700 text-neutral-100 text-xs rounded-lg p-2 shadow-lg opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-200 z-10">
+                Combined points balance across all pharmacy accounts
+              </div>
+            </div>
+            <p id="statTotalPharmacyPoints" class="text-xl sm:text-2xl font-bold text-green-400">—</p>
+          </div>
+
+          <!-- Total Driver Points -->
+          <div class="bg-neutral-800/80 border border-neutral-700 p-4 rounded-xl shadow relative group">
+            <div class="flex items-center justify-between mb-2">
+              <p class="text-xs sm:text-sm text-neutral-400">Total Driver Points</p>
+              <svg class="w-4 h-4 text-neutral-500 cursor-help" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/>
+              </svg>
+              <div class="absolute top-full mt-1 right-0 w-48 sm:w-56 bg-neutral-700 text-neutral-100 text-xs rounded-lg p-2 shadow-lg opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-200 z-10">
+                Combined points balance across all driver accounts
+              </div>
+            </div>
+            <p id="statTotalDriverPoints" class="text-xl sm:text-2xl font-bold text-blue-400">—</p>
+          </div>
+
+          <!-- Active Pharmacy Accounts -->
+          <div class="bg-neutral-800/80 border border-neutral-700 p-4 rounded-xl shadow relative group">
+            <div class="flex items-center justify-between mb-2">
+              <p class="text-xs sm:text-sm text-neutral-400">Active Pharmacy Accounts</p>
+              <svg class="w-4 h-4 text-neutral-500 cursor-help" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/>
+              </svg>
+              <div class="absolute top-full mt-1 right-0 w-48 sm:w-56 bg-neutral-700 text-neutral-100 text-xs rounded-lg p-2 shadow-lg opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-200 z-10">
+                Number of pharmacies with CC Points accounts
+              </div>
+            </div>
+            <p id="statActivePharmacyAccounts" class="text-xl sm:text-2xl font-bold text-white">—</p>
+          </div>
+
+          <!-- Active Driver Accounts -->
+          <div class="bg-neutral-800/80 border border-neutral-700 p-4 rounded-xl shadow relative group">
+            <div class="flex items-center justify-between mb-2">
+              <p class="text-xs sm:text-sm text-neutral-400">Active Driver Accounts</p>
+              <svg class="w-4 h-4 text-neutral-500 cursor-help" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/>
+              </svg>
+              <div class="absolute top-full mt-1 right-0 w-48 sm:w-56 bg-neutral-700 text-neutral-100 text-xs rounded-lg p-2 shadow-lg opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-200 z-10">
+                Number of drivers with CC Points accounts
+              </div>
+            </div>
+            <p id="statActiveDriverAccounts" class="text-xl sm:text-2xl font-bold text-white">—</p>
+          </div>
+        </div>
+      </section>
+
+      <!-- Main Content Grid -->
+      <section class="px-4 sm:px-6 pb-8 grid grid-cols-1 lg:grid-cols-2 gap-6">
+        
+        <!-- Pharmacy Points Accounts -->
+        <div class="bg-neutral-800/80 border border-neutral-700 rounded-xl shadow">
+          <div class="px-6 py-4 border-b border-neutral-700 flex justify-between items-center">
+            <h2 class="text-lg font-semibold text-white flex items-center gap-2">
+              <svg class="w-5 h-5 text-green-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 11V5a3 3 0 00-3-3H7a3 3 0 00-3 3v6m12 0v6a3 3 0 01-3 3H7a3 3 0 01-3-3v-6m12 0H4"/>
+              </svg>
+              Pharmacy Accounts
+            </h2>
+            <input
+              id="pharmacySearch"
+              type="text"
+              placeholder="Search pharmacies..."
+              class="px-3 py-1.5 bg-neutral-700 text-neutral-200 text-sm rounded-md focus:outline-none focus:ring-2 focus:ring-green-500"
+            />
+          </div>
+          <div id="pharmacyAccountsContainer" class="overflow-y-auto max-h-96 divide-y divide-neutral-700">
+            <p class="text-center text-neutral-500 py-6">Loading pharmacy accounts...</p>
+          </div>
+        </div>
+
+        <!-- Driver Points Accounts -->
+        <div class="bg-neutral-800/80 border border-neutral-700 rounded-xl shadow">
+          <div class="px-6 py-4 border-b border-neutral-700 flex justify-between items-center">
+            <h2 class="text-lg font-semibold text-white flex items-center gap-2">
+              <svg class="w-5 h-5 text-blue-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/>
+              </svg>
+              Driver Accounts
+            </h2>
+            <input
+              id="driverSearch"
+              type="text"
+              placeholder="Search drivers..."
+              class="px-3 py-1.5 bg-neutral-700 text-neutral-200 text-sm rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+            />
+          </div>
+          <div id="driverAccountsContainer" class="overflow-y-auto max-h-96 divide-y divide-neutral-700">
+            <p class="text-center text-neutral-500 py-6">Loading driver accounts...</p>
+          </div>
+        </div>
+
+      </section>
+
+      <!-- Transaction History -->
+      <section class="px-4 sm:px-6 pb-10">
+        <div class="bg-neutral-800/80 border border-neutral-700 rounded-xl shadow">
+          <div class="px-6 py-4 border-b border-neutral-700 flex flex-wrap justify-between items-center gap-3">
+            <h2 class="text-lg font-semibold text-white flex items-center gap-2">
+              <svg class="w-5 h-5 text-orange-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"/>
+              </svg>
+              Recent Transactions
+            </h2>
+            <div class="flex gap-2">
+              <select
+                id="transactionTypeFilter"
+                class="text-sm bg-neutral-800 border border-neutral-700 rounded-lg px-3 py-1.5 text-neutral-300 focus:ring-2 focus:ring-orange-500 focus:outline-none"
+              >
+                <option value="all">All Types</option>
+                <option value="pharmacy">Pharmacy</option>
+                <option value="driver">Driver</option>
+              </select>
+              <select
+                id="transactionActionFilter"
+                class="text-sm bg-neutral-800 border border-neutral-700 rounded-lg px-3 py-1.5 text-neutral-300 focus:ring-2 focus:ring-orange-500 focus:outline-none"
+              >
+                <option value="all">All Actions</option>
+                <option value="add">Added</option>
+                <option value="deduct">Deducted</option>
+              </select>
+            </div>
+          </div>
+          <div class="overflow-x-auto">
+            <table class="min-w-full text-sm">
+              <thead class="bg-neutral-800 border-b border-neutral-700">
+                <tr>
+                  <th class="px-6 py-3 text-left text-neutral-400 uppercase tracking-wider">Timestamp</th>
+                  <th class="px-6 py-3 text-left text-neutral-400 uppercase tracking-wider">Entity</th>
+                  <th class="px-6 py-3 text-left text-neutral-400 uppercase tracking-wider">Action</th>
+                  <th class="px-6 py-3 text-left text-neutral-400 uppercase tracking-wider">Points</th>
+                  <th class="px-6 py-3 text-left text-neutral-400 uppercase tracking-wider">New Balance</th>
+                  <th class="px-6 py-3 text-left text-neutral-400 uppercase tracking-wider">Admin</th>
+                </tr>
+              </thead>
+              <tbody id="transactionHistoryBody" class="divide-y divide-neutral-700">
+                <tr>
+                  <td colspan="6" class="px-6 py-4 text-center text-neutral-500">Loading transactions...</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </section>
+
+    </main>
+  </div>
+
+  <!-- Adjustment Modal -->
+  <div id="adjustmentModal" class="hidden fixed inset-0 bg-black/70 flex items-center justify-center z-50">
+    <div class="bg-neutral-900 p-6 rounded-xl border border-neutral-700 w-11/12 md:w-1/2 lg:w-1/3 relative">
+      <button
+        id="closeAdjustmentModal"
+        class="absolute top-3 right-3 text-neutral-400 hover:text-white text-xl font-bold"
+      >&times;</button>
+
+      <h3 id="adjustmentModalTitle" class="text-lg font-semibold text-white mb-4">Adjust Points</h3>
+      
+      <div class="space-y-4">
+        <div>
+          <label class="block text-sm text-neutral-400 mb-1">Current Balance</label>
+          <p id="modalCurrentBalance" class="text-2xl font-bold text-orange-400">—</p>
+        </div>
+
+        <div>
+          <label class="block text-sm text-neutral-400 mb-1">Action</label>
+          <select id="adjustmentAction" class="w-full px-3 py-2 bg-neutral-800 border border-neutral-700 rounded-lg text-neutral-200 focus:ring-2 focus:ring-orange-500 focus:outline-none">
+            <option value="add">Add Points</option>
+            <option value="deduct">Deduct Points</option>
+          </select>
+        </div>
+
+        <div>
+          <label class="block text-sm text-neutral-400 mb-1">Points Amount</label>
+          <input
+            id="adjustmentAmount"
+            type="number"
+            min="1"
+            placeholder="Enter points amount"
+            class="w-full px-3 py-2 bg-neutral-800 border border-neutral-700 rounded-lg text-neutral-200 focus:ring-2 focus:ring-orange-500 focus:outline-none"
+          />
+        </div>
+
+        <div>
+          <label class="block text-sm text-neutral-400 mb-1">Reason (optional)</label>
+          <textarea
+            id="adjustmentReason"
+            rows="3"
+            placeholder="Brief explanation for this adjustment..."
+            class="w-full px-3 py-2 bg-neutral-800 border border-neutral-700 rounded-lg text-neutral-200 focus:ring-2 focus:ring-orange-500 focus:outline-none resize-none"
+          ></textarea>
+        </div>
+
+        <div class="flex gap-3 pt-2">
+          <button
+            id="confirmAdjustment"
+            class="flex-1 px-4 py-2 bg-gradient-to-r from-orange-600 to-orange-500 text-white rounded-lg font-medium hover:from-orange-700 hover:to-orange-600 transition"
+          >
+            Confirm Adjustment
+          </button>
+          <button
+            id="cancelAdjustment"
+            class="px-4 py-2 bg-neutral-700 text-neutral-300 rounded-lg hover:bg-neutral-600 transition"
+          >
+            Cancel
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    function getCSRFToken() {
+      return document.cookie
+        .split('; ')
+        .find(row => row.startsWith('csrftoken='))
+        ?.split('=')[1];
+    }
+
+    const fmtInt = n => new Intl.NumberFormat().format(Number(n || 0));
+
+    // Global state
+    let allPharmacyAccounts = [];
+    let allDriverAccounts = [];
+    let allTransactions = [];
+    let currentAdjustmentTarget = null;
+
+    // Load summary stats
+    async function loadSummaryStats() {
+      const els = {
+        totalPharmacyPoints: document.getElementById('statTotalPharmacyPoints'),
+        totalDriverPoints: document.getElementById('statTotalDriverPoints'),
+        activePharmacyAccounts: document.getElementById('statActivePharmacyAccounts'),
+        activeDriverAccounts: document.getElementById('statActiveDriverAccounts'),
+      };
+
+      Object.values(els).forEach(el => el && (el.textContent = '…'));
+
+      try {
+        // TODO: Replace with actual API endpoint
+        // const res = await fetch('/api/ccPointsSummary/', {
+        //   method: 'GET',
+        //   credentials: 'include',
+        //   headers: { 'X-CSRFToken': getCSRFToken() }
+        // });
+        // const data = await res.json();
+
+        // Mock data for now
+        const data = {
+          total_pharmacy_points: 15420,
+          total_driver_points: 8750,
+          active_pharmacy_accounts: 12,
+          active_driver_accounts: 8
+        };
+
+        els.totalPharmacyPoints.textContent = fmtInt(data.total_pharmacy_points);
+        els.totalDriverPoints.textContent = fmtInt(data.total_driver_points);
+        els.activePharmacyAccounts.textContent = fmtInt(data.active_pharmacy_accounts);
+        els.activeDriverAccounts.textContent = fmtInt(data.active_driver_accounts);
+      } catch (err) {
+        console.error('Failed to load summary stats:', err);
+        Object.values(els).forEach(el => el && (el.textContent = '0'));
+      }
+    }
+
+    // Load pharmacy accounts
+    async function loadPharmacyAccounts() {
+      const container = document.getElementById('pharmacyAccountsContainer');
+      
+      try {
+        // TODO: Replace with actual API endpoint
+        // const res = await fetch('/api/ccPointsPharmacyAccounts/', {
+        //   method: 'GET',
+        //   credentials: 'include',
+        //   headers: { 'X-CSRFToken': getCSRFToken() }
+        // });
+        // const data = await res.json();
+
+        // Mock data for now
+        const data = {
+          accounts: [
+            { id: 1, pharmacy_id: 1, pharmacy_name: 'Health Plus Pharmacy', points_balance: 2500, city: 'Kitchener' },
+            { id: 2, pharmacy_id: 2, pharmacy_name: 'Care Rx', points_balance: 1800, city: 'Waterloo' },
+            { id: 3, pharmacy_id: 3, pharmacy_name: 'Wellness Pharmacy', points_balance: 3200, city: 'Cambridge' },
+            { id: 4, pharmacy_id: 4, pharmacy_name: 'MediCare Plus', points_balance: 950, city: 'Guelph' },
+            { id: 5, pharmacy_id: 5, pharmacy_name: 'Family Health Pharmacy', points_balance: 4100, city: 'Kitchener' },
+          ]
+        };
+
+        allPharmacyAccounts = data.accounts;
+        renderPharmacyAccounts(allPharmacyAccounts);
+      } catch (err) {
+        console.error('Failed to load pharmacy accounts:', err);
+        container.innerHTML = '<p class="text-center text-red-400 py-6">Failed to load pharmacy accounts.</p>';
+      }
+    }
+
+    // Render pharmacy accounts
+    function renderPharmacyAccounts(accounts) {
+      const container = document.getElementById('pharmacyAccountsContainer');
+      
+      if (!accounts.length) {
+        container.innerHTML = '<p class="text-center text-neutral-500 py-6">No pharmacy accounts found.</p>';
+        return;
+      }
+
+      container.innerHTML = accounts.map(acc => `
+        <div class="p-4 hover:bg-neutral-700/40 transition">
+          <div class="flex justify-between items-start mb-2">
+            <div class="flex-1">
+              <p class="font-semibold text-white">${acc.pharmacy_name}</p>
+              <p class="text-xs text-neutral-400">${acc.city} • Pharmacy ID: ${acc.pharmacy_id}</p>
+            </div>
+            <button
+              onclick="openAdjustmentModal('pharmacy', ${acc.id}, '${acc.pharmacy_name}', ${acc.points_balance})"
+              class="px-3 py-1 bg-green-600/20 text-green-400 text-xs rounded-lg border border-green-600/40 hover:bg-green-600/30 transition"
+            >
+              Adjust
+            </button>
+          </div>
+          <div class="flex items-center gap-2">
+            <span class="text-sm text-neutral-400">Balance:</span>
+            <span class="text-lg font-bold text-green-400">${fmtInt(acc.points_balance)} pts</span>
+          </div>
+        </div>
+      `).join('');
+    }
+
+    // Load driver accounts
+    async function loadDriverAccounts() {
+      const container = document.getElementById('driverAccountsContainer');
+      
+      try {
+        // TODO: Replace with actual API endpoint
+        // const res = await fetch('/api/ccPointsDriverAccounts/', {
+        //   method: 'GET',
+        //   credentials: 'include',
+        //   headers: { 'X-CSRFToken': getCSRFToken() }
+        // });
+        // const data = await res.json();
+
+        // Mock data for now
+        const data = {
+          accounts: [
+            { id: 6, driver_id: 1, driver_name: 'John Smith', points_balance: 1200, phone: '5191234567' },
+            { id: 7, driver_id: 2, driver_name: 'Sarah Johnson', points_balance: 2100, phone: '5199876543' },
+            { id: 8, driver_id: 3, driver_name: 'Mike Wilson', points_balance: 850, phone: '5195551234' },
+            { id: 9, driver_id: 4, driver_name: 'Emily Brown', points_balance: 1650, phone: '5194445678' },
+          ]
+        };
+
+        allDriverAccounts = data.accounts;
+        renderDriverAccounts(allDriverAccounts);
+      } catch (err) {
+        console.error('Failed to load driver accounts:', err);
+        container.innerHTML = '<p class="text-center text-red-400 py-6">Failed to load driver accounts.</p>';
+      }
+    }
+
+    // Render driver accounts
+    function renderDriverAccounts(accounts) {
+      const container = document.getElementById('driverAccountsContainer');
+      
+      if (!accounts.length) {
+        container.innerHTML = '<p class="text-center text-neutral-500 py-6">No driver accounts found.</p>';
+        return;
+      }
+
+      container.innerHTML = accounts.map(acc => `
+        <div class="p-4 hover:bg-neutral-700/40 transition">
+          <div class="flex justify-between items-start mb-2">
+            <div class="flex-1">
+              <p class="font-semibold text-white">${acc.driver_name}</p>
+              <p class="text-xs text-neutral-400">${acc.phone} • Driver ID: ${acc.driver_id}</p>
+            </div>
+            <button
+              onclick="openAdjustmentModal('driver', ${acc.id}, '${acc.driver_name}', ${acc.points_balance})"
+              class="px-3 py-1 bg-blue-600/20 text-blue-400 text-xs rounded-lg border border-blue-600/40 hover:bg-blue-600/30 transition"
+            >
+              Adjust
+            </button>
+          </div>
+          <div class="flex items-center gap-2">
+            <span class="text-sm text-neutral-400">Balance:</span>
+            <span class="text-lg font-bold text-blue-400">${fmtInt(acc.points_balance)} pts</span>
+          </div>
+        </div>
+      `).join('');
+    }
+
+    // Load transaction history
+    async function loadTransactionHistory() {
+      const tbody = document.getElementById('transactionHistoryBody');
+      
+      try {
+        // TODO: Replace with actual API endpoint
+        // const res = await fetch('/api/ccPointsTransactions/', {
+        //   method: 'GET',
+        //   credentials: 'include',
+        //   headers: { 'X-CSRFToken': getCSRFToken() }
+        // });
+        // const data = await res.json();
+
+        // Mock data for now
+        const data = {
+          transactions: [
+            { id: 1, timestamp: '2025-01-23T14:30:00', entity_type: 'pharmacy', entity_name: 'Health Plus Pharmacy', action: 'add', points: 500, new_balance: 2500, admin: 'Admin User' },
+            { id: 2, timestamp: '2025-01-23T13:15:00', entity_type: 'driver', entity_name: 'Sarah Johnson', action: 'add', points: 300, new_balance: 2100, admin: 'Admin User' },
+            { id: 3, timestamp: '2025-01-23T11:45:00', entity_type: 'pharmacy', entity_name: 'Wellness Pharmacy', action: 'deduct', points: 200, new_balance: 3200, admin: 'Admin User' },
+            { id: 4, timestamp: '2025-01-22T16:20:00', entity_type: 'driver', entity_name: 'John Smith', action: 'add', points: 150, new_balance: 1200, admin: 'Admin User' },
+            { id: 5, timestamp: '2025-01-22T10:00:00', entity_type: 'pharmacy', entity_name: 'Family Health Pharmacy', action: 'add', points: 1000, new_balance: 4100, admin: 'Admin User' },
+          ]
+        };
+
+        allTransactions = data.transactions;
+        renderTransactionHistory(allTransactions);
+      } catch (err) {
+        console.error('Failed to load transactions:', err);
+        tbody.innerHTML = '<tr><td colspan="6" class="px-6 py-4 text-center text-red-400">Failed to load transactions.</td></tr>';
+      }
+    }
+
+    // Render transaction history
+    function renderTransactionHistory(transactions) {
+      const tbody = document.getElementById('transactionHistoryBody');
+      
+      if (!transactions.length) {
+        tbody.innerHTML = '<tr><td colspan="6" class="px-6 py-4 text-center text-neutral-500">No transactions found.</td></tr>';
+        return;
+      }
+
+      tbody.innerHTML = transactions.map(txn => {
+        const actionColor = txn.action === 'add' ? 'text-green-400' : 'text-red-400';
+        const actionIcon = txn.action === 'add' ? '+' : '-';
+        const entityColor = txn.entity_type === 'pharmacy' ? 'text-green-400' : 'text-blue-400';
+        
+        return `
+          <tr class="hover:bg-neutral-700/50 transition">
+            <td class="px-6 py-4 text-neutral-300">${new Date(txn.timestamp).toLocaleString()}</td>
+            <td class="px-6 py-4">
+              <span class="${entityColor} font-medium">${txn.entity_name}</span>
+              <span class="block text-xs text-neutral-500">${txn.entity_type}</span>
+            </td>
+            <td class="px-6 py-4">
+              <span class="inline-flex px-2 py-1 text-xs font-medium rounded ${txn.action === 'add' ? 'bg-green-500/20 text-green-400' : 'bg-red-500/20 text-red-400'}">
+                ${txn.action === 'add' ? 'Added' : 'Deducted'}
+              </span>
+            </td>
+            <td class="px-6 py-4 ${actionColor} font-semibold">${actionIcon}${fmtInt(txn.points)}</td>
+            <td class="px-6 py-4 text-neutral-100 font-medium">${fmtInt(txn.new_balance)}</td>
+            <td class="px-6 py-4 text-neutral-400">${txn.admin}</td>
+          </tr>
+        `;
+      }).join('');
+    }
+
+    // Open adjustment modal
+    function openAdjustmentModal(type, accountId, entityName, currentBalance) {
+      currentAdjustmentTarget = { type, accountId, entityName, currentBalance };
+      
+      document.getElementById('adjustmentModalTitle').textContent = `Adjust Points - ${entityName}`;
+      document.getElementById('modalCurrentBalance').textContent = `${fmtInt(currentBalance)} pts`;
+      document.getElementById('adjustmentAmount').value = '';
+      document.getElementById('adjustmentReason').value = '';
+      document.getElementById('adjustmentAction').value = 'add';
+      
+      document.getElementById('adjustmentModal').classList.remove('hidden');
+    }
+
+    // Close adjustment modal
+    function closeAdjustmentModal() {
+      document.getElementById('adjustmentModal').classList.add('hidden');
+      currentAdjustmentTarget = null;
+    }
+
+    // Confirm adjustment
+    async function confirmAdjustment() {
+      if (!currentAdjustmentTarget) return;
+
+      const action = document.getElementById('adjustmentAction').value;
+      const amount = parseInt(document.getElementById('adjustmentAmount').value);
+      const reason = document.getElementById('adjustmentReason').value;
+
+      if (!amount || amount <= 0) {
+        alert('Please enter a valid points amount');
+        return;
+      }
+
+      try {
+        // TODO: Replace with actual API endpoint
+        // const res = await fetch('/api/ccPointsAdjust/', {
+        //   method: 'POST',
+        //   credentials: 'include',
+        //   headers: {
+        //     'Content-Type': 'application/json',
+        //     'X-CSRFToken': getCSRFToken()
+        //   },
+        //   body: JSON.stringify({
+        //     type: currentAdjustmentTarget.type,
+        //     account_id: currentAdjustmentTarget.accountId,
+        //     action: action,
+        //     points: amount,
+        //     reason: reason
+        //   })
+        // });
+        // const data = await res.json();
+
+        console.log('Adjustment:', {
+          type: currentAdjustmentTarget.type,
+          account_id: currentAdjustmentTarget.accountId,
+          action,
+          points: amount,
+          reason
+        });
+
+        alert(`Successfully ${action === 'add' ? 'added' : 'deducted'} ${amount} points!`);
+        
+        closeAdjustmentModal();
+        
+        // Reload data
+        loadSummaryStats();
+        loadPharmacyAccounts();
+        loadDriverAccounts();
+        loadTransactionHistory();
+      } catch (err) {
+        console.error('Adjustment failed:', err);
+        alert('Failed to adjust points. Please try again.');
+      }
+    }
+
+    // Search filters
+    document.getElementById('pharmacySearch').addEventListener('input', (e) => {
+      const query = e.target.value.toLowerCase();
+      const filtered = allPharmacyAccounts.filter(acc =>
+        acc.pharmacy_name.toLowerCase().includes(query) ||
+        acc.city.toLowerCase().includes(query)
+      );
+      renderPharmacyAccounts(filtered);
+    });
+
+    document.getElementById('driverSearch').addEventListener('input', (e) => {
+      const query = e.target.value.toLowerCase();
+      const filtered = allDriverAccounts.filter(acc =>
+        acc.driver_name.toLowerCase().includes(query) ||
+        acc.phone.includes(query)
+      );
+      renderDriverAccounts(filtered);
+    });
+
+    // Transaction filters
+    function filterTransactions() {
+      const typeFilter = document.getElementById('transactionTypeFilter').value;
+      const actionFilter = document.getElementById('transactionActionFilter').value;
+      
+      let filtered = allTransactions;
+      
+      if (typeFilter !== 'all') {
+        filtered = filtered.filter(txn => txn.entity_type === typeFilter);
+      }
+      
+      if (actionFilter !== 'all') {
+        filtered = filtered.filter(txn => txn.action === actionFilter);
+      }
+      
+      renderTransactionHistory(filtered);
+    }
+
+    document.getElementById('transactionTypeFilter').addEventListener('change', filterTransactions);
+    document.getElementById('transactionActionFilter').addEventListener('change', filterTransactions);
+
+    // Modal event listeners
+    document.getElementById('closeAdjustmentModal').addEventListener('click', closeAdjustmentModal);
+    document.getElementById('cancelAdjustment').addEventListener('click', closeAdjustmentModal);
+    document.getElementById('confirmAdjustment').addEventListener('click', confirmAdjustment);
+
+    // Logout
+    document.getElementById('logoutBtn').addEventListener('click', (e) => {
+      e.preventDefault();
+      document.cookie = 'adminId=; path=/; expires=Thu, 01 Jan 1970 00:00:00 UTC; SameSite=Lax;';
+      document.cookie = 'jwtToken=; path=/; expires=Thu, 01 Jan 1970 00:00:00 UTC; SameSite=Lax;';
+      window.location.href = '/adminLogin/';
+    });
+
+    // Mobile menu toggle
+    const menuToggle = document.getElementById('menuToggle');
+    const sidebar = document.getElementById('sidebar');
+    const sidebarOverlay = document.getElementById('sidebarOverlay');
+
+    menuToggle?.addEventListener('click', () => {
+      sidebar.classList.toggle('-translate-x-full');
+      sidebarOverlay.classList.toggle('hidden');
+    });
+
+    sidebarOverlay?.addEventListener('click', () => {
+      sidebar.classList.add('-translate-x-full');
+      sidebarOverlay.classList.add('hidden');
+    });
+
+    // Initialize on page load
+    document.addEventListener('DOMContentLoaded', () => {
+      loadSummaryStats();
+      loadPharmacyAccounts();
+      loadDriverAccounts();
+      loadTransactionHistory();
+    });
+  </script>
+</body>
+</html>

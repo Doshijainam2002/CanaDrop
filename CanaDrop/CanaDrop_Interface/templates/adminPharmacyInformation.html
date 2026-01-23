@@ -14,6 +14,24 @@
         linear-gradient(135deg, rgba(0,0,0,0) 75%, rgba(255,255,255,0.04) 75%) 0 0/28px 28px;
       box-shadow: inset 0 0 120px rgba(0,0,0,0.35);
     }
+    .toast {
+    position: fixed;
+    top: 20px;
+    right: 20px;
+    padding: 16px 24px;
+    border-radius: 8px;
+    color: white;
+    font-weight: 500;
+    z-index: 9999;
+    animation: slideIn 0.3s ease-out;
+}
+.toast-success { background: linear-gradient(135deg, #10b981 0%, #059669 100%); }
+.toast-error { background: linear-gradient(135deg, #ef4444 0%, #dc2626 100%); }
+
+@keyframes slideIn {
+    from { transform: translateX(400px); opacity: 0; }
+    to { transform: translateX(0); opacity: 1; }
+}
   </style>
 </head>
 <body class="min-h-screen bg-neutral-900 text-neutral-100 font-inter logistics-bg">
@@ -60,6 +78,22 @@
             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4"/>
           </svg>
           Pharmacy Information
+        </a>
+        <a href="/adminPaymentInformation/"
+          class="flex items-center px-3 py-2 rounded-lg text-neutral-300 hover:bg-neutral-700 transition">
+          <svg class="w-5 h-5 mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                  d="M3 10h18M7 15h1m4 0h1m-7 4h12a3 3 0 003-3V8a3 3 0 00-3-3H6a3 3 0 00-3 3v8a3 3 0 003 3z"/>
+          </svg>
+          Payment Information
+        </a>
+        <a href="/adminCCPoints/"
+          class="flex items-center px-3 py-2 rounded-lg text-neutral-300 hover:bg-neutral-700 transition">
+          <svg class="w-5 h-5 mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                  d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/>
+          </svg>
+          CC Points
         </a>
         <a href="/adminSupport/" class="flex items-center px-3 py-2 rounded-lg text-neutral-300 hover:bg-neutral-700 transition">
           <svg class="w-5 h-5 mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 10h.01M12 10h.01M16 10h.01M21 12c0 4.418-4.03 8-9 8s-9-3.582-9-8 4.03-8 9-8 9 3.582 9 8zM12 14v-4m0 4h.01"/></svg>
@@ -307,66 +341,414 @@
                 </tr>
               </thead>
               <tbody id="pharmacyTableBody" class="divide-y divide-neutral-700">
-                <!-- Sample Row -->
-                <tr class="hover:bg-neutral-700/50 transition">
-                  <td class="px-6 py-4">
-                    <div>
-                      <p class="font-medium text-neutral-100">HealthPlus Pharmacy</p>
-                      <p class="text-xs text-neutral-400">healthplus@example.com</p>
-                    </div>
-                  </td>
-                  <td class="px-6 py-4">
-                    <div>
-                      <p class="text-neutral-200">John Smith</p>
-                      <p class="text-xs text-neutral-400">Owner • (555) 123-4567</p>
-                    </div>
-                  </td>
-                  <td class="px-6 py-4">
-                    <div>
-                      <p class="text-neutral-200">Kitchener</p>
-                      <p class="text-xs text-neutral-400">N2G 4X8</p>
-                    </div>
-                  </td>
-                  <td class="px-6 py-4">
-                    <span class="inline-flex px-2 py-1 text-xs font-medium rounded-full bg-green-500/20 text-green-400 border border-green-600/40">
-                      Both
-                    </span>
-                  </td>
-                  <td class="px-6 py-4">
-                    <span class="text-neutral-100 font-semibold">15</span>
-                    <span class="text-xs text-neutral-400 ml-1">orders</span>
-                  </td>
-                  <td class="px-6 py-4">
-                    <span class="text-neutral-100 font-semibold">25</span>
-                    <span class="text-xs text-neutral-400 ml-1">km</span>
-                  </td>
-                  <td class="px-6 py-4">
-                    <div class="flex gap-1">
-                      <span class="inline-flex items-center justify-center w-6 h-6 bg-yellow-500/20 text-yellow-400 rounded text-xs font-bold" title="Signature Required">S</span>
-                      <span class="inline-flex items-center justify-center w-6 h-6 bg-red-500/20 text-red-400 rounded text-xs font-bold" title="ID Verification">ID</span>
-                    </div>
-                  </td>
-                  <td class="px-6 py 4">
-                    <div class="flex gap-2">
-                      <button class="px-3 py-1 bg-neutral-700 hover:bg-neutral-600 text-neutral-300 rounded text-xs transition" onclick="viewDetails(1)">
-                        View
-                      </button>
-                      <button class="px-3 py-1 bg-orange-600 hover:bg-orange-700 text-white rounded text-xs transition" onclick="viewNotes(1)">
-                        Notes
-                      </button>
-                    </div>
-                  </td>
-                </tr>
+                  <tr>
+                      <td colspan="8" class="px-6 py-8 text-center text-neutral-400">
+                          <svg class="animate-spin h-8 w-8 mx-auto mb-2 text-orange-500" fill="none" viewBox="0 0 24 24">
+                              <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                              <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                          </svg>
+                          Loading pharmacy data...
+                      </td>
+                  </tr>
               </tbody>
             </table>
           </div>
         </div>
       </section>
 
+<!-- Edit Pharmacy Modal - COMPLETE VERSION -->
+<div id="editModal" class="hidden fixed inset-0 bg-black/70 z-50 flex items-center justify-center p-4">
+    <div class="bg-neutral-800 rounded-xl border border-neutral-700 max-w-4xl w-full max-h-[90vh] overflow-y-auto">
+        <div class="px-6 py-4 border-b border-neutral-700 flex justify-between items-center sticky top-0 bg-neutral-800 z-10">
+            <h3 class="text-xl font-semibold text-white">Edit Pharmacy Information</h3>
+            <button onclick="closeEditModal()" class="text-neutral-400 hover:text-white">
+                <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
+                </svg>
+            </button>
+        </div>
+        <form id="editForm" class="p-6 space-y-6">
+            <input type="hidden" id="editPharmacyId" />
+            
+            <!-- Pharmacy Information Section -->
+            <div>
+                <h4 class="text-lg font-semibold text-white mb-4 flex items-center gap-2">
+                    <svg class="w-5 h-5 text-orange-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4"/>
+                    </svg>
+                    Pharmacy Information
+                </h4>
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div>
+                        <label class="block text-sm font-medium text-neutral-300 mb-2">Pharmacy Name *</label>
+                        <input type="text" id="editPharmacyName" class="w-full px-4 py-2 bg-neutral-700 text-neutral-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-orange-500" required />
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-neutral-300 mb-2">Pharmacy Email *</label>
+                        <input type="email" id="editPharmacyEmail" class="w-full px-4 py-2 bg-neutral-700 text-neutral-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-orange-500" required />
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-neutral-300 mb-2">Pharmacy Phone</label>
+                        <input type="tel" id="editPharmacyPhone" class="w-full px-4 py-2 bg-neutral-700 text-neutral-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-orange-500" placeholder="e.g., (416) 555-1234" />
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-neutral-300 mb-2">Store Hours</label>
+                        <input type="text" id="editStoreHours" class="w-full px-4 py-2 bg-neutral-700 text-neutral-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-orange-500" placeholder="e.g., Mon-Fri 9am-8pm" />
+                    </div>
+                </div>
+            </div>
+
+            <!-- Address Section -->
+            <div>
+                <h4 class="text-lg font-semibold text-white mb-4 flex items-center gap-2">
+                    <svg class="w-5 h-5 text-orange-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z"/>
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 11a3 3 0 11-6 0 3 3 0 016 0z"/>
+                    </svg>
+                    Address
+                </h4>
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div class="md:col-span-2">
+                        <label class="block text-sm font-medium text-neutral-300 mb-2">Street Address</label>
+                        <input type="text" id="editAddress" class="w-full px-4 py-2 bg-neutral-700 text-neutral-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-orange-500" />
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-neutral-300 mb-2">City</label>
+                        <input type="text" id="editCity" class="w-full px-4 py-2 bg-neutral-700 text-neutral-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-orange-500" />
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-neutral-300 mb-2">Postal Code</label>
+                        <input type="text" id="editPostalCode" class="w-full px-4 py-2 bg-neutral-700 text-neutral-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-orange-500" placeholder="e.g., M5V 1H8" />
+                    </div>
+                </div>
+            </div>
+
+            <!-- Contact Person Section -->
+            <div>
+                <h4 class="text-lg font-semibold text-white mb-4 flex items-center gap-2">
+                    <svg class="w-5 h-5 text-orange-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"/>
+                    </svg>
+                    Contact Person
+                </h4>
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div>
+                        <label class="block text-sm font-medium text-neutral-300 mb-2">Contact Name</label>
+                        <input type="text" id="editContactName" class="w-full px-4 py-2 bg-neutral-700 text-neutral-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-orange-500" />
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-neutral-300 mb-2">Role</label>
+                        <select id="editContactRole" class="w-full px-4 py-2 bg-neutral-700 text-neutral-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-orange-500">
+                            <option value="owner">Owner</option>
+                            <option value="manager">Manager</option>
+                            <option value="pharmacist">Pharmacist</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-neutral-300 mb-2">Contact Phone</label>
+                        <input type="tel" id="editContactPhone" class="w-full px-4 py-2 bg-neutral-700 text-neutral-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-orange-500" />
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-neutral-300 mb-2">Contact Email</label>
+                        <input type="email" id="editContactEmail" class="w-full px-4 py-2 bg-neutral-700 text-neutral-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-orange-500" />
+                    </div>
+                </div>
+            </div>
+
+            <!-- Delivery Preferences Section -->
+            <div>
+                <h4 class="text-lg font-semibold text-white mb-4 flex items-center gap-2">
+                    <svg class="w-5 h-5 text-orange-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16V6a1 1 0 00-1-1H4a1 1 0 00-1 1v10a1 1 0 001 1h1m8-1a1 1 0 01-1 1H9m4-1V8a1 1 0 011-1h2.586a1 1 0 01.707.293l3.414 3.414a1 1 0 01.293.707V16a1 1 0 01-1 1h-1m-6-1a1 1 0 001 1h1M5 17a2 2 0 104 0m-4 0a2 2 0 114 0m6 0a2 2 0 104 0m-4 0a2 2 0 114 0"/>
+                    </svg>
+                    Delivery Preferences
+                </h4>
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div>
+                        <label class="flex items-center gap-2 text-sm text-neutral-300 mb-2">
+                            <input type="checkbox" id="editCurrentlyOffers" class="w-4 h-4 rounded bg-neutral-700 border-neutral-600 text-orange-500 focus:ring-orange-500" />
+                            Currently Offers Delivery
+                        </label>
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-neutral-300 mb-2">Preferred Delivery Type</label>
+                        <select id="editDeliveryType" class="w-full px-4 py-2 bg-neutral-700 text-neutral-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-orange-500">
+                            <option value="same_day">Same-Day</option>
+                            <option value="next_day">Next-Day</option>
+                            <option value="both">Both</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-neutral-300 mb-2">Estimated Daily Deliveries</label>
+                        <input type="number" id="editDailyDeliveries" class="w-full px-4 py-2 bg-neutral-700 text-neutral-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-orange-500" min="0" />
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-neutral-300 mb-2">Delivery Radius (km)</label>
+                        <input type="number" id="editRadius" class="w-full px-4 py-2 bg-neutral-700 text-neutral-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-orange-500" min="0" step="0.1" />
+                    </div>
+                </div>
+            </div>
+
+            <!-- Compliance & Requirements Section -->
+            <div>
+                <h4 class="text-lg font-semibold text-white mb-4 flex items-center gap-2">
+                    <svg class="w-5 h-5 text-orange-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z"/>
+                    </svg>
+                    Compliance & Requirements
+                </h4>
+                <div class="space-y-4">
+                    <div class="flex gap-6 flex-wrap">
+                        <label class="flex items-center gap-2 text-sm text-neutral-300">
+                            <input type="checkbox" id="editSignatureRequired" class="w-4 h-4 rounded bg-neutral-700 border-neutral-600 text-orange-500 focus:ring-orange-500" />
+                            Signature Required
+                        </label>
+                        <label class="flex items-center gap-2 text-sm text-neutral-300">
+                            <input type="checkbox" id="editIdVerification" class="w-4 h-4 rounded bg-neutral-700 border-neutral-600 text-orange-500 focus:ring-orange-500" />
+                            ID Verification Required
+                        </label>
+                        <label class="flex items-center gap-2 text-sm text-neutral-300">
+                            <input type="checkbox" id="editConsent" class="w-4 h-4 rounded bg-neutral-700 border-neutral-600 text-orange-500 focus:ring-orange-500" />
+                            Consent Given
+                        </label>
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-neutral-300 mb-2">Special Delivery Instructions</label>
+                        <textarea id="editSpecialInstructions" rows="3" class="w-full px-4 py-2 bg-neutral-700 text-neutral-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-orange-500" placeholder="Enter any special delivery instructions..."></textarea>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Internal Notes Section -->
+            <div>
+                <h4 class="text-lg font-semibold text-white mb-4 flex items-center gap-2">
+                    <svg class="w-5 h-5 text-orange-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/>
+                    </svg>
+                    Internal Notes
+                </h4>
+                <div>
+                    <textarea id="editInternalNotes" rows="3" class="w-full px-4 py-2 bg-neutral-700 text-neutral-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-orange-500" placeholder="Internal notes (not visible to pharmacy)..."></textarea>
+                </div>
+            </div>
+
+            <!-- Action Buttons -->
+            <div class="flex gap-3 pt-4 border-t border-neutral-700">
+                <button type="submit" class="flex-1 px-4 py-2 bg-orange-600 hover:bg-orange-700 text-white rounded-lg font-medium transition">
+                    Save Changes
+                </button>
+                <button type="button" onclick="closeEditModal()" class="px-4 py-2 bg-neutral-700 hover:bg-neutral-600 text-neutral-300 rounded-lg font-medium transition">
+                    Cancel
+                </button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<!-- View Details Modal -->
+<div id="viewModal" class="hidden fixed inset-0 bg-black/70 z-50 flex items-center justify-center p-4">
+    <div class="bg-neutral-800 rounded-xl border border-neutral-700 max-w-4xl w-full max-h-[90vh] overflow-y-auto">
+        <div class="px-6 py-4 border-b border-neutral-700 flex justify-between items-center sticky top-0 bg-neutral-800 z-10">
+            <h3 class="text-xl font-semibold text-white">Pharmacy Details</h3>
+            <button onclick="closeViewModal()" class="text-neutral-400 hover:text-white">
+                <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
+                </svg>
+            </button>
+        </div>
+        
+        <div class="p-6">
+            <!-- Pharmacy Information Section -->
+            <div class="mb-6">
+                <h4 class="text-lg font-semibold text-white mb-4 flex items-center gap-2">
+                    <svg class="w-5 h-5 text-orange-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4"/>
+                    </svg>
+                    Pharmacy Information
+                </h4>
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div class="bg-neutral-700/50 p-4 rounded-lg">
+                        <p class="text-xs text-neutral-400 uppercase mb-1">Pharmacy Name</p>
+                        <p id="viewPharmacyName" class="text-white font-medium">—</p>
+                    </div>
+                    <div class="bg-neutral-700/50 p-4 rounded-lg">
+                        <p class="text-xs text-neutral-400 uppercase mb-1">Pharmacy Email</p>
+                        <p id="viewPharmacyEmail" class="text-white font-medium">—</p>
+                    </div>
+                    <div class="bg-neutral-700/50 p-4 rounded-lg">
+                        <p class="text-xs text-neutral-400 uppercase mb-1">Pharmacy Phone</p>
+                        <p id="viewPharmacyPhone" class="text-white font-medium">—</p>
+                    </div>
+                    <div class="bg-neutral-700/50 p-4 rounded-lg">
+                        <p class="text-xs text-neutral-400 uppercase mb-1">Store Hours</p>
+                        <p id="viewStoreHours" class="text-white font-medium">—</p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Address Section -->
+            <div class="mb-6">
+                <h4 class="text-lg font-semibold text-white mb-4 flex items-center gap-2">
+                    <svg class="w-5 h-5 text-orange-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z"/>
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 11a3 3 0 11-6 0 3 3 0 016 0z"/>
+                    </svg>
+                    Address
+                </h4>
+                <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                    <div class="bg-neutral-700/50 p-4 rounded-lg md:col-span-2">
+                        <p class="text-xs text-neutral-400 uppercase mb-1">Street Address</p>
+                        <p id="viewAddress" class="text-white font-medium">—</p>
+                    </div>
+                    <div class="bg-neutral-700/50 p-4 rounded-lg">
+                        <p class="text-xs text-neutral-400 uppercase mb-1">City</p>
+                        <p id="viewCity" class="text-white font-medium">—</p>
+                    </div>
+                    <div class="bg-neutral-700/50 p-4 rounded-lg">
+                        <p class="text-xs text-neutral-400 uppercase mb-1">Postal Code</p>
+                        <p id="viewPostalCode" class="text-white font-medium">—</p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Contact Person Section -->
+            <div class="mb-6">
+                <h4 class="text-lg font-semibold text-white mb-4 flex items-center gap-2">
+                    <svg class="w-5 h-5 text-orange-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"/>
+                    </svg>
+                    Contact Person
+                </h4>
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div class="bg-neutral-700/50 p-4 rounded-lg">
+                        <p class="text-xs text-neutral-400 uppercase mb-1">Contact Name</p>
+                        <p id="viewContactName" class="text-white font-medium">—</p>
+                    </div>
+                    <div class="bg-neutral-700/50 p-4 rounded-lg">
+                        <p class="text-xs text-neutral-400 uppercase mb-1">Role</p>
+                        <p id="viewContactRole" class="text-white font-medium">—</p>
+                    </div>
+                    <div class="bg-neutral-700/50 p-4 rounded-lg">
+                        <p class="text-xs text-neutral-400 uppercase mb-1">Contact Phone</p>
+                        <p id="viewContactPhone" class="text-white font-medium">—</p>
+                    </div>
+                    <div class="bg-neutral-700/50 p-4 rounded-lg">
+                        <p class="text-xs text-neutral-400 uppercase mb-1">Contact Email</p>
+                        <p id="viewContactEmail" class="text-white font-medium">—</p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Delivery Preferences Section -->
+            <div class="mb-6">
+                <h4 class="text-lg font-semibold text-white mb-4 flex items-center gap-2">
+                    <svg class="w-5 h-5 text-orange-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16V6a1 1 0 00-1-1H4a1 1 0 00-1 1v10a1 1 0 001 1h1m8-1a1 1 0 01-1 1H9m4-1V8a1 1 0 011-1h2.586a1 1 0 01.707.293l3.414 3.414a1 1 0 01.293.707V16a1 1 0 01-1 1h-1m-6-1a1 1 0 001 1h1M5 17a2 2 0 104 0m-4 0a2 2 0 114 0m6 0a2 2 0 104 0m-4 0a2 2 0 114 0"/>
+                    </svg>
+                    Delivery Preferences
+                </h4>
+                <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                    <div class="bg-neutral-700/50 p-4 rounded-lg">
+                        <p class="text-xs text-neutral-400 uppercase mb-1">Currently Offers Delivery</p>
+                        <p id="viewCurrentlyOffers" class="text-white font-medium">—</p>
+                    </div>
+                    <div class="bg-neutral-700/50 p-4 rounded-lg">
+                        <p class="text-xs text-neutral-400 uppercase mb-1">Preferred Delivery Type</p>
+                        <div id="viewDeliveryType">—</div>
+                    </div>
+                    <div class="bg-neutral-700/50 p-4 rounded-lg">
+                        <p class="text-xs text-neutral-400 uppercase mb-1">Delivery Radius</p>
+                        <p id="viewDeliveryRadius" class="text-white font-medium">—</p>
+                    </div>
+                    <div class="bg-neutral-700/50 p-4 rounded-lg">
+                        <p class="text-xs text-neutral-400 uppercase mb-1">Est. Daily Deliveries</p>
+                        <p id="viewDailyDeliveries" class="text-white font-medium">—</p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Compliance & Requirements Section -->
+            <div class="mb-6">
+                <h4 class="text-lg font-semibold text-white mb-4 flex items-center gap-2">
+                    <svg class="w-5 h-5 text-orange-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z"/>
+                    </svg>
+                    Compliance & Requirements
+                </h4>
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div class="bg-neutral-700/50 p-4 rounded-lg">
+                        <p class="text-xs text-neutral-400 uppercase mb-1">Signature Required</p>
+                        <p id="viewSignatureRequired" class="text-white font-medium">—</p>
+                    </div>
+                    <div class="bg-neutral-700/50 p-4 rounded-lg">
+                        <p class="text-xs text-neutral-400 uppercase mb-1">ID Verification Required</p>
+                        <p id="viewIdVerification" class="text-white font-medium">—</p>
+                    </div>
+                    <div class="bg-neutral-700/50 p-4 rounded-lg">
+                        <p class="text-xs text-neutral-400 uppercase mb-1">Consent Given</p>
+                        <p id="viewConsent" class="text-white font-medium">—</p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Special Instructions Section -->
+            <div class="mb-6">
+                <h4 class="text-lg font-semibold text-white mb-4 flex items-center gap-2">
+                    <svg class="w-5 h-5 text-orange-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/>
+                    </svg>
+                    Special Instructions & Notes
+                </h4>
+                <div class="space-y-4">
+                    <div class="bg-neutral-700/50 p-4 rounded-lg">
+                        <p class="text-xs text-neutral-400 uppercase mb-2">Special Delivery Instructions</p>
+                        <p id="viewSpecialInstructions" class="text-white">—</p>
+                    </div>
+                    <div class="bg-neutral-700/50 p-4 rounded-lg">
+                        <p class="text-xs text-neutral-400 uppercase mb-2">Internal Notes</p>
+                        <p id="viewInternalNotes" class="text-white">—</p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Timestamps Section -->
+            <div class="mb-4">
+                <h4 class="text-lg font-semibold text-white mb-4 flex items-center gap-2">
+                    <svg class="w-5 h-5 text-orange-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"/>
+                    </svg>
+                    Record Information
+                </h4>
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div class="bg-neutral-700/50 p-4 rounded-lg">
+                        <p class="text-xs text-neutral-400 uppercase mb-1">Created At</p>
+                        <p id="viewCreatedAt" class="text-white font-medium">—</p>
+                    </div>
+                    <div class="bg-neutral-700/50 p-4 rounded-lg">
+                        <p class="text-xs text-neutral-400 uppercase mb-1">Last Updated</p>
+                        <p id="viewUpdatedAt" class="text-white font-medium">—</p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Action Buttons -->
+            <div class="flex gap-3 pt-4 border-t border-neutral-700">
+
+                <button onclick="closeViewModal()" class="px-4 py-2 bg-neutral-700 hover:bg-neutral-600 text-neutral-300 rounded-lg font-medium transition">
+                    Close
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
     </main>
   </div>
 
   <script>
+
+    let currentViewPharmacy = null;
+
     // Mobile menu toggle
     const menuToggle = document.getElementById('menuToggle');
     const sidebar = document.getElementById('sidebar');
@@ -382,6 +764,245 @@
       sidebarOverlay.classList.add('hidden');
     });
 
+// CSRF Token function
+function getCSRFToken() {
+    return document.cookie
+        .split('; ')
+        .find(row => row.startsWith('csrftoken='))
+        ?.split('=')[1];
+}
+
+function showToast(message, type = 'success') {
+    const toast = document.createElement('div');
+    toast.className = `toast toast-${type}`;
+    toast.textContent = message;
+    document.body.appendChild(toast);
+    
+    setTimeout(() => {
+        toast.style.animation = 'slideIn 0.3s ease-out reverse';
+        setTimeout(() => toast.remove(), 300);
+    }, 3000);
+}
+
+// Add this function after getCSRFToken()
+function escapeHtml(text) {
+    const div = document.createElement('div');
+    div.textContent = text;
+    return div.innerHTML;
+}
+
+// Fetch pharmacy analytics data
+async function fetchPharmacyAnalytics() {
+    try {
+        const response = await fetch('/adminAnalyticsAPI/', {
+            method: 'GET',
+            credentials: 'include',
+            headers: {
+                'X-CSRFToken': getCSRFToken(),
+                'Content-Type': 'application/json'
+            }
+        });
+
+        if (!response.ok) {
+            throw new Error('Failed to fetch analytics data');
+        }
+
+        const data = await response.json();
+        populateAnalytics(data);
+    } catch (error) {
+        console.error('Error fetching analytics:', error);
+        showErrorState();
+    }
+}
+
+// Populate the page with API data
+function populateAnalytics(data) {
+    // Check if data has the expected structure
+    if (!data.success || !data.metrics) {
+        console.error('Invalid data structure:', data);
+        showErrorState();
+        return;
+    }
+
+    const metrics = data.metrics;
+    
+    // Update key metrics - using correct API field names
+    document.getElementById('statTotalSubmissions').textContent = metrics.total_submissions_last_30_days || 0;
+    document.getElementById('statAvgDeliveries').textContent = (metrics.average_deliveries_per_day || 0).toFixed(1);
+    document.getElementById('statAvgRadius').textContent = (metrics.average_delivery_radius_km || 0).toFixed(1);
+    document.getElementById('statConsentRate').textContent = `${(metrics.consent_rate_percentage || 0).toFixed(1)}%`;
+
+    // Update delivery type distribution - using correct API structure
+    const deliveryPrefs = metrics.delivery_type_preferences || {};
+    const deliveryTypes = {
+        same_day: deliveryPrefs.same_day?.count || 0,
+        next_day: deliveryPrefs.next_day?.count || 0,
+        both: deliveryPrefs.both?.count || 0
+    };
+    updateDeliveryTypeChart(deliveryTypes);
+
+    // Update compliance requirements - using correct API field names
+    document.getElementById('signatureCount').textContent = metrics.signature_required_count || 0;
+    document.getElementById('idVerificationCount').textContent = metrics.id_verification_required_count || 0;
+    document.getElementById('currentDeliveryCount').textContent = metrics.currently_offering_delivery_count || 0;
+
+    // Populate table - using correct API field name
+    populateTable(data.pharmacies || []);
+}
+
+// Update delivery type chart
+function updateDeliveryTypeChart(types) {
+    const total = (types.same_day || 0) + (types.next_day || 0) + (types.both || 0);
+    
+    if (total > 0) {
+        const sameDayPct = ((types.same_day || 0) / total * 100);
+        const nextDayPct = ((types.next_day || 0) / total * 100);
+        const bothPct = ((types.both || 0) / total * 100);
+
+        document.getElementById('sameDayCount').textContent = types.same_day || 0;
+        document.getElementById('sameDayBar').style.width = `${sameDayPct}%`;
+
+        document.getElementById('nextDayCount').textContent = types.next_day || 0;
+        document.getElementById('nextDayBar').style.width = `${nextDayPct}%`;
+
+        document.getElementById('bothCount').textContent = types.both || 0;
+        document.getElementById('bothBar').style.width = `${bothPct}%`;
+    }
+}
+
+// Populate pharmacy table
+let allPharmacies = [];
+
+function populateTable(pharmacies) {
+    allPharmacies = pharmacies;
+    renderTable(pharmacies);
+}
+
+function renderTable(pharmacies) {
+    const tbody = document.getElementById('pharmacyTableBody');
+    document.getElementById('tableCount').textContent = `${pharmacies.length} records`;
+
+    if (pharmacies.length === 0) {
+        tbody.innerHTML = `
+            <tr>
+                <td colspan="8" class="px-6 py-8 text-center text-neutral-400">
+                    No pharmacy submissions found
+                </td>
+            </tr>
+        `;
+        return;
+    }
+
+    tbody.innerHTML = pharmacies.map(pharmacy => `
+        <tr class="hover:bg-neutral-700/50 transition">
+            <td class="px-6 py-4">
+                <div>
+                    <p class="font-medium text-neutral-100">${escapeHtml(pharmacy.pharmacy_name || 'N/A')}</p>
+                    <p class="text-xs text-neutral-400">${escapeHtml(pharmacy.pharmacy_email || 'N/A')}</p>
+                </div>
+            </td>
+            <td class="px-6 py-4">
+                <div>
+                    <p class="text-neutral-200">${escapeHtml(pharmacy.contact_name || 'N/A')}</p>
+                    <p class="text-xs text-neutral-400">${escapeHtml(pharmacy.contact_role || 'N/A')} • ${escapeHtml(pharmacy.contact_phone || 'N/A')}</p>
+                </div>
+            </td>
+            <td class="px-6 py-4">
+                <div>
+                    <p class="text-neutral-200">${escapeHtml(pharmacy.city || 'N/A')}</p>
+                    <p class="text-xs text-neutral-400">${escapeHtml(pharmacy.postal_code || 'N/A')}</p>
+                </div>
+            </td>
+            <td class="px-6 py-4">
+                ${getDeliveryTypeBadge(pharmacy.preferred_delivery_type)}
+            </td>
+            <td class="px-6 py-4">
+                <span class="text-neutral-100 font-semibold">${pharmacy.estimated_deliveries_per_day || 0}</span>
+                <span class="text-xs text-neutral-400 ml-1">orders</span>
+            </td>
+            <td class="px-6 py-4">
+                <span class="text-neutral-100 font-semibold">${pharmacy.delivery_radius_km || 0}</span>
+                <span class="text-xs text-neutral-400 ml-1">km</span>
+            </td>
+            <td class="px-6 py-4">
+                <div class="flex gap-1">
+                    ${pharmacy.signature_required ? '<span class="inline-flex items-center justify-center w-6 h-6 bg-yellow-500/20 text-yellow-400 rounded text-xs font-bold" title="Signature Required">S</span>' : ''}
+                    ${pharmacy.id_verification_required ? '<span class="inline-flex items-center justify-center w-6 h-6 bg-red-500/20 text-red-400 rounded text-xs font-bold" title="ID Verification">ID</span>' : ''}
+                </div>
+            </td>
+            <td class="px-6 py-4">
+                <div class="flex gap-2">
+                    <button class="px-3 py-1 bg-neutral-700 hover:bg-neutral-600 text-neutral-300 rounded text-xs transition" onclick="viewDetails(${pharmacy.id})">
+                        View
+                    </button>
+                    <button class="px-3 py-1 bg-blue-600 hover:bg-blue-700 text-white rounded text-xs transition" onclick="editPharmacy(${pharmacy.id})">
+                        Edit
+                    </button>
+                </div>
+            </td>
+        </tr>
+    `).join('');
+}
+
+function getDeliveryTypeBadge(type) {
+    const badges = {
+        'same_day': '<span class="inline-flex px-2 py-1 text-xs font-medium rounded-full bg-blue-500/20 text-blue-400 border border-blue-600/40">Same-Day</span>',
+        'next_day': '<span class="inline-flex px-2 py-1 text-xs font-medium rounded-full bg-amber-500/20 text-amber-400 border border-amber-600/40">Next-Day</span>',
+        'both': '<span class="inline-flex px-2 py-1 text-xs font-medium rounded-full bg-green-500/20 text-green-400 border border-green-600/40">Both</span>'
+    };
+    return badges[type] || '<span class="text-xs text-neutral-400">N/A</span>';
+}
+
+function showErrorState() {
+    document.getElementById('statTotalSubmissions').textContent = 'Error';
+    document.getElementById('statAvgDeliveries').textContent = 'Error';
+    document.getElementById('statAvgRadius').textContent = 'Error';
+    document.getElementById('statConsentRate').textContent = 'Error';
+}
+
+// Filter functionality
+document.getElementById('searchInput')?.addEventListener('input', applyFilters);
+document.getElementById('deliveryTypeFilter')?.addEventListener('change', applyFilters);
+document.getElementById('radiusFilter')?.addEventListener('change', applyFilters);
+
+function applyFilters() {
+    const searchTerm = document.getElementById('searchInput').value.toLowerCase();
+    const deliveryType = document.getElementById('deliveryTypeFilter').value;
+    const radiusRange = document.getElementById('radiusFilter').value;
+
+    let filtered = allPharmacies.filter(pharmacy => {
+        // Search filter - using correct API field names
+        const matchesSearch = !searchTerm || 
+            pharmacy.pharmacy_name?.toLowerCase().includes(searchTerm) ||
+            pharmacy.city?.toLowerCase().includes(searchTerm) ||
+            pharmacy.pharmacy_email?.toLowerCase().includes(searchTerm);
+
+        // Delivery type filter - using correct API field name
+        const matchesDeliveryType = deliveryType === 'all' || pharmacy.preferred_delivery_type === deliveryType;
+
+        // Radius filter - using correct API field name
+        let matchesRadius = true;
+        if (radiusRange !== 'all') {
+            const radius = pharmacy.delivery_radius_km || 0;
+            if (radiusRange === '0-10') matchesRadius = radius >= 0 && radius <= 10;
+            else if (radiusRange === '11-20') matchesRadius = radius >= 11 && radius <= 20;
+            else if (radiusRange === '21-30') matchesRadius = radius >= 21 && radius <= 30;
+            else if (radiusRange === '31+') matchesRadius = radius >= 31;
+        }
+
+        return matchesSearch && matchesDeliveryType && matchesRadius;
+    });
+
+    renderTable(filtered);
+}
+
+// Initialize on page load
+document.addEventListener('DOMContentLoaded', () => {
+    fetchPharmacyAnalytics();
+});
+
+
+
     // Logout functionality
     document.getElementById("logoutBtn").addEventListener("click", function (event) {
       event.preventDefault();
@@ -391,15 +1012,284 @@
     });
 
     // Placeholder functions for action buttons
-    function viewDetails(id) {
-      console.log('View details for pharmacy:', id);
-      // TODO: Implement modal with full pharmacy details
+function viewDetails(id) {
+    const pharmacy = allPharmacies.find(p => p.id === id);
+    if (!pharmacy) {
+        showToast('Pharmacy not found', 'error');
+        return;
     }
 
-    function viewNotes(id) {
-      console.log('View internal notes for pharmacy:', id);
-      // TODO: Implement notes modal
+    currentViewPharmacy = pharmacy;
+
+    // Populate pharmacy information
+    document.getElementById('viewPharmacyName').textContent = pharmacy.pharmacy_name || 'N/A';
+    document.getElementById('viewPharmacyEmail').textContent = pharmacy.pharmacy_email || 'N/A';
+    document.getElementById('viewPharmacyPhone').textContent = formatPhone(pharmacy.pharmacy_phone) || 'N/A';
+    document.getElementById('viewStoreHours').textContent = pharmacy.store_hours || 'N/A';
+
+    // Populate address
+    document.getElementById('viewAddress').textContent = pharmacy.address_line_1 || 'N/A';
+    document.getElementById('viewCity').textContent = pharmacy.city || 'N/A';
+    document.getElementById('viewPostalCode').textContent = pharmacy.postal_code || 'N/A';
+
+    // Populate contact person
+    document.getElementById('viewContactName').textContent = pharmacy.contact_name || 'N/A';
+    // In the viewDetails function, find this line:
+    document.getElementById('viewContactRole').textContent = formatRole(pharmacy.contact_role);
+    document.getElementById('viewContactPhone').textContent = formatPhone(pharmacy.contact_phone) || 'N/A';
+    document.getElementById('viewContactEmail').textContent = pharmacy.contact_email || 'N/A';
+
+    // Populate delivery preferences
+    document.getElementById('viewCurrentlyOffers').textContent = pharmacy.currently_offers_delivery ? 'Yes' : 'No';
+    document.getElementById('viewCurrentlyOffers').className = pharmacy.currently_offers_delivery 
+        ? 'text-green-400 font-medium' 
+        : 'text-red-400 font-medium';
+    
+    document.getElementById('viewDeliveryType').innerHTML = getDeliveryTypeBadge(pharmacy.preferred_delivery_type);
+    document.getElementById('viewDeliveryRadius').textContent = `${pharmacy.delivery_radius_km || 0} km`;
+    document.getElementById('viewDailyDeliveries').textContent = `${pharmacy.estimated_deliveries_per_day || 0} orders/day`;
+
+    // Populate compliance
+    document.getElementById('viewSignatureRequired').textContent = pharmacy.signature_required ? 'Yes' : 'No';
+    document.getElementById('viewSignatureRequired').className = pharmacy.signature_required 
+        ? 'text-yellow-400 font-medium' 
+        : 'text-neutral-400 font-medium';
+    
+    document.getElementById('viewIdVerification').textContent = pharmacy.id_verification_required ? 'Yes' : 'No';
+    document.getElementById('viewIdVerification').className = pharmacy.id_verification_required 
+        ? 'text-red-400 font-medium' 
+        : 'text-neutral-400 font-medium';
+    
+    document.getElementById('viewConsent').textContent = pharmacy.consent_given ? 'Yes' : 'No';
+    document.getElementById('viewConsent').className = pharmacy.consent_given 
+        ? 'text-green-400 font-medium' 
+        : 'text-red-400 font-medium';
+
+    // Populate special instructions and notes
+    document.getElementById('viewSpecialInstructions').textContent = pharmacy.special_delivery_instructions || 'None';
+    document.getElementById('viewInternalNotes').textContent = pharmacy.internal_notes || 'None';
+
+    // Populate timestamps
+    document.getElementById('viewCreatedAt').textContent = formatDateTime(pharmacy.created_at);
+    document.getElementById('viewUpdatedAt').textContent = formatDateTime(pharmacy.updated_at);
+
+    // Show modal
+    document.getElementById('viewModal').classList.remove('hidden');
+}
+
+function closeViewModal() {
+    document.getElementById('viewModal').classList.add('hidden');
+    currentViewPharmacy = null;
+}
+
+// // Edit pharmacy from view modal
+// function editFromView() {
+//     if (currentViewPharmacy) {
+//         closeViewModal();
+//         editPharmacy(currentViewPharmacy.id);
+//     }
+// }
+
+// Helper function to format phone numbers
+function formatPhone(phone) {
+    if (!phone) return 'N/A';
+    // Remove all non-numeric characters
+    const cleaned = phone.replace(/\D/g, '');
+    // Format as (XXX) XXX-XXXX
+    if (cleaned.length === 10) {
+        return `(${cleaned.slice(0, 3)}) ${cleaned.slice(3, 6)}-${cleaned.slice(6)}`;
     }
+    return phone;
+}
+
+// Helper function to format role display
+function formatRole(role) {
+    const roleMap = {
+        'owner': 'Owner',
+        'manager': 'Manager',
+        'pharmacist': 'Pharmacist'
+    };
+    return roleMap[role] || capitalizeFirst(role) || 'N/A';
+}
+
+// Helper function to capitalize first letter
+function capitalizeFirst(str) {
+    if (!str) return '';
+    return str.charAt(0).toUpperCase() + str.slice(1);
+}
+
+// Helper function to format date/time
+function formatDateTime(dateStr) {
+    if (!dateStr) return 'N/A';
+    try {
+        const date = new Date(dateStr);
+        return date.toLocaleString('en-US', {
+            year: 'numeric',
+            month: 'short',
+            day: 'numeric',
+            hour: '2-digit',
+            minute: '2-digit'
+        });
+    } catch (e) {
+        return dateStr;
+    }
+}
+
+
+// Edit pharmacy functionality - COMPLETE VERSION
+function editPharmacy(id) {
+    const pharmacy = allPharmacies.find(p => p.id === id);
+    if (!pharmacy) return;
+
+    // Populate form with ALL fields
+    document.getElementById('editPharmacyId').value = pharmacy.id;
+    
+    // Pharmacy Information
+    document.getElementById('editPharmacyName').value = pharmacy.pharmacy_name || '';
+    document.getElementById('editPharmacyEmail').value = pharmacy.pharmacy_email || '';
+    document.getElementById('editPharmacyPhone').value = pharmacy.pharmacy_phone || '';
+    document.getElementById('editStoreHours').value = pharmacy.store_hours || '';
+    
+    // Address
+    document.getElementById('editAddress').value = pharmacy.address_line_1 || '';
+    document.getElementById('editCity').value = pharmacy.city || '';
+    document.getElementById('editPostalCode').value = pharmacy.postal_code || '';
+    
+    // Contact Person
+    document.getElementById('editContactName').value = pharmacy.contact_name || '';
+    document.getElementById('editContactRole').value = pharmacy.contact_role || '';
+    document.getElementById('editContactPhone').value = pharmacy.contact_phone || '';
+    document.getElementById('editContactEmail').value = pharmacy.contact_email || '';
+    
+    // Delivery Preferences
+    document.getElementById('editCurrentlyOffers').checked = pharmacy.currently_offers_delivery || false;
+    document.getElementById('editDeliveryType').value = pharmacy.preferred_delivery_type || 'both';
+    document.getElementById('editDailyDeliveries').value = pharmacy.estimated_deliveries_per_day || 0;
+    document.getElementById('editRadius').value = pharmacy.delivery_radius_km || 0;
+    
+    // Compliance
+    document.getElementById('editSignatureRequired').checked = pharmacy.signature_required || false;
+    document.getElementById('editIdVerification').checked = pharmacy.id_verification_required || false;
+    document.getElementById('editConsent').checked = pharmacy.consent_given || false;
+    document.getElementById('editSpecialInstructions').value = pharmacy.special_delivery_instructions || '';
+    
+    // Internal Notes
+    document.getElementById('editInternalNotes').value = pharmacy.internal_notes || '';
+
+    // Show modal
+    document.getElementById('editModal').classList.remove('hidden');
+}
+function closeEditModal() {
+    document.getElementById('editModal').classList.add('hidden');
+    document.getElementById('editForm').reset();
+}
+
+// Handle edit form submission - COMPLETE VERSION
+document.getElementById('editForm')?.addEventListener('submit', async (e) => {
+    e.preventDefault();
+
+    const submitBtn = e.target.querySelector('button[type="submit"]');
+    const originalText = submitBtn.textContent;
+    submitBtn.disabled = true;
+    submitBtn.innerHTML = '<svg class="animate-spin h-5 w-5 mx-auto" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path></svg>';
+
+    const id = document.getElementById('editPharmacyId').value;
+    
+    // Complete formData with ALL fields
+    const formData = {
+        // Pharmacy Info
+        pharmacy_name: document.getElementById('editPharmacyName').value,
+        pharmacy_phone: document.getElementById('editPharmacyPhone').value,
+        pharmacy_email: document.getElementById('editPharmacyEmail').value,
+        address_line_1: document.getElementById('editAddress').value,
+        city: document.getElementById('editCity').value,
+        postal_code: document.getElementById('editPostalCode').value,
+        store_hours: document.getElementById('editStoreHours').value,
+
+        // Contact
+        contact_name: document.getElementById('editContactName').value,
+        contact_role: document.getElementById('editContactRole').value,
+        contact_phone: document.getElementById('editContactPhone').value,
+        contact_email: document.getElementById('editContactEmail').value,
+
+        // Delivery Preferences
+        currently_offers_delivery: document.getElementById('editCurrentlyOffers').checked,
+        estimated_deliveries_per_day: parseInt(document.getElementById('editDailyDeliveries').value) || 0,
+        preferred_delivery_type: document.getElementById('editDeliveryType').value,
+        delivery_radius_km: parseFloat(document.getElementById('editRadius').value) || 0,
+
+        // Compliance
+        signature_required: document.getElementById('editSignatureRequired').checked,
+        id_verification_required: document.getElementById('editIdVerification').checked,
+        special_delivery_instructions: document.getElementById('editSpecialInstructions').value,
+
+        // Consent & Internal
+        consent_given: document.getElementById('editConsent').checked,
+        internal_notes: document.getElementById('editInternalNotes').value
+    };
+
+    try {
+        const response = await fetch(`/adminPharmacyInfo/${id}/edit.`, {
+            method: 'PUT', // or 'PATCH' for partial updates
+            credentials: 'include',
+            headers: {
+                'X-CSRFToken': getCSRFToken(),
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify(formData)
+        });
+
+        const result = await response.json();
+
+        if (!response.ok || !result.success) {
+            throw new Error(result.message || 'Failed to update pharmacy');
+        }
+
+        // Refresh data
+        await fetchPharmacyAnalytics();
+        closeEditModal();
+        showToast('Pharmacy updated successfully!', 'success');
+    } catch (error) {
+        console.error('Error updating pharmacy:', error);
+        showToast(error.message || 'Failed to update pharmacy. Please try again.', 'error');
+    } finally {
+        submitBtn.disabled = false;
+        submitBtn.textContent = originalText;
+    }
+});
+
+// Export functionality
+document.getElementById('exportBtn')?.addEventListener('click', () => {
+    const csv = convertToCSV(allPharmacies);
+    downloadCSV(csv, 'pharmacy_information_export.csv');
+});
+
+function convertToCSV(data) {
+    if (data.length === 0) return '';
+    
+    const headers = Object.keys(data[0]);
+    const csvRows = [headers.join(',')];
+    
+    data.forEach(row => {
+        const values = headers.map(header => {
+            const value = row[header]?.toString() || '';
+            return `"${value.replace(/"/g, '""')}"`;
+        });
+        csvRows.push(values.join(','));
+    });
+    
+    return csvRows.join('\n');
+}
+
+function downloadCSV(csv, filename) {
+    const blob = new Blob([csv], { type: 'text/csv' });
+    const url = window.URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = filename;
+    a.click();
+    window.URL.revokeObjectURL(url);
+}
   </script>
 </body>
 </html>

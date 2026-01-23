@@ -104,7 +104,10 @@ urlpatterns = [
     path('adminAnalyticsAndReports/', views.adminAnalyticsAndReportsView, name="AdminAnalyticsAndReportsPage"), # Done
     path('adminPaymentInformation/', views.adminPaymentInformationView, name="AdminPaymentInformationPage"), # Done
     path('adminPharmacyInformation/', views.adminPharmacyInformationView, name="AdminPharmacyInformationPage"), # Done
-
+    path('adminCCPoints/', views.adminCCPointsView, name="AdminCCPointsPage"), # Done
+    path('adminAnalyticsAPI/', views.get_pharmacy_analytics_overview, name="AdminPharmacyAnalyticsOverviewAPI"), # Done
+    path('adminPharmacyInfo/<int:pharmacy_info_id>/edit.', views.edit_pharmacy_info, name="AdminEditPharmacyInfo"), # Done
+ 
 
 
     path('', views.landingView, name='landingPage'), # Not Required
