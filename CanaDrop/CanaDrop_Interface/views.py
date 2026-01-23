@@ -259,6 +259,18 @@ def adminSupportView(request):
 def adminDriversView(request):
     return render(request, 'adminDrivers.html')
 
+@admin_auth_required
+def adminAnalyticsAndReportsView(request):
+    return render(request, 'adminAnalyticsAndReports.html')
+
+@admin_auth_required
+def adminPaymentInformationView(request):
+    return render(request, 'adminPaymentInformation.html')
+
+@admin_auth_required
+def adminPharmacyInformationView(request):
+    return render(request, 'adminPharmacyInformation.html')
+
 # ----------------------------
 # General Page Logins
 # ----------------------------
@@ -1081,6 +1093,7 @@ def pharmacy_orders_api(request, pharmacy_id):
                 "id_verification_required": order.id_verification_required,
                 "id_verified": order.id_verified,
                 "delivery_notes": order.delivery_notes,
+                "driver_notes" : order.driver_notes,
                 "created_at": created_local.strftime("%Y-%m-%d %H:%M:%S"),
                 "updated_at": updated_local.strftime("%Y-%m-%d %H:%M:%S"),
                 "delivered_at": delivered_local.strftime("%Y-%m-%d %H:%M:%S"),
@@ -10432,152 +10445,6 @@ def admin_alerts(request):
 
 
 
-# @csrf_exempt
-# def admin_order_list(request):
-#     """
-#     Returns all delivery orders - simple version with relative imports
-#     """
-#     try:
-#         orders = list(DeliveryOrder.objects.all().order_by("pickup_day").values(
-#             'id',
-#             'pharmacy_id',
-#             'driver_id', 
-#             'pickup_address',
-#             'pickup_city',
-#             'pickup_day',
-#             'drop_address',
-#             'drop_city',
-#             'status',
-#             'rate',
-#             'customer_name',
-#             'created_at',
-#             'updated_at'
-#         ))
-        
-#         result = []
-        
-#         for order in orders:
-#             # Get pharmacy info
-#             pharmacy_info = None
-#             if order.get('pharmacy_id'):
-#                 try:
-#                     p = Pharmacy.objects.filter(id=order['pharmacy_id']).values(
-#                         'id', 'name', 'email', 'phone_number', 
-#                         'city', 'province', 'postal_code', 'country', 
-#                         'active', 'created_at'
-#                     ).first()
-#                     if p:
-#                         pharmacy_info = {
-#                             "id": p['id'],
-#                             "name": p['name'],
-#                             "email": p['email'],
-#                             "phone_number": p['phone_number'],
-#                             "city": p['city'],
-#                             "province": p['province'],
-#                             "postal_code": p['postal_code'],
-#                             "country": p['country'],
-#                             "active": p['active'],
-#                             "created_at": str(p['created_at'])
-#                         }
-#                 except:
-#                     pass
-            
-#             # Get driver info
-#             driver_info = None
-#             if order.get('driver_id'):
-#                 try:
-#                     d = Driver.objects.filter(id=order['driver_id']).values(
-#                         'id', 'name', 'email', 'phone_number',
-#                         'vehicle_number', 'active', 'created_at'
-#                     ).first()
-#                     if d:
-#                         driver_info = {
-#                             "id": d['id'],
-#                             "name": d['name'],
-#                             "email": d['email'],
-#                             "phone_number": d['phone_number'],
-#                             "vehicle_number": d['vehicle_number'],
-#                             "active": d['active'],
-#                             "created_at": str(d['created_at'])
-#                         }
-#                 except:
-#                     pass
-            
-#             # Get tracking
-#             tracking_info = []
-#             try:
-#                 tracks = OrderTracking.objects.filter(order_id=order['id']).order_by('timestamp').values(
-#                     'step', 'performed_by', 'timestamp', 'note', 'image_url'
-#                 )
-#                 for t in tracks:
-#                     tracking_info.append({
-#                         "step": t['step'],
-#                         "performed_by": t['performed_by'] or "",
-#                         "timestamp": str(t['timestamp']),
-#                         "note": t['note'] or "",
-#                         "image_url": t['image_url'] or ""
-#                     })
-#             except:
-#                 pass
-            
-#             # Get images
-#             proof_images = []
-#             try:
-#                 imgs = OrderImage.objects.filter(order_id=order['id']).order_by('uploaded_at').values(
-#                     'stage', 'image_url', 'uploaded_at'
-#                 )
-#                 for img in imgs:
-#                     proof_images.append({
-#                         "stage": img['stage'],
-#                         "image_url": img['image_url'],
-#                         "uploaded_at": str(img['uploaded_at'])
-#                     })
-#             except:
-#                 pass
-            
-#             # Calculate commission
-#             rate = float(order['rate']) if order['rate'] else 0.0
-#             commission = round(rate * settings.DRIVER_COMMISSION_RATE, 2)  # ✅ FIXED
-#             net = round(rate - commission, 2)
-            
-#             result.append({
-#                 "order_id": order['id'],
-#                 "pharmacy": pharmacy_info,
-#                 "driver": driver_info,
-#                 "pickup_address": order['pickup_address'] or "",
-#                 "pickup_city": order['pickup_city'] or "",
-#                 "pickup_day": str(order['pickup_day']) if order['pickup_day'] else "",
-#                 "drop_address": order['drop_address'] or "",
-#                 "drop_city": order['drop_city'] or "",
-#                 "status": order['status'] or "",
-#                 "amount": rate,
-#                 "customer_name": order['customer_name'] or "",
-#                 "created_at": str(order['created_at']) if order['created_at'] else "",
-#                 "updated_at": str(order['updated_at']) if order['updated_at'] else "",
-#                 "tracking_history": tracking_info,
-#                 "proof_images": proof_images,
-#                 "commission_info": {
-#                     "commission_rate": f"{int(settings.DRIVER_COMMISSION_RATE * 100)}%",  
-#                     "commission_decimal": settings.DRIVER_COMMISSION_RATE,  
-#                     "commission_amount": commission,
-#                     "net_payout_driver": net
-#                 }
-#             })
-        
-#         return JsonResponse({
-#             "success": True,
-#             "total_orders": len(result),
-#             "orders": result
-#         }, safe=False)
-        
-#     except Exception as e:
-#         import traceback
-#         traceback.print_exc()
-#         return JsonResponse({
-#             "success": False,
-#             "error": str(e)
-#         }, status=500)
-
 
 from django.http import JsonResponse
 from django.views.decorators.csrf import csrf_protect
@@ -10627,6 +10494,7 @@ def admin_order_list(request):
                 "customer_phone",
                 "alternate_contact",
                 "delivery_notes",
+                "driver_notes",
 
                 # ✅ Missing business fields
                 "signature_required",
@@ -10770,6 +10638,7 @@ def admin_order_list(request):
                 "customer_phone": order.get("customer_phone") or "",
                 "alternate_contact": order.get("alternate_contact") or "",
                 "delivery_notes": order.get("delivery_notes") or "",
+                "driver_notes" : order.get("driver_notes") or "",
 
                 # ✅ ID + signature requirements / verification
                 "signature_required": bool(order.get("signature_required")),

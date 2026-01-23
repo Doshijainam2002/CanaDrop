@@ -1,0 +1,523 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Analytics & Reports • CanaLogistiX</title>
+  <link rel="icon" type="image/png" sizes="512x512" href="/favicon-512.png">
+  <link rel="apple-touch-icon" href="/favicon-512.png">
+  <script src="https://cdn.tailwindcss.com"></script>
+  <style>
+    .logistics-bg {
+      background:
+        linear-gradient(135deg, rgba(255,255,255,0.04) 25%, rgba(0,0,0,0) 25%) 0 0/28px 28px,
+        linear-gradient(135deg, rgba(0,0,0,0) 75%, rgba(255,255,255,0.04) 75%) 0 0/28px 28px;
+      box-shadow: inset 0 0 120px rgba(0,0,0,0.35);
+    }
+  </style>
+</head>
+<body class="min-h-screen bg-neutral-900 text-neutral-100 font-inter logistics-bg">
+
+  <div class="flex h-screen overflow-hidden">
+    <!-- Sidebar -->
+    <aside id="sidebar" class="w-64 bg-neutral-800 border-r border-neutral-700 flex flex-col fixed lg:static inset-y-0 left-0 z-40 transform -translate-x-full lg:translate-x-0 transition-transform duration-300 overflow-y-auto">
+      <div class="flex items-center h-16 border-b border-neutral-700 px-6">
+        <img src="https://canalogistix.s3.us-east-2.amazonaws.com/Logo/CanaLogistiX_Logo_BG.png" alt="CanaLogistiX Logo" class="h-12 w-12 rounded-full object-cover"/>
+        <span class="ml-2 text-lg font-semibold text-white">CanaLogistiX</span>
+      </div>
+
+      <!-- Navigation -->
+      <nav class="flex-1 p-4 space-y-2 text-sm overflow-y-auto">
+        <a href="/adminDashboard/" class="flex items-center px-3 py-2 rounded-lg text-neutral-300 hover:bg-neutral-700 transition">
+          <svg class="w-5 h-5 mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 12l2-2m0 0l7-7 7 7M13 5v6h6"/></svg>
+          Dashboard
+        </a>
+        <a href="/adminOrders/" class="flex items-center px-3 py-2 rounded-lg text-neutral-300 hover:bg-neutral-700 transition">
+          <svg class="w-5 h-5 mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 17v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm6 0v-8a2 2 0 00-2-2h-2a2 2 0 00-2 2v8m6 0a2 2 0 002 2h2a2 2 0 002-2"/></svg>
+          Orders
+        </a>
+        <a href="/adminPharmacies/" class="flex items-center px-3 py-2 rounded-lg text-neutral-300 hover:bg-neutral-700 transition">
+          <svg class="w-5 h-5 mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 11V5a3 3 0 00-3-3H7a3 3 0 00-3 3v6m12 0v6a3 3 0 01-3 3H7a3 3 0 01-3-3v-6m12 0H4"/></svg>
+          Pharmacies
+        </a>
+        <a href="/adminDrivers/" class="flex items-center px-3 py-2 rounded-lg text-neutral-300 hover:bg-neutral-700 transition">
+          <svg class="w-5 h-5 mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/></svg>
+          Drivers
+        </a>
+        <a href="/adminInvoices/" class="flex items-center px-3 py-2 rounded-lg text-neutral-300 hover:bg-neutral-700 transition">
+          <svg class="w-5 h-5 mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 4H7a2 2 0 01-2-2V6a2 2 0 012-2h7l5 5v9a2 2 0 01-2 2z"/></svg>
+          Invoices
+        </a>
+        <a href="/adminAnalyticsAndReports/" class="flex items-center px-3 py-2 rounded-lg bg-gradient-to-r from-orange-600 to-orange-500 text-white font-medium">
+          <svg class="w-5 h-5 mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"/></svg>
+          Analytics & Reports
+        </a>
+        <a href="/adminPharmacyInformation/"
+          class="flex items-center px-3 py-2 rounded-lg text-neutral-300 hover:bg-neutral-700 transition">
+          <svg class="w-5 h-5 mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                  d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4"/>
+          </svg>
+          Pharmacy Information
+        </a>
+        <a href="/adminSupport/" class="flex items-center px-3 py-2 rounded-lg text-neutral-300 hover:bg-neutral-700 transition">
+          <svg class="w-5 h-5 mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 10h.01M12 10h.01M16 10h.01M21 12c0 4.418-4.03 8-9 8s-9-3.582-9-8 4.03-8 9-8 9 3.582 9 8zM12 14v-4m0 4h.01"/></svg>
+          Support
+        </a>
+        <a href="#" id="logoutBtn" class="flex items-center px-3 py-2 rounded-lg text-neutral-300 hover:bg-neutral-700 transition">
+          <svg class="w-5 h-5 mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a2 2 0 01-2 2H5a2 2 0 01-2-2V7a2 2 0 012-2h6a2 2 0 012 2v1" />
+          </svg>
+          Logout
+        </a>
+      </nav>
+
+      <!-- Profile -->
+      <div class="p-4 border-t border-neutral-700">
+        <div class="flex items-center">
+          <div class="flex-shrink-0 w-9 h-9 bg-gradient-to-r from-orange-600 to-orange-500 rounded-full flex items-center justify-center text-sm font-semibold">A</div>
+          <div class="ml-3">
+            <p class="text-sm font-medium text-neutral-100">Admin</p>
+            <p class="text-xs text-neutral-400">admin@canadrop.ca</p>
+          </div>
+        </div>
+      </div>
+    </aside>
+
+    <div id="sidebarOverlay" class="hidden lg:hidden fixed inset-0 bg-black/50 z-30"></div>
+
+    <!-- Main Content -->
+    <main class="flex-1 flex flex-col overflow-y-auto lg:ml-0">
+      <!-- Header -->
+      <header class="bg-neutral-800 border-b border-neutral-700 px-4 sm:px-6 py-4 flex items-center justify-between gap-4">
+        <button id="menuToggle" class="lg:hidden text-white p-2 flex-shrink-0">
+          <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16"/>
+          </svg>
+        </button>
+        <div class="flex-1 min-w-0">
+          <h1 class="text-xl sm:text-2xl font-bold text-white truncate">Analytics & Reports</h1>
+          <p class="text-sm text-neutral-400">Comprehensive business insights and performance metrics</p>
+        </div>
+        <div class="flex items-center space-x-2">
+          <button id="refreshBtn" class="p-2 text-neutral-400 hover:text-white transition-colors">
+            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"/>
+            </svg>
+          </button>
+        </div>
+      </header>
+
+      <!-- Date Range Filter -->
+      <section class="px-4 sm:px-6 py-4 bg-neutral-800/50 border-b border-neutral-700">
+        <div class="flex flex-col sm:flex-row gap-3 items-start sm:items-center justify-between">
+          <div class="flex flex-wrap items-center gap-2">
+            <button id="todayBtn" class="px-3 py-1.5 text-xs sm:text-sm rounded-lg border border-neutral-600 text-neutral-300 hover:bg-neutral-700 transition">Today</button>
+            <button id="weekBtn" class="px-3 py-1.5 text-xs sm:text-sm rounded-lg border border-neutral-600 text-neutral-300 hover:bg-neutral-700 transition">This Week</button>
+            <button id="monthBtn" class="px-3 py-1.5 text-xs sm:text-sm rounded-lg bg-orange-500/20 border border-orange-500 text-orange-400 font-medium transition">This Month</button>
+            <button id="customBtn" class="px-3 py-1.5 text-xs sm:text-sm rounded-lg border border-neutral-600 text-neutral-300 hover:bg-neutral-700 transition">Custom Range</button>
+          </div>
+          <div id="customDateRange" class="hidden flex flex-col sm:flex-row gap-2 w-full sm:w-auto">
+            <input type="date" id="startDate" class="px-3 py-1.5 text-sm bg-neutral-700 border border-neutral-600 rounded-lg text-neutral-200 focus:ring-2 focus:ring-orange-500 focus:outline-none">
+            <input type="date" id="endDate" class="px-3 py-1.5 text-sm bg-neutral-700 border border-neutral-600 rounded-lg text-neutral-200 focus:ring-2 focus:ring-orange-500 focus:outline-none">
+            <button id="applyCustomBtn" class="px-3 py-1.5 text-sm bg-orange-500 text-white rounded-lg hover:bg-orange-600 transition">Apply</button>
+          </div>
+        </div>
+      </section>
+
+      <!-- Revenue Reports Section -->
+      <section class="px-4 sm:px-6 py-6">
+        <div class="bg-neutral-800/80 border border-neutral-700 rounded-xl p-4 sm:p-6 mb-6">
+          <div class="flex items-center justify-between mb-4">
+            <h2 class="text-lg font-semibold text-white flex items-center gap-2">
+              <svg class="w-5 h-5 text-green-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/>
+              </svg>
+              Revenue Overview
+              <div class="relative group">
+                <svg class="w-4 h-4 text-neutral-500 cursor-help" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/>
+                </svg>
+                <div class="absolute top-full mt-1 left-1/2 -translate-x-1/2 w-64 bg-neutral-700 text-neutral-100 text-xs rounded-lg p-2 shadow-lg opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-200 z-10">
+                  Total revenue generated from delivered orders within the selected time period
+                </div>
+              </div>
+            </h2>
+          </div>
+
+          <!-- Revenue Cards -->
+          <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
+            <div class="bg-neutral-700/50 border border-neutral-600 p-4 rounded-lg">
+              <p class="text-xs text-neutral-400 mb-1">Daily Revenue</p>
+              <p id="dailyRevenue" class="text-2xl font-bold text-green-400">—</p>
+              <p id="dailyRevenueChange" class="text-xs text-neutral-500 mt-1">—</p>
+            </div>
+            <div class="bg-neutral-700/50 border border-neutral-600 p-4 rounded-lg">
+              <p class="text-xs text-neutral-400 mb-1">Weekly Revenue</p>
+              <p id="weeklyRevenue" class="text-2xl font-bold text-green-400">—</p>
+              <p id="weeklyRevenueChange" class="text-xs text-neutral-500 mt-1">—</p>
+            </div>
+            <div class="bg-neutral-700/50 border border-neutral-600 p-4 rounded-lg">
+              <p class="text-xs text-neutral-400 mb-1">Monthly Revenue</p>
+              <p id="monthlyRevenue" class="text-2xl font-bold text-green-400">—</p>
+              <p id="monthlyRevenueChange" class="text-xs text-neutral-500 mt-1">—</p>
+            </div>
+            <div class="bg-neutral-700/50 border border-neutral-600 p-4 rounded-lg">
+              <p class="text-xs text-neutral-400 mb-1">Average Order Value</p>
+              <p id="avgOrderValue" class="text-2xl font-bold text-green-400">—</p>
+              <p id="avgOrderValueChange" class="text-xs text-neutral-500 mt-1">—</p>
+            </div>
+          </div>
+
+          <!-- Revenue Breakdown Table -->
+          <div class="overflow-x-auto">
+            <table class="min-w-full text-sm">
+              <thead class="bg-neutral-800 border-b border-neutral-700">
+                <tr>
+                  <th class="px-4 py-3 text-left text-neutral-400 uppercase tracking-wider text-xs">Period</th>
+                  <th class="px-4 py-3 text-left text-neutral-400 uppercase tracking-wider text-xs">Orders</th>
+                  <th class="px-4 py-3 text-left text-neutral-400 uppercase tracking-wider text-xs">Revenue</th>
+                  <th class="px-4 py-3 text-left text-neutral-400 uppercase tracking-wider text-xs">Avg/Order</th>
+                </tr>
+              </thead>
+              <tbody id="revenueTableBody" class="divide-y divide-neutral-700">
+                <tr class="hover:bg-neutral-700/30 transition">
+                  <td class="px-4 py-3 text-neutral-300">Jan 20 - Jan 26, 2026</td>
+                  <td class="px-4 py-3 text-neutral-200">42</td>
+                  <td class="px-4 py-3 text-green-400 font-semibold">$2,845.00</td>
+                  <td class="px-4 py-3 text-neutral-300">$67.74</td>
+                </tr>
+                <tr class="hover:bg-neutral-700/30 transition">
+                  <td class="px-4 py-3 text-neutral-300">Jan 13 - Jan 19, 2026</td>
+                  <td class="px-4 py-3 text-neutral-200">38</td>
+                  <td class="px-4 py-3 text-green-400 font-semibold">$2,512.50</td>
+                  <td class="px-4 py-3 text-neutral-300">$66.12</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+
+        <!-- Order Completion Rates -->
+        <div class="bg-neutral-800/80 border border-neutral-700 rounded-xl p-4 sm:p-6 mb-6">
+          <div class="flex items-center justify-between mb-4">
+            <h2 class="text-lg font-semibold text-white flex items-center gap-2">
+              <svg class="w-5 h-5 text-blue-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/>
+              </svg>
+              Order Completion Metrics
+              <div class="relative group">
+                <svg class="w-4 h-4 text-neutral-500 cursor-help" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/>
+                </svg>
+                <div class="absolute top-full mt-1 left-1/2 -translate-x-1/2 w-64 bg-neutral-700 text-neutral-100 text-xs rounded-lg p-2 shadow-lg opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-200 z-10">
+                  Percentage of orders successfully delivered vs total orders created
+                </div>
+              </div>
+            </h2>
+          </div>
+
+          <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
+            <div class="bg-neutral-700/50 border border-neutral-600 p-4 rounded-lg">
+              <p class="text-xs text-neutral-400 mb-1">Completion Rate</p>
+              <p id="completionRate" class="text-2xl font-bold text-blue-400">—</p>
+              <div class="w-full bg-neutral-600 rounded-full h-2 mt-2">
+                <div id="completionRateBar" class="bg-blue-400 h-2 rounded-full" style="width: 0%"></div>
+              </div>
+            </div>
+            <div class="bg-neutral-700/50 border border-neutral-600 p-4 rounded-lg">
+              <p class="text-xs text-neutral-400 mb-1">Total Orders</p>
+              <p id="totalOrders" class="text-2xl font-bold text-neutral-200">—</p>
+            </div>
+            <div class="bg-neutral-700/50 border border-neutral-600 p-4 rounded-lg">
+              <p class="text-xs text-neutral-400 mb-1">Completed Orders</p>
+              <p id="completedOrders" class="text-2xl font-bold text-green-400">—</p>
+            </div>
+            <div class="bg-neutral-700/50 border border-neutral-600 p-4 rounded-lg">
+              <p class="text-xs text-neutral-400 mb-1">Cancelled Orders</p>
+              <p id="cancelledOrders" class="text-2xl font-bold text-red-400">—</p>
+            </div>
+          </div>
+
+          <!-- Status Breakdown -->
+          <div class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3">
+            <div class="bg-neutral-700/30 border border-yellow-600/30 p-3 rounded-lg">
+              <p class="text-xs text-neutral-400 mb-1">Pending</p>
+              <p id="pendingCount" class="text-lg font-bold text-yellow-400">—</p>
+            </div>
+            <div class="bg-neutral-700/30 border border-blue-600/30 p-3 rounded-lg">
+              <p class="text-xs text-neutral-400 mb-1">Accepted</p>
+              <p id="acceptedCount" class="text-lg font-bold text-blue-400">—</p>
+            </div>
+            <div class="bg-neutral-700/30 border border-purple-600/30 p-3 rounded-lg">
+              <p class="text-xs text-neutral-400 mb-1">Picked Up</p>
+              <p id="pickedUpCount" class="text-lg font-bold text-purple-400">—</p>
+            </div>
+            <div class="bg-neutral-700/30 border border-amber-600/30 p-3 rounded-lg">
+              <p class="text-xs text-neutral-400 mb-1">In Transit</p>
+              <p id="inTransitCount" class="text-lg font-bold text-amber-400">—</p>
+            </div>
+            <div class="bg-neutral-700/30 border border-green-600/30 p-3 rounded-lg">
+              <p class="text-xs text-neutral-400 mb-1">Delivered</p>
+              <p id="deliveredCount" class="text-lg font-bold text-green-400">—</p>
+            </div>
+            <div class="bg-neutral-700/30 border border-red-600/30 p-3 rounded-lg">
+              <p class="text-xs text-neutral-400 mb-1">Cancelled</p>
+              <p id="cancelledCount" class="text-lg font-bold text-red-400">—</p>
+            </div>
+          </div>
+        </div>
+
+        <!-- Driver Efficiency Metrics -->
+        <div class="bg-neutral-800/80 border border-neutral-700 rounded-xl p-4 sm:p-6 mb-6">
+          <div class="flex items-center justify-between mb-4">
+            <h2 class="text-lg font-semibold text-white flex items-center gap-2">
+              <svg class="w-5 h-5 text-cyan-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"/>
+              </svg>
+              Driver Performance
+              <div class="relative group">
+                <svg class="w-4 h-4 text-neutral-500 cursor-help" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/>
+                </svg>
+                <div class="absolute top-full mt-1 left-1/2 -translate-x-1/2 w-64 bg-neutral-700 text-neutral-100 text-xs rounded-lg p-2 shadow-lg opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-200 z-10">
+                  Key performance indicators for delivery drivers including completion rates and earnings
+                </div>
+              </div>
+            </h2>
+          </div>
+
+          <div class="overflow-x-auto">
+            <table class="min-w-full text-sm">
+              <thead class="bg-neutral-800 border-b border-neutral-700">
+                <tr>
+                  <th class="px-4 py-3 text-left text-neutral-400 uppercase tracking-wider text-xs">Driver</th>
+                  <th class="px-4 py-3 text-left text-neutral-400 uppercase tracking-wider text-xs">Deliveries</th>
+                  <th class="px-4 py-3 text-left text-neutral-400 uppercase tracking-wider text-xs">Completion Rate</th>
+                  <th class="px-4 py-3 text-left text-neutral-400 uppercase tracking-wider text-xs">Avg Time</th>
+                  <th class="px-4 py-3 text-left text-neutral-400 uppercase tracking-wider text-xs">Total Earned</th>
+                  <th class="px-4 py-3 text-left text-neutral-400 uppercase tracking-wider text-xs">Status</th>
+                </tr>
+              </thead>
+              <tbody id="driverMetricsTableBody" class="divide-y divide-neutral-700">
+                <tr class="hover:bg-neutral-700/30 transition">
+                  <td class="px-4 py-3">
+                    <div class="flex items-center">
+                      <div class="w-8 h-8 bg-gradient-to-r from-cyan-500 to-blue-500 rounded-full flex items-center justify-center text-white text-xs font-semibold mr-2">JD</div>
+                      <span class="text-neutral-200">John Driver</span>
+                    </div>
+                  </td>
+                  <td class="px-4 py-3 text-neutral-200 font-semibold">28</td>
+                  <td class="px-4 py-3">
+                    <span class="inline-flex px-2 py-1 text-xs font-medium rounded-full bg-green-500/20 text-green-400 border border-green-600/40">96.4%</span>
+                  </td>
+                  <td class="px-4 py-3 text-neutral-300">42 min</td>
+                  <td class="px-4 py-3 text-green-400 font-semibold">$1,848.00</td>
+                  <td class="px-4 py-3">
+                    <span class="inline-flex px-2 py-1 text-xs font-medium rounded-full bg-green-500/20 text-green-400 border border-green-600/40">Active</span>
+                  </td>
+                </tr>
+                <tr class="hover:bg-neutral-700/30 transition">
+                  <td class="px-4 py-3">
+                    <div class="flex items-center">
+                      <div class="w-8 h-8 bg-gradient-to-r from-purple-500 to-pink-500 rounded-full flex items-center justify-center text-white text-xs font-semibold mr-2">SM</div>
+                      <span class="text-neutral-200">Sarah Miller</span>
+                    </div>
+                  </td>
+                  <td class="px-4 py-3 text-neutral-200 font-semibold">24</td>
+                  <td class="px-4 py-3">
+                    <span class="inline-flex px-2 py-1 text-xs font-medium rounded-full bg-green-500/20 text-green-400 border border-green-600/40">91.7%</span>
+                  </td>
+                  <td class="px-4 py-3 text-neutral-300">38 min</td>
+                  <td class="px-4 py-3 text-green-400 font-semibold">$1,584.00</td>
+                  <td class="px-4 py-3">
+                    <span class="inline-flex px-2 py-1 text-xs font-medium rounded-full bg-green-500/20 text-green-400 border border-green-600/40">Active</span>
+                  </td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+
+        <!-- Pharmacy Activity Reports -->
+        <div class="bg-neutral-800/80 border border-neutral-700 rounded-xl p-4 sm:p-6 mb-6">
+          <div class="flex items-center justify-between mb-4">
+            <h2 class="text-lg font-semibold text-white flex items-center gap-2">
+              <svg class="w-5 h-5 text-purple-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4"/>
+              </svg>
+              Pharmacy Activity
+              <div class="relative group">
+                <svg class="w-4 h-4 text-neutral-500 cursor-help" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/>
+                </svg>
+                <div class="absolute top-full mt-1 left-1/2 -translate-x-1/2 w-64 bg-neutral-700 text-neutral-100 text-xs rounded-lg p-2 shadow-lg opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-200 z-10">
+                  Order volume and activity metrics for each pharmacy partner
+                </div>
+              </div>
+            </h2>
+          </div>
+
+          <div class="overflow-x-auto">
+            <table class="min-w-full text-sm">
+              <thead class="bg-neutral-800 border-b border-neutral-700">
+                <tr>
+                  <th class="px-4 py-3 text-left text-neutral-400 uppercase tracking-wider text-xs">Pharmacy</th>
+                  <th class="px-4 py-3 text-left text-neutral-400 uppercase tracking-wider text-xs">Total Orders</th>
+                  <th class="px-4 py-3 text-left text-neutral-400 uppercase tracking-wider text-xs">Delivered</th>
+                  <th class="px-4 py-3 text-left text-neutral-400 uppercase tracking-wider text-xs">Pending</th>
+                  <th class="px-4 py-3 text-left text-neutral-400 uppercase tracking-wider text-xs">Total Spent</th>
+                  <th class="px-4 py-3 text-left text-neutral-400 uppercase tracking-wider text-xs">Status</th>
+                </tr>
+              </thead>
+              <tbody id="pharmacyActivityTableBody" class="divide-y divide-neutral-700">
+                <tr class="hover:bg-neutral-700/30 transition">
+                  <td class="px-4 py-3">
+                    <div class="flex items-center">
+                      <div class="w-8 h-8 bg-gradient-to-r from-teal-500 to-cyan-500 rounded-full flex items-center justify-center text-white text-xs font-semibold mr-2">CP</div>
+                      <span class="text-neutral-200">CarePoint Pharmacy</span>
+                    </div>
+                  </td>
+                  <td class="px-4 py-3 text-neutral-200 font-semibold">156</td>
+                  <td class="px-4 py-3 text-green-400">148</td>
+                  <td class="px-4 py-3 text-yellow-400">8</td>
+                  <td class="px-4 py-3 text-green-400 font-semibold">$10,296.00</td>
+                  <td class="px-4 py-3">
+                    <span class="inline-flex px-2 py-1 text-xs font-medium rounded-full bg-green-500/20 text-green-400 border border-green-600/40">Active</span>
+                  </td>
+                </tr>
+                <tr class="hover:bg-neutral-700/30 transition">
+                  <td class="px-4 py-3">
+                    <div class="flex items-center">
+                      <div class="w-8 h-8 bg-gradient-to-r from-orange-500 to-red-500 rounded-full flex items-center justify-center text-white text-xs font-semibold mr-2">WP</div>
+                      <span class="text-neutral-200">Wellness Plus</span>
+                    </div>
+                  </td>
+                  <td class="px-4 py-3 text-neutral-200 font-semibold">124</td>
+                  <td class="px-4 py-3 text-green-400">118</td>
+                  <td class="px-4 py-3 text-yellow-400">6</td>
+                  <td class="px-4 py-3 text-green-400 font-semibold">$8,184.00</td>
+                  <td class="px-4 py-3">
+                    <span class="inline-flex px-2 py-1 text-xs font-medium rounded-full bg-green-500/20 text-green-400 border border-green-600/40">Active</span>
+                  </td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+
+      </section>
+    </main>
+  </div>
+
+  <script>
+    function getCSRFToken() {
+      return document.cookie
+        .split('; ')
+        .find(row => row.startsWith('csrftoken='))
+        ?.split('=')[1];
+    }
+
+    // Mobile menu toggle
+    const menuToggle = document.getElementById('menuToggle');
+    const sidebar = document.getElementById('sidebar');
+    const sidebarOverlay = document.getElementById('sidebarOverlay');
+
+    menuToggle?.addEventListener('click', () => {
+      sidebar.classList.toggle('-translate-x-full');
+      sidebarOverlay.classList.toggle('hidden');
+    });
+
+    sidebarOverlay?.addEventListener('click', () => {
+      sidebar.classList.add('-translate-x-full');
+      sidebarOverlay.classList.add('hidden');
+    });
+
+    // Date range filter buttons
+    const todayBtn = document.getElementById('todayBtn');
+    const weekBtn = document.getElementById('weekBtn');
+    const monthBtn = document.getElementById('monthBtn');
+    const customBtn = document.getElementById('customBtn');
+    const customDateRange = document.getElementById('customDateRange');
+    const applyCustomBtn = document.getElementById('applyCustomBtn');
+
+    const filterButtons = [todayBtn, weekBtn, monthBtn, customBtn];
+
+    function setActiveFilter(activeBtn) {
+      filterButtons.forEach(btn => {
+        if (btn === activeBtn) {
+          btn.classList.add('bg-orange-500/20', 'border-orange-500', 'text-orange-400', 'font-medium');
+          btn.classList.remove('border-neutral-600', 'text-neutral-300', 'hover:bg-neutral-700');
+        } else {
+          btn.classList.remove('bg-orange-500/20', 'border-orange-500', 'text-orange-400', 'font-medium');
+          btn.classList.add('border-neutral-600', 'text-neutral-300', 'hover:bg-neutral-700');
+        }
+      });
+    }
+
+    todayBtn?.addEventListener('click', () => {
+      setActiveFilter(todayBtn);
+      customDateRange.classList.add('hidden');
+      // Load data for today
+    });
+
+    weekBtn?.addEventListener('click', () => {
+      setActiveFilter(weekBtn);
+      customDateRange.classList.add('hidden');
+      // Load data for this week
+    });
+
+    monthBtn?.addEventListener('click', () => {
+      setActiveFilter(monthBtn);
+      customDateRange.classList.add('hidden');
+      // Load data for this month
+    });
+
+    customBtn?.addEventListener('click', () => {
+      setActiveFilter(customBtn);
+      customDateRange.classList.remove('hidden');
+    });
+
+    applyCustomBtn?.addEventListener('click', () => {
+      const startDate = document.getElementById('startDate').value;
+      const endDate = document.getElementById('endDate').value;
+      
+      if (startDate && endDate) {
+        // Load data for custom date range
+        console.log('Custom range:', startDate, 'to', endDate);
+      }
+    });
+
+    // Logout functionality
+    document.getElementById("logoutBtn")?.addEventListener("click", function (event) {
+      event.preventDefault();
+
+      // Clear adminId cookie
+      document.cookie = "adminId=; path=/; expires=Thu, 01 Jan 1970 00:00:00 UTC; SameSite=Lax;";
+      document.cookie = "jwtToken=; path=/; expires=Thu, 01 Jan 1970 00:00:00 UTC; SameSite=Lax;";
+
+      // Redirect to admin login page
+      window.location.href = "/adminLogin/";
+    });
+
+    // Refresh button
+    document.getElementById('refreshBtn')?.addEventListener('click', () => {
+      // Reload analytics data
+      location.reload();
+    });
+
+    // Load analytics data on page load
+    document.addEventListener('DOMContentLoaded', () => {
+      // Initialize with "This Month" filter active
+      setActiveFilter(monthBtn);
+      
+      // Load initial analytics data here
+      // API calls will be implemented to populate:
+      // - Revenue metrics
+      // - Order completion rates
+      // - Driver performance data
+      // - Pharmacy activity reports
+    });
+  </script>
+</body>
+</html>

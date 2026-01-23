@@ -101,6 +101,9 @@ urlpatterns = [
     path("api/admin/support/tickets/<int:ticket_id>/status/",views.update_ticket_status,name="AdminUpdateTicketStatus"), # Done
     path("api/admin/support/tickets/<int:ticket_id>/respond/", views.add_admin_response, name="AdminAddTicketResponse"), # Done
     path("api/admin/support/tickets/metrics/", views.get_ticket_status_metrics, name="AdminSupportTicketMetrics"), # Done
+    path('adminAnalyticsAndReports/', views.adminAnalyticsAndReportsView, name="AdminAnalyticsAndReportsPage"), # Done
+    path('adminPaymentInformation/', views.adminPaymentInformationView, name="AdminPaymentInformationPage"), # Done
+    path('adminPharmacyInformation/', views.adminPharmacyInformationView, name="AdminPharmacyInformationPage"), # Done
 
 
 

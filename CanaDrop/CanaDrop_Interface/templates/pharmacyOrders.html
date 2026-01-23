@@ -962,6 +962,14 @@ function renderOrderDetails(order) {
                             </div>
                         ` : ''}
 
+                        <!-- Driver Notes -->
+                        ${order.driver_notes ? `
+                            <div class="pt-3 border-t border-gray-100">
+                                <label class="text-xs font-medium text-gray-500">Driver Notes</label>
+                                <p class="text-sm text-gray-900 mt-1 p-2 bg-blue-50 border border-blue-200 rounded">${order.driver_notes}</p>
+                            </div>
+                        ` : ''}
+
                         <!-- Signed Acknowledgement -->
                         ${order.signature_required && order.signature_ack_url ? `
                             <div class="pt-3 border-t border-gray-100">

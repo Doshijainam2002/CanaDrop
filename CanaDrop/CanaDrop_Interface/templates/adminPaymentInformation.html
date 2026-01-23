@@ -1,0 +1,931 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Payment Information • CanaLogistiX</title>
+  <link rel="icon" type="image/png" sizes="512x512" href="/favicon-512.png">
+  <link rel="apple-touch-icon" href="/favicon-512.png">
+  <script src="https://cdn.tailwindcss.com"></script>
+  <style>
+    .logistics-bg {
+      background:
+        linear-gradient(135deg, rgba(255,255,255,0.04) 25%, rgba(0,0,0,0) 25%) 0 0/28px 28px,
+        linear-gradient(135deg, rgba(0,0,0,0) 75%, rgba(255,255,255,0.04) 75%) 0 0/28px 28px;
+      box-shadow: inset 0 0 120px rgba(0,0,0,0.35);
+    }
+  </style>
+</head>
+<body class="min-h-screen bg-neutral-900 text-neutral-100 font-inter logistics-bg">
+
+  <div class="flex h-screen overflow-hidden">
+    <!-- Sidebar -->
+    <aside id="sidebar" class="w-64 bg-neutral-800 border-r border-neutral-700 flex flex-col fixed lg:static inset-y-0 left-0 z-40 transform -translate-x-full lg:translate-x-0 transition-transform duration-300 overflow-y-auto">
+      <div class="flex items-center h-16 border-b border-neutral-700 px-6">
+        <img src="https://canalogistix.s3.us-east-2.amazonaws.com/Logo/CanaLogistiX_Logo_BG.png" alt="CanaLogistiX Logo" class="h-12 w-12 rounded-full object-cover"/>
+        <span class="ml-2 text-lg font-semibold text-white">CanaLogistiX</span>
+      </div>
+
+      <!-- Navigation -->
+      <nav class="flex-1 p-4 space-y-2 text-sm overflow-y-auto">
+        <a href="/adminDashboard/" class="flex items-center px-3 py-2 rounded-lg text-neutral-300 hover:bg-neutral-700 transition">
+          <svg class="w-5 h-5 mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 12l2-2m0 0l7-7 7 7M13 5v6h6"/></svg>
+          Dashboard
+        </a>
+        <a href="/adminOrders/" class="flex items-center px-3 py-2 rounded-lg text-neutral-300 hover:bg-neutral-700 transition">
+          <svg class="w-5 h-5 mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 17v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm6 0v-8a2 2 0 00-2-2h-2a2 2 0 00-2 2v8m6 0a2 2 0 002 2h2a2 2 0 002-2"/></svg>
+          Orders
+        </a>
+        <a href="/adminPharmacies/" class="flex items-center px-3 py-2 rounded-lg text-neutral-300 hover:bg-neutral-700 transition">
+          <svg class="w-5 h-5 mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 11V5a3 3 0 00-3-3H7a3 3 0 00-3 3v6m12 0v6a3 3 0 01-3 3H7a3 3 0 01-3-3v-6m12 0H4"/></svg>
+          Pharmacies
+        </a>
+        <a href="/adminDrivers/" class="flex items-center px-3 py-2 rounded-lg text-neutral-300 hover:bg-neutral-700 transition">
+          <svg class="w-5 h-5 mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/></svg>
+          Drivers
+        </a>
+        <a href="/adminInvoices/" class="flex items-center px-3 py-2 rounded-lg text-neutral-300 hover:bg-neutral-700 transition">
+          <svg class="w-5 h-5 mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 4H7a2 2 0 01-2-2V6a2 2 0 012-2h7l5 5v9a2 2 0 01-2 2z"/></svg>
+          Invoices
+        </a>
+        <a href="/adminAnalyticsAndReports/" class="flex items-center px-3 py-2 rounded-lg text-neutral-300 hover:bg-neutral-700 transition">
+          <svg class="w-5 h-5 mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"/></svg>
+          Analytics & Reports
+        </a>
+        <a href="/adminPaymentInformation/" class="flex items-center px-3 py-2 rounded-lg bg-gradient-to-r from-orange-600 to-orange-500 text-white font-medium">
+          <svg class="w-5 h-5 mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 10h18M7 15h1m4 0h1m-7 4h12a3 3 0 003-3V8a3 3 0 00-3-3H6a3 3 0 00-3 3v8a3 3 0 003 3z"/></svg>
+          Payment Information
+        </a>
+        <a href="/adminSupport/" class="flex items-center px-3 py-2 rounded-lg text-neutral-300 hover:bg-neutral-700 transition">
+          <svg class="w-5 h-5 mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 10h.01M12 10h.01M16 10h.01M21 12c0 4.418-4.03 8-9 8s-9-3.582-9-8 4.03-8 9-8 9 3.582 9 8zM12 14v-4m0 4h.01"/></svg>
+          Support
+        </a>
+        <a href="#" id="logoutBtn" class="flex items-center px-3 py-2 rounded-lg text-neutral-300 hover:bg-neutral-700 transition">
+          <svg class="w-5 h-5 mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a2 2 0 01-2 2H5a2 2 0 01-2-2V7a2 2 0 012-2h6a2 2 0 012 2v1" />
+          </svg>
+          Logout
+        </a>
+      </nav>
+
+      <!-- Profile -->
+      <div class="p-4 border-t border-neutral-700">
+        <div class="flex items-center">
+          <div class="flex-shrink-0 w-9 h-9 bg-gradient-to-r from-orange-600 to-orange-500 rounded-full flex items-center justify-center text-sm font-semibold">A</div>
+          <div class="ml-3">
+            <p class="text-sm font-medium text-neutral-100">Admin</p>
+            <p class="text-xs text-neutral-400">admin@canadrop.ca</p>
+          </div>
+        </div>
+      </div>
+    </aside>
+
+    <div id="sidebarOverlay" class="hidden lg:hidden fixed inset-0 bg-black/50 z-30"></div>
+
+    <!-- Main Content -->
+    <main class="flex-1 flex flex-col overflow-y-auto lg:ml-0">
+      <!-- Header -->
+      <header class="bg-neutral-800 border-b border-neutral-700 px-4 sm:px-6 py-4 flex items-center justify-between gap-4">
+        <button id="menuToggle" class="lg:hidden text-white p-2 flex-shrink-0">
+          <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16"/>
+          </svg>
+        </button>
+        <div class="flex-1 min-w-0">
+          <h1 class="text-xl sm:text-2xl font-bold text-white truncate">Payment Information</h1>
+          <p class="text-sm text-neutral-400">Manage payment methods and view transaction history</p>
+        </div>
+        <div class="flex items-center space-x-2">
+          <button id="refreshBtn" class="p-2 text-neutral-400 hover:text-white transition-colors">
+            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"/>
+            </svg>
+          </button>
+        </div>
+      </header>
+
+      <!-- Payment Methods Section -->
+      <section class="px-4 sm:px-6 py-6">
+        <!-- Active Payment Methods -->
+        <div class="bg-neutral-800/80 border border-neutral-700 rounded-xl p-4 sm:p-6 mb-6">
+          <div class="flex items-center justify-between mb-4">
+            <h2 class="text-lg font-semibold text-white flex items-center gap-2">
+              <svg class="w-5 h-5 text-green-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/>
+              </svg>
+              Active Payment Methods
+              <div class="relative group">
+                <svg class="w-4 h-4 text-neutral-500 cursor-help" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/>
+                </svg>
+                <div class="absolute top-full mt-1 left-1/2 -translate-x-1/2 w-64 bg-neutral-700 text-neutral-100 text-xs rounded-lg p-2 shadow-lg opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-200 z-10">
+                  Payment methods currently active and available for driver payouts
+                </div>
+              </div>
+            </h2>
+            <button id="addPaymentMethodBtn" class="px-4 py-2 bg-gradient-to-r from-orange-600 to-orange-500 text-white text-sm font-medium rounded-lg hover:from-orange-700 hover:to-orange-600 transition flex items-center gap-2">
+              <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/>
+              </svg>
+              Add Method
+            </button>
+          </div>
+
+          <!-- Payment Methods Grid -->
+          <div id="activePaymentMethodsGrid" class="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <!-- EFT Card -->
+            <div class="bg-neutral-700/50 border border-neutral-600 rounded-lg p-4 hover:border-green-500/50 transition">
+              <div class="flex items-start justify-between mb-3">
+                <div class="flex items-center gap-3">
+                  <div class="w-10 h-10 bg-green-500/20 rounded-lg flex items-center justify-center">
+                    <svg class="w-5 h-5 text-green-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 10h18M7 15h1m4 0h1m-7 4h12a3 3 0 003-3V8a3 3 0 00-3-3H6a3 3 0 00-3 3v8a3 3 0 003 3z"/>
+                    </svg>
+                  </div>
+                  <div>
+                    <h3 class="text-sm font-semibold text-white">Electronic Funds Transfer</h3>
+                    <p class="text-xs text-neutral-400">Primary EFT Account</p>
+                  </div>
+                </div>
+                <span class="inline-flex px-2 py-1 text-xs font-medium rounded-full bg-green-500/20 text-green-400 border border-green-600/40">Active</span>
+              </div>
+              <div class="space-y-2 mb-4">
+                <div class="flex justify-between text-xs">
+                  <span class="text-neutral-400">Bank Name:</span>
+                  <span class="text-neutral-200 font-medium">TD Canada Trust</span>
+                </div>
+                <div class="flex justify-between text-xs">
+                  <span class="text-neutral-400">Account Number:</span>
+                  <span class="text-neutral-200 font-mono">****1234</span>
+                </div>
+                <div class="flex justify-between text-xs">
+                  <span class="text-neutral-400">Transit Number:</span>
+                  <span class="text-neutral-200 font-mono">12345</span>
+                </div>
+                <div class="flex justify-between text-xs">
+                  <span class="text-neutral-400">Last Updated:</span>
+                  <span class="text-neutral-400">Jan 15, 2026</span>
+                </div>
+              </div>
+              <div class="flex gap-2">
+                <button onclick="editPaymentMethod('eft', 1)" class="flex-1 px-3 py-1.5 bg-neutral-600 hover:bg-neutral-500 text-neutral-200 text-xs font-medium rounded transition">
+                  Edit
+                </button>
+                <button onclick="deactivatePaymentMethod('eft', 1)" class="flex-1 px-3 py-1.5 bg-red-600/20 hover:bg-red-600/30 text-red-400 text-xs font-medium rounded border border-red-600/40 transition">
+                  Deactivate
+                </button>
+              </div>
+            </div>
+
+            <!-- Interac Card -->
+            <div class="bg-neutral-700/50 border border-neutral-600 rounded-lg p-4 hover:border-blue-500/50 transition">
+              <div class="flex items-start justify-between mb-3">
+                <div class="flex items-center gap-3">
+                  <div class="w-10 h-10 bg-blue-500/20 rounded-lg flex items-center justify-center">
+                    <svg class="w-5 h-5 text-blue-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"/>
+                    </svg>
+                  </div>
+                  <div>
+                    <h3 class="text-sm font-semibold text-white">Interac e-Transfer</h3>
+                    <p class="text-xs text-neutral-400">Business Account</p>
+                  </div>
+                </div>
+                <span class="inline-flex px-2 py-1 text-xs font-medium rounded-full bg-green-500/20 text-green-400 border border-green-600/40">Active</span>
+              </div>
+              <div class="space-y-2 mb-4">
+                <div class="flex justify-between text-xs">
+                  <span class="text-neutral-400">Email:</span>
+                  <span class="text-neutral-200 font-medium">payments@canadrop.ca</span>
+                </div>
+                <div class="flex justify-between text-xs">
+                  <span class="text-neutral-400">Auto-Deposit:</span>
+                  <span class="text-green-400 font-medium">Enabled</span>
+                </div>
+                <div class="flex justify-between text-xs">
+                  <span class="text-neutral-400">Security Question:</span>
+                  <span class="text-neutral-200">Set</span>
+                </div>
+                <div class="flex justify-between text-xs">
+                  <span class="text-neutral-400">Last Updated:</span>
+                  <span class="text-neutral-400">Jan 10, 2026</span>
+                </div>
+              </div>
+              <div class="flex gap-2">
+                <button onclick="editPaymentMethod('interac', 2)" class="flex-1 px-3 py-1.5 bg-neutral-600 hover:bg-neutral-500 text-neutral-200 text-xs font-medium rounded transition">
+                  Edit
+                </button>
+                <button onclick="deactivatePaymentMethod('interac', 2)" class="flex-1 px-3 py-1.5 bg-red-600/20 hover:bg-red-600/30 text-red-400 text-xs font-medium rounded border border-red-600/40 transition">
+                  Deactivate
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- All Payment Methods Table -->
+        <div class="bg-neutral-800/80 border border-neutral-700 rounded-xl p-4 sm:p-6 mb-6">
+          <div class="flex items-center justify-between mb-4">
+            <h2 class="text-lg font-semibold text-white flex items-center gap-2">
+              <svg class="w-5 h-5 text-orange-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 10h16M4 14h16M4 18h16"/>
+              </svg>
+              All Payment Methods
+            </h2>
+            <div class="flex items-center gap-2">
+              <select id="statusFilter" class="text-sm bg-neutral-700 border border-neutral-600 rounded-lg px-3 py-1.5 text-neutral-300 focus:ring-2 focus:ring-orange-500 focus:outline-none">
+                <option value="all">All Status</option>
+                <option value="active">Active</option>
+                <option value="inactive">Inactive</option>
+              </select>
+              <select id="typeFilter" class="text-sm bg-neutral-700 border border-neutral-600 rounded-lg px-3 py-1.5 text-neutral-300 focus:ring-2 focus:ring-orange-500 focus:outline-none">
+                <option value="all">All Types</option>
+                <option value="eft">EFT</option>
+                <option value="cheque">Cheque</option>
+                <option value="interac">Interac</option>
+                <option value="wire">Wire Transfer</option>
+                <option value="other">Other</option>
+              </select>
+            </div>
+          </div>
+
+          <div class="overflow-x-auto">
+            <table class="min-w-full text-sm">
+              <thead class="bg-neutral-800 border-b border-neutral-700">
+                <tr>
+                  <th class="px-4 py-3 text-left text-neutral-400 uppercase tracking-wider text-xs">Type</th>
+                  <th class="px-4 py-3 text-left text-neutral-400 uppercase tracking-wider text-xs">Label</th>
+                  <th class="px-4 py-3 text-left text-neutral-400 uppercase tracking-wider text-xs">Details</th>
+                  <th class="px-4 py-3 text-left text-neutral-400 uppercase tracking-wider text-xs">Status</th>
+                  <th class="px-4 py-3 text-left text-neutral-400 uppercase tracking-wider text-xs">Last Updated</th>
+                  <th class="px-4 py-3 text-left text-neutral-400 uppercase tracking-wider text-xs">Updated By</th>
+                  <th class="px-4 py-3 text-left text-neutral-400 uppercase tracking-wider text-xs">Actions</th>
+                </tr>
+              </thead>
+              <tbody id="paymentMethodsTableBody" class="divide-y divide-neutral-700">
+                <tr class="hover:bg-neutral-700/30 transition">
+                  <td class="px-4 py-3">
+                    <span class="inline-flex px-2 py-1 text-xs font-medium rounded bg-green-500/20 text-green-400">EFT</span>
+                  </td>
+                  <td class="px-4 py-3 text-neutral-200 font-medium">Primary EFT Account</td>
+                  <td class="px-4 py-3 text-neutral-300 text-xs">TD Canada Trust - ****1234</td>
+                  <td class="px-4 py-3">
+                    <span class="inline-flex px-2 py-1 text-xs font-medium rounded-full bg-green-500/20 text-green-400 border border-green-600/40">Active</span>
+                  </td>
+                  <td class="px-4 py-3 text-neutral-400 text-xs">Jan 15, 2026</td>
+                  <td class="px-4 py-3 text-neutral-400 text-xs">Admin User</td>
+                  <td class="px-4 py-3">
+                    <div class="flex gap-2">
+                      <button onclick="editPaymentMethod('eft', 1)" class="text-blue-400 hover:text-blue-300 transition">
+                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"/>
+                        </svg>
+                      </button>
+                      <button onclick="viewPaymentMethodDetails('eft', 1)" class="text-neutral-400 hover:text-neutral-300 transition">
+                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/>
+                          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"/>
+                        </svg>
+                      </button>
+                    </div>
+                  </td>
+                </tr>
+                <tr class="hover:bg-neutral-700/30 transition">
+                  <td class="px-4 py-3">
+                    <span class="inline-flex px-2 py-1 text-xs font-medium rounded bg-blue-500/20 text-blue-400">Interac</span>
+                  </td>
+                  <td class="px-4 py-3 text-neutral-200 font-medium">Business Account</td>
+                  <td class="px-4 py-3 text-neutral-300 text-xs">payments@canadrop.ca</td>
+                  <td class="px-4 py-3">
+                    <span class="inline-flex px-2 py-1 text-xs font-medium rounded-full bg-green-500/20 text-green-400 border border-green-600/40">Active</span>
+                  </td>
+                  <td class="px-4 py-3 text-neutral-400 text-xs">Jan 10, 2026</td>
+                  <td class="px-4 py-3 text-neutral-400 text-xs">Admin User</td>
+                  <td class="px-4 py-3">
+                    <div class="flex gap-2">
+                      <button onclick="editPaymentMethod('interac', 2)" class="text-blue-400 hover:text-blue-300 transition">
+                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"/>
+                        </svg>
+                      </button>
+                      <button onclick="viewPaymentMethodDetails('interac', 2)" class="text-neutral-400 hover:text-neutral-300 transition">
+                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/>
+                          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"/>
+                        </svg>
+                      </button>
+                    </div>
+                  </td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+
+        <!-- Payment History -->
+        <div class="bg-neutral-800/80 border border-neutral-700 rounded-xl p-4 sm:p-6">
+          <div class="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 mb-4">
+            <h2 class="text-lg font-semibold text-white flex items-center gap-2">
+              <svg class="w-5 h-5 text-cyan-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"/>
+              </svg>
+              Payment History
+            </h2>
+            <div class="flex flex-wrap items-center gap-2">
+              <input type="date" id="startDate" class="text-sm bg-neutral-700 border border-neutral-600 rounded-lg px-3 py-1.5 text-neutral-300 focus:ring-2 focus:ring-orange-500 focus:outline-none">
+              <input type="date" id="endDate" class="text-sm bg-neutral-700 border border-neutral-600 rounded-lg px-3 py-1.5 text-neutral-300 focus:ring-2 focus:ring-orange-500 focus:outline-none">
+              <button id="filterHistoryBtn" class="px-4 py-1.5 bg-orange-600 hover:bg-orange-700 text-white text-sm font-medium rounded-lg transition">
+                Filter
+              </button>
+            </div>
+          </div>
+
+          <div class="overflow-x-auto">
+            <table class="min-w-full text-sm">
+              <thead class="bg-neutral-800 border-b border-neutral-700">
+                <tr>
+                  <th class="px-4 py-3 text-left text-neutral-400 uppercase tracking-wider text-xs">Transaction ID</th>
+                  <th class="px-4 py-3 text-left text-neutral-400 uppercase tracking-wider text-xs">Date</th>
+                  <th class="px-4 py-3 text-left text-neutral-400 uppercase tracking-wider text-xs">Payment Method</th>
+                  <th class="px-4 py-3 text-left text-neutral-400 uppercase tracking-wider text-xs">Recipient</th>
+                  <th class="px-4 py-3 text-left text-neutral-400 uppercase tracking-wider text-xs">Amount</th>
+                  <th class="px-4 py-3 text-left text-neutral-400 uppercase tracking-wider text-xs">Status</th>
+                  <th class="px-4 py-3 text-left text-neutral-400 uppercase tracking-wider text-xs">Actions</th>
+                </tr>
+              </thead>
+              <tbody id="paymentHistoryTableBody" class="divide-y divide-neutral-700">
+                <tr class="hover:bg-neutral-700/30 transition">
+                  <td class="px-4 py-3 text-neutral-300 font-mono text-xs">TXN-2026-0015</td>
+                  <td class="px-4 py-3 text-neutral-400 text-xs">Jan 20, 2026</td>
+                  <td class="px-4 py-3">
+                    <span class="inline-flex px-2 py-1 text-xs font-medium rounded bg-green-500/20 text-green-400">EFT</span>
+                  </td>
+                  <td class="px-4 py-3 text-neutral-300 text-xs">Driver - John Smith</td>
+                  <td class="px-4 py-3 text-neutral-200 font-medium">$2,450.00</td>
+                  <td class="px-4 py-3">
+                    <span class="inline-flex px-2 py-1 text-xs font-medium rounded-full bg-green-500/20 text-green-400 border border-green-600/40">Completed</span>
+                  </td>
+                  <td class="px-4 py-3">
+                    <button onclick="viewTransactionDetails('TXN-2026-0015')" class="text-blue-400 hover:text-blue-300 transition text-xs">
+                      View Details
+                    </button>
+                  </td>
+                </tr>
+                <tr class="hover:bg-neutral-700/30 transition">
+                  <td class="px-4 py-3 text-neutral-300 font-mono text-xs">TXN-2026-0014</td>
+                  <td class="px-4 py-3 text-neutral-400 text-xs">Jan 18, 2026</td>
+                  <td class="px-4 py-3">
+                    <span class="inline-flex px-2 py-1 text-xs font-medium rounded bg-blue-500/20 text-blue-400">Interac</span>
+                  </td>
+                  <td class="px-4 py-3 text-neutral-300 text-xs">Driver - Sarah Johnson</td>
+                  <td class="px-4 py-3 text-neutral-200 font-medium">$1,875.50</td>
+                  <td class="px-4 py-3">
+                    <span class="inline-flex px-2 py-1 text-xs font-medium rounded-full bg-green-500/20 text-green-400 border border-green-600/40">Completed</span>
+                  </td>
+                  <td class="px-4 py-3">
+                    <button onclick="viewTransactionDetails('TXN-2026-0014')" class="text-blue-400 hover:text-blue-300 transition text-xs">
+                      View Details
+                    </button>
+                  </td>
+                </tr>
+                <tr class="hover:bg-neutral-700/30 transition">
+                  <td class="px-4 py-3 text-neutral-300 font-mono text-xs">TXN-2026-0013</td>
+                  <td class="px-4 py-3 text-neutral-400 text-xs">Jan 15, 2026</td>
+                  <td class="px-4 py-3">
+                    <span class="inline-flex px-2 py-1 text-xs font-medium rounded bg-green-500/20 text-green-400">EFT</span>
+                  </td>
+                  <td class="px-4 py-3 text-neutral-300 text-xs">Driver - Mike Chen</td>
+                  <td class="px-4 py-3 text-neutral-200 font-medium">$3,120.75</td>
+                  <td class="px-4 py-3">
+                    <span class="inline-flex px-2 py-1 text-xs font-medium rounded-full bg-yellow-500/20 text-yellow-400 border border-yellow-600/40">Pending</span>
+                  </td>
+                  <td class="px-4 py-3">
+                    <button onclick="viewTransactionDetails('TXN-2026-0013')" class="text-blue-400 hover:text-blue-300 transition text-xs">
+                      View Details
+                    </button>
+                  </td>
+                </tr>
+                <tr class="hover:bg-neutral-700/30 transition">
+                  <td class="px-4 py-3 text-neutral-300 font-mono text-xs">TXN-2026-0012</td>
+                  <td class="px-4 py-3 text-neutral-400 text-xs">Jan 12, 2026</td>
+                  <td class="px-4 py-3">
+                    <span class="inline-flex px-2 py-1 text-xs font-medium rounded bg-purple-500/20 text-purple-400">Wire</span>
+                  </td>
+                  <td class="px-4 py-3 text-neutral-300 text-xs">Driver - Emily Davis</td>
+                  <td class="px-4 py-3 text-neutral-200 font-medium">$5,200.00</td>
+                  <td class="px-4 py-3">
+                    <span class="inline-flex px-2 py-1 text-xs font-medium rounded-full bg-green-500/20 text-green-400 border border-green-600/40">Completed</span>
+                  </td>
+                  <td class="px-4 py-3">
+                    <button onclick="viewTransactionDetails('TXN-2026-0012')" class="text-blue-400 hover:text-blue-300 transition text-xs">
+                      View Details
+                    </button>
+                  </td>
+                </tr>
+                <tr class="hover:bg-neutral-700/30 transition">
+                  <td class="px-4 py-3 text-neutral-300 font-mono text-xs">TXN-2026-0011</td>
+                  <td class="px-4 py-3 text-neutral-400 text-xs">Jan 10, 2026</td>
+                  <td class="px-4 py-3">
+                    <span class="inline-flex px-2 py-1 text-xs font-medium rounded bg-orange-500/20 text-orange-400">Cheque</span>
+                  </td>
+                  <td class="px-4 py-3 text-neutral-300 text-xs">Driver - Tom Wilson</td>
+                  <td class="px-4 py-3 text-neutral-200 font-medium">$1,650.25</td>
+                  <td class="px-4 py-3">
+                    <span class="inline-flex px-2 py-1 text-xs font-medium rounded-full bg-green-500/20 text-green-400 border border-green-600/40">Completed</span>
+                  </td>
+                  <td class="px-4 py-3">
+                    <button onclick="viewTransactionDetails('TXN-2026-0011')" class="text-blue-400 hover:text-blue-300 transition text-xs">
+                      View Details
+                    </button>
+                  </td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+
+          <!-- Pagination -->
+          <div class="flex items-center justify-between mt-4 pt-4 border-t border-neutral-700">
+            <p class="text-sm text-neutral-400">Showing 1 to 5 of 47 transactions</p>
+            <div class="flex gap-2">
+              <button class="px-3 py-1.5 bg-neutral-700 hover:bg-neutral-600 text-neutral-300 text-sm rounded transition disabled:opacity-50 disabled:cursor-not-allowed" disabled>
+                Previous
+              </button>
+              <button class="px-3 py-1.5 bg-orange-600 text-white text-sm rounded">1</button>
+              <button class="px-3 py-1.5 bg-neutral-700 hover:bg-neutral-600 text-neutral-300 text-sm rounded transition">2</button>
+              <button class="px-3 py-1.5 bg-neutral-700 hover:bg-neutral-600 text-neutral-300 text-sm rounded transition">3</button>
+              <button class="px-3 py-1.5 bg-neutral-700 hover:bg-neutral-600 text-neutral-300 text-sm rounded transition">
+                Next
+              </button>
+            </div>
+          </div>
+        </div>
+      </section>
+    </main>
+  </div>
+
+  <!-- Add Payment Method Modal -->
+  <div id="addPaymentMethodModal" class="hidden fixed inset-0 bg-black/60 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+    <div class="bg-neutral-800 border border-neutral-700 rounded-xl shadow-2xl max-w-2xl w-full max-h-[90vh] overflow-y-auto">
+      <div class="sticky top-0 bg-neutral-800 border-b border-neutral-700 px-6 py-4 flex items-center justify-between">
+        <h3 class="text-xl font-semibold text-white">Add Payment Method</h3>
+        <button onclick="closeAddPaymentMethodModal()" class="text-neutral-400 hover:text-white transition">
+          <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
+          </svg>
+        </button>
+      </div>
+
+      <div class="p-6">
+        <div class="mb-6">
+          <label class="block text-sm font-medium text-neutral-300 mb-2">Payment Method Type</label>
+          <select id="paymentMethodType" class="w-full bg-neutral-700 border border-neutral-600 rounded-lg px-4 py-2.5 text-neutral-200 focus:ring-2 focus:ring-orange-500 focus:outline-none">
+            <option value="">Select Type</option>
+            <option value="eft">Electronic Funds Transfer (EFT)</option>
+            <option value="interac">Interac e-Transfer</option>
+            <option value="wire">Wire Transfer</option>
+            <option value="cheque">Cheque</option>
+            <option value="other">Other</option>
+          </select>
+        </div>
+
+        <!-- EFT Form -->
+        <div id="eftForm" class="hidden space-y-4">
+          <div>
+            <label class="block text-sm font-medium text-neutral-300 mb-2">Label/Description</label>
+            <input type="text" placeholder="e.g., Primary Business Account" class="w-full bg-neutral-700 border border-neutral-600 rounded-lg px-4 py-2.5 text-neutral-200 placeholder-neutral-500 focus:ring-2 focus:ring-orange-500 focus:outline-none">
+          </div>
+          <div>
+            <label class="block text-sm font-medium text-neutral-300 mb-2">Bank Name</label>
+            <input type="text" placeholder="e.g., TD Canada Trust" class="w-full bg-neutral-700 border border-neutral-600 rounded-lg px-4 py-2.5 text-neutral-200 placeholder-neutral-500 focus:ring-2 focus:ring-orange-500 focus:outline-none">
+          </div>
+          <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            <div>
+              <label class="block text-sm font-medium text-neutral-300 mb-2">Transit Number</label>
+              <input type="text" placeholder="12345" maxlength="5" class="w-full bg-neutral-700 border border-neutral-600 rounded-lg px-4 py-2.5 text-neutral-200 placeholder-neutral-500 focus:ring-2 focus:ring-orange-500 focus:outline-none">
+            </div>
+            <div>
+              <label class="block text-sm font-medium text-neutral-300 mb-2">Institution Number</label>
+              <input type="text" placeholder="004" maxlength="3" class="w-full bg-neutral-700 border border-neutral-600 rounded-lg px-4 py-2.5 text-neutral-200 placeholder-neutral-500 focus:ring-2 focus:ring-orange-500 focus:outline-none">
+            </div>
+          </div>
+          <div>
+            <label class="block text-sm font-medium text-neutral-300 mb-2">Account Number</label>
+            <input type="text" placeholder="1234567" class="w-full bg-neutral-700 border border-neutral-600 rounded-lg px-4 py-2.5 text-neutral-200 placeholder-neutral-500 focus:ring-2 focus:ring-orange-500 focus:outline-none">
+          </div>
+          <div>
+            <label class="block text-sm font-medium text-neutral-300 mb-2">Account Holder Name</label>
+            <input type="text" placeholder="CanaLogistiX Inc." class="w-full bg-neutral-700 border border-neutral-600 rounded-lg px-4 py-2.5 text-neutral-200 placeholder-neutral-500 focus:ring-2 focus:ring-orange-500 focus:outline-none">
+          </div>
+        </div>
+
+        <!-- Interac Form -->
+        <div id="interacForm" class="hidden space-y-4">
+          <div>
+            <label class="block text-sm font-medium text-neutral-300 mb-2">Label/Description</label>
+            <input type="text" placeholder="e.g., Business Account" class="w-full bg-neutral-700 border border-neutral-600 rounded-lg px-4 py-2.5 text-neutral-200 placeholder-neutral-500 focus:ring-2 focus:ring-orange-500 focus:outline-none">
+          </div>
+          <div>
+            <label class="block text-sm font-medium text-neutral-300 mb-2">Email Address</label>
+            <input type="email" placeholder="payments@canadrop.ca" class="w-full bg-neutral-700 border border-neutral-600 rounded-lg px-4 py-2.5 text-neutral-200 placeholder-neutral-500 focus:ring-2 focus:ring-orange-500 focus:outline-none">
+          </div>
+          <div>
+            <label class="block text-sm font-medium text-neutral-300 mb-2">Security Question</label>
+            <input type="text" placeholder="What is your company name?" class="w-full bg-neutral-700 border border-neutral-600 rounded-lg px-4 py-2.5 text-neutral-200 placeholder-neutral-500 focus:ring-2 focus:ring-orange-500 focus:outline-none">
+          </div>
+          <div>
+            <label class="block text-sm font-medium text-neutral-300 mb-2">Security Answer</label>
+            <input type="text" placeholder="Answer" class="w-full bg-neutral-700 border border-neutral-600 rounded-lg px-4 py-2.5 text-neutral-200 placeholder-neutral-500 focus:ring-2 focus:ring-orange-500 focus:outline-none">
+          </div>
+          <div class="flex items-center">
+            <input type="checkbox" id="autoDeposit" class="w-4 h-4 rounded bg-neutral-700 border-neutral-600 text-orange-600 focus:ring-2 focus:ring-orange-500">
+            <label for="autoDeposit" class="ml-2 text-sm text-neutral-300">Enable Auto-Deposit</label>
+          </div>
+        </div>
+
+        <!-- Wire Transfer Form -->
+        <div id="wireForm" class="hidden space-y-4">
+          <div>
+            <label class="block text-sm font-medium text-neutral-300 mb-2">Label/Description</label>
+            <input type="text" placeholder="e.g., International Wire Account" class="w-full bg-neutral-700 border border-neutral-600 rounded-lg px-4 py-2.5 text-neutral-200 placeholder-neutral-500 focus:ring-2 focus:ring-orange-500 focus:outline-none">
+          </div>
+          <div>
+            <label class="block text-sm font-medium text-neutral-300 mb-2">Bank Name</label>
+            <input type="text" placeholder="Bank Name" class="w-full bg-neutral-700 border border-neutral-600 rounded-lg px-4 py-2.5 text-neutral-200 placeholder-neutral-500 focus:ring-2 focus:ring-orange-500 focus:outline-none">
+          </div>
+          <div>
+            <label class="block text-sm font-medium text-neutral-300 mb-2">SWIFT/BIC Code</label>
+            <input type="text" placeholder="TDOMCATTTOR" class="w-full bg-neutral-700 border border-neutral-600 rounded-lg px-4 py-2.5 text-neutral-200 placeholder-neutral-500 focus:ring-2 focus:ring-orange-500 focus:outline-none">
+          </div>
+          <div>
+            <label class="block text-sm font-medium text-neutral-300 mb-2">Account Number/IBAN</label>
+            <input type="text" placeholder="Account Number" class="w-full bg-neutral-700 border border-neutral-600 rounded-lg px-4 py-2.5 text-neutral-200 placeholder-neutral-500 focus:ring-2 focus:ring-orange-500 focus:outline-none">
+          </div>
+          <div>
+            <label class="block text-sm font-medium text-neutral-300 mb-2">Beneficiary Name</label>
+            <input type="text" placeholder="CanaLogistiX Inc." class="w-full bg-neutral-700 border border-neutral-600 rounded-lg px-4 py-2.5 text-neutral-200 placeholder-neutral-500 focus:ring-2 focus:ring-orange-500 focus:outline-none">
+          </div>
+          <div>
+            <label class="block text-sm font-medium text-neutral-300 mb-2">Bank Address</label>
+            <textarea rows="2" placeholder="Complete bank address" class="w-full bg-neutral-700 border border-neutral-600 rounded-lg px-4 py-2.5 text-neutral-200 placeholder-neutral-500 focus:ring-2 focus:ring-orange-500 focus:outline-none"></textarea>
+          </div>
+        </div>
+
+        <!-- Cheque Form -->
+        <div id="chequeForm" class="hidden space-y-4">
+          <div>
+            <label class="block text-sm font-medium text-neutral-300 mb-2">Label/Description</label>
+            <input type="text" placeholder="e.g., Mailed Cheques" class="w-full bg-neutral-700 border border-neutral-600 rounded-lg px-4 py-2.5 text-neutral-200 placeholder-neutral-500 focus:ring-2 focus:ring-orange-500 focus:outline-none">
+          </div>
+          <div>
+            <label class="block text-sm font-medium text-neutral-300 mb-2">Payee Name</label>
+            <input type="text" placeholder="Name to appear on cheque" class="w-full bg-neutral-700 border border-neutral-600 rounded-lg px-4 py-2.5 text-neutral-200 placeholder-neutral-500 focus:ring-2 focus:ring-orange-500 focus:outline-none">
+          </div>
+          <div>
+            <label class="block text-sm font-medium text-neutral-300 mb-2">Mailing Address</label>
+            <textarea rows="3" placeholder="Complete mailing address for cheque delivery" class="w-full bg-neutral-700 border border-neutral-600 rounded-lg px-4 py-2.5 text-neutral-200 placeholder-neutral-500 focus:ring-2 focus:ring-orange-500 focus:outline-none"></textarea>
+          </div>
+          <div>
+            <label class="block text-sm font-medium text-neutral-300 mb-2">Additional Instructions</label>
+            <textarea rows="2" placeholder="Any special delivery or handling instructions" class="w-full bg-neutral-700 border border-neutral-600 rounded-lg px-4 py-2.5 text-neutral-200 placeholder-neutral-500 focus:ring-2 focus:ring-orange-500 focus:outline-none"></textarea>
+          </div>
+        </div>
+
+        <div class="flex gap-3 mt-6 pt-6 border-t border-neutral-700">
+          <button onclick="closeAddPaymentMethodModal()" class="flex-1 px-4 py-2.5 bg-neutral-700 hover:bg-neutral-600 text-neutral-200 font-medium rounded-lg transition">
+            Cancel
+          </button>
+          <button onclick="savePaymentMethod()" class="flex-1 px-4 py-2.5 bg-gradient-to-r from-orange-600 to-orange-500 hover:from-orange-700 hover:to-orange-600 text-white font-medium rounded-lg transition">
+            Save Payment Method
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Edit Payment Method Modal -->
+  <div id="editPaymentMethodModal" class="hidden fixed inset-0 bg-black/60 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+    <div class="bg-neutral-800 border border-neutral-700 rounded-xl shadow-2xl max-w-2xl w-full max-h-[90vh] overflow-y-auto">
+      <div class="sticky top-0 bg-neutral-800 border-b border-neutral-700 px-6 py-4 flex items-center justify-between">
+        <h3 class="text-xl font-semibold text-white">Edit Payment Method</h3>
+        <button onclick="closeEditPaymentMethodModal()" class="text-neutral-400 hover:text-white transition">
+          <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
+          </svg>
+        </button>
+      </div>
+
+      <div class="p-6">
+        <div id="editFormContent" class="space-y-4">
+          <!-- Dynamic content will be loaded here based on payment method type -->
+        </div>
+
+        <div class="flex gap-3 mt-6 pt-6 border-t border-neutral-700">
+          <button onclick="closeEditPaymentMethodModal()" class="flex-1 px-4 py-2.5 bg-neutral-700 hover:bg-neutral-600 text-neutral-200 font-medium rounded-lg transition">
+            Cancel
+          </button>
+          <button onclick="updatePaymentMethod()" class="flex-1 px-4 py-2.5 bg-gradient-to-r from-orange-600 to-orange-500 hover:from-orange-700 hover:to-orange-600 text-white font-medium rounded-lg transition">
+            Update Payment Method
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Transaction Details Modal -->
+  <div id="transactionDetailsModal" class="hidden fixed inset-0 bg-black/60 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+    <div class="bg-neutral-800 border border-neutral-700 rounded-xl shadow-2xl max-w-2xl w-full max-h-[90vh] overflow-y-auto">
+      <div class="sticky top-0 bg-neutral-800 border-b border-neutral-700 px-6 py-4 flex items-center justify-between">
+        <h3 class="text-xl font-semibold text-white">Transaction Details</h3>
+        <button onclick="closeTransactionDetailsModal()" class="text-neutral-400 hover:text-white transition">
+          <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
+          </svg>
+        </button>
+      </div>
+
+      <div class="p-6">
+        <div class="space-y-4">
+          <div class="bg-neutral-700/30 rounded-lg p-4">
+            <div class="grid grid-cols-2 gap-4">
+              <div>
+                <p class="text-xs text-neutral-400 mb-1">Transaction ID</p>
+                <p class="text-sm font-mono text-neutral-200" id="txnId">-</p>
+              </div>
+              <div>
+                <p class="text-xs text-neutral-400 mb-1">Status</p>
+                <span id="txnStatus" class="inline-flex px-2 py-1 text-xs font-medium rounded-full bg-green-500/20 text-green-400 border border-green-600/40">-</span>
+              </div>
+              <div>
+                <p class="text-xs text-neutral-400 mb-1">Date & Time</p>
+                <p class="text-sm text-neutral-200" id="txnDate">-</p>
+              </div>
+              <div>
+                <p class="text-xs text-neutral-400 mb-1">Amount</p>
+                <p class="text-sm font-semibold text-neutral-200" id="txnAmount">-</p>
+              </div>
+              <div>
+                <p class="text-xs text-neutral-400 mb-1">Payment Method</p>
+                <span id="txnMethod" class="inline-flex px-2 py-1 text-xs font-medium rounded bg-green-500/20 text-green-400">-</span>
+              </div>
+              <div>
+                <p class="text-xs text-neutral-400 mb-1">Recipient</p>
+                <p class="text-sm text-neutral-200" id="txnRecipient">-</p>
+              </div>
+            </div>
+          </div>
+
+          <div class="bg-neutral-700/30 rounded-lg p-4">
+            <h4 class="text-sm font-semibold text-white mb-3">Payment Details</h4>
+            <div id="txnPaymentDetails" class="space-y-2">
+              <!-- Dynamic payment details will be loaded here -->
+            </div>
+          </div>
+
+          <div class="bg-neutral-700/30 rounded-lg p-4">
+            <h4 class="text-sm font-semibold text-white mb-3">Notes</h4>
+            <p id="txnNotes" class="text-sm text-neutral-300">No additional notes</p>
+          </div>
+        </div>
+
+        <div class="flex gap-3 mt-6 pt-6 border-t border-neutral-700">
+          <button onclick="closeTransactionDetailsModal()" class="flex-1 px-4 py-2.5 bg-neutral-700 hover:bg-neutral-600 text-neutral-200 font-medium rounded-lg transition">
+            Close
+          </button>
+          <button onclick="downloadTransactionReceipt()" class="flex-1 px-4 py-2.5 bg-orange-600 hover:bg-orange-700 text-white font-medium rounded-lg transition flex items-center justify-center gap-2">
+            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"/>
+            </svg>
+            Download Receipt
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    // Sidebar Toggle
+    const menuToggle = document.getElementById('menuToggle');
+    const sidebar = document.getElementById('sidebar');
+    const sidebarOverlay = document.getElementById('sidebarOverlay');
+
+    menuToggle.addEventListener('click', () => {
+      sidebar.classList.toggle('-translate-x-full');
+      sidebarOverlay.classList.toggle('hidden');
+    });
+
+    sidebarOverlay.addEventListener('click', () => {
+      sidebar.classList.add('-translate-x-full');
+      sidebarOverlay.classList.add('hidden');
+    });
+
+    // Payment Method Type Selection
+    const paymentMethodType = document.getElementById('paymentMethodType');
+    const eftForm = document.getElementById('eftForm');
+    const interacForm = document.getElementById('interacForm');
+    const wireForm = document.getElementById('wireForm');
+    const chequeForm = document.getElementById('chequeForm');
+
+    paymentMethodType.addEventListener('change', (e) => {
+      eftForm.classList.add('hidden');
+      interacForm.classList.add('hidden');
+      wireForm.classList.add('hidden');
+      chequeForm.classList.add('hidden');
+
+      const type = e.target.value;
+      if (type === 'eft') eftForm.classList.remove('hidden');
+      else if (type === 'interac') interacForm.classList.remove('hidden');
+      else if (type === 'wire') wireForm.classList.remove('hidden');
+      else if (type === 'cheque') chequeForm.classList.remove('hidden');
+    });
+
+    // Add Payment Method Modal
+    const addPaymentMethodBtn = document.getElementById('addPaymentMethodBtn');
+    const addPaymentMethodModal = document.getElementById('addPaymentMethodModal');
+
+    addPaymentMethodBtn.addEventListener('click', () => {
+      addPaymentMethodModal.classList.remove('hidden');
+    });
+
+    function closeAddPaymentMethodModal() {
+      addPaymentMethodModal.classList.add('hidden');
+      paymentMethodType.value = '';
+      eftForm.classList.add('hidden');
+      interacForm.classList.add('hidden');
+      wireForm.classList.add('hidden');
+      chequeForm.classList.add('hidden');
+    }
+
+    function savePaymentMethod() {
+      // Add your save logic here
+      alert('Payment method saved successfully!');
+      closeAddPaymentMethodModal();
+    }
+
+    // Edit Payment Method Modal
+    const editPaymentMethodModal = document.getElementById('editPaymentMethodModal');
+
+    function editPaymentMethod(type, id) {
+      const editFormContent = document.getElementById('editFormContent');
+      
+      if (type === 'eft') {
+        editFormContent.innerHTML = `
+          <div>
+            <label class="block text-sm font-medium text-neutral-300 mb-2">Label/Description</label>
+            <input type="text" value="Primary EFT Account" class="w-full bg-neutral-700 border border-neutral-600 rounded-lg px-4 py-2.5 text-neutral-200 focus:ring-2 focus:ring-orange-500 focus:outline-none">
+          </div>
+          <div>
+            <label class="block text-sm font-medium text-neutral-300 mb-2">Bank Name</label>
+            <input type="text" value="TD Canada Trust" class="w-full bg-neutral-700 border border-neutral-600 rounded-lg px-4 py-2.5 text-neutral-200 focus:ring-2 focus:ring-orange-500 focus:outline-none">
+          </div>
+          <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            <div>
+              <label class="block text-sm font-medium text-neutral-300 mb-2">Transit Number</label>
+              <input type="text" value="12345" class="w-full bg-neutral-700 border border-neutral-600 rounded-lg px-4 py-2.5 text-neutral-200 focus:ring-2 focus:ring-orange-500 focus:outline-none">
+            </div>
+            <div>
+              <label class="block text-sm font-medium text-neutral-300 mb-2">Institution Number</label>
+              <input type="text" value="004" class="w-full bg-neutral-700 border border-neutral-600 rounded-lg px-4 py-2.5 text-neutral-200 focus:ring-2 focus:ring-orange-500 focus:outline-none">
+            </div>
+          </div>
+          <div>
+            <label class="block text-sm font-medium text-neutral-300 mb-2">Account Number</label>
+            <input type="text" value="****1234" class="w-full bg-neutral-700 border border-neutral-600 rounded-lg px-4 py-2.5 text-neutral-200 focus:ring-2 focus:ring-orange-500 focus:outline-none">
+          </div>
+          <div>
+            <label class="block text-sm font-medium text-neutral-300 mb-2">Account Holder Name</label>
+            <input type="text" value="CanaLogistiX Inc." class="w-full bg-neutral-700 border border-neutral-600 rounded-lg px-4 py-2.5 text-neutral-200 focus:ring-2 focus:ring-orange-500 focus:outline-none">
+          </div>
+          <div class="flex items-center">
+            <input type="checkbox" id="editActive" checked class="w-4 h-4 rounded bg-neutral-700 border-neutral-600 text-orange-600 focus:ring-2 focus:ring-orange-500">
+            <label for="editActive" class="ml-2 text-sm text-neutral-300">Active</label>
+          </div>
+        `;
+      } else if (type === 'interac') {
+        editFormContent.innerHTML = `
+          <div>
+            <label class="block text-sm font-medium text-neutral-300 mb-2">Label/Description</label>
+            <input type="text" value="Business Account" class="w-full bg-neutral-700 border border-neutral-600 rounded-lg px-4 py-2.5 text-neutral-200 focus:ring-2 focus:ring-orange-500 focus:outline-none">
+          </div>
+          <div>
+            <label class="block text-sm font-medium text-neutral-300 mb-2">Email Address</label>
+            <input type="email" value="payments@canadrop.ca" class="w-full bg-neutral-700 border border-neutral-600 rounded-lg px-4 py-2.5 text-neutral-200 focus:ring-2 focus:ring-orange-500 focus:outline-none">
+          </div>
+          <div>
+            <label class="block text-sm font-medium text-neutral-300 mb-2">Security Question</label>
+            <input type="text" value="What is your company name?" class="w-full bg-neutral-700 border border-neutral-600 rounded-lg px-4 py-2.5 text-neutral-200 focus:ring-2 focus:ring-orange-500 focus:outline-none">
+          </div>
+          <div>
+            <label class="block text-sm font-medium text-neutral-300 mb-2">Security Answer</label>
+            <input type="text" value="********" class="w-full bg-neutral-700 border border-neutral-600 rounded-lg px-4 py-2.5 text-neutral-200 focus:ring-2 focus:ring-orange-500 focus:outline-none">
+          </div>
+          <div class="flex items-center">
+            <input type="checkbox" id="editAutoDeposit" checked class="w-4 h-4 rounded bg-neutral-700 border-neutral-600 text-orange-600 focus:ring-2 focus:ring-orange-500">
+            <label for="editAutoDeposit" class="ml-2 text-sm text-neutral-300">Enable Auto-Deposit</label>
+          </div>
+          <div class="flex items-center">
+            <input type="checkbox" id="editActiveInterac" checked class="w-4 h-4 rounded bg-neutral-700 border-neutral-600 text-orange-600 focus:ring-2 focus:ring-orange-500">
+            <label for="editActiveInterac" class="ml-2 text-sm text-neutral-300">Active</label>
+          </div>
+        `;
+      }
+      
+      editPaymentMethodModal.classList.remove('hidden');
+    }
+
+    function closeEditPaymentMethodModal() {
+      editPaymentMethodModal.classList.add('hidden');
+    }
+
+    function updatePaymentMethod() {
+      alert('Payment method updated successfully!');
+      closeEditPaymentMethodModal();
+    }
+
+    // Deactivate Payment Method
+    function deactivatePaymentMethod(type, id) {
+      if (confirm('Are you sure you want to deactivate this payment method?')) {
+        alert('Payment method deactivated successfully!');
+        // Add your deactivation logic here
+      }
+    }
+
+    // View Payment Method Details
+    function viewPaymentMethodDetails(type, id) {
+      alert('Viewing details for payment method ID: ' + id);
+      // Add your view details logic here
+    }
+
+    // Transaction Details Modal
+    const transactionDetailsModal = document.getElementById('transactionDetailsModal');
+
+    function viewTransactionDetails(txnId) {
+      // Sample data - replace with actual data fetching
+      document.getElementById('txnId').textContent = txnId;
+      document.getElementById('txnStatus').textContent = 'Completed';
+      document.getElementById('txnDate').textContent = 'Jan 20, 2026 at 2:30 PM';
+      document.getElementById('txnAmount').textContent = '$2,450.00';
+      document.getElementById('txnMethod').textContent = 'EFT';
+      document.getElementById('txnRecipient').textContent = 'Driver - John Smith';
+      
+      const paymentDetailsHtml = `
+        <div class="flex justify-between text-xs">
+          <span class="text-neutral-400">Bank:</span>
+          <span class="text-neutral-200">TD Canada Trust</span>
+        </div>
+        <div class="flex justify-between text-xs">
+          <span class="text-neutral-400">Account:</span>
+          <span class="text-neutral-200 font-mono">****1234</span>
+        </div>
+        <div class="flex justify-between text-xs">
+          <span class="text-neutral-400">Processing Time:</span>
+          <span class="text-neutral-200">2-3 business days</span>
+        </div>
+      `;
+      document.getElementById('txnPaymentDetails').innerHTML = paymentDetailsHtml;
+      document.getElementById('txnNotes').textContent = 'Payment for delivery services - Week ending Jan 20, 2026';
+      
+      transactionDetailsModal.classList.remove('hidden');
+    }
+
+    function closeTransactionDetailsModal() {
+      transactionDetailsModal.classList.add('hidden');
+    }
+
+    function downloadTransactionReceipt() {
+      alert('Downloading receipt...');
+      // Add your download logic here
+    }
+
+    // Refresh Button
+    document.getElementById('refreshBtn').addEventListener('click', () => {
+      location.reload();
+    });
+
+    // Logout
+    document.getElementById('logoutBtn').addEventListener('click', (e) => {
+      e.preventDefault();
+      if (confirm('Are you sure you want to logout?')) {
+        window.location.href = '/logout';
+      }
+    });
+
+    // Filters
+    document.getElementById('statusFilter').addEventListener('change', (e) => {
+      console.log('Filter by status:', e.target.value);
+      // Add your filtering logic here
+    });
+
+    document.getElementById('typeFilter').addEventListener('change', (e) => {
+      console.log('Filter by type:', e.target.value);
+      // Add your filtering logic here
+    });
+
+    document.getElementById('filterHistoryBtn').addEventListener('click', () => {
+      const startDate = document.getElementById('startDate').value;
+      const endDate = document.getElementById('endDate').value;
+      console.log('Filter history from', startDate, 'to', endDate);
+      // Add your filtering logic here
+    });
+  </script>
+</body>
+</html>
