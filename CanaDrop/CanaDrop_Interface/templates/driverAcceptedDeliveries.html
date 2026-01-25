@@ -300,6 +300,42 @@ function showPageLoading(show) {
     }
 }
 
+function showActionLoading(show, message = 'Performing Action...') {
+    let overlay = document.getElementById('actionLoadingOverlay');
+    if (show) {
+        if (!overlay) {
+            overlay = document.createElement('div');
+            overlay.id = 'actionLoadingOverlay';
+            overlay.className = 'fixed inset-0 bg-black/80 backdrop-blur-sm z-[60] flex items-center justify-center';
+            overlay.innerHTML = `
+                <div class="bg-slate-800 rounded-xl p-8 shadow-2xl border border-slate-700 max-w-sm mx-4">
+                    <div class="flex flex-col items-center">
+                        <div class="relative">
+                            <div class="animate-spin rounded-full h-16 w-16 border-4 border-slate-600 border-t-emerald-500"></div>
+                            <div class="absolute inset-0 flex items-center justify-center">
+                                <div class="w-8 h-8 bg-emerald-500/20 rounded-full animate-pulse"></div>
+                            </div>
+                        </div>
+                        <p id="actionLoadingMessage" class="text-white text-lg font-medium mt-6 text-center"></p>
+                        <p class="text-slate-400 text-sm mt-2 text-center">Please wait...</p>
+                    </div>
+                </div>
+            `;
+            document.body.appendChild(overlay);
+        }
+        const messageEl = document.getElementById('actionLoadingMessage');
+        if (messageEl) messageEl.textContent = message;
+        overlay.classList.remove('hidden');
+        // Prevent body scroll
+        document.body.style.overflow = 'hidden';
+    } else {
+        if (overlay) {
+            overlay.classList.add('hidden');
+            document.body.style.overflow = 'auto';
+        }
+    }
+}
+
 function formatDateNoTZ(ymd) {
     if (!ymd) return 'N/A';
     const [y, m, d] = ymd.split('T')[0].split('-').map(Number);
@@ -381,7 +417,8 @@ async function loadDeliveries() {
                 signature_required: order.signature_required || false,
                 signature_ack_url: order.signature_ack_url || null,
                 id_verification_required: order.id_verification_required || false,
-                id_verified: order.id_verified || false
+                id_verified: order.id_verified || false,
+                driver_notes: order.driver_notes || null
             }));
 
             renderDeliveries();
@@ -1008,15 +1045,57 @@ function renderDeliveryProcess(delivery) {
                     `}
                 </div>
             ` : '';
+
+            const driverNotesSection = `
+                <div class="bg-slate-700/50 rounded-lg p-4 mb-3 border border-slate-600">
+                    <div class="flex items-center text-blue-400 text-sm mb-2">
+                        <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"/>
+                        </svg>
+                        Driver Notes (Optional)
+                    </div>
+                    <p class="text-xs text-slate-400 mb-3">
+                        <svg class="w-3 h-3 inline mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/>
+                        </svg>
+                        Should be filled when signature/ID verification was requested but not possible
+                    </p>
+                    
+                    <div class="mb-2">
+                        <label class="text-xs text-slate-400 block mb-1">Quick Templates:</label>
+                        <select id="noteTemplate_${delivery.id}" 
+                                onchange="fillNoteTemplate('${delivery.id}')"
+                                class="w-full bg-slate-800 text-slate-200 border border-slate-600 rounded px-3 py-2 text-sm focus:outline-none focus:border-emerald-500">
+                            <option value="">-- Select a template --</option>
+                            <option value="Customer not home at time of delivery. Unable to provide signature and perform ID Verification.">Customer not home at time of delivery. Unable to provide signature and perform ID Verification.</option>
+                            <option value="Package left at door as per customer request.">Package left at door as per customer request.</option>
+                            <option value="Package left at door as per pharmacy request.">Package left at door as per pharmacy request.</option>
+                            <option value="Unable to access building/gate. Tried calling Pharmacy / Customer - Nothing actionable.">Unable to access building/gate. Tried calling Pharmacy / Customer - Nothing actionable.</option>
+                        </select>
+                    </div>
+                    
+                    <textarea id="driverNotes_${delivery.id}" 
+                            rows="3" 
+                            placeholder="Enter delivery notes here..."
+                            class="w-full bg-slate-800 text-slate-200 border border-slate-600 rounded px-3 py-2 text-sm focus:outline-none focus:border-emerald-500 mb-2"></textarea>
+                    
+                    <button id="saveNotesBtn_${delivery.id}" 
+                            onclick="submitDriverNotes('${delivery.id}')" 
+                            class="w-full bg-blue-600 hover:bg-blue-700 text-white py-2 px-4 rounded text-sm font-medium transition-colors">
+                        Save Notes
+                    </button>
+                </div>
+            `;
             
             return `
                 ${signatureSection}
                 ${idVerificationSection}
+                ${driverNotesSection}
                 <button onclick="uploadPhoto('${delivery.id}', 'delivery')" class="w-full bg-emerald-600 hover:bg-emerald-700 text-white py-3 px-4 rounded-lg font-medium transition-colors">
                     Take Delivery Photo
                 </button>
             `;
-        
+                    
         
         case 'delivered':
             return `
@@ -1044,44 +1123,57 @@ function uploadPhoto(orderId, type) {
     input.click();
 }
 
+
+
 // async function submitPhoto(orderId, type, file) {
-//     const driverId = getCookie('driverId');
 //     const delivery = deliveries.find(d => d.id == orderId);
-    
-//     if (!driverId || !delivery) {
+
+//     if (!delivery || !file) {
 //         showNotification('Error: Missing data', 'error');
 //         return;
 //     }
 
 //     const formData = new FormData();
-//     formData.append('driverId', driverId);
+//     // ⚠️ driverId is NO LONGER trusted by BE, but keeping it does not break anything
+//     // If you want, you can safely remove this later
+//     const driverId = getCookie('driverId');
+//     if (driverId) {
+//         formData.append('driverId', driverId);
+//     }
+
 //     formData.append('orderId', orderId);
 //     formData.append('pharmacyId', delivery.pharmacy_id);
 //     formData.append('image', file);
 
-//     const endpoint = type === 'pickup' ? '/api/driver-pickup-proof/' : '/api/driver-delivery-proof/';
-    
+//     const endpoint =
+//         type === 'pickup'
+//             ? '/api/driver-pickup-proof/'
+//             : '/api/driver-delivery-proof/';
+
 //     try {
 //         const response = await fetch(endpoint, {
 //             method: 'POST',
+//             credentials: 'include', // ✅ send auth cookies (JWT)
+//             headers: {
+//                 'X-CSRFToken': getCSRFToken(), // ✅ CSRF protection
+//             },
 //             body: formData
 //         });
 
 //         const data = await response.json();
-        
-//         if (response.ok) {
-//             showNotification(data.message, 'success');
+
+//         if (response.ok && data.success) {
+//             showNotification(data.message || 'Photo uploaded successfully', 'success');
 //             await loadDeliveries();
 //             closeModal();
 //         } else {
-//             showNotification('Failed to upload photo', 'error');
+//             showNotification(data.error || 'Failed to upload photo', 'error');
 //         }
 //     } catch (error) {
 //         console.error('Error uploading photo:', error);
 //         showNotification('Error uploading photo', 'error');
 //     }
 // }
-
 
 async function submitPhoto(orderId, type, file) {
     const delivery = deliveries.find(d => d.id == orderId);
@@ -1091,9 +1183,11 @@ async function submitPhoto(orderId, type, file) {
         return;
     }
 
+    // ✅ ADD THIS - Show loading overlay
+    const actionMessage = type === 'pickup' ? 'Uploading Pickup Photo...' : 'Uploading Delivery Photo...';
+    showActionLoading(true, actionMessage);
+
     const formData = new FormData();
-    // ⚠️ driverId is NO LONGER trusted by BE, but keeping it does not break anything
-    // If you want, you can safely remove this later
     const driverId = getCookie('driverId');
     if (driverId) {
         formData.append('driverId', driverId);
@@ -1111,9 +1205,9 @@ async function submitPhoto(orderId, type, file) {
     try {
         const response = await fetch(endpoint, {
             method: 'POST',
-            credentials: 'include', // ✅ send auth cookies (JWT)
+            credentials: 'include',
             headers: {
-                'X-CSRFToken': getCSRFToken(), // ✅ CSRF protection
+                'X-CSRFToken': getCSRFToken(),
             },
             body: formData
         });
@@ -1130,6 +1224,9 @@ async function submitPhoto(orderId, type, file) {
     } catch (error) {
         console.error('Error uploading photo:', error);
         showNotification('Error uploading photo', 'error');
+    } finally {
+        // ✅ ADD THIS - Hide loading overlay
+        showActionLoading(false);
     }
 }
 
@@ -1316,63 +1413,192 @@ function clearSignature(orderId) {
     showNotification('Signature cleared', 'info');
 }
 
+function fillNoteTemplate(orderId) {
+    const select = document.getElementById(`noteTemplate_${orderId}`);
+    const textarea = document.getElementById(`driverNotes_${orderId}`);
+    
+    if (select && textarea && select.value) {
+        textarea.value = select.value;
+        // Reset select to default
+        select.selectedIndex = 0;
+    }
+}
+
+// async function submitDriverNotes(orderId) {
+//     const textarea = document.getElementById(`driverNotes_${orderId}`);
+    
+//     if (!textarea) {
+//         showNotification('Notes field not found', 'error');
+//         return;
+//     }
+    
+//     const notes = textarea.value.trim();
+    
+//     if (!notes) {
+//         showNotification('Please enter notes before submitting', 'error');
+//         return;
+//     }
+    
+//     try {
+//         showNotification('Saving notes...', 'info');
+        
+//         const response = await fetch('/api/driver/add-order-notes/', {
+//             method: 'POST',
+//             credentials: 'include',
+//             headers: {
+//                 'Content-Type': 'application/json',
+//                 'X-CSRFToken': getCSRFToken()
+//             },
+//             body: JSON.stringify({
+//                 order_id: orderId,
+//                 driver_notes: notes
+//             })
+//         });
+        
+//         const data = await response.json();
+        
+//         if (response.ok && data.success) {
+//             showNotification('Notes saved successfully!', 'success');
+            
+//             // Update local delivery object
+//             const delivery = deliveries.find(d => d.id == orderId);
+//             if (delivery) {
+//                 delivery.driver_notes = notes;
+//             }
+            
+//             // Disable textarea and button after successful save
+//             textarea.disabled = true;
+//             textarea.classList.add('opacity-50', 'cursor-not-allowed');
+
+//             const saveBtn = document.getElementById(`saveNotesBtn_${orderId}`);
+//             if (saveBtn) {
+//                 saveBtn.disabled = true;
+//                 saveBtn.classList.add('opacity-50', 'cursor-not-allowed');
+//                 saveBtn.textContent = 'Notes Saved ✓';
+//             }
+//         } else {
+//             showNotification(data.error || 'Failed to save notes', 'error');
+//         }
+//     } catch (error) {
+//         console.error('Error submitting notes:', error);
+//         showNotification('Error submitting notes', 'error');
+//     }
+// }
+
+async function submitDriverNotes(orderId) {
+    const textarea = document.getElementById(`driverNotes_${orderId}`);
+    
+    if (!textarea) {
+        showNotification('Notes field not found', 'error');
+        return;
+    }
+    
+    const notes = textarea.value.trim();
+    
+    if (!notes) {
+        showNotification('Please enter notes before submitting', 'error');
+        return;
+    }
+    
+    // ✅ ADD THIS - Show loading overlay
+    showActionLoading(true, 'Saving Driver Notes...');
+    
+    try {
+        const response = await fetch('/api/driver/add-order-notes/', {
+            method: 'POST',
+            credentials: 'include',
+            headers: {
+                'Content-Type': 'application/json',
+                'X-CSRFToken': getCSRFToken()
+            },
+            body: JSON.stringify({
+                order_id: orderId,
+                driver_notes: notes
+            })
+        });
+        
+        const data = await response.json();
+        
+        if (response.ok && data.success) {
+            showNotification('Notes saved successfully!', 'success');
+            
+            const delivery = deliveries.find(d => d.id == orderId);
+            if (delivery) {
+                delivery.driver_notes = notes;
+            }
+            
+            textarea.disabled = true;
+            textarea.classList.add('opacity-50', 'cursor-not-allowed');
+            
+            const saveBtn = document.getElementById(`saveNotesBtn_${orderId}`);
+            if (saveBtn) {
+                saveBtn.disabled = true;
+                saveBtn.classList.add('opacity-50', 'cursor-not-allowed');
+                saveBtn.textContent = 'Notes Saved ✓';
+            }
+        } else {
+            showNotification(data.error || 'Failed to save notes', 'error');
+        }
+    } catch (error) {
+        console.error('Error submitting notes:', error);
+        showNotification('Error submitting notes', 'error');
+    } finally {
+        // ✅ ADD THIS - Hide loading overlay
+        showActionLoading(false);
+    }
+}
+
+
 // async function submitSignature(orderId) {
 //     const canvasData = signatureCanvases[orderId];
 //     if (!canvasData) {
 //         showNotification('Signature canvas not found', 'error');
 //         return;
 //     }
-    
+
 //     const { canvas } = canvasData;
-    
+
 //     // Check if canvas is empty
 //     const ctx = canvas.getContext('2d');
 //     const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
 //     const isEmpty = !imageData.data.some(channel => channel !== 0);
-    
+
 //     if (isEmpty) {
 //         showNotification('Please provide a signature first', 'error');
 //         return;
 //     }
-    
+
 //     try {
 //         showNotification('Uploading signature...', 'info');
-        
-//         // Convert canvas directly to base64 (this is more reliable than blob)
+
+//         // Convert canvas to base64
 //         const base64data = canvas.toDataURL('image/png');
-        
-//         // Log for debugging (remove after testing)
-//         console.log('Base64 data length:', base64data.length);
-//         console.log('Base64 starts with:', base64data.substring(0, 50));
-        
-//         // Prepare form data
+
 //         const formData = new FormData();
 //         formData.append('orderId', orderId);
 //         formData.append('signature', base64data);
-        
+
 //         const response = await fetch('/api/upload-signature-acknowledgement/', {
 //             method: 'POST',
+//             credentials: 'include', // 🔐 REQUIRED for JWT cookie
 //             headers: {
-//                 'X-CSRFToken': getCookie('csrftoken')
+//                 'X-CSRFToken': getCSRFToken() // ✅ use your helper
 //             },
 //             body: formData
 //         });
-        
+
 //         const data = await response.json();
-        
+
 //         if (response.ok && data.success) {
 //             showNotification('Signature saved successfully!', 'success');
-            
-//             // Update the delivery in local array
+
 //             const delivery = deliveries.find(d => d.id == orderId);
 //             if (delivery) {
 //                 delivery.signature_ack_url = data.acknowledgement_url;
 //             }
-            
-//             // Reload deliveries to refresh UI
+
 //             await loadDeliveries();
-            
-//             // Close and reopen modal to show updated state
+
 //             closeModal();
 //             setTimeout(() => viewDelivery(orderId), 300);
 //         } else {
@@ -1385,7 +1611,6 @@ function clearSignature(orderId) {
 //     }
 // }
 
-
 async function submitSignature(orderId) {
     const canvasData = signatureCanvases[orderId];
     if (!canvasData) {
@@ -1395,7 +1620,6 @@ async function submitSignature(orderId) {
 
     const { canvas } = canvasData;
 
-    // Check if canvas is empty
     const ctx = canvas.getContext('2d');
     const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
     const isEmpty = !imageData.data.some(channel => channel !== 0);
@@ -1405,10 +1629,10 @@ async function submitSignature(orderId) {
         return;
     }
 
-    try {
-        showNotification('Uploading signature...', 'info');
+    // ✅ ADD THIS - Show loading overlay
+    showActionLoading(true, 'Uploading Signature...');
 
-        // Convert canvas to base64
+    try {
         const base64data = canvas.toDataURL('image/png');
 
         const formData = new FormData();
@@ -1417,9 +1641,9 @@ async function submitSignature(orderId) {
 
         const response = await fetch('/api/upload-signature-acknowledgement/', {
             method: 'POST',
-            credentials: 'include', // 🔐 REQUIRED for JWT cookie
+            credentials: 'include',
             headers: {
-                'X-CSRFToken': getCSRFToken() // ✅ use your helper
+                'X-CSRFToken': getCSRFToken()
             },
             body: formData
         });
@@ -1445,10 +1669,63 @@ async function submitSignature(orderId) {
     } catch (error) {
         console.error('Error submitting signature:', error);
         showNotification('Error submitting signature', 'error');
+    } finally {
+        // ✅ ADD THIS - Hide loading overlay
+        showActionLoading(false);
     }
 }
 
 
+// async function verifyCustomerId(orderId) {
+//     const driverId = getCookie('driverId');
+    
+//     if (!driverId) {
+//         showNotification('Error: Driver ID not found', 'error');
+//         return;
+//     }
+    
+//     try {
+//         showNotification('Verifying customer ID...', 'info');
+        
+//         const formData = new FormData();
+//         formData.append('orderId', orderId);
+//         // formData.append('driverId', driverId);
+//         formData.append('verified', 'true');
+        
+//         const response = await fetch('/api/verify-customer-id/', {
+//             method: 'POST',
+//             headers: {
+//                 'X-CSRFToken': getCSRFToken()
+//             },
+//             credentials : "include",
+//             body: formData
+//         });
+        
+//         const data = await response.json();
+        
+//         if (response.ok && data.success) {
+//             showNotification('Customer ID verified successfully!', 'success');
+            
+//             // Update the delivery in local array
+//             const delivery = deliveries.find(d => d.id == orderId);
+//             if (delivery) {
+//                 delivery.id_verified = true;
+//             }
+            
+//             // Reload deliveries to refresh UI
+//             await loadDeliveries();
+            
+//             // Close and reopen modal to show updated state
+//             closeModal();
+//             setTimeout(() => viewDelivery(orderId), 300);
+//         } else {
+//             showNotification(data.error || 'Failed to verify customer ID', 'error');
+//         }
+//     } catch (error) {
+//         console.error('Error verifying customer ID:', error);
+//         showNotification('Error verifying customer ID', 'error');
+//     }
+// }
 
 
 async function verifyCustomerId(orderId) {
@@ -1459,12 +1736,12 @@ async function verifyCustomerId(orderId) {
         return;
     }
     
+    // ✅ ADD THIS - Show loading overlay
+    showActionLoading(true, 'Verifying Customer ID...');
+    
     try {
-        showNotification('Verifying customer ID...', 'info');
-        
         const formData = new FormData();
         formData.append('orderId', orderId);
-        // formData.append('driverId', driverId);
         formData.append('verified', 'true');
         
         const response = await fetch('/api/verify-customer-id/', {
@@ -1481,16 +1758,13 @@ async function verifyCustomerId(orderId) {
         if (response.ok && data.success) {
             showNotification('Customer ID verified successfully!', 'success');
             
-            // Update the delivery in local array
             const delivery = deliveries.find(d => d.id == orderId);
             if (delivery) {
                 delivery.id_verified = true;
             }
             
-            // Reload deliveries to refresh UI
             await loadDeliveries();
             
-            // Close and reopen modal to show updated state
             closeModal();
             setTimeout(() => viewDelivery(orderId), 300);
         } else {
@@ -1499,6 +1773,9 @@ async function verifyCustomerId(orderId) {
     } catch (error) {
         console.error('Error verifying customer ID:', error);
         showNotification('Error verifying customer ID', 'error');
+    } finally {
+        // ✅ ADD THIS - Hide loading overlay
+        showActionLoading(false);
     }
 }
 

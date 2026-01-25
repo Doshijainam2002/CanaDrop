@@ -250,6 +250,31 @@
                     </div>
                 </div>
 
+                <!-- Color Legend -->
+                <div class="px-6 py-3 bg-gradient-to-r from-gray-50 to-gray-100 border-b border-gray-200">
+                    <div class="flex items-center flex-wrap gap-4 text-xs">
+                        <div class="flex items-center font-semibold text-gray-700">
+                            <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 21a4 4 0 01-4-4V5a2 2 0 012-2h4a2 2 0 012 2v12a4 4 0 01-4 4zm0 0h12a2 2 0 002-2v-4a2 2 0 00-2-2h-2.343M11 7.343l1.657-1.657a2 2 0 012.828 0l2.829 2.829a2 2 0 010 2.828l-8.486 8.485M7 17h.01"/>
+                            </svg>
+                            Row Colors:
+                        </div>
+                        <div class="flex items-center space-x-2">
+                            <div class="w-4 h-4 bg-red-100 border border-red-200 rounded"></div>
+                            <span class="text-gray-600">Missing Images or Cancelled</span>
+                        </div>
+                        <div class="flex items-center space-x-2">
+                            <div class="w-4 h-4 bg-green-100 border border-green-200 rounded"></div>
+                            <span class="text-gray-600">Delivered (Complete)</span>
+                        </div>
+                        <div class="flex items-center space-x-2">
+                            <div class="w-4 h-4 bg-white border border-gray-200 rounded"></div>
+                            <span class="text-gray-600">Work in Progress</span>
+                        </div>
+                    </div>
+                </div>
+
+
                 <!-- Header - Desktop Only -->
                 <div class="hidden lg:block px-6 py-4 border-b border-gray-100">
                     <div class="grid grid-cols-12 gap-4 text-xs font-semibold text-gray-500 uppercase tracking-wider">
@@ -494,7 +519,17 @@ function renderOrders(orders) {
 
   orders.forEach(order => {
     const hasHandoverImage = !!(order.images && order.images.handover && order.images.handover.length > 0);
-    const rowColorClass = hasHandoverImage ? 'hover:bg-gray-50' : 'bg-red-50 hover:bg-red-100';
+    // const rowColorClass = hasHandoverImage ? 'hover:bg-gray-50' : 'bg-red-50 hover:bg-red-100';
+    // Determine row color based on status and images
+    let rowColorClass = 'hover:bg-gray-50'; // Default: white (WIP orders)
+
+    if (order.status === 'delivered') {
+        // Green: All delivered orders (regardless of images)
+        rowColorClass = 'bg-green-50 hover:bg-green-100';
+    } else if (!hasHandoverImage || order.status === 'cancelled') {
+        // Red: Missing images OR cancelled status
+        rowColorClass = 'bg-red-50 hover:bg-red-100';
+    }
     const imageCountColor = order.total_images > 0 ? 'text-green-600' : 'text-red-500';
 
     ordersHtml += `

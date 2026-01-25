@@ -17134,3 +17134,86 @@ def edit_pharmacy_info(request, pharmacy_info_id):
         },
         status=200
     )
+
+
+@csrf_protect
+@require_http_methods(["POST"])
+@driver_auth_required
+def add_driver_notes(request):
+    """
+    Driver API to add or update driver notes on an assigned delivery order.
+
+    Required JSON body:
+    {
+        "order_id": 123,
+        "driver_notes": "Customer was not home when delivery was attempted."
+    }
+    """
+
+    driver = request.driver  # injected by driver_auth_required
+
+    # ---- Parse JSON payload safely ----
+    try:
+        data = json.loads(request.body.decode("utf-8"))
+    except json.JSONDecodeError:
+        return JsonResponse(
+            {"success": False, "error": "Invalid JSON payload"},
+            status=400
+        )
+
+    order_id = data.get("order_id")
+    driver_notes = data.get("driver_notes")
+
+    if not order_id:
+        return JsonResponse(
+            {"success": False, "error": "order_id is required"},
+            status=400
+        )
+
+    if not driver_notes or not str(driver_notes).strip():
+        return JsonResponse(
+            {"success": False, "error": "driver_notes cannot be empty"},
+            status=400
+        )
+
+    # ---- Fetch order ----
+    try:
+        order = DeliveryOrder.objects.select_related("driver").get(id=order_id)
+    except DeliveryOrder.DoesNotExist:
+        return JsonResponse(
+            {"success": False, "error": "Order not found"},
+            status=404
+        )
+
+    # ---- Security check: driver must own this order ----
+    if not order.driver or order.driver.id != driver.id:
+        logger.warning(
+            f"Driver {driver.id} attempted to modify order {order.id} not assigned to them"
+        )
+        return JsonResponse(
+            {"success": False, "error": "Unauthorized for this order"},
+            status=403
+        )
+
+    # ---- Update notes ----
+    order.driver_notes = driver_notes.strip()
+    order.updated_at = timezone.now()
+    order.save(update_fields=["driver_notes", "updated_at"])
+
+    logger.info(
+        f"Driver {driver.id} added notes to Order {order.id}"
+    )
+
+    return JsonResponse({
+        "success": True,
+        "message": "Driver notes saved successfully",
+        "data": {
+            "order_id": order.id,
+            "driver_id": driver.id,
+            "driver_notes": order.driver_notes,
+            "updated_at": timezone.localtime(
+                order.updated_at,
+                settings.USER_TIMEZONE
+            ).strftime("%Y-%m-%d %H:%M:%S %Z")
+        }
+    })

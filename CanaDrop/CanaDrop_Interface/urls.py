@@ -56,6 +56,7 @@ urlpatterns = [
     path('driverCCPoints/', views.driverCCPointsView, name='DriverCCPointsPage'), # Done
     path("api/driver/<int:driver_id>/cc-points/", views.get_driver_cc_points, name="driver_cc_points"), # Done
     path('api/driver/logout/', views.driver_logout_api, name="DriverLogoutAPI"), # Done
+    path("api/driver/add-order-notes/", views.add_driver_notes, name="add_driver_notes"), # Done
 
     path('contactAdmin/', views.contactAdminView, name='contactAdminPage'), # Done
     path('api/contact-admin/', views.contact_admin_api, name='contact_admin_api'), # Done
