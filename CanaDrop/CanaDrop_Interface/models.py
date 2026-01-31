@@ -123,7 +123,15 @@ class Driver(models.Model):
     right_to_work_url = models.URLField(blank=True, null=True) 
 
     driver_contract = models.URLField(blank=True, null=True) 
-    privacy_laws_agreement = models.URLField(blank=True, null=True) 
+    privacy_laws_agreement = models.URLField(blank=True, null=True)
+
+    # EFT / Direct Deposit details (Canada)
+    bank_institution_number = models.CharField(max_length=3, blank=True, null=True)  # e.g., 003
+    bank_transit_number = models.CharField(max_length=5, blank=True, null=True)      # e.g., 12345
+    bank_account_number = models.CharField(max_length=20, blank=True, null=True)     # varies by bank
+
+    # Consent / authorization
+    authorized_to_store_banking_details = models.BooleanField(default=False, db_index=True)
 
     def save(self, *args, **kwargs):
         if not self.password.startswith('pbkdf2_'):

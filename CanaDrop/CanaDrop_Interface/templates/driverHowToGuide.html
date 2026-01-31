@@ -1,0 +1,776 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Delivery Partner Dashboard - How To Guide</title>
+    <link rel="icon" type="image/png" sizes="512x512" href="/favicon-512.png">
+    <link rel="apple-touch-icon" href="/favicon-512.png">
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    animation: {
+                        'fade-in': 'fadeIn 0.3s ease-in-out',
+                        'slide-up': 'slideUp 0.3s ease-out'
+                    }
+                }
+            }
+        }
+    </script>
+</head>
+<body class="min-h-screen bg-gradient-to-br from-slate-900 to-gray-900">
+    <div class="flex h-screen overflow-hidden">
+
+        <!-- Sidebar -->
+        <aside id="sidebar" class="w-64 bg-slate-800 border-r border-slate-700 flex flex-col fixed lg:static inset-y-0 left-0 z-40 transform -translate-x-full lg:translate-x-0 transition-transform duration-300 overflow-y-auto">
+            <div class="flex items-center h-16 px-6 border-b border-slate-700">
+                <img src="https://canalogistix.s3.us-east-2.amazonaws.com/Logo/CanaLogistiX_Logo_BG.png" alt="CanaLogistiX Logo" class="h-10 w-10 rounded-full object-cover"/>
+                <span class="ml-2 text-lg font-semibold text-slate-100">CanaLogistiX</span>
+            </div>
+
+            <!-- Navigation -->
+            <nav class="flex-1 px-4 py-6 space-y-2">
+                <!-- Dashboard -->
+                <a href="/driverDashboard/" class="flex items-center px-3 py-2 text-sm font-medium text-slate-300 hover:bg-slate-700 hover:text-emerald-400 rounded-lg transition-colors">
+                    <svg class="w-5 h-5 mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 7v10a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2H5a2 2 0 00-2-2z"/>
+                    </svg>
+                    Dashboard
+                </a>
+
+                <!-- Accepted Deliveries -->
+                <a href="/driverAcceptedDeliveries/" class="flex items-center px-3 py-2 text-sm font-medium text-slate-300 hover:bg-slate-700 hover:text-emerald-400 rounded-lg transition-colors">
+                    <svg class="w-5 h-5 mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 8l6 6 10-10"/>
+                    </svg>
+                    Accepted Deliveries
+                </a>
+
+                <!-- Finances -->
+                <a href="/driverFinances/" class="flex items-center px-3 py-2 text-sm font-medium text-slate-300 hover:bg-slate-700 hover:text-emerald-400 rounded-lg transition-colors">
+                    <svg class="w-5 h-5 mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1"/>
+                    </svg>
+                    Finances
+                </a>
+
+                <!-- Contact Admin -->
+                <a href="/contactAdmin/" class="flex items-center px-3 py-2 text-sm font-medium text-slate-300 hover:bg-slate-700 hover:text-emerald-400 rounded-lg transition-colors">
+                    <svg class="w-5 h-5 mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 10h.01M12 10h.01M16 10h.01M21 12c0 4.418-4.03 8-9 8s-9-3.582-9-8 4.03-8 9-8 9 3.582 9 8zM12 14v-4m0 4h.01"/>
+                    </svg>
+                    Contact Admin
+                </a>
+
+                <!-- My Identity -->
+                <a href="/driverIdentity/" class="flex items-center px-3 py-2 text-sm font-medium text-slate-300 hover:bg-slate-700 hover:text-emerald-400 rounded-lg transition-colors">
+                    <svg class="w-5 h-5 mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 6H5a2 2 0 00-2 2v9a2 2 0 002 2h14a2 2 0 002-2V8a2 2 0 00-2-2h-5m-4 0V5a2 2 0 114 0v1m-4 0a2 2 0 104 0m-5 8a2 2 0 100-4 2 2 0 000 4zm0 0c1.306 0 2.417.835 2.83 2M9 14a3.001 3.001 0 00-2.83 2M15 11h3m-3 4h2"/>
+                    </svg>
+                    My Identity
+                </a>
+
+                <!-- My Documents -->
+                <a href="/driverDocuments/" class="flex items-center px-3 py-2 text-sm font-medium text-slate-300 hover:bg-slate-700 hover:text-emerald-400 rounded-lg transition-colors">
+                    <svg class="w-5 h-5 mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/>
+                    </svg>
+                    My Documents
+                </a>
+
+                <!-- CC Points -->
+                <a href="/driverCCPoints/" class="flex items-center px-3 py-2 text-sm font-medium text-slate-300 hover:bg-slate-700 hover:text-emerald-400 rounded-lg transition-colors">
+                    <svg class="w-5 h-5 mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/>
+                    </svg>
+                    CC Points
+                </a>
+
+                <!-- How To Guide - Active -->
+                <a href="/driverHowToGuide/" class="flex items-center px-3 py-2 text-sm font-medium text-white bg-gradient-to-r from-emerald-600 to-emerald-500 rounded-lg">
+                    <svg class="w-5 h-5 mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8.228 9c.549-1.165 2.03-2 3.772-2 2.21 0 4 1.343 4 3 0 1.4-1.278 2.575-3.006 2.907-.542.104-.994.54-.994 1.093m0 3h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/>
+                    </svg>
+                    How To Guide
+                </a>
+
+                <!-- Logout -->
+                <a href="javascript:void(0);" onclick="handleLogout()" class="flex items-center px-3 py-2 text-sm font-medium text-slate-300 hover:bg-slate-700 hover:text-red-400 rounded-lg transition-colors mt-8">
+                    <svg class="w-5 h-5 mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1"/>
+                    </svg>
+                    Logout
+                </a>
+            </nav>
+
+            <!-- User Profile -->
+            <div class="px-4 py-4 border-t border-slate-700">
+                <div class="flex items-center">
+                    <div class="flex-shrink-0 w-8 h-8 bg-gradient-to-r from-emerald-600 to-emerald-500 rounded-full flex items-center justify-center">
+                        <span class="text-sm font-medium text-white" id="driverInitial">D</span>
+                    </div>
+                    <div class="ml-3">
+                        <p class="text-sm font-medium text-slate-100" id="driverName">Driver</p>
+                        <p class="text-xs text-slate-400" id="driverEmail">driver@example.com</p>
+                    </div>
+                </div>
+            </div>
+        </aside>
+
+        <div id="sidebarOverlay" class="hidden lg:hidden fixed inset-0 bg-black/50 z-30"></div>
+
+        <!-- Main Content -->
+        <main class="flex-1 flex flex-col overflow-y-auto lg:ml-0">
+            <!-- Header -->
+            <header class="bg-slate-800 border-b border-slate-700 px-4 sm:px-6 py-4 flex items-center justify-between gap-4">
+                <button id="menuToggle" class="lg:hidden text-slate-300 p-2 flex-shrink-0">
+                    <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16"/>
+                    </svg>
+                </button>
+                <div class="flex-1 min-w-0">
+                    <h1 class="text-xl sm:text-2xl font-bold text-slate-100 truncate">How To Guide</h1>
+                    <p class="text-sm text-slate-400 hidden sm:block">Complete workflow guide for delivery partners</p>
+                </div>
+            </header>
+
+            <!-- Guide Content -->
+            <section class="p-4 sm:p-6 pb-20">
+                <!-- Welcome Banner -->
+                <div class="bg-gradient-to-r from-emerald-600 to-emerald-500 rounded-xl p-6 mb-6 text-white">
+                    <div class="flex items-start">
+                        <div class="flex-shrink-0">
+                            <svg class="w-12 h-12" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z"/>
+                            </svg>
+                        </div>
+                        <div class="ml-4">
+                            <h2 class="text-2xl font-bold mb-2">Welcome to CanaLogistiX Delivery Partner Program</h2>
+                            <p class="text-emerald-50">Your complete guide to successful deliveries - from onboarding to earnings and compliance.</p>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Collapsible Sections -->
+                <div class="space-y-4">
+                    <!-- Section 1: Driver Onboarding -->
+                    <div class="bg-slate-800 border border-slate-700 rounded-xl overflow-hidden">
+                        <button onclick="toggleSection('section1')" class="w-full px-6 py-4 flex items-center justify-between hover:bg-slate-700 transition-colors">
+                            <div class="flex items-center">
+                                <div class="w-10 h-10 bg-blue-500 bg-opacity-20 rounded-lg flex items-center justify-center mr-4">
+                                    <svg class="w-6 h-6 text-blue-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"/>
+                                    </svg>
+                                </div>
+                                <h3 class="text-lg font-semibold text-slate-100">Driver Onboarding & Eligibility</h3>
+                            </div>
+                            <svg id="icon-section1" class="w-6 h-6 text-slate-400 transform transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/>
+                            </svg>
+                        </button>
+                        <div id="section1" class="hidden px-6 pb-4">
+                            <p class="text-slate-300 mb-3">Before accessing delivery opportunities, you must complete onboarding as an Independent Contractor.</p>
+                            
+                            <p class="text-slate-200 font-semibold mt-4 mb-2">Required Documents</p>
+                            <ul class="list-disc list-inside text-slate-300 space-y-1 mb-4">
+                                <li>Government-issued ID</li>
+                                <li>Driver's License</li>
+                                <li>Vehicle Insurance</li>
+                                <li>Vehicle Ownership / Registration</li>
+                                <li>Proof of Right to Work in Canada</li>
+                                <li>Front-facing profile photo (My Identity section)</li>
+                            </ul>
+
+                            <div class="bg-yellow-500 bg-opacity-10 border border-yellow-500 rounded-lg p-4 mb-4">
+                                <p class="font-semibold text-yellow-400 mb-2 flex items-center">
+                                    <svg class="w-5 h-5 mr-2" fill="currentColor" viewBox="0 0 20 20">
+                                        <path fill-rule="evenodd" d="M8.257 3.099c.765-1.36 2.722-1.36 3.486 0l5.58 9.92c.75 1.334-.213 2.98-1.742 2.98H4.42c-1.53 0-2.493-1.646-1.743-2.98l5.58-9.92zM11 13a1 1 0 11-2 0 1 1 0 012 0zm-1-8a1 1 0 00-1 1v3a1 1 0 002 0V6a1 1 0 00-1-1z" clip-rule="evenodd"/>
+                                    </svg>
+                                    Identity Photo Requirement
+                                </p>
+                                <ul class="text-sm text-yellow-300 space-y-1">
+                                    <li>A clear, front-facing photo is mandatory</li>
+                                    <li>Pharmacies may require visual identity verification before handing over medications</li>
+                                    <li>If your identity photo is missing or unclear, pharmacies may refuse to release packages</li>
+                                </ul>
+                            </div>
+
+                            <p class="text-slate-200 font-semibold mb-2">Required Agreements</p>
+                            <ul class="list-disc list-inside text-slate-300 space-y-1">
+                                <li>Independent Contractor Agreement</li>
+                                <li>Privacy / PHIPA & Confidentiality Agreement</li>
+                            </ul>
+                        </div>
+                    </div>
+
+                    <!-- Section 2: Viewing & Accepting Deliveries -->
+                    <div class="bg-slate-800 border border-slate-700 rounded-xl overflow-hidden">
+                        <button onclick="toggleSection('section2')" class="w-full px-6 py-4 flex items-center justify-between hover:bg-slate-700 transition-colors">
+                            <div class="flex items-center">
+                                <div class="w-10 h-10 bg-purple-500 bg-opacity-20 rounded-lg flex items-center justify-center mr-4">
+                                    <svg class="w-6 h-6 text-purple-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"/>
+                                    </svg>
+                                </div>
+                                <h3 class="text-lg font-semibold text-slate-100">Viewing & Accepting Deliveries</h3>
+                            </div>
+                            <svg id="icon-section2" class="w-6 h-6 text-slate-400 transform transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/>
+                            </svg>
+                        </button>
+                        <div id="section2" class="hidden px-6 pb-4">
+                            <p class="text-slate-200 font-semibold mb-2">New Delivery Notifications</p>
+                            <ul class="list-disc list-inside text-slate-300 space-y-1 mb-4">
+                                <li>Drivers receive email notifications when new deliveries are posted</li>
+                                <li>Regularly check the Dashboard in the portal</li>
+                                <li>Dashboard displays all pending deliveries, pickup pharmacy details, pickup day, and store operating hours</li>
+                            </ul>
+
+                            <div class="bg-emerald-500 bg-opacity-10 border border-emerald-500 rounded-lg p-3 mb-4">
+                                <p class="text-sm text-emerald-300">
+                                    <span class="font-medium">Note:</span> Compliance steps (Signature / ID) are not shown at the acceptance stage. Full requirements appear only after accepting the delivery.
+                                </p>
+                            </div>
+
+                            <p class="text-slate-200 font-semibold mb-2">Accepting a Delivery</p>
+                            <ul class="list-disc list-inside text-slate-300 space-y-1">
+                                <li>Deliveries are not auto-assigned - drivers choose which orders to accept</li>
+                                <li>Once accepted, the delivery is reserved for that driver</li>
+                                <li>The driver becomes responsible for completing it</li>
+                                <li>Accept only deliveries you can complete within pharmacy hours</li>
+                            </ul>
+                        </div>
+                    </div>
+
+                    <!-- Section 3: Store Timing & Business Hours -->
+                    <div class="bg-slate-800 border border-slate-700 rounded-xl overflow-hidden">
+                        <button onclick="toggleSection('section3')" class="w-full px-6 py-4 flex items-center justify-between hover:bg-slate-700 transition-colors">
+                            <div class="flex items-center">
+                                <div class="w-10 h-10 bg-yellow-500 bg-opacity-20 rounded-lg flex items-center justify-center mr-4">
+                                    <svg class="w-6 h-6 text-yellow-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"/>
+                                    </svg>
+                                </div>
+                                <h3 class="text-lg font-semibold text-slate-100">General Business Hours & Store Timing</h3>
+                            </div>
+                            <svg id="icon-section3" class="w-6 h-6 text-slate-400 transform transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/>
+                            </svg>
+                        </button>
+                        <div id="section3" class="hidden px-6 pb-4">
+                            <p class="text-slate-300 mb-3">Most partner businesses (including pharmacies) operate during standard business hours:</p>
+                            
+                            <ul class="list-disc list-inside text-slate-300 space-y-1 mb-4">
+                                <li>Monday to Friday: 9:00 AM – 6:00 PM</li>
+                                <li>Saturday: 9:00 AM – 4:00 PM</li>
+                                <li>Sunday: Closed (in most cases)</li>
+                            </ul>
+
+                            <p class="text-slate-200 font-semibold mb-2">Driver Responsibility</p>
+                            <ul class="list-disc list-inside text-slate-300 space-y-1 mb-4">
+                                <li>Review store timing details shown in the portal before accepting a delivery</li>
+                                <li>Not all pharmacies follow identical schedules</li>
+                                <li>Pickup and return attempts must always respect store hours</li>
+                            </ul>
+
+                            <div class="bg-red-500 bg-opacity-10 border border-red-500 rounded-lg p-3">
+                                <p class="text-sm text-red-300">
+                                    <span class="font-medium">Warning:</span> Accepting a delivery without confirming store hours may result in unsuccessful pickups, delays, required returns, and reduced future delivery visibility.
+                                </p>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Section 4: After Accepting (Pickup Process) -->
+                    <div class="bg-slate-800 border border-slate-700 rounded-xl overflow-hidden">
+                        <button onclick="toggleSection('section4')" class="w-full px-6 py-4 flex items-center justify-between hover:bg-slate-700 transition-colors">
+                            <div class="flex items-center">
+                                <div class="w-10 h-10 bg-green-500 bg-opacity-20 rounded-lg flex items-center justify-center mr-4">
+                                    <svg class="w-6 h-6 text-green-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/>
+                                    </svg>
+                                </div>
+                                <h3 class="text-lg font-semibold text-slate-100">After Accepting: Pickup Process</h3>
+                            </div>
+                            <svg id="icon-section4" class="w-6 h-6 text-slate-400 transform transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/>
+                            </svg>
+                        </button>
+                        <div id="section4" class="hidden px-6 pb-4">
+                            <p class="text-slate-200 font-semibold mb-2">At the Pharmacy</p>
+                            <ul class="list-disc list-inside text-slate-300 space-y-2 mb-4">
+                                <li>Arrive during pharmacy business hours</li>
+                                <li>Show your identity and ID number from the "My Identity" section</li>
+                                <li>Confirm you are the assigned driver</li>
+                                <li>Verify that the order number is written on the package and matches the delivery details</li>
+                            </ul>
+
+                            <p class="text-slate-200 font-semibold mb-2">Pickup Proof</p>
+                            <ul class="list-disc list-inside text-slate-300 space-y-2 mb-4">
+                                <li>Take a pickup photo at the pharmacy for the respective order</li>
+                                <li>This photo confirms custody transfer</li>
+                            </ul>
+
+                            <p class="text-slate-200 font-semibold mb-2">After Pickup</p>
+                            <ul class="list-disc list-inside text-slate-300 space-y-2">
+                                <li>Secure the package</li>
+                                <li>Proceed directly to the delivery location</li>
+                            </ul>
+                        </div>
+                    </div>
+
+                    <!-- Section 5: Delivery & Compliance -->
+                    <div class="bg-slate-800 border border-slate-700 rounded-xl overflow-hidden">
+                        <button onclick="toggleSection('section5')" class="w-full px-6 py-4 flex items-center justify-between hover:bg-slate-700 transition-colors">
+                            <div class="flex items-center">
+                                <div class="w-10 h-10 bg-indigo-500 bg-opacity-20 rounded-lg flex items-center justify-center mr-4">
+                                    <svg class="w-6 h-6 text-indigo-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z"/>
+                                    </svg>
+                                </div>
+                                <h3 class="text-lg font-semibold text-slate-100">Delivery Completion & Compliance</h3>
+                            </div>
+                            <svg id="icon-section5" class="w-6 h-6 text-slate-400 transform transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/>
+                            </svg>
+                        </button>
+                        <div id="section5" class="hidden px-6 pb-4">
+                            <p class="text-slate-200 font-semibold mb-2">Signature & ID Verification</p>
+                            <ul class="list-disc list-inside text-slate-300 space-y-2 mb-4">
+                                <li>Signature and ID requirements are explicitly shown per order</li>
+                                <li>If not required, proceed normally</li>
+                                <li>If signature is required: ask the customer for signature, tap "Save Signature", then hand over medications</li>
+                                <li>For ID verification: ask for any valid ID, verify the name matches the order, then complete the handoff</li>
+                            </ul>
+
+                            <p class="text-slate-200 font-semibold mb-2">Customer Unavailable</p>
+                            <ul class="list-disc list-inside text-slate-300 space-y-2 mb-4">
+                                <li>Call the customer and ask for instructions</li>
+                                <li>If instructed to leave the package: leave at door/reception/concierge only if verbally authorized</li>
+                                <li>If unreachable: call the pharmacy for guidance and follow pharmacy instructions if verbally authorized</li>
+                                <li>If no contact is established: return medications to the pharmacy and take a return photo as delivery proof (you will still be paid)</li>
+                            </ul>
+
+                            <p class="text-slate-200 font-semibold mb-2">Completing the Delivery (In Order)</p>
+                            <ol class="list-decimal list-inside text-slate-300 space-y-2">
+                                <li>Save signature / complete ID verification (if required)</li>
+                                <li>Add driver notes (if needed)</li>
+                                <li>Take final drop-off photo</li>
+                                <li>Upload photo — this automatically completes the delivery</li>
+                            </ol>
+
+                            <div class="bg-amber-500 bg-opacity-10 border border-amber-500 rounded-lg p-3 mt-4">
+                                <p class="text-sm text-amber-300">Raise a support ticket for any unexpected issue.</p>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Section 6: Unsuccessful Deliveries & Returns -->
+                    <div class="bg-slate-800 border border-slate-700 rounded-xl overflow-hidden">
+                        <button onclick="toggleSection('section6')" class="w-full px-6 py-4 flex items-center justify-between hover:bg-slate-700 transition-colors">
+                            <div class="flex items-center">
+                                <div class="w-10 h-10 bg-red-500 bg-opacity-20 rounded-lg flex items-center justify-center mr-4">
+                                    <svg class="w-6 h-6 text-red-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"/>
+                                    </svg>
+                                </div>
+                                <h3 class="text-lg font-semibold text-slate-100">Unsuccessful Deliveries & Returns</h3>
+                            </div>
+                            <svg id="icon-section6" class="w-6 h-6 text-slate-400 transform transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/>
+                            </svg>
+                        </button>
+                        <div id="section6" class="hidden px-6 pb-4">
+                            <p class="text-slate-200 font-semibold mb-2">Medication Returns</p>
+                            <ul class="list-disc list-inside text-slate-300 space-y-2 mb-4">
+                                <li>Medications must be returned to the original pharmacy</li>
+                                <li>If the pharmacy is closed: return on the next business day</li>
+                            </ul>
+
+                            <div class="bg-red-500 bg-opacity-10 border border-red-500 rounded-lg p-4">
+                                <p class="font-semibold text-red-400 mb-2">Important Safety Rules</p>
+                                <ul class="text-sm text-red-300 space-y-1">
+                                    <li>Never leave medications unless explicitly authorized</li>
+                                    <li>Do not leave packages at doors, with neighbors, with unauthorized staff, or in unsecured locations</li>
+                                </ul>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Section 7: Cancelling Deliveries -->
+                    <div class="bg-slate-800 border border-slate-700 rounded-xl overflow-hidden">
+                        <button onclick="toggleSection('section7')" class="w-full px-6 py-4 flex items-center justify-between hover:bg-slate-700 transition-colors">
+                            <div class="flex items-center">
+                                <div class="w-10 h-10 bg-pink-500 bg-opacity-20 rounded-lg flex items-center justify-center mr-4">
+                                    <svg class="w-6 h-6 text-pink-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
+                                    </svg>
+                                </div>
+                                <h3 class="text-lg font-semibold text-slate-100">Cancelling a Delivery</h3>
+                            </div>
+                            <svg id="icon-section7" class="w-6 h-6 text-slate-400 transform transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/>
+                            </svg>
+                        </button>
+                        <div id="section7" class="hidden px-6 pb-4">
+                            <p class="text-slate-200 font-semibold mb-2">Cancellation Process</p>
+                            <ul class="list-disc list-inside text-slate-300 space-y-2 mb-4">
+                                <li>Cancellations must be done by raising a support ticket</li>
+                                <li>Clearly state the reason and mention the order ID</li>
+                            </ul>
+
+                            <p class="text-slate-200 font-semibold mb-2">Allowed Cancellation Window</p>
+                            <ul class="list-disc list-inside text-slate-300 space-y-2">
+                                <li>Cancellations are allowed up to 2 hours before pharmacy closing time</li>
+                            </ul>
+
+                            <div class="bg-yellow-500 bg-opacity-10 border border-yellow-500 rounded-lg p-3 mt-4">
+                                <p class="text-sm text-yellow-300">
+                                    <span class="font-medium">Warning:</span> Repeated late cancellations may impact driver access to future deliveries.
+                                </p>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Section 8: Payouts & Earnings -->
+                    <div class="bg-slate-800 border border-slate-700 rounded-xl overflow-hidden">
+                        <button onclick="toggleSection('section8')" class="w-full px-6 py-4 flex items-center justify-between hover:bg-slate-700 transition-colors">
+                            <div class="flex items-center">
+                                <div class="w-10 h-10 bg-emerald-500 bg-opacity-20 rounded-lg flex items-center justify-center mr-4">
+                                    <svg class="w-6 h-6 text-emerald-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1"/>
+                                    </svg>
+                                </div>
+                                <h3 class="text-lg font-semibold text-slate-100">Payouts, Earnings & Invoices</h3>
+                            </div>
+                            <svg id="icon-section8" class="w-6 h-6 text-slate-400 transform transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/>
+                            </svg>
+                        </button>
+                        <div id="section8" class="hidden px-6 pb-4">
+                            <p class="text-slate-200 font-semibold mb-2">Payment Structure</p>
+                            <ul class="list-disc list-inside text-slate-300 space-y-2 mb-4">
+                                <li>Drivers are paid bi-weekly</li>
+                                <li>Earnings are calculated per completed delivery</li>
+                            </ul>
+
+                            <p class="text-slate-200 font-semibold mb-2">Driver Invoices</p>
+                            <ul class="list-disc list-inside text-slate-300 space-y-2 mb-4">
+                                <li>Drivers will receive invoices for their completed deliveries</li>
+                                <li>Invoices show delivery breakdown, and net payable amount</li>
+                            </ul>
+
+                            <p class="text-slate-200 font-semibold mb-2">Payment Method</p>
+                            <ul class="list-disc list-inside text-slate-300 space-y-2">
+                                <li>Electronic Funds Transfer (EFT)</li>
+                                <li>Drivers must provide: Institution number, Transit number, Account number, and authorization to store banking details</li>
+                            </ul>
+                        </div>
+                    </div>
+
+                    <!-- Section 9: CC Points & Rewards -->
+                    <div class="bg-slate-800 border border-slate-700 rounded-xl overflow-hidden">
+                        <button onclick="toggleSection('section9')" class="w-full px-6 py-4 flex items-center justify-between hover:bg-slate-700 transition-colors">
+                            <div class="flex items-center">
+                                <div class="w-10 h-10 bg-cyan-500 bg-opacity-20 rounded-lg flex items-center justify-center mr-4">
+                                    <svg class="w-6 h-6 text-cyan-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/>
+                                    </svg>
+                                </div>
+                                <h3 class="text-lg font-semibold text-slate-100">CC Points & Rewards</h3>
+                            </div>
+                            <svg id="icon-section9" class="w-6 h-6 text-slate-400 transform transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/>
+                            </svg>
+                        </button>
+                        <div id="section9" class="hidden px-6 pb-4">
+                            <ul class="list-disc list-inside text-slate-300 space-y-2 mb-4">
+                                <li>Every successful delivery earns 50 CC Points</li>
+                                <li>Points are currently banked for future use</li>
+                            </ul>
+
+                            <p class="text-slate-200 font-semibold mb-2">Future Uses</p>
+                            <ul class="list-disc list-inside text-slate-300 space-y-2 mb-4">
+                                <li>Merchandise purchases</li>
+                                <li>Partial cash payouts</li>
+                                <li>Promotions and rewards</li>
+                            </ul>
+
+                            <p class="text-slate-200 font-semibold mb-2">Referrals & Performance Incentives</p>
+                            <ul class="list-disc list-inside text-slate-300 space-y-2">
+                                <li>CanaLogistiX regularly offers referrals and performance-based incentives</li>
+                                <li>Drivers who complete more successful deliveries may see more delivery opportunities</li>
+                                <li>May become eligible for higher-paying deliveries and incremental earning increases</li>
+                            </ul>
+                        </div>
+                    </div>
+
+                    <!-- Section 10: Professional Conduct -->
+                    <div class="bg-slate-800 border border-slate-700 rounded-xl overflow-hidden">
+                        <button onclick="toggleSection('section10')" class="w-full px-6 py-4 flex items-center justify-between hover:bg-slate-700 transition-colors">
+                            <div class="flex items-center">
+                                <div class="w-10 h-10 bg-orange-500 bg-opacity-20 rounded-lg flex items-center justify-center mr-4">
+                                    <svg class="w-6 h-6 text-orange-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z"/>
+                                    </svg>
+                                </div>
+                                <h3 class="text-lg font-semibold text-slate-100">Professional Conduct & Responsibility</h3>
+                            </div>
+                            <svg id="icon-section10" class="w-6 h-6 text-slate-400 transform transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/>
+                            </svg>
+                        </button>
+                        <div id="section10" class="hidden px-6 pb-4">
+                            <p class="text-slate-200 font-semibold mb-2">Drivers Must</p>
+                            <ul class="list-disc list-inside text-slate-300 space-y-2 mb-4">
+                                <li>Be punctual and professional</li>
+                                <li>Communicate respectfully</li>
+                                <li>Follow pharmacy instructions</li>
+                                <li>Drive safely</li>
+                            </ul>
+
+                            <div class="bg-red-500 bg-opacity-10 border border-red-500 rounded-lg p-4 mb-4">
+                                <p class="font-semibold text-red-400 mb-2">Package Responsibility</p>
+                                <ul class="text-sm text-red-300 space-y-1">
+                                    <li>Once medications are handed to the driver, the driver is fully responsible</li>
+                                    <li>Loss, damage, or mishandling is the driver's responsibility</li>
+                                </ul>
+                            </div>
+
+                            <p class="text-slate-200 font-semibold mb-2">Zero Tolerance Policy</p>
+                            <ul class="list-disc list-inside text-slate-300 space-y-2">
+                                <li>Privacy violations</li>
+                                <li>Medication mishandling</li>
+                                <li>Fraud</li>
+                                <li>Unsafe conduct</li>
+                            </ul>
+                        </div>
+                    </div>
+
+                    <!-- Section 11: Privacy & Confidentiality -->
+                    <div class="bg-slate-800 border border-slate-700 rounded-xl overflow-hidden">
+                        <button onclick="toggleSection('section11')" class="w-full px-6 py-4 flex items-center justify-between hover:bg-slate-700 transition-colors">
+                            <div class="flex items-center">
+                                <div class="w-10 h-10 bg-purple-500 bg-opacity-20 rounded-lg flex items-center justify-center mr-4">
+                                    <svg class="w-6 h-6 text-purple-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"/>
+                                    </svg>
+                                </div>
+                                <h3 class="text-lg font-semibold text-slate-100">Privacy, PHIPA & Confidentiality</h3>
+                            </div>
+                            <svg id="icon-section11" class="w-6 h-6 text-slate-400 transform transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/>
+                            </svg>
+                        </button>
+                        <div id="section11" class="hidden px-6 pb-4">
+                            <p class="text-slate-300 mb-3">Drivers handle Personal Health Information (PHI) and must:</p>
+                            
+                            <ul class="list-disc list-inside text-slate-300 space-y-2">
+                                <li>Keep all information confidential</li>
+                                <li>Use data only for delivery completion</li>
+                                <li>Never store or share customer information</li>
+                            </ul>
+                        </div>
+                    </div>
+
+                    <!-- Section 12: Independent Contractor Status -->
+                    <div class="bg-slate-800 border border-slate-700 rounded-xl overflow-hidden">
+                        <button onclick="toggleSection('section12')" class="w-full px-6 py-4 flex items-center justify-between hover:bg-slate-700 transition-colors">
+                            <div class="flex items-center">
+                                <div class="w-10 h-10 bg-blue-500 bg-opacity-20 rounded-lg flex items-center justify-center mr-4">
+                                    <svg class="w-6 h-6 text-blue-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/>
+                                    </svg>
+                                </div>
+                                <h3 class="text-lg font-semibold text-slate-100">Independent Contractor Status</h3>
+                            </div>
+                            <svg id="icon-section12" class="w-6 h-6 text-slate-400 transform transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/>
+                            </svg>
+                        </button>
+                        <div id="section12" class="hidden px-6 pb-4">
+                            <p class="text-slate-300 mb-3">Drivers acknowledge that they are independent contractors. CanaLogistiX does not:</p>
+                            
+                            <ul class="list-disc list-inside text-slate-300 space-y-2 mb-4">
+                                <li>Withhold taxes</li>
+                                <li>Provide benefits</li>
+                                <li>Reimburse expenses (unless stated)</li>
+                            </ul>
+
+                            <p class="text-slate-200 font-semibold mb-2">Drivers Are Responsible For</p>
+                            <ul class="list-disc list-inside text-slate-300 space-y-2">
+                                <li>Taxes</li>
+                                <li>Insurance</li>
+                                <li>Vehicle costs</li>
+                                <li>Compliance with laws</li>
+                            </ul>
+                        </div>
+                    </div>
+
+                    <!-- Section 13: Support & Issues -->
+                    <div class="bg-slate-800 border border-slate-700 rounded-xl overflow-hidden">
+                        <button onclick="toggleSection('section13')" class="w-full px-6 py-4 flex items-center justify-between hover:bg-slate-700 transition-colors">
+                            <div class="flex items-center">
+                                <div class="w-10 h-10 bg-teal-500 bg-opacity-20 rounded-lg flex items-center justify-center mr-4">
+                                    <svg class="w-6 h-6 text-teal-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M18.364 5.636l-3.536 3.536m0 5.656l3.536 3.536M9.172 9.172L5.636 5.636m3.536 9.192l-3.536 3.536M21 12a9 9 0 11-18 0 9 9 0 0118 0zm-5 0a4 4 0 11-8 0 4 4 0 018 0z"/>
+                                    </svg>
+                                </div>
+                                <h3 class="text-lg font-semibold text-slate-100">Support & Issues</h3>
+                            </div>
+                            <svg id="icon-section13" class="w-6 h-6 text-slate-400 transform transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/>
+                            </svg>
+                        </button>
+                        <div id="section13" class="hidden px-6 pb-4">
+                            <p class="text-slate-300 mb-3">Raise support tickets for:</p>
+                            
+                            <ul class="list-disc list-inside text-slate-300 space-y-2 mb-4">
+                                <li>Delivery issues</li>
+                                <li>Cancellations</li>
+                                <li>Compliance problems</li>
+                            </ul>
+
+                            <div class="bg-yellow-500 bg-opacity-10 border border-yellow-500 rounded-lg p-3">
+                                <p class="text-sm text-yellow-300">Do not resolve disputes directly with customers - always contact support.</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Support CTA -->
+                <div class="mt-8 bg-slate-800 border border-slate-700 rounded-xl p-6">
+                    <div class="text-center">
+                        <div class="inline-flex items-center justify-center w-16 h-16 bg-gradient-to-r from-emerald-600 to-emerald-500 rounded-full mb-4">
+                            <svg class="w-8 h-8 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 10h.01M12 10h.01M16 10h.01M9 16H5a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v8a2 2 0 01-2 2h-5l-5 5v-5z"/>
+                            </svg>
+                        </div>
+                        <h3 class="text-xl font-semibold text-slate-100 mb-2">Need More Help?</h3>
+                        <p class="text-slate-400 mb-4">Our operations team is here to support you with any questions or issues.</p>
+                        <a href="/contactAdmin/" class="inline-flex items-center px-6 py-3 bg-gradient-to-r from-emerald-600 to-emerald-500 text-white font-medium rounded-lg hover:from-emerald-700 hover:to-emerald-600 transition-all duration-200 shadow-lg hover:shadow-xl transform hover:scale-105">
+                            <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z"/>
+                            </svg>
+                            Contact Support
+                        </a>
+                    </div>
+                </div>
+            </section>
+        </main>
+    </div>
+
+    <script>
+        function getCSRFToken() {
+            return document.cookie
+                .split('; ')
+                .find(row => row.startsWith('csrftoken='))
+                ?.split('=')[1];
+        }
+
+        function getCookie(name) {
+            const value = `; ${document.cookie}`;
+            const parts = value.split(`; ${name}=`);
+            if (parts.length === 2) return parts.pop().split(';').shift();
+            return null;
+        }
+
+        function toggleSection(sectionId) {
+            const section = document.getElementById(sectionId);
+            const icon = document.getElementById('icon-' + sectionId);
+            
+            if (section.classList.contains('hidden')) {
+                section.classList.remove('hidden');
+                icon.style.transform = 'rotate(180deg)';
+            } else {
+                section.classList.add('hidden');
+                icon.style.transform = 'rotate(0deg)';
+            }
+        }
+
+        async function loadDriverInfo() {
+            try {
+                const driverId = getCookie("driverId");
+                if (!driverId) {
+                    console.error("Driver ID not found in cookies");
+                    return;
+                }
+
+                const response = await fetch(`/api/driver/details/?driverId=${driverId}`);
+                if (!response.ok) {
+                    throw new Error("Failed to fetch driver details");
+                }
+
+                const data = await response.json();
+                
+                if (data) {
+                    const nameElement = document.getElementById('driverName');
+                    if (nameElement) {
+                        nameElement.textContent = data.name;
+                    }
+                    
+                    const emailElement = document.getElementById('driverEmail');
+                    if (emailElement) {
+                        emailElement.textContent = data.email;
+                    }
+                    
+                    const initialElement = document.getElementById('driverInitial');
+                    if (initialElement && data.name) {
+                        initialElement.textContent = data.name.charAt(0).toUpperCase();
+                    }
+                }
+
+            } catch (error) {
+                console.error("Error loading driver info:", error);
+            }
+        }
+
+        async function handleLogout() {
+            try {
+                const csrfToken = getCSRFToken();
+                await fetch("/api/driver/logout/", {
+                    method: "POST",
+                    headers: {
+                        "X-CSRFToken": csrfToken,
+                        "Accept": "application/json"
+                    },
+                    credentials: "include"
+                });
+            } catch (e) {
+                console.error("Logout error:", e);
+            } finally {
+                const cookiesToClear = ["driverId", "tokenExpiresAt", "csrftoken"];
+                cookiesToClear.forEach(name => {
+                    document.cookie = `${name}=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/;`;
+                });
+
+                window.location.href = "/driverLogin/?reason=expired";
+            }
+        }
+
+        document.addEventListener("DOMContentLoaded", function() {
+            loadDriverInfo();
+
+            const menuToggle = document.getElementById('menuToggle');
+            const sidebar = document.getElementById('sidebar');
+            const sidebarOverlay = document.getElementById('sidebarOverlay');
+
+            if (menuToggle) {
+                menuToggle.addEventListener('click', () => {
+                    sidebar.classList.toggle('-translate-x-full');
+                    sidebarOverlay.classList.toggle('hidden');
+                });
+            }
+
+            if (sidebarOverlay) {
+                sidebarOverlay.addEventListener('click', () => {
+                    sidebar.classList.add('-translate-x-full');
+                    sidebarOverlay.classList.add('hidden');
+                });
+            }
+        });
+    </script>
+</body>
+</html>

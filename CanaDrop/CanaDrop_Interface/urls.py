@@ -64,6 +64,8 @@ urlpatterns = [
     path('api/driver/generate-contract/', views.generate_driver_contract, name='generate_driver_contract'), # Done
     path('api/driver/generate-privacy-agreement/', views.generate_privacy_agreement, name='generate_privacy_agreement'), # Done
     path('api/driver/commission/', views.get_driver_commission, name="GETDRIVERCOMMISSIONVALUES"), # Done
+    path('api/driver/banking-details/', views.save_driver_banking_details, name="SaveDriverBankingDetailsForPayments"), # Done
+    path('driverHowToGuide/', views.driverHowToGuideView, name="DriverHowToGuidePage"), # Done
 
 
     path('contactAdmin/', views.contactAdminView, name='contactAdminPage'), # Done

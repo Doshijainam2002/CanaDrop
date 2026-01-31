@@ -228,6 +228,9 @@ def driverCCPointsView(request):
 def driverMyDocumentsView(request):
     return render(request, 'driverMyDocuments.html')
 
+@driver_auth_required
+def driverHowToGuideView(request):
+    return render(request, 'driverHowToGuide.html')
 # ----------------------------
 # Admin Page Logins
 # ----------------------------
@@ -16726,6 +16729,59 @@ def get_driver_documents(request):
         }, status=500)
 
 
+# @csrf_protect
+# @require_http_methods(["GET"])
+# @driver_auth_required
+# def get_driver_document_status(request):
+#     """
+#     Returns both:
+#       - boolean flags (exists True/False)
+#       - the actual stored URL values (or None)
+
+#     TRUE  => field is not null/blank
+#     FALSE => field is null/blank
+#     """
+
+#     try:
+#         driver = request.driver  # set by driver_auth_required
+
+#         def clean_url(v):
+#             v = (v or "").strip()
+#             return v if v else None
+
+#         urls = {
+#             "identity_url": clean_url(driver.identity_url),
+#             "driver_license_url": clean_url(driver.driver_license_url),
+#             "auto_insurance_url": clean_url(driver.auto_insurance_url),
+#             "vehicle_ownership_url": clean_url(driver.vehicle_ownership_url),
+#             "right_to_work_url": clean_url(driver.right_to_work_url),
+#             "driver_contract": clean_url(driver.driver_contract),
+#             "privacy_laws_agreement": clean_url(driver.privacy_laws_agreement),
+#         }
+
+#         status = {k: (v is not None) for k, v in urls.items()}
+
+#         return JsonResponse(
+#             {
+#                 "success": True,
+#                 "driver_id": driver.id,
+#                 "document_status": status,  # True/False
+#                 "document_urls": urls,      # actual values or None
+#             },
+#             status=200
+#         )
+
+#     except Exception:
+#         logger.exception("Error fetching driver document status")
+#         return JsonResponse(
+#             {
+#                 "success": False,
+#                 "error": "Failed to fetch document status"
+#             },
+#             status=500
+#         )
+
+
 @csrf_protect
 @require_http_methods(["GET"])
 @driver_auth_required
@@ -16735,8 +16791,15 @@ def get_driver_document_status(request):
       - boolean flags (exists True/False)
       - the actual stored URL values (or None)
 
-    TRUE  => field is not null/blank
-    FALSE => field is null/blank
+    Also includes newly added EFT fields:
+      - bank_institution_number
+      - bank_transit_number
+      - bank_account_number
+      - authorized_to_store_banking_details
+
+    Note:
+      - For EFT fields: if authorized_to_store_banking_details is True,
+        return the values; otherwise return None (and status False).
     """
 
     try:
@@ -16746,6 +16809,13 @@ def get_driver_document_status(request):
             v = (v or "").strip()
             return v if v else None
 
+        def clean_text(v):
+            v = (v or "").strip()
+            return v if v else None
+
+        # ----------------------------
+        # Existing document URLs
+        # ----------------------------
         urls = {
             "identity_url": clean_url(driver.identity_url),
             "driver_license_url": clean_url(driver.driver_license_url),
@@ -16756,14 +16826,31 @@ def get_driver_document_status(request):
             "privacy_laws_agreement": clean_url(driver.privacy_laws_agreement),
         }
 
-        status = {k: (v is not None) for k, v in urls.items()}
+        # ----------------------------
+        # EFT fields (new)
+        # Only return values if driver authorized storage
+        # ----------------------------
+        authorized = bool(getattr(driver, "authorized_to_store_banking_details", False))
+
+        eft_values = {
+            "authorized_to_store_banking_details": authorized,
+            "bank_institution_number": clean_text(getattr(driver, "bank_institution_number", None)) if authorized else None,
+            "bank_transit_number": clean_text(getattr(driver, "bank_transit_number", None)) if authorized else None,
+            "bank_account_number": clean_text(getattr(driver, "bank_account_number", None)) if authorized else None,
+        }
+
+        # Merge into one "document_urls" payload (same response shape)
+        all_values = {**urls, **eft_values}
+
+        # Status booleans (True if value exists + allowed to be returned)
+        status = {k: (v is not None and v is not False) for k, v in all_values.items()}
 
         return JsonResponse(
             {
                 "success": True,
                 "driver_id": driver.id,
-                "document_status": status,  # True/False
-                "document_urls": urls,      # actual values or None
+                "document_status": status,   # True/False
+                "document_urls": all_values, # actual values or None
             },
             status=200
         )
@@ -16777,6 +16864,7 @@ def get_driver_document_status(request):
             },
             status=500
         )
+
 
 
 def generate_acknowledgement_pdf(order, signature_image_path):
@@ -19605,3 +19693,129 @@ def get_driver_commission(request):
             "success": False,
             "error": "Driver commission rate is not configured"
         }, status=500)
+
+
+@csrf_protect
+@require_http_methods(["POST"])
+@driver_auth_required
+def save_driver_banking_details(request):
+    """
+    Save or update EFT (Direct Deposit) details for an authenticated driver.
+
+    Required:
+      - bank_institution_number (3 digits)
+      - bank_transit_number (5 digits)
+      - bank_account_number
+      - authorized_to_store_banking_details = true
+
+    Security:
+      - Driver-authenticated only
+      - Explicit consent required
+    """
+
+    try:
+        driver = request.driver
+        data = json.loads(request.body or "{}")
+
+        institution = data.get("bank_institution_number")
+        transit = data.get("bank_transit_number")
+        account = data.get("bank_account_number")
+        authorized = data.get("authorized_to_store_banking_details")
+
+        # ----------------------------
+        # Validation
+        # ----------------------------
+        if not authorized:
+            return JsonResponse(
+                {
+                    "success": False,
+                    "error": "Authorization is required to store banking details"
+                },
+                status=400
+            )
+
+        if not institution or not transit or not account:
+            return JsonResponse(
+                {
+                    "success": False,
+                    "error": "All banking fields are required"
+                },
+                status=400
+            )
+
+        if not institution.isdigit() or len(institution) != 3:
+            return JsonResponse(
+                {
+                    "success": False,
+                    "error": "Institution number must be 3 digits"
+                },
+                status=400
+            )
+
+        if not transit.isdigit() or len(transit) != 5:
+            return JsonResponse(
+                {
+                    "success": False,
+                    "error": "Transit number must be 5 digits"
+                },
+                status=400
+            )
+
+        if not account.isdigit():
+            return JsonResponse(
+                {
+                    "success": False,
+                    "error": "Account number must be numeric"
+                },
+                status=400
+            )
+
+        # ----------------------------
+        # Save to DB
+        # ----------------------------
+        driver.bank_institution_number = institution
+        driver.bank_transit_number = transit
+        driver.bank_account_number = account
+        driver.authorized_to_store_banking_details = True
+
+        driver.save(
+            update_fields=[
+                "bank_institution_number",
+                "bank_transit_number",
+                "bank_account_number",
+                "authorized_to_store_banking_details",
+            ]
+        )
+
+        logger.info(
+            "Driver banking details saved | driver_id=%s",
+            driver.id
+        )
+
+        return JsonResponse(
+            {
+                "success": True,
+                "driver_id": driver.id,
+                "message": "Banking details saved successfully"
+            },
+            status=200
+        )
+
+    except json.JSONDecodeError:
+        return JsonResponse(
+            {
+                "success": False,
+                "error": "Invalid JSON payload"
+            },
+            status=400
+        )
+
+    except Exception:
+        logger.exception("Error saving driver banking details")
+        return JsonResponse(
+            {
+                "success": False,
+                "error": "Failed to save banking details"
+            },
+            status=500
+        )

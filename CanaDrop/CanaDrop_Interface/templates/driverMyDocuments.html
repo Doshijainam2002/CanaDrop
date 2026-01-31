@@ -120,6 +120,14 @@
                     CC Points
                 </a>
 
+                <!-- How To Guide - Non-Active -->
+                <a href="/driverHowToGuide/" class="flex items-center px-3 py-2 text-sm font-medium text-slate-300 hover:bg-slate-700 hover:text-emerald-400 rounded-lg transition-colors">
+                    <svg class="w-5 h-5 mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8.228 9c.549-1.165 2.03-2 3.772-2 2.21 0 4 1.343 4 3 0 1.4-1.278 2.575-3.006 2.907-.542.104-.994.54-.994 1.093m0 3h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/>
+                    </svg>
+                    How To Guide
+                </a>
+
                 <a href="#" onclick="handleLogout()" class="nav-item flex items-center px-6 py-3 text-slate-300 hover:bg-slate-700 hover:text-red-400 transition-colors mt-8">
                     <svg class="w-5 h-5 mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1"/>
@@ -466,6 +474,96 @@
                                     <span>Sign Privacy Agreement Now</span>
                                 </button>
                             </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Banking Details Section -->
+                <div class="mt-8">
+                    <h2 class="text-2xl font-bold text-white mb-6">Banking Information</h2>
+                    
+                    <div class="bg-slate-800 border border-slate-700 rounded-lg p-6">
+                        <div class="flex items-center mb-4">
+                            <div class="p-2 bg-emerald-500 bg-opacity-20 rounded-lg">
+                                <svg class="w-6 h-6 text-emerald-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 10h18M7 15h1m4 0h1m-7 4h12a3 3 0 003-3V8a3 3 0 00-3-3H6a3 3 0 00-3 3v8a3 3 0 003 3z"/>
+                                </svg>
+                            </div>
+                            <h3 class="ml-3 text-lg font-semibold text-slate-100">Direct Deposit (EFT) Details</h3>
+                        </div>
+
+                        <!-- Banking Details Display (when exists) -->
+                        <div id="bankingExistsView" class="hidden">
+                            <div class="bg-slate-700 rounded-lg p-4 mb-4">
+                                <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                                    <div>
+                                        <p class="text-xs text-slate-400 mb-1">Institution Number</p>
+                                        <p class="text-white font-mono" id="displayInstitution">•••</p>
+                                    </div>
+                                    <div>
+                                        <p class="text-xs text-slate-400 mb-1">Transit Number</p>
+                                        <p class="text-white font-mono" id="displayTransit">•••••</p>
+                                    </div>
+                                    <div>
+                                        <p class="text-xs text-slate-400 mb-1">Account Number</p>
+                                        <p class="text-white font-mono" id="displayAccount">••••••••</p>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="bg-emerald-500 bg-opacity-10 border border-emerald-500 rounded-lg p-3">
+                                <p class="text-sm text-emerald-400 flex items-center">
+                                    <svg class="w-5 h-5 mr-2" fill="currentColor" viewBox="0 0 20 20">
+                                        <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd"/>
+                                    </svg>
+                                    Banking details securely saved
+                                </p>
+                            </div>
+                        </div>
+
+                        <!-- Banking Details Form (when doesn't exist) -->
+                        <div id="bankingFormView" class="hidden">
+                            <p class="text-sm text-slate-400 mb-4">Add your banking details for direct deposit payments</p>
+                            <div class="space-y-4 mb-4">
+                                <div>
+                                    <label class="block text-sm font-medium text-slate-300 mb-2">Institution Number (3 digits)</label>
+                                    <input type="text" id="institutionNumber" maxlength="3" placeholder="000" 
+                                        class="w-full bg-slate-700 border border-slate-600 rounded-lg px-4 py-3 text-white placeholder-slate-500 focus:outline-none focus:border-emerald-500">
+                                    <p class="text-xs text-slate-500 mt-1">Found on your cheque (3 digits before transit number)</p>
+                                </div>
+                                
+                                <div>
+                                    <label class="block text-sm font-medium text-slate-300 mb-2">Transit Number (5 digits)</label>
+                                    <input type="text" id="transitNumber" maxlength="5" placeholder="00000"
+                                        class="w-full bg-slate-700 border border-slate-600 rounded-lg px-4 py-3 text-white placeholder-slate-500 focus:outline-none focus:border-emerald-500">
+                                    <p class="text-xs text-slate-500 mt-1">Found on your cheque (5 digits after institution number)</p>
+                                </div>
+                                
+                                <div>
+                                    <label class="block text-sm font-medium text-slate-300 mb-2">Account Number</label>
+                                    <input type="text" id="accountNumber" maxlength="20" placeholder="Account number"
+                                        class="w-full bg-slate-700 border border-slate-600 rounded-lg px-4 py-3 text-white placeholder-slate-500 focus:outline-none focus:border-emerald-500">
+                                    <p class="text-xs text-slate-500 mt-1">Found on your cheque (varies by bank, 7-12 digits)</p>
+                                </div>
+                            </div>
+
+                            <!-- Authorization Checkbox -->
+                            <div class="bg-slate-700 rounded-lg p-4 mb-4">
+                                <label class="flex items-start cursor-pointer">
+                                    <input type="checkbox" id="bankingAuthCheckbox" class="mt-1 h-5 w-5 text-emerald-600 border-slate-600 rounded focus:ring-emerald-500">
+                                    <span class="ml-3 text-sm text-slate-300">
+                                        I authorize CanaLogistiX to securely store my banking information and use it solely for the purpose of processing direct deposit payments for my delivery services. I understand this information will be encrypted and stored securely.
+                                    </span>
+                                </label>
+                            </div>
+
+                            <!-- Submit Button -->
+                            <button id="submitBankingBtn" onclick="submitBankingDetails()" disabled
+                                class="w-full bg-emerald-600 hover:bg-emerald-700 disabled:bg-slate-600 disabled:cursor-not-allowed text-white px-6 py-4 rounded-lg transition-colors flex items-center justify-center space-x-3 text-lg font-semibold">
+                                <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/>
+                                </svg>
+                                <span>Save Banking Details</span>
+                            </button>
                         </div>
                     </div>
                 </div>
@@ -1045,6 +1143,75 @@ async function submitPrivacySignature() {
     }
 }
 
+// Enable/disable banking submit button
+function updateBankingSubmitButton() {
+    const submitBtn = document.getElementById('submitBankingBtn');
+    const authCheckbox = document.getElementById('bankingAuthCheckbox');
+    const institution = document.getElementById('institutionNumber').value.trim();
+    const transit = document.getElementById('transitNumber').value.trim();
+    const account = document.getElementById('accountNumber').value.trim();
+    
+    if (authCheckbox.checked && institution.length === 3 && transit.length === 5 && account.length >= 7) {
+        submitBtn.disabled = false;
+    } else {
+        submitBtn.disabled = true;
+    }
+}
+
+async function submitBankingDetails() {
+    const institution = document.getElementById('institutionNumber').value.trim();
+    const transit = document.getElementById('transitNumber').value.trim();
+    const account = document.getElementById('accountNumber').value.trim();
+    const authorized = document.getElementById('bankingAuthCheckbox').checked;
+    
+    if (!authorized) {
+        showError('Please authorize us to store your banking details');
+        return;
+    }
+    
+    showLoading();
+    
+    try {
+        const response = await fetch('/api/driver/banking-details/', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'X-CSRFToken': getCSRFToken()
+            },
+            credentials: 'include',
+            body: JSON.stringify({
+                bank_institution_number: institution,
+                bank_transit_number: transit,
+                bank_account_number: account,
+                authorized_to_store_banking_details: true
+            })
+        });
+        
+        const data = await response.json();
+        
+        if (data.success) {
+            showSuccess('Banking details saved successfully!');
+            
+            // ✅ ADD THESE LINES TO CLEAR THE FORM
+            document.getElementById('institutionNumber').value = '';
+            document.getElementById('transitNumber').value = '';
+            document.getElementById('accountNumber').value = '';
+            document.getElementById('bankingAuthCheckbox').checked = false;
+            
+            setTimeout(() => {
+                loadDocumentStatus();
+            }, 1000);
+        } else {
+            showError(data.error || 'Failed to save banking details');
+        }
+    } catch (error) {
+        console.error('Banking details error:', error);
+        showError('Failed to save banking details. Please try again.');
+    } finally {
+        hideLoading();
+    }
+}
+
     // ===== DOCUMENT UPLOAD FUNCTIONS =====
     function handleFileSelect(input, docType) {
         const file = input.files[0];
@@ -1163,136 +1330,162 @@ async function submitPrivacySignature() {
         }
     }
 
-    // ===== LOAD DOCUMENT STATUS =====
-    async function loadDocumentStatus() {
-        try {
-            const response = await fetch('/api/driver/document-status/', {
-                credentials: 'include',
-                headers: {
-                    'X-CSRFToken': getCSRFToken()
-                }
-            });
-
-            if (!response.ok) {
-                throw new Error('Failed to fetch document status');
+// ===== LOAD DOCUMENT STATUS =====
+async function loadDocumentStatus() {
+    try {
+        const response = await fetch('/api/driver/document-status/', {
+            credentials: 'include',
+            headers: {
+                'X-CSRFToken': getCSRFToken()
             }
+        });
 
-            const data = await response.json();
-            
-            if (!data.success) {
-                console.error('Document status fetch failed:', data.error);
-                return;
-            }
-
-            const status = data.document_status || {};
-            const urls = data.document_urls || {};
-            
-            console.log('Document Status:', status);
-            console.log('Document URLs:', urls);
-
-            // ===== CONTRACT STATUS =====
-            const contractExistsView = document.getElementById('contractExistsView');
-            const contractSignView = document.getElementById('contractSignView');
-            const viewContractBtn = document.getElementById('viewContractBtn');
-
-            if (status.driver_contract && urls.driver_contract) {
-                // Contract exists - show view button
-                contractExistsView.classList.remove('hidden');
-                contractSignView.classList.add('hidden');
-                viewContractBtn.setAttribute('data-url', urls.driver_contract);
-                viewContractBtn.disabled = false;
-                viewContractBtn.classList.remove('opacity-50', 'cursor-not-allowed');
-            } else {
-                // Contract doesn't exist - show sign button
-                contractExistsView.classList.add('hidden');
-                contractSignView.classList.remove('hidden');
-            }
-
-            // ===== PRIVACY AGREEMENT STATUS =====
-            const privacyExistsView = document.getElementById('privacyExistsView');
-            const privacySignView = document.getElementById('privacySignView');
-            const viewPrivacyBtn = document.getElementById('viewPrivacyBtn');
-
-            if (status.privacy_laws_agreement && urls.privacy_laws_agreement) {
-                // Privacy agreement exists - show view button
-                privacyExistsView.classList.remove('hidden');
-                privacySignView.classList.add('hidden');
-                viewPrivacyBtn.setAttribute('data-url', urls.privacy_laws_agreement);
-                viewPrivacyBtn.disabled = false;
-                viewPrivacyBtn.classList.remove('opacity-50', 'cursor-not-allowed');
-            } else {
-                // Privacy agreement doesn't exist - show sign button
-                privacyExistsView.classList.add('hidden');
-                privacySignView.classList.remove('hidden');
-            }
-
-            // ===== CHECK IF DOCUMENTS UPLOADED =====
-            const hasUploadedDocs = !!(
-                status.driver_license_url && 
-                status.auto_insurance_url && 
-                status.vehicle_ownership_url && 
-                status.right_to_work_url
-            );
-
-            if (hasUploadedDocs) {
-                // Documents already uploaded - lock interface and show them
-                const docMapping = {
-                    'driver_license_url': 'license',
-                    'auto_insurance_url': 'insurance',
-                    'vehicle_ownership_url': 'registration',
-                    'right_to_work_url': 'workProof'
-                };
-
-                Object.entries(docMapping).forEach(([apiKey, uiKey]) => {
-                    const url = urls[apiKey];
-                    if (!url) return;
-                    
-                    const previewDiv = document.getElementById(`${uiKey}Preview`);
-                    const filename = url.split('/').pop();
-                    
-                    previewDiv.classList.remove('hidden');
-                    previewDiv.innerHTML = `
-                        <div class="flex items-center justify-between bg-slate-700 rounded-lg p-3">
-                            <div class="flex items-center flex-1 min-w-0 mr-2">
-                                <svg class="w-5 h-5 text-emerald-400 mr-2 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20">
-                                    <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd"/>
-                                </svg>
-                                <span class="text-sm text-slate-300 truncate">${decodeURIComponent(filename)}</span>
-                                <span class="ml-2 text-xs text-emerald-400 flex-shrink-0">✓ Uploaded</span>
-                            </div>
-                            <button onclick="viewUploadedDocument('${url}')" class="text-blue-400 hover:text-blue-300 text-xs px-2 py-1 rounded transition-colors flex items-center flex-shrink-0" title="View document">
-                                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/>
-                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"/>
-                                </svg>
-                            </button>
-                        </div>
-                    `;
-                    
-                    // Disable file input
-                    const fileInput = document.getElementById(`${uiKey}Upload`);
-                    fileInput.disabled = true;
-                    
-                    // Disable upload area
-                    const label = fileInput.previousElementSibling;
-                    label.classList.add('opacity-50', 'cursor-not-allowed', 'pointer-events-none');
-                });
-                
-                // Hide upload button
-                document.getElementById('uploadAllBtn').classList.add('hidden');
-                
-                // Show info message (only once)
-                if (!sessionStorage.getItem('docsLockedMessageShown')) {
-                    showInfo('Your documents have been uploaded and locked. Contact admin if changes are needed.');
-                    sessionStorage.setItem('docsLockedMessageShown', 'true');
-                }
-            }
-
-        } catch (error) {
-            console.error('Error loading document status:', error);
-            showError('Failed to load document status');
+        if (!response.ok) {
+            throw new Error('Failed to fetch document status');
         }
+
+        const data = await response.json();
+        
+        if (!data.success) {
+            console.error('Document status fetch failed:', data.error);
+            return;
+        }
+
+        const status = data.document_status || {};
+        const urls = data.document_urls || {};
+        
+        console.log('Document Status:', status);
+        console.log('Document URLs:', urls);
+
+        // ===== CONTRACT STATUS =====
+        const contractExistsView = document.getElementById('contractExistsView');
+        const contractSignView = document.getElementById('contractSignView');
+        const viewContractBtn = document.getElementById('viewContractBtn');
+
+        if (status.driver_contract && urls.driver_contract) {
+            // Contract exists - show view button
+            contractExistsView.classList.remove('hidden');
+            contractSignView.classList.add('hidden');
+            viewContractBtn.setAttribute('data-url', urls.driver_contract);
+            viewContractBtn.disabled = false;
+            viewContractBtn.classList.remove('opacity-50', 'cursor-not-allowed');
+        } else {
+            // Contract doesn't exist - show sign button
+            contractExistsView.classList.add('hidden');
+            contractSignView.classList.remove('hidden');
+        }
+
+        // ===== PRIVACY AGREEMENT STATUS =====
+        const privacyExistsView = document.getElementById('privacyExistsView');
+        const privacySignView = document.getElementById('privacySignView');
+        const viewPrivacyBtn = document.getElementById('viewPrivacyBtn');
+
+        if (status.privacy_laws_agreement && urls.privacy_laws_agreement) {
+            // Privacy agreement exists - show view button
+            privacyExistsView.classList.remove('hidden');
+            privacySignView.classList.add('hidden');
+            viewPrivacyBtn.setAttribute('data-url', urls.privacy_laws_agreement);
+            viewPrivacyBtn.disabled = false;
+            viewPrivacyBtn.classList.remove('opacity-50', 'cursor-not-allowed');
+        } else {
+            // Privacy agreement doesn't exist - show sign button
+            privacyExistsView.classList.add('hidden');
+            privacySignView.classList.remove('hidden');
+        }
+
+        // ===== BANKING DETAILS STATUS =====
+        const bankingExistsView = document.getElementById('bankingExistsView');
+        const bankingFormView = document.getElementById('bankingFormView');
+
+        if (status.authorized_to_store_banking_details && urls.bank_account_number) {
+            // Banking details exist - show display view
+            bankingExistsView.classList.remove('hidden');
+            bankingFormView.classList.add('hidden');
+            
+            // Display banking information (masked for security)
+            document.getElementById('displayInstitution').textContent = urls.bank_institution_number || '•••';
+            document.getElementById('displayTransit').textContent = urls.bank_transit_number || '•••••';
+            
+            // Mask account number - show only last 4 digits
+            const accountNumber = urls.bank_account_number || '';
+            if (accountNumber.length > 4) {
+                document.getElementById('displayAccount').textContent = '••••' + accountNumber.slice(-4);
+            } else {
+                document.getElementById('displayAccount').textContent = accountNumber;
+            }
+        } else {
+            // Banking details don't exist - show form
+            bankingExistsView.classList.add('hidden');
+            bankingFormView.classList.remove('hidden');
+        }
+
+        // ===== CHECK IF DOCUMENTS UPLOADED =====
+        const hasUploadedDocs = !!(
+            status.driver_license_url && 
+            status.auto_insurance_url && 
+            status.vehicle_ownership_url && 
+            status.right_to_work_url
+        );
+
+        if (hasUploadedDocs) {
+            // Documents already uploaded - lock interface and show them
+            const docMapping = {
+                'driver_license_url': 'license',
+                'auto_insurance_url': 'insurance',
+                'vehicle_ownership_url': 'registration',
+                'right_to_work_url': 'workProof'
+            };
+
+            Object.entries(docMapping).forEach(([apiKey, uiKey]) => {
+                const url = urls[apiKey];
+                if (!url) return;
+                
+                const previewDiv = document.getElementById(`${uiKey}Preview`);
+                const filename = url.split('/').pop();
+                
+                previewDiv.classList.remove('hidden');
+                previewDiv.innerHTML = `
+                    <div class="flex items-center justify-between bg-slate-700 rounded-lg p-3">
+                        <div class="flex items-center flex-1 min-w-0 mr-2">
+                            <svg class="w-5 h-5 text-emerald-400 mr-2 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20">
+                                <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd"/>
+                            </svg>
+                            <span class="text-sm text-slate-300 truncate">${decodeURIComponent(filename)}</span>
+                            <span class="ml-2 text-xs text-emerald-400 flex-shrink-0">✓ Uploaded</span>
+                        </div>
+                        <button onclick="viewUploadedDocument('${url}')" class="text-blue-400 hover:text-blue-300 text-xs px-2 py-1 rounded transition-colors flex items-center flex-shrink-0" title="View document">
+                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/>
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"/>
+                            </svg>
+                        </button>
+                    </div>
+                `;
+                
+                // Disable file input
+                const fileInput = document.getElementById(`${uiKey}Upload`);
+                fileInput.disabled = true;
+                
+                // Disable upload area
+                const label = fileInput.previousElementSibling;
+                label.classList.add('opacity-50', 'cursor-not-allowed', 'pointer-events-none');
+            });
+            
+            // Hide upload button
+            document.getElementById('uploadAllBtn').classList.add('hidden');
+            
+            // Show info message (only once)
+            if (!sessionStorage.getItem('docsLockedMessageShown')) {
+                showInfo('Your documents have been uploaded and locked. Contact admin if changes are needed.');
+                sessionStorage.setItem('docsLockedMessageShown', 'true');
+            }
+        }
+
+    } catch (error) {
+        console.error('Error loading document status:', error);
+        showError('Failed to load document status');
     }
+}
 
     // ===== LOGOUT =====
     async function handleLogout() {
@@ -1359,6 +1552,23 @@ async function submitPrivacySignature() {
         sidebarOverlay?.addEventListener('click', () => {
             sidebar.classList.add('-translate-x-full');
             sidebarOverlay.classList.add('hidden');
+        });
+
+        // Banking form listeners
+        document.getElementById('institutionNumber')?.addEventListener('input', updateBankingSubmitButton);
+        document.getElementById('transitNumber')?.addEventListener('input', updateBankingSubmitButton);
+        document.getElementById('accountNumber')?.addEventListener('input', updateBankingSubmitButton);
+        document.getElementById('bankingAuthCheckbox')?.addEventListener('change', updateBankingSubmitButton);
+
+        // Restrict banking inputs to numbers only
+        document.getElementById('institutionNumber')?.addEventListener('input', function(e) {
+            this.value = this.value.replace(/[^0-9]/g, '');
+        });
+        document.getElementById('transitNumber')?.addEventListener('input', function(e) {
+            this.value = this.value.replace(/[^0-9]/g, '');
+        });
+        document.getElementById('accountNumber')?.addEventListener('input', function(e) {
+            this.value = this.value.replace(/[^0-9]/g, '');
         });
 
         loadDriverInfo();
