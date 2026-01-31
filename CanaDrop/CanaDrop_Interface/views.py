@@ -15,7 +15,7 @@ from random import sample
 import mimetypes
 import base64
 import time
-from .auth import *
+from .auth import * 
 
 # Third-Party Libraries
 import googlemaps
@@ -26,17 +26,18 @@ from google.cloud import storage
 from google.oauth2 import service_account
 from ortools.constraint_solver import pywrapcp, routing_enums_pb2
 from reportlab.lib import colors
-from reportlab.lib.enums import TA_CENTER, TA_LEFT, TA_RIGHT
+from reportlab.lib.enums import TA_CENTER, TA_LEFT, TA_RIGHT, TA_JUSTIFY
 from reportlab.lib.pagesizes import A4, letter
 from reportlab.lib.styles import getSampleStyleSheet, ParagraphStyle
 from reportlab.lib.units import inch
 from reportlab.platypus import (
-    SimpleDocTemplate, Paragraph, Spacer, Table, TableStyle, Image
+    SimpleDocTemplate, Paragraph, Spacer, Table, TableStyle, Image, PageBreak
 )
 from PIL import Image as PILImage
 import jwt
 import hmac
 import re
+import threading
 
 # Django Core
 from django.conf import settings
@@ -222,6 +223,10 @@ def driverIdentityView(request):
 @driver_auth_required
 def driverCCPointsView(request):
     return render(request, 'driverCCPoints.html')
+
+@driver_auth_required
+def driverMyDocumentsView(request):
+    return render(request, 'driverMyDocuments.html')
 
 # ----------------------------
 # Admin Page Logins
@@ -542,6 +547,353 @@ def create_order_tracking_entry(
         }
 
 
+# @csrf_protect
+# @require_http_methods(["POST"])
+# @pharmacy_auth_required
+# def create_delivery_order(request):
+#     try:
+#         data = json.loads(request.body or "{}")
+
+#         # -----------------------------
+#         # Required fields
+#         # -----------------------------
+#         pharmacy_id = data.get("pharmacyId")
+#         pickup_address = data.get("pickupAddress")
+#         pickup_city = data.get("pickupCity")
+#         pickup_day = data.get("pickupDay")
+#         drop_address = data.get("dropAddress")
+#         drop_city = data.get("dropCity")
+
+#         # Optional existing fields
+#         customer_name = data.get("customerName")
+#         customer_phone = data.get("customerPhone")
+
+#         # Optional compliance fields
+#         signature_required = data.get("signatureRequired")
+#         id_verification_required = data.get("idVerificationRequired")
+#         alternate_contact = data.get("alternateContact")
+#         delivery_notes = data.get("deliveryNotes")
+
+#         # -----------------------------
+#         # Validation
+#         # -----------------------------
+#         if not all([
+#             pharmacy_id,
+#             pickup_address,
+#             pickup_city,
+#             pickup_day,
+#             drop_address,
+#             drop_city,
+#         ]):
+#             logger.info(
+#                 "create_delivery_order: missing required fields | pharmacy_id=%s",
+#                 pharmacy_id,
+#             )
+#             return JsonResponse(
+#                 {"success": False, "error": "Missing required fields"},
+#                 status=400
+#             )
+
+#         # -----------------------------
+#         # Pharmacy validation
+#         # -----------------------------
+#         pharmacy = Pharmacy.objects.get(id=pharmacy_id)
+
+#         if request.pharmacy.id != pharmacy.id:
+#             logger.warning(
+#                 "create_delivery_order: pharmacy mismatch | token=%s payload=%s",
+#                 request.pharmacy.id,
+#                 pharmacy.id,
+#             )
+#             return JsonResponse(
+#                 {"success": False, "error": "Unauthorized pharmacy"},
+#                 status=403
+#             )
+        
+#         if not pharmacy.active:
+#           logger.warning("create_delivery_order: inactive pharmacy attempted order | pharmacy_id=%s",pharmacy.id,)
+#           return JsonResponse({"success": False, "error": "Your pharmacy account is currently inactive. Please contact support."}, status=403)
+
+#         # -----------------------------
+#         # Distance calculation
+#         # -----------------------------
+#         distance_km, error = get_distance_km(
+#             pickup_address,
+#             pickup_city,
+#             drop_address,
+#             drop_city,
+#         )
+
+#         if error:
+#             logger.warning(
+#                 "create_delivery_order: distance error | pharmacy=%s error=%s",
+#                 pharmacy.id,
+#                 error,
+#             )
+#             return JsonResponse(
+#                 {"success": False, "error": error},
+#                 status=400
+#             )
+
+#         # -----------------------------
+#         # Rate calculation
+#         # -----------------------------
+#         rate_entry = (
+#             DeliveryDistanceRate.objects
+#             .filter(min_distance_km__lte=distance_km)
+#             .order_by("min_distance_km")
+#             .last()
+#         )
+
+#         rate = rate_entry.rate if rate_entry else 0
+
+#         # -----------------------------
+#         # Create kwargs
+#         # -----------------------------
+#         create_kwargs = {
+#             "pharmacy": pharmacy,
+#             "pickup_address": pickup_address,
+#             "pickup_city": pickup_city,
+#             "pickup_day": parse_date(pickup_day),
+#             "drop_address": drop_address,
+#             "drop_city": drop_city,
+#             "status": "pending",
+#             "rate": rate,
+#         }
+
+#         if customer_name:
+#             create_kwargs["customer_name"] = customer_name
+
+#         if customer_phone:
+#             create_kwargs["customer_phone"] = customer_phone
+
+#         if signature_required is not None:
+#             create_kwargs["signature_required"] = bool(signature_required)
+
+#         if id_verification_required is not None:
+#             create_kwargs["id_verification_required"] = bool(id_verification_required)
+
+#         if alternate_contact:
+#             create_kwargs["alternate_contact"] = alternate_contact
+
+#         if delivery_notes:
+#             create_kwargs["delivery_notes"] = delivery_notes
+
+#         # -----------------------------
+#         # Create order + tracking
+#         # -----------------------------
+#         with transaction.atomic():
+#             order = DeliveryOrder.objects.create(**create_kwargs)
+
+#             tracking_result = create_order_tracking_entry(
+#                 order_id=order.id,
+#                 step="pending",
+#                 performed_by=f"Pharmacy: {pharmacy.name}",
+#                 note="Order created and pending driver acceptance",
+#             )
+
+#         logger.info(
+#             "create_delivery_order: success | order_id=%s pharmacy=%s distance=%.2f rate=%s",
+#             order.id,
+#             pharmacy.id,
+#             distance_km,
+#             rate,
+#         )
+
+#         # -----------------------------
+#         # Response (UNCHANGED)
+#         # -----------------------------
+#         return JsonResponse(
+#             {
+#                 "success": True,
+#                 "orderId": order.id,
+#                 "distance_km": distance_km,
+#                 "rate": str(rate),
+#                 "status": order.status,
+#                 "customerName": order.customer_name,
+#                 "customerPhone": order.customer_phone,
+#                 "signatureRequired": order.signature_required,
+#                 "idVerificationRequired": order.id_verification_required,
+#                 "alternateContact": order.alternate_contact,
+#                 "deliveryNotes": order.delivery_notes,
+#                 "tracking_id": tracking_result.get("tracking_id"),
+#                 "message": "Order and tracking created successfully",
+#             },
+#             status=201,
+#         )
+
+#     except Pharmacy.DoesNotExist:
+#         logger.warning(
+#             "create_delivery_order: pharmacy not found | pharmacy_id=%s",
+#             data.get("pharmacyId"),
+#         )
+#         return JsonResponse(
+#             {"success": False, "error": "Pharmacy not found"},
+#             status=404
+#         )
+
+#     except Exception:
+#         logger.exception("create_delivery_order: unhandled exception")
+#         return JsonResponse(
+#             {"success": False, "error": "Internal server error"},
+#             status=500
+#         )
+
+def notify_drivers_new_order_async(order_id: int):
+    """
+    Fire-and-forget notification to all ACTIVE drivers
+    when a new order is posted.
+    """
+
+    def _run():
+        try:
+            order = (
+                DeliveryOrder.objects
+                .select_related("pharmacy")
+                .get(id=order_id)
+            )
+
+            drivers = Driver.objects.filter(active=True)
+
+            logger.info(
+                "Notifying %s drivers about new order %s",
+                drivers.count(),
+                order.id
+            )
+
+            brand_primary = settings.BRAND_COLORS['primary']
+            brand_accent = settings.BRAND_COLORS['accent']
+            logo_url = settings.LOGO_URL
+
+            for driver in drivers.iterator():
+                html = f"""\
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <title>New Delivery Available • {settings.COMPANY_OPERATING_NAME}</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <style>
+      @media (prefers-color-scheme: dark) {{
+        body {{ background: #0b1220 !important; color: #e5e7eb !important; }}
+        .card {{ background: #0f172a !important; border-color: #1f2937 !important; }}
+        .muted {{ color: #94a3b8 !important; }}
+      }}
+    </style>
+  </head>
+  <body style="margin:0;padding:0;background:#f4f7f9;">
+    <div style="display:none;visibility:hidden;opacity:0;height:0;width:0;overflow:hidden;">
+      New delivery order available — check the portal for details.
+    </div>
+
+    <table role="presentation" width="100%" cellspacing="0" cellpadding="0" border="0" style="background:#f4f7f9;padding:24px 12px;">
+      <tr>
+        <td align="center">
+          <table role="presentation" width="100%" cellspacing="0" cellpadding="0" border="0" class="card" style="max-width:640px;background:#ffffff;border:1px solid #e5e7eb;border-radius:16px;overflow:hidden;">
+            <tr>
+              <td style="background:{brand_primary};padding:18px 20px;">
+                <table width="100%" cellspacing="0" cellpadding="0" border="0">
+                  <tr>
+                    <td align="left">
+                      <img src="{logo_url}"
+                           alt="{settings.COMPANY_OPERATING_NAME}"
+                           width="64"
+                           height="64"
+                           style="display:block;border:0;outline:none;text-decoration:none;border-radius:50%;object-fit:cover;">
+                    </td>
+                    <td align="right" style="font:600 16px/1.2 system-ui,-apple-system,'Segoe UI',Roboto,Helvetica,Arial;color:#e6fffb;">
+                      New Delivery Available
+                    </td>
+                  </tr>
+                </table>
+              </td>
+            </tr>
+
+            <tr>
+              <td style="padding:28px 24px 6px;">
+                <h1 style="margin:0 0 10px;font:800 24px/1.25 system-ui,-apple-system,'Segoe UI',Roboto,Helvetica,Arial;color:#0f172a;">
+                  Hi {driver.name}, a new delivery is ready 🚗
+                </h1>
+                <p style="margin:0 0 16px;font:400 14px/1.7 system-ui,-apple-system,'Segoe UI',Roboto,Helvetica,Arial;color:#475569;">
+                  A new delivery order has been posted to the <strong>{settings.COMPANY_OPERATING_NAME}</strong> platform.
+                  Log in to the driver portal to view full details and accept the order.
+                </p>
+
+                <div style="margin:18px 0;background:#f0fdfa;border:1px solid {brand_primary};border-radius:12px;padding:16px 18px;">
+                  <table width="100%" cellspacing="0" cellpadding="0" border="0" style="font:400 14px/1.7 system-ui,-apple-system,'Segoe UI',Roboto,Helvetica,Arial;color:#334155;">
+                    <tr>
+                      <td style="padding:6px 0;color:#64748b;font-weight:600;">Pickup City:</td>
+                      <td style="padding:6px 0;color:#0f172a;font-weight:500;">{order.pickup_city}</td>
+                    </tr>
+                    <tr>
+                      <td style="padding:6px 0;color:#64748b;font-weight:600;">Drop-off City:</td>
+                      <td style="padding:6px 0;color:#0f172a;font-weight:500;">{order.drop_city}</td>
+                    </tr>
+                  </table>
+                </div>
+
+                <div style="margin:18px 0;background:#eff6ff;border:1px solid {brand_accent};border-radius:12px;padding:14px 18px;">
+                  <p style="margin:0;font:400 13px/1.6 system-ui,-apple-system,'Segoe UI',Roboto,Helvetica,Arial;color:#1e40af;">
+                    <strong>📋 Action Required</strong> — Log in to the driver portal to view complete order details, delivery rate, and accept this delivery.
+                  </p>
+                </div>
+
+                <hr style="border:0;border-top:1px solid #e5e7eb;margin:24px 0;">
+                <p class="muted" style="margin:0;font:400 12px/1.7 system-ui,-apple-system,'Segoe UI',Roboto,Helvetica,Arial;color:#6b7280;">
+                  Questions? Contact support through the driver portal or reach out to the operations team.
+                </p>
+              </td>
+            </tr>
+
+            <tr>
+              <td style="padding:0 24px 24px;">
+                <table width="100%" cellspacing="0" cellpadding="0" border="0" style="background:#f8fafc;border:1px dashed #e2e8f0;border-radius:12px;">
+                  <tr>
+                    <td style="padding:12px 16px;">
+                      <p style="margin:0;font:400 12px/1.6 system-ui,-apple-system,'Segoe UI',Roboto,Helvetica,Arial;color:#64748b;">
+                        Thank you for being part of the {settings.COMPANY_OPERATING_NAME} driver network.
+                      </p>
+                    </td>
+                  </tr>
+                </table>
+              </td>
+            </tr>
+
+          </table>
+
+          <p style="margin:14px 0 0;font:400 12px/1.6 system-ui,-apple-system,'Segoe UI',Roboto,Helvetica,Arial;color:#94a3b8;">
+            © 2026 {settings.COMPANY_OPERATING_NAME} - {settings.COMPANY_SUB_GROUP_NAME}. All rights reserved.
+          </p>
+        </td>
+      </tr>
+    </table>
+  </body>
+</html>
+"""
+
+                text_fallback = (
+                    f"New delivery available.\n"
+                    f"Pickup: {order.pickup_city}\n"
+                    f"Drop: {order.drop_city}\n\n"
+                    f"Log in to view details."
+                )
+
+                _send_html_email_operations(
+                    subject="New Delivery Available",
+                    to_email=driver.email,
+                    html=html,
+                    text_fallback=text_fallback,
+                )
+
+        except Exception:
+            logger.exception(
+                "Failed sending driver notifications for order %s",
+                order_id
+            )
+
+    threading.Thread(target=_run, daemon=True).start()
+
+
 @csrf_protect
 @require_http_methods(["POST"])
 @pharmacy_auth_required
@@ -559,19 +911,15 @@ def create_delivery_order(request):
         drop_address = data.get("dropAddress")
         drop_city = data.get("dropCity")
 
-        # Optional existing fields
+        # Optional fields
         customer_name = data.get("customerName")
         customer_phone = data.get("customerPhone")
 
-        # Optional compliance fields
         signature_required = data.get("signatureRequired")
         id_verification_required = data.get("idVerificationRequired")
         alternate_contact = data.get("alternateContact")
         delivery_notes = data.get("deliveryNotes")
 
-        # -----------------------------
-        # Validation
-        # -----------------------------
         if not all([
             pharmacy_id,
             pickup_address,
@@ -580,37 +928,27 @@ def create_delivery_order(request):
             drop_address,
             drop_city,
         ]):
-            logger.info(
-                "create_delivery_order: missing required fields | pharmacy_id=%s",
-                pharmacy_id,
-            )
             return JsonResponse(
                 {"success": False, "error": "Missing required fields"},
                 status=400
             )
 
-        # -----------------------------
-        # Pharmacy validation
-        # -----------------------------
         pharmacy = Pharmacy.objects.get(id=pharmacy_id)
 
         if request.pharmacy.id != pharmacy.id:
-            logger.warning(
-                "create_delivery_order: pharmacy mismatch | token=%s payload=%s",
-                request.pharmacy.id,
-                pharmacy.id,
-            )
             return JsonResponse(
                 {"success": False, "error": "Unauthorized pharmacy"},
                 status=403
             )
-        
+
         if not pharmacy.active:
-          logger.warning("create_delivery_order: inactive pharmacy attempted order | pharmacy_id=%s",pharmacy.id,)
-          return JsonResponse({"success": False, "error": "Your pharmacy account is currently inactive. Please contact support."}, status=403)
+            return JsonResponse(
+                {"success": False, "error": "Your pharmacy account is inactive"},
+                status=403
+            )
 
         # -----------------------------
-        # Distance calculation
+        # Distance + rate
         # -----------------------------
         distance_km, error = get_distance_km(
             pickup_address,
@@ -620,19 +958,11 @@ def create_delivery_order(request):
         )
 
         if error:
-            logger.warning(
-                "create_delivery_order: distance error | pharmacy=%s error=%s",
-                pharmacy.id,
-                error,
-            )
             return JsonResponse(
                 {"success": False, "error": error},
                 status=400
             )
 
-        # -----------------------------
-        # Rate calculation
-        # -----------------------------
         rate_entry = (
             DeliveryDistanceRate.objects
             .filter(min_distance_km__lte=distance_km)
@@ -642,9 +972,6 @@ def create_delivery_order(request):
 
         rate = rate_entry.rate if rate_entry else 0
 
-        # -----------------------------
-        # Create kwargs
-        # -----------------------------
         create_kwargs = {
             "pharmacy": pharmacy,
             "pickup_address": pickup_address,
@@ -658,24 +985,19 @@ def create_delivery_order(request):
 
         if customer_name:
             create_kwargs["customer_name"] = customer_name
-
         if customer_phone:
             create_kwargs["customer_phone"] = customer_phone
-
         if signature_required is not None:
             create_kwargs["signature_required"] = bool(signature_required)
-
         if id_verification_required is not None:
             create_kwargs["id_verification_required"] = bool(id_verification_required)
-
         if alternate_contact:
             create_kwargs["alternate_contact"] = alternate_contact
-
         if delivery_notes:
             create_kwargs["delivery_notes"] = delivery_notes
 
         # -----------------------------
-        # Create order + tracking
+        # Create order + notify drivers
         # -----------------------------
         with transaction.atomic():
             order = DeliveryOrder.objects.create(**create_kwargs)
@@ -687,17 +1009,11 @@ def create_delivery_order(request):
                 note="Order created and pending driver acceptance",
             )
 
-        logger.info(
-            "create_delivery_order: success | order_id=%s pharmacy=%s distance=%.2f rate=%s",
-            order.id,
-            pharmacy.id,
-            distance_km,
-            rate,
-        )
+            # 🔔 Notify drivers AFTER successful commit
+            transaction.on_commit(
+                lambda: notify_drivers_new_order_async(order.id)
+            )
 
-        # -----------------------------
-        # Response (UNCHANGED)
-        # -----------------------------
         return JsonResponse(
             {
                 "success": True,
@@ -705,30 +1021,20 @@ def create_delivery_order(request):
                 "distance_km": distance_km,
                 "rate": str(rate),
                 "status": order.status,
-                "customerName": order.customer_name,
-                "customerPhone": order.customer_phone,
-                "signatureRequired": order.signature_required,
-                "idVerificationRequired": order.id_verification_required,
-                "alternateContact": order.alternate_contact,
-                "deliveryNotes": order.delivery_notes,
                 "tracking_id": tracking_result.get("tracking_id"),
-                "message": "Order and tracking created successfully",
+                "message": "Order created successfully",
             },
             status=201,
         )
 
     except Pharmacy.DoesNotExist:
-        logger.warning(
-            "create_delivery_order: pharmacy not found | pharmacy_id=%s",
-            data.get("pharmacyId"),
-        )
         return JsonResponse(
             {"success": False, "error": "Pharmacy not found"},
             status=404
         )
 
     except Exception:
-        logger.exception("create_delivery_order: unhandled exception")
+        logger.exception("create_delivery_order failed")
         return JsonResponse(
             {"success": False, "error": "Internal server error"},
             status=500
@@ -1831,8 +2137,10 @@ def get_pending_orders(request):
     Returns all pending delivery orders.
     - DB timestamps are stored in UTC
     - API converts timestamps to settings.USER_TIMEZONE
-    - Requires authenticated driver (JWT in HttpOnly cookie)
+    - Includes net_driver_rate after commission deduction
     """
+
+    commission_rate = Decimal(str(settings.DRIVER_COMMISSION_RATE))
 
     orders = (
         DeliveryOrder.objects
@@ -1848,10 +2156,10 @@ def get_pending_orders(request):
         store_timing = None
 
         # ----------------------------
-        # Business-hours logic (date-only, timezone-independent)
+        # Business-hours logic
         # ----------------------------
         if pharmacy and pharmacy.business_hours and order.pickup_day:
-            day_key = order.pickup_day.strftime("%a")  # Mon, Tue, Wed
+            day_key = order.pickup_day.strftime("%a")
             day_hours = pharmacy.business_hours.get(day_key)
 
             if not day_hours or day_hours == "closed":
@@ -1868,7 +2176,7 @@ def get_pending_orders(request):
                 }
 
         # ----------------------------
-        # ⏰ TIMEZONE CONVERSION (UTC → USER_TIMEZONE)
+        # Timezone conversion
         # ----------------------------
         created_local = timezone.localtime(
             order.created_at,
@@ -1878,6 +2186,12 @@ def get_pending_orders(request):
             order.updated_at,
             settings.USER_TIMEZONE
         )
+
+        # ----------------------------
+        # 💰 Net driver rate calculation
+        # ----------------------------
+        rate = Decimal(order.rate)
+        net_driver_rate = rate * (Decimal("1") - commission_rate)
 
         data.append({
             "id": order.id,
@@ -1892,11 +2206,11 @@ def get_pending_orders(request):
             "drop_city": order.drop_city,
 
             "status": order.status,
-            "rate": str(order.rate),
+            "rate": str(rate),
+            "net_driver_rate": str(net_driver_rate.quantize(Decimal("0.01"))),
 
             "store_timing_for_pickup_day": store_timing,
 
-            # Local time output (same format as before)
             "created_at": created_local.strftime("%Y-%m-%d %H:%M:%S"),
             "updated_at": updated_local.strftime("%Y-%m-%d %H:%M:%S"),
         })
@@ -16209,6 +16523,261 @@ def upload_driver_identity_image(request):
         }, status=500)
 
 
+@csrf_protect
+@require_http_methods(["POST"])
+@driver_auth_required
+def upload_driver_documents(request):
+    """
+    Upload driver compliance documents in one request:
+      - license
+      - insurance
+      - ownership
+      - workstatus
+
+    Saves public URLs to Driver model fields.
+    """
+
+    try:
+        driver = request.driver
+
+        # Log what files we received
+        logger.info(f"=== Upload request for driver {driver.id} ===")
+        logger.info(f"Received files: {list(request.FILES.keys())}")
+        for key in request.FILES.keys():
+            f = request.FILES[key]
+            logger.info(f"  {key}: {f.name} ({f.size} bytes, {f.content_type})")
+
+        # ----------------------------
+        # Supported documents map
+        # ----------------------------
+        DOCUMENT_FIELDS = {
+            "license": "driver_license_url",
+            "insurance": "auto_insurance_url",
+            "ownership": "vehicle_ownership_url",
+            "workstatus": "right_to_work_url",
+        }
+
+        allowed_exts = {".pdf", ".png", ".jpg", ".jpeg"}
+        uploaded_urls = {}
+
+        # ----------------------------
+        # Build driver folder
+        # ----------------------------
+        safe_name = "".join(
+            c for c in (driver.name or "") if c.isalnum() or c in ("_", "-")
+        ).strip() or "driver"
+
+        safe_email = (
+            driver.email.replace("@", "_").replace(".", "_")
+            if driver.email else f"driver_{driver.id}"
+        )
+
+        driver_folder = f"{driver.id}_{safe_name}_{safe_email}"
+
+        # ----------------------------
+        # Init GCP client
+        # ----------------------------
+        credentials = service_account.Credentials.from_service_account_file(
+            settings.GCP_KEY_PATH
+        )
+        client = storage.Client(credentials=credentials)
+        bucket = client.bucket(settings.GCP_BUCKET_NAME)
+
+        # ----------------------------
+        # Process each document
+        # ----------------------------
+        for doc_key, model_field in DOCUMENT_FIELDS.items():
+            file_obj = request.FILES.get(doc_key)
+            if not file_obj:
+                logger.warning(f"No file received for {doc_key}")
+                continue  # optional upload
+
+            logger.info(f"Processing {doc_key}: {file_obj.name}")
+
+            ext = os.path.splitext(file_obj.name)[1].lower()
+            logger.info(f"  Extension: {ext}")
+            
+            if ext not in allowed_exts:
+                logger.error(f"Invalid extension {ext} for {doc_key}")
+                return JsonResponse(
+                    {
+                        "success": False,
+                        "error": f"Invalid file type for {doc_key}. Allowed: pdf, png, jpg, jpeg"
+                    },
+                    status=400
+                )
+
+            filename = f"{doc_key}{ext}"
+
+            gcp_object_path = (
+                f"{settings.GCP_DRIVER_INVOICE_FOLDER}/"
+                f"{settings.GCP_DRIVER_DOCUMENTS_FOLDER}/"
+                f"{driver_folder}/"
+                f"{filename}"
+            )
+
+            logger.info(f"  GCP path: {gcp_object_path}")
+
+            blob = bucket.blob(gcp_object_path)
+            file_obj.seek(0)
+
+            # Force correct content type based on extension
+            if ext == '.pdf':
+                content_type = 'application/pdf'
+            elif ext in ['.jpg', '.jpeg']:
+                content_type = 'image/jpeg'
+            elif ext == '.png':
+                content_type = 'image/png'
+            else:
+                content_type = (
+                    file_obj.content_type
+                    or mimetypes.guess_type(filename)[0]
+                    or "application/octet-stream"
+                )
+
+            logger.info(f"  Content-Type: {content_type}")
+
+            # Upload (overwrite-safe)
+            try:
+                blob.upload_from_file(file_obj, content_type=content_type)
+                logger.info(f"  ✓ Successfully uploaded {doc_key}")
+            except Exception as e:
+                logger.exception(f"  ✗ Failed to upload {doc_key}")
+                raise
+
+            public_url = f"https://storage.googleapis.com/{bucket.name}/{gcp_object_path}"
+
+            # Save URL on model field
+            setattr(driver, model_field, public_url)
+            uploaded_urls[doc_key] = public_url
+            logger.info(f"  URL: {public_url}")
+
+        # ----------------------------
+        # Persist DB updates
+        # ----------------------------
+        if uploaded_urls:
+            driver.save(update_fields=DOCUMENT_FIELDS.values())
+            logger.info(f"Saved {len(uploaded_urls)} document URLs to database")
+
+        logger.info(f"=== Upload complete: {len(uploaded_urls)} files ===")
+
+        return JsonResponse(
+            {
+                "success": True,
+                "driver_id": driver.id,
+                "uploaded_documents": uploaded_urls,
+                "message": "Driver documents uploaded successfully"
+            },
+            status=200
+        )
+
+    except Exception:
+        logger.exception("Error uploading driver documents")
+        return JsonResponse(
+            {
+                "success": False,
+                "error": "Failed to upload driver documents"
+            },
+            status=500
+        )
+
+
+@csrf_protect
+@require_http_methods(["GET"])
+@driver_auth_required
+def get_driver_documents(request):
+    """
+    Return uploaded driver document URLs for the authenticated driver.
+    Only returns documents that exist.
+    """
+
+    try:
+        driver = request.driver  # set by driver_auth_required
+
+        documents = {
+            "driver_license": driver.driver_license_url,
+            "auto_insurance": driver.auto_insurance_url,
+            "vehicle_ownership": driver.vehicle_ownership_url,
+            "right_to_work": driver.right_to_work_url,
+            "driver_contract": driver.driver_contract,
+            "privacy_laws_agreement": driver.privacy_laws_agreement,
+        }
+
+        # Filter out empty / null values
+        available_documents = {
+            key: value
+            for key, value in documents.items()
+            if value
+        }
+
+        return JsonResponse({
+            "success": True,
+            "driver_id": driver.id,
+            "driver_name": driver.name,
+            "documents": available_documents,
+            "total_documents": len(available_documents)
+        }, status=200)
+
+    except Exception as e:
+        logger.exception("Failed to fetch driver documents")
+        return JsonResponse({
+            "success": False,
+            "error": "Failed to fetch driver documents"
+        }, status=500)
+
+
+@csrf_protect
+@require_http_methods(["GET"])
+@driver_auth_required
+def get_driver_document_status(request):
+    """
+    Returns both:
+      - boolean flags (exists True/False)
+      - the actual stored URL values (or None)
+
+    TRUE  => field is not null/blank
+    FALSE => field is null/blank
+    """
+
+    try:
+        driver = request.driver  # set by driver_auth_required
+
+        def clean_url(v):
+            v = (v or "").strip()
+            return v if v else None
+
+        urls = {
+            "identity_url": clean_url(driver.identity_url),
+            "driver_license_url": clean_url(driver.driver_license_url),
+            "auto_insurance_url": clean_url(driver.auto_insurance_url),
+            "vehicle_ownership_url": clean_url(driver.vehicle_ownership_url),
+            "right_to_work_url": clean_url(driver.right_to_work_url),
+            "driver_contract": clean_url(driver.driver_contract),
+            "privacy_laws_agreement": clean_url(driver.privacy_laws_agreement),
+        }
+
+        status = {k: (v is not None) for k, v in urls.items()}
+
+        return JsonResponse(
+            {
+                "success": True,
+                "driver_id": driver.id,
+                "document_status": status,  # True/False
+                "document_urls": urls,      # actual values or None
+            },
+            status=200
+        )
+
+    except Exception:
+        logger.exception("Error fetching driver document status")
+        return JsonResponse(
+            {
+                "success": False,
+                "error": "Failed to fetch document status"
+            },
+            status=500
+        )
+
 
 def generate_acknowledgement_pdf(order, signature_image_path):
     """
@@ -16371,7 +16940,7 @@ def generate_acknowledgement_pdf(order, signature_image_path):
     delivery from <b>{order.pharmacy.name}</b> on <b>{current_date}</b>. 
     I confirm that all medicines have been received in <b>proper condition</b>, with intact packaging, 
     correct labeling, and no visible damage or tampering. The delivery was completed by 
-    <b>{settings.COMPANY_OPERATING_NAME} Delivery Services</b> in accordance with pharmaceutical handling protocols.
+    <b>{settings.COMPANY_OPERATING_NAME}</b> in accordance with pharmaceutical handling protocols.
     </font>
     </para>
     '''
@@ -17217,3 +17786,1822 @@ def add_driver_notes(request):
             ).strftime("%Y-%m-%d %H:%M:%S %Z")
         }
     })
+
+
+
+@csrf_protect
+@require_http_methods(["POST"])
+@driver_auth_required
+def generate_driver_contract(request):
+    """
+    Generate a professional driver contract PDF with signatures and upload to GCP.
+    
+    Expects:
+        - signature: Image file (driver's signature)
+    
+    Saves the contract PDF to:
+        GCP_BUCKET_NAME / GCP_DRIVER_INVOICE_FOLDER / GCP_DRIVER_DOCUMENTS_FOLDER / {driver_folder} / contract.pdf
+    
+    Updates Driver.driver_contract field with the public URL.
+    """
+    
+    try:
+        driver = request.driver
+        
+        logger.info(f"=== Generating contract for driver {driver.id} ({driver.name}) ===")
+        
+        # ----------------------------
+        # Validate signature upload
+        # ----------------------------
+        signature_file = request.FILES.get('signature')
+        if not signature_file:
+            logger.error("No signature file provided")
+            return JsonResponse(
+                {
+                    "success": False,
+                    "error": "Signature image is required"
+                },
+                status=400
+            )
+        
+        logger.info(f"Received signature: {signature_file.name} ({signature_file.size} bytes)")
+        
+        # Validate file type
+        allowed_exts = {".png", ".jpg", ".jpeg"}
+        ext = os.path.splitext(signature_file.name)[1].lower()
+        if ext not in allowed_exts:
+            logger.error(f"Invalid signature file type: {ext}")
+            return JsonResponse(
+                {
+                    "success": False,
+                    "error": "Signature must be a PNG, JPG, or JPEG image"
+                },
+                status=400
+            )
+        
+        # ----------------------------
+        # Build driver folder path
+        # ----------------------------
+        safe_name = "".join(
+            c for c in (driver.name or "") if c.isalnum() or c in ("_", "-")
+        ).strip() or "driver"
+        
+        safe_email = (
+            driver.email.replace("@", "_").replace(".", "_")
+            if driver.email else f"driver_{driver.id}"
+        )
+        
+        driver_folder = f"{driver.id}_{safe_name}_{safe_email}"
+        
+        # ----------------------------
+        # Download company signature
+        # ----------------------------
+        logger.info("Downloading company signature...")
+        try:
+            response = requests.get(settings.COMPANY_SIGNATURE_URL, timeout=10)
+            response.raise_for_status()
+            company_signature_data = io.BytesIO(response.content)
+            logger.info("✓ Company signature downloaded")
+        except Exception as e:
+            logger.exception("Failed to download company signature")
+            return JsonResponse(
+                {
+                    "success": False,
+                    "error": "Failed to download company signature"
+                },
+                status=500
+            )
+        
+        # ----------------------------
+        # Generate PDF contract
+        # ----------------------------
+        logger.info("Generating contract PDF...")
+        pdf_buffer = io.BytesIO()
+        
+        try:
+            generate_contract_pdf(
+                pdf_buffer,
+                driver,
+                signature_file,
+                company_signature_data
+            )
+            logger.info("✓ Contract PDF generated")
+        except Exception as e:
+            logger.exception("Failed to generate contract PDF")
+            return JsonResponse(
+                {
+                    "success": False,
+                    "error": "Failed to generate contract PDF"
+                },
+                status=500
+            )
+        
+        # ----------------------------
+        # Upload to GCP
+        # ----------------------------
+        logger.info("Uploading contract to GCP...")
+        
+        # Initialize GCP client
+        credentials = service_account.Credentials.from_service_account_file(
+            settings.GCP_KEY_PATH
+        )
+        client = storage.Client(credentials=credentials)
+        bucket = client.bucket(settings.GCP_BUCKET_NAME)
+        
+        utc_now = datetime.now(pytz.UTC)
+        local_now = utc_now.astimezone(settings.USER_TIMEZONE)
+        timestamp = local_now.strftime("%Y%m%d_%H%M%S")
+
+        gcp_object_path = (
+            f"{settings.GCP_DRIVER_INVOICE_FOLDER}/"
+            f"{settings.GCP_DRIVER_DOCUMENTS_FOLDER}/"
+            f"{driver_folder}/"
+            f"contract_{timestamp}.pdf"
+        )
+        
+        logger.info(f"GCP path: {gcp_object_path}")
+        
+        # Upload PDF
+        blob = bucket.blob(gcp_object_path)
+        pdf_buffer.seek(0)
+        
+        try:
+            blob.upload_from_file(pdf_buffer, content_type='application/pdf')
+            logger.info("✓ Successfully uploaded contract to GCP")
+        except Exception as e:
+            logger.exception("Failed to upload contract to GCP")
+            raise
+        
+        # Generate public URL
+        public_url = f"https://storage.googleapis.com/{bucket.name}/{gcp_object_path}"
+        
+        # ----------------------------
+        # Save contract URL to driver
+        # ----------------------------
+        driver.driver_contract = public_url
+        driver.save(update_fields=['driver_contract'])
+        logger.info(f"✓ Contract URL saved to driver record: {public_url}")
+        
+        logger.info(f"=== Contract generation complete ===")
+        
+        return JsonResponse(
+            {
+                "success": True,
+                "driver_id": driver.id,
+                "contract_url": public_url,
+                "message": "Driver contract generated and uploaded successfully"
+            },
+            status=200
+        )
+        
+    except Exception:
+        logger.exception("Error generating driver contract")
+        return JsonResponse(
+            {
+                "success": False,
+                "error": "Failed to generate driver contract"
+            },
+            status=500
+        )
+
+
+def generate_contract_pdf(pdf_buffer, driver, driver_signature_file, company_signature_data):
+    """
+    Generate a professional contract PDF with proper formatting and signatures.
+    
+    Args:
+        pdf_buffer: BytesIO buffer to write PDF to
+        driver: Driver model instance
+        driver_signature_file: Uploaded signature file from request.FILES
+        company_signature_data: BytesIO containing company signature image data
+    """
+    
+    # Create document with professional margins
+    doc = SimpleDocTemplate(
+        pdf_buffer,
+        pagesize=letter,
+        rightMargin=0.75*inch,
+        leftMargin=0.75*inch,
+        topMargin=0.5*inch,
+        bottomMargin=0.75*inch
+    )
+    
+    # Container for the 'Flowable' objects
+    elements = []
+    
+    # Define styles
+    styles = getSampleStyleSheet()
+    
+    # Custom styles
+    title_style = ParagraphStyle(
+        'CustomTitle',
+        parent=styles['Heading1'],
+        fontSize=20,
+        textColor=colors.HexColor('#1a1a1a'),
+        spaceAfter=6,
+        spaceBefore=12,
+        alignment=TA_CENTER,
+        fontName='Helvetica-Bold',
+        leading=24
+    )
+    
+    subtitle_style = ParagraphStyle(
+        'SubTitle',
+        parent=styles['Normal'],
+        fontSize=10,
+        textColor=colors.HexColor('#555555'),
+        spaceAfter=6,
+        alignment=TA_CENTER,
+        fontName='Helvetica'
+    )
+    
+    company_info_style = ParagraphStyle(
+        'CompanyInfo',
+        parent=styles['Normal'],
+        fontSize=9,
+        textColor=colors.HexColor('#666666'),
+        spaceAfter=20,
+        alignment=TA_CENTER,
+        fontName='Helvetica',
+        leading=12
+    )
+    
+    heading_style = ParagraphStyle(
+        'CustomHeading',
+        parent=styles['Heading2'],
+        fontSize=12,
+        textColor=colors.HexColor('#0f4c81'),
+        spaceAfter=8,
+        spaceBefore=16,
+        fontName='Helvetica-Bold',
+        borderWidth=1,
+        borderColor=colors.HexColor('#0f4c81'),
+        borderPadding=6,
+        backColor=colors.HexColor('#f0f4f8')
+    )
+    
+    subheading_style = ParagraphStyle(
+        'SubHeading',
+        parent=styles['Heading3'],
+        fontSize=11,
+        textColor=colors.HexColor('#1a1a1a'),
+        spaceAfter=6,
+        spaceBefore=10,
+        fontName='Helvetica-Bold'
+    )
+    
+    body_style = ParagraphStyle(
+        'CustomBody',
+        parent=styles['Normal'],
+        fontSize=10,
+        textColor=colors.HexColor('#333333'),
+        spaceAfter=10,
+        alignment=TA_JUSTIFY,
+        leading=14,
+        fontName='Helvetica'
+    )
+    
+    bullet_style = ParagraphStyle(
+        'BulletPoint',
+        parent=body_style,
+        leftIndent=25,
+        bulletIndent=10,
+        spaceAfter=6
+    )
+    
+    # ----------------------------
+    # Document Header with Logo
+    # ----------------------------
+    try:
+        # Download and add company logo
+        logo_response = requests.get('https://canalogistix.s3.us-east-2.amazonaws.com/Logo/CanaLogistiX_Logo_NOBG.png', timeout=10)
+        logo_response.raise_for_status()
+        logo_data = io.BytesIO(logo_response.content)
+        
+        # Resize logo to appropriate size
+        logo_img = PILImage.open(logo_data)
+        logo_width = 2.0 * inch
+        logo_height = logo_img.height * (logo_width / logo_img.width)
+        if logo_height > 1.0 * inch:
+            logo_height = 1.0 * inch
+            logo_width = logo_img.width * (logo_height / logo_img.height)
+        
+        logo_data.seek(0)
+        logo = Image(logo_data, width=logo_width, height=logo_height)
+        
+        # Center the logo
+        logo_table = Table([[logo]], colWidths=[6.5*inch])
+        logo_table.setStyle(TableStyle([
+            ('ALIGN', (0, 0), (-1, -1), 'CENTER'),
+            ('VALIGN', (0, 0), (-1, -1), 'MIDDLE'),
+        ]))
+        elements.append(logo_table)
+        elements.append(Spacer(1, 0.1*inch))
+        
+    except Exception as e:
+        logger.warning(f"Could not load company logo: {e}")
+        # Continue without logo
+    
+    # Company Information
+    elements.append(Paragraph(
+        f"<b>{settings.COMPANY_OPERATING_NAME}</b><br/>"
+        f"A division of {settings.COMPANY_SUB_GROUP_NAME}<br/>"
+        f"{settings.CORPORATION_NAME} | Business Number: {settings.COMPANY_BUSINESS_NUMBER}",
+        company_info_style
+    ))
+    
+    # Horizontal line separator
+    elements.append(Table([['']], colWidths=[6.5*inch], style=TableStyle([
+        ('LINEABOVE', (0, 0), (-1, 0), 2, colors.HexColor('#0f4c81')),
+        ('LINEBELOW', (0, 0), (-1, 0), 0.5, colors.HexColor('#cccccc')),
+    ])))
+    elements.append(Spacer(1, 0.2*inch))
+    
+    # Document Title
+    elements.append(Paragraph("INDEPENDENT CONTRACTOR AGREEMENT", title_style))
+    elements.append(Paragraph("Driver Services Agreement", subtitle_style))
+    elements.append(Paragraph(
+        f"Effective Date: {datetime.now().strftime('%B %d, %Y')}",
+        subtitle_style
+    ))
+    elements.append(Spacer(1, 0.2*inch))
+    
+    # ----------------------------
+    # Parties Section
+    # ----------------------------
+    elements.append(Paragraph("PARTIES TO THIS AGREEMENT", heading_style))
+    elements.append(Paragraph(
+        f"This Independent Contractor Agreement (the \"Agreement\") is entered into as of "
+        f"{datetime.now().strftime('%B %d, %Y')} by and between:",
+        body_style
+    ))
+    elements.append(Spacer(1, 0.1*inch))
+    
+    # Parties table with better styling
+    parties_data = [
+        ['Company:', f'{settings.COMPANY_OPERATING_NAME}, an operating name of {settings.CORPORATION_NAME} ("Company")'],
+        ['Contractor:', f'{driver.name} ("Driver" or "Contractor")'],
+        ['Email:', driver.email or 'N/A'],
+        ['Phone:', driver.phone_number or 'N/A'],
+        ['Vehicle:', driver.vehicle_number or 'N/A']
+    ]
+    
+    parties_table = Table(parties_data, colWidths=[1.3*inch, 5.2*inch])
+    parties_table.setStyle(TableStyle([
+        ('FONTNAME', (0, 0), (0, -1), 'Helvetica-Bold'),
+        ('FONTNAME', (1, 0), (1, -1), 'Helvetica'),
+        ('FONTSIZE', (0, 0), (-1, -1), 10),
+        ('TEXTCOLOR', (0, 0), (-1, -1), colors.HexColor('#333333')),
+        ('VALIGN', (0, 0), (-1, -1), 'TOP'),
+        ('LEFTPADDING', (0, 0), (-1, -1), 8),
+        ('RIGHTPADDING', (0, 0), (-1, -1), 8),
+        ('TOPPADDING', (0, 0), (-1, -1), 6),
+        ('BOTTOMPADDING', (0, 0), (-1, -1), 6),
+        ('GRID', (0, 0), (-1, -1), 0.5, colors.HexColor('#cccccc')),
+        ('BACKGROUND', (0, 0), (0, -1), colors.HexColor('#f8f9fa')),
+    ]))
+    
+    elements.append(parties_table)
+    elements.append(Spacer(1, 0.2*inch))
+    
+    # ----------------------------
+    # Recitals
+    # ----------------------------
+    elements.append(Paragraph(
+        "<b>WHEREAS</b>, the Company operates a delivery platform connecting businesses and providers "
+        "with customers requiring delivery services; and",
+        body_style
+    ))
+    elements.append(Paragraph(
+        "<b>WHEREAS</b>, the Contractor desires to provide independent delivery services through the "
+        "Company's platform;",
+        body_style
+    ))
+    elements.append(Paragraph(
+        "<b>NOW, THEREFORE</b>, in consideration of the mutual covenants and agreements contained herein, "
+        "the parties agree as follows:",
+        body_style
+    ))
+    elements.append(Spacer(1, 0.15*inch))
+    
+    # ----------------------------
+    # 1. Independent Contractor Relationship
+    # ----------------------------
+    elements.append(Paragraph("1. INDEPENDENT CONTRACTOR RELATIONSHIP", heading_style))
+    
+    elements.append(Paragraph("1.1 Independent Status", subheading_style))
+    elements.append(Paragraph(
+        f"The Contractor acknowledges and agrees that they are an independent contractor and not "
+        f"an employee, agent, partner, joint venturer, or representative of {settings.COMPANY_OPERATING_NAME} "
+        f"(an operating name of {settings.CORPORATION_NAME}). The Contractor has no authority to bind or represent "
+        f"the Company in any manner.",
+        body_style
+    ))
+    
+    elements.append(Paragraph("1.2 No Employment Benefits", subheading_style))
+    elements.append(Paragraph("The Contractor is not entitled to:", body_style))
+    elements.append(Paragraph("• Wages, overtime, or minimum wage protections", bullet_style))
+    elements.append(Paragraph("• Employment Insurance (EI) benefits", bullet_style))
+    elements.append(Paragraph("• Canada Pension Plan (CPP) contributions by the Company", bullet_style))
+    elements.append(Paragraph("• Vacation pay, sick leave, or employee benefits", bullet_style))
+    elements.append(Paragraph("• Workers' compensation unless independently arranged", bullet_style))
+    
+    # ----------------------------
+    # 2. Tax & Financial Responsibility
+    # ----------------------------
+    elements.append(Paragraph("2. TAX AND FINANCIAL RESPONSIBILITY", heading_style))
+    
+    elements.append(Paragraph("2.1 Tax Obligations", subheading_style))
+    elements.append(Paragraph(
+        "The Contractor is solely responsible for all tax obligations, including but not limited to:",
+        body_style
+    ))
+    elements.append(Paragraph(
+        f"• Reporting all income earned through {settings.COMPANY_OPERATING_NAME}",
+        bullet_style
+    ))
+    elements.append(Paragraph(
+        "• Filing federal and provincial tax returns",
+        bullet_style
+    ))
+    elements.append(Paragraph(
+        "• Remitting income tax, HST/GST (if applicable), and CPP contributions",
+        bullet_style
+    ))
+    elements.append(Paragraph(
+        "• Maintaining accurate financial and tax records",
+        bullet_style
+    ))
+
+    elements.append(Paragraph("2.2 No Withholding", subheading_style))
+    elements.append(Paragraph(
+        f"{settings.COMPANY_OPERATING_NAME} (an operating name of {settings.CORPORATION_NAME}) "
+        f"does not withhold taxes, CPP, EI, or any other statutory deductions on behalf of the Contractor. "
+        f"The Contractor acknowledges full responsibility for all such payments.",
+        body_style
+    ))
+    
+    # ----------------------------
+    # 3. Driver Eligibility & Documentation
+    # ----------------------------
+    elements.append(Paragraph("3. DRIVER ELIGIBILITY AND DOCUMENTATION", heading_style))
+    elements.append(Paragraph(
+        "To remain eligible to use the Platform, the Contractor must maintain and provide "
+        "valid documentation including:",
+        body_style
+    ))
+    elements.append(Paragraph("• Government-issued driver's licence (Ontario G or G2 minimum)", bullet_style))
+    elements.append(Paragraph("• Valid auto insurance permitting courier/delivery use", bullet_style))
+    elements.append(Paragraph("• Vehicle registration or ownership documentation", bullet_style))
+    elements.append(Paragraph("• Criminal record check (where required)", bullet_style))
+    elements.append(Paragraph("• Proof of legal authorization to work in Canada", bullet_style))
+    elements.append(Paragraph(
+        "Failure to maintain valid documentation may result in immediate suspension or termination "
+        "of Platform access.",
+        body_style
+    ))
+    
+    # ----------------------------
+    # Page break for better formatting
+    # ----------------------------
+    elements.append(PageBreak())
+    
+    # ----------------------------
+    # 4. Scope of Services
+    # ----------------------------
+    elements.append(Paragraph("4. SCOPE OF SERVICES (DELIVERY ONLY)", heading_style))
+    
+    elements.append(Paragraph("4.1 Transportation-Only Role", subheading_style))
+    elements.append(Paragraph(
+        "The Contractor's role is strictly limited to transporting sealed packages from "
+        "businesses and providers to customers. The Contractor explicitly acknowledges that they:",
+        body_style
+    ))
+    elements.append(Paragraph("• Are not a healthcare professional", bullet_style))
+    elements.append(Paragraph("• Do not dispense, handle, or assess medications", bullet_style))
+    elements.append(Paragraph("• Do not provide medical advice or consultation", bullet_style))
+    elements.append(Paragraph("• Do not determine medication eligibility or legality", bullet_style))
+    elements.append(Paragraph("• Do not represent the businesses and providers in any manner", bullet_style))
+    
+    elements.append(Paragraph("4.2 Package Integrity", subheading_style))
+    elements.append(Paragraph(
+        "The Contractor must not open, alter, substitute, inspect, or tamper with the contents "
+        "of any package. All packages must remain sealed during transport and delivery.",
+        body_style
+    ))
+    
+    # ----------------------------
+    # 5. Regulatory & Legal Compliance
+    # ----------------------------
+    elements.append(Paragraph("5. REGULATORY AND LEGAL COMPLIANCE", heading_style))
+    
+    elements.append(Paragraph("5.1 Pharmacy Responsibility", subheading_style))
+    elements.append(Paragraph(
+        "The Contractor acknowledges that businesses and providers like pharmaceutical providers are solely responsible for "
+        "ensuring medications are legally eligible for delivery. "
+        f"{settings.COMPANY_OPERATING_NAME} (an operating name of {settings.CORPORATION_NAME}) does not assess "
+        "medication legality, sensitivity, or regulatory classification.",
+        body_style
+    ))
+    
+    elements.append(Paragraph("5.2 Contractor Responsibilities", subheading_style))
+    elements.append(Paragraph("The Contractor agrees to:", body_style))
+    elements.append(Paragraph("• Follow delivery instructions exactly as provided", bullet_style))
+    elements.append(Paragraph("• Collect signatures or verify ID only when explicitly required", bullet_style))
+    elements.append(Paragraph("• Return packages to the business pharmacy if delivery is unsuccessful", bullet_style))
+    elements.append(Paragraph("• Comply with all applicable traffic and transportation laws", bullet_style))
+    
+    # ----------------------------
+    # 6. Privacy & Confidentiality (PHIPA)
+    # ----------------------------
+    elements.append(Paragraph("6. PRIVACY AND CONFIDENTIALITY (PHIPA COMPLIANCE)", heading_style))
+    
+    elements.append(Paragraph("6.1 Confidential Information", subheading_style))
+    elements.append(Paragraph(
+        "In the course of providing services, the Contractor may have access to personal health "
+        "information (\"PHI\") and other confidential information protected under the Personal "
+        "Health Information Protection Act (PHIPA) and other privacy legislation.",
+        body_style
+    ))
+    
+    elements.append(Paragraph("6.2 Privacy Obligations", subheading_style))
+    elements.append(Paragraph("The Contractor agrees to:", body_style))
+    elements.append(Paragraph("• Use PHI only for completing authorized deliveries", bullet_style))
+    elements.append(Paragraph("• Not store, copy, photograph, or disclose PHI", bullet_style))
+    elements.append(Paragraph("• Immediately report any suspected privacy breach", bullet_style))
+    elements.append(Paragraph("• Comply with all privacy training and policies provided", bullet_style))
+    
+    elements.append(Paragraph("6.3 Survival of Obligations", subheading_style))
+    elements.append(Paragraph(
+        "These privacy and confidentiality obligations survive termination of this Agreement and "
+        "remain in effect indefinitely.",
+        body_style
+    ))
+    
+    # ----------------------------
+    # 7. Equipment & Expenses
+    # ----------------------------
+    elements.append(Paragraph("7. EQUIPMENT AND EXPENSES", heading_style))
+    
+    elements.append(Paragraph("7.1 Contractor-Provided Equipment", subheading_style))
+    elements.append(Paragraph(
+        "The Contractor is responsible for providing and maintaining all equipment necessary to "
+        "perform services, including:",
+        body_style
+    ))
+    elements.append(Paragraph("• Motor vehicle suitable for deliveries", bullet_style))
+    elements.append(Paragraph("• Fuel and vehicle maintenance", bullet_style))
+    elements.append(Paragraph("• Mobile phone and data plan", bullet_style))
+    elements.append(Paragraph("• Valid insurance coverage", bullet_style))
+    elements.append(Paragraph("• All other operating costs and expenses", bullet_style))
+    
+    elements.append(Paragraph("7.2 No Reimbursement", subheading_style))
+    elements.append(Paragraph(
+        "Unless explicitly stated in a separate written agreement, "
+        f"{settings.COMPANY_OPERATING_NAME} (an operating name of {settings.CORPORATION_NAME}) does not "
+        "reimburse the Contractor for any expenses, including but not limited to fuel, "
+        "maintenance, insurance, or communication costs.",
+        body_style
+    ))
+    
+    # ----------------------------
+    # Page break
+    # ----------------------------
+    elements.append(PageBreak())
+    
+    # ----------------------------
+    # 8. Insurance & Liability
+    # ----------------------------
+    elements.append(Paragraph("8. INSURANCE AND LIABILITY", heading_style))
+    
+    elements.append(Paragraph("8.1 Contractor Insurance", subheading_style))
+    elements.append(Paragraph(
+        "The Contractor must maintain, at their own expense, valid automobile insurance coverage "
+        "that specifically permits commercial delivery activity. The Contractor must provide "
+        "proof of such insurance upon request.",
+        body_style
+    ))
+    
+    elements.append(Paragraph("8.2 Indemnification", subheading_style))
+    elements.append(Paragraph(
+        "The Contractor agrees to indemnify, defend, and hold harmless "
+        f"{settings.COMPANY_OPERATING_NAME} (an operating name of {settings.CORPORATION_NAME}), "
+        "its officers, directors, employees, and agents from and against any and all claims, damages, "
+        "liabilities, costs, and expenses (including reasonable legal fees) arising from or relating to:",
+        body_style
+    ))
+    elements.append(Paragraph("• Traffic violations or accidents", bullet_style))
+    elements.append(Paragraph("• Insurance coverage denial or insufficiency", bullet_style))
+    elements.append(Paragraph("• Regulatory non-compliance", bullet_style))
+    elements.append(Paragraph("• Misuse or unauthorized disclosure of customer information", bullet_style))
+    elements.append(Paragraph("• Any breach of this Agreement by the Contractor", bullet_style))
+    
+    # ----------------------------
+    # 9. Platform Access & Termination
+    # ----------------------------
+    elements.append(Paragraph("9. PLATFORM ACCESS AND TERMINATION", heading_style))
+    
+    elements.append(Paragraph("9.1 No Guaranteed Work", subheading_style))
+    elements.append(Paragraph(
+        f"{settings.COMPANY_OPERATING_NAME} (an operating name of {settings.CORPORATION_NAME}) "
+        "does not guarantee any minimum delivery volume, earnings, or work hours. "
+        "The Contractor's access to delivery opportunities is subject to availability and may "
+        "vary based on demand, location, and performance.",
+        body_style
+    ))
+
+    elements.append(Paragraph("9.2 Termination Rights", subheading_style))
+    elements.append(Paragraph(
+        "Either party may terminate this Agreement at any time, with or without cause, by providing "
+        "written notice. "
+        f"{settings.COMPANY_OPERATING_NAME} (an operating name of {settings.CORPORATION_NAME}) "
+        "may immediately suspend or terminate the Contractor's Platform access for:",
+        body_style
+    ))
+    elements.append(Paragraph("• Violation of this Agreement or Company policies", bullet_style))
+    elements.append(Paragraph("• Expired or invalid documentation", bullet_style))
+    elements.append(Paragraph("• Safety concerns or complaints", bullet_style))
+    elements.append(Paragraph("• Regulatory compliance issues", bullet_style))
+    elements.append(Paragraph("• Poor performance or customer complaints", bullet_style))
+    
+    # ----------------------------
+    # 10. Limitation of Liability
+    # ----------------------------
+    elements.append(Paragraph("10. LIMITATION OF LIABILITY", heading_style))
+    elements.append(Paragraph(
+        "To the maximum extent permitted by applicable law:",
+        body_style
+    ))
+    elements.append(Paragraph(
+        f"{settings.COMPANY_OPERATING_NAME} (an operating name of {settings.CORPORATION_NAME}) "
+        "shall not be liable for any indirect, incidental, special, consequential, "
+        "or punitive damages, including but not limited to loss of profits, revenue, data, or "
+        "business opportunities, arising out of or related to this Agreement or the use of the Platform.",
+        body_style
+    ))
+    elements.append(Paragraph(
+        f"{settings.COMPANY_OPERATING_NAME}'s (an operating name of {settings.CORPORATION_NAME}) "
+        "total liability for any claims arising from this Agreement shall not "
+        "exceed the total amounts paid to the Contractor for the specific delivery(ies) giving "
+        "rise to the claim.",
+        body_style
+    ))
+
+    # ----------------------------
+    # 11. Governing Law & Dispute Resolution
+    # ----------------------------
+    elements.append(Paragraph("11. GOVERNING LAW AND DISPUTE RESOLUTION", heading_style))
+    elements.append(Paragraph(
+        "This Agreement shall be governed by and construed in accordance with the laws of the "
+        "Province of Ontario and the federal laws of Canada applicable therein, without regard "
+        "to conflict of law principles.",
+        body_style
+    ))
+    elements.append(Paragraph(
+        "Any disputes arising from this Agreement shall be resolved through binding arbitration "
+        "in Ontario, Canada, in accordance with the Arbitration Act, 1991 (Ontario).",
+        body_style
+    ))
+    
+    # ----------------------------
+    # 12. General Provisions
+    # ----------------------------
+    elements.append(Paragraph("12. GENERAL PROVISIONS", heading_style))
+    
+    elements.append(Paragraph("12.1 Entire Agreement", subheading_style))
+    elements.append(Paragraph(
+        "This Agreement constitutes the entire agreement between the parties and supersedes all "
+        "prior understandings and agreements, whether written or oral, relating to the subject matter herein.",
+        body_style
+    ))
+    
+    elements.append(Paragraph("12.2 Amendments", subheading_style))
+    elements.append(Paragraph(
+        "This Agreement may only be amended by written agreement signed by both parties. "
+        f"{settings.COMPANY_OPERATING_NAME} (an operating name of {settings.CORPORATION_NAME}) "
+        "reserves the right to update Platform policies with reasonable notice.",
+        body_style
+    ))
+    
+    elements.append(Paragraph("12.3 Severability", subheading_style))
+    elements.append(Paragraph(
+        "If any provision of this Agreement is found to be invalid or unenforceable, the "
+        "remaining provisions shall remain in full force and effect.",
+        body_style
+    ))
+    
+    elements.append(Paragraph("12.4 Assignment", subheading_style))
+    elements.append(Paragraph(
+        f"The Contractor may not assign this Agreement without prior written consent from "
+        f"{settings.COMPANY_OPERATING_NAME} (an operating name of {settings.CORPORATION_NAME}).",
+        body_style
+    ))
+    
+    # ----------------------------
+    # Page break for signatures
+    # ----------------------------
+    elements.append(PageBreak())
+    
+    # ----------------------------
+    # Acknowledgment and Acceptance
+    # ----------------------------
+    elements.append(Paragraph("ACKNOWLEDGMENT AND ACCEPTANCE", heading_style))
+    elements.append(Spacer(1, 0.15*inch))
+    
+    elements.append(Paragraph(
+        "By signing below, the Contractor confirms that they have:",
+        body_style
+    ))
+    elements.append(Paragraph("• Read and understood this entire Agreement", bullet_style))
+    elements.append(Paragraph("• Voluntarily accept independent contractor status", bullet_style))
+    elements.append(Paragraph("• Understand they are responsible for all taxes and legal obligations", bullet_style))
+    elements.append(Paragraph("• Agree to comply with all privacy and confidentiality requirements", bullet_style))
+    elements.append(Paragraph("• Had the opportunity to seek independent legal advice", bullet_style))
+    elements.append(Spacer(1, 0.3*inch))
+    
+    # ----------------------------
+    # Signature Section - Improved Layout
+    # ----------------------------
+    
+    # Process and resize signatures
+    try:
+        # Driver signature
+        driver_sig_img = PILImage.open(driver_signature_file)
+        driver_sig_width = 2.2 * inch
+        driver_sig_height = driver_sig_img.height * (driver_sig_width / driver_sig_img.width)
+        if driver_sig_height > 0.8 * inch:
+            driver_sig_height = 0.8 * inch
+            driver_sig_width = driver_sig_img.width * (driver_sig_height / driver_sig_img.height)
+        
+        driver_signature_file.seek(0)
+        driver_sig = Image(driver_signature_file, width=driver_sig_width, height=driver_sig_height)
+        
+        # Company signature
+        company_sig_img = PILImage.open(company_signature_data)
+        company_sig_width = 2.2 * inch
+        company_sig_height = company_sig_img.height * (company_sig_width / company_sig_img.width)
+        if company_sig_height > 0.8 * inch:
+            company_sig_height = 0.8 * inch
+            company_sig_width = company_sig_img.width * (company_sig_height / company_sig_img.height)
+        
+        company_signature_data.seek(0)
+        company_sig = Image(company_signature_data, width=company_sig_width, height=company_sig_height)
+        
+    except Exception as e:
+        logger.error(f"Error processing signature images: {e}")
+        raise
+    
+    # Signature table with better formatting to prevent overlap
+    signature_data = [
+        ['CONTRACTOR', 'COMPANY'],
+        [driver_sig, company_sig],
+        ['', ''],
+        [f'{driver.name}', f'{settings.COMPANY_OPERATING_NAME}'],
+        ['Contractor', 'Authorized Signatory'],
+        [datetime.now().strftime("%B %d, %Y"), datetime.now().strftime("%B %d, %Y")],
+    ]
+    
+    signature_table = Table(signature_data, colWidths=[3.25*inch, 3.25*inch])
+    signature_table.setStyle(TableStyle([
+        # Headers
+        ('FONTNAME', (0, 0), (-1, 0), 'Helvetica-Bold'),
+        ('FONTSIZE', (0, 0), (-1, 0), 10),
+        ('TEXTCOLOR', (0, 0), (-1, 0), colors.HexColor('#1a1a1a')),
+        ('ALIGN', (0, 0), (-1, 0), 'CENTER'),
+        ('BOTTOMPADDING', (0, 0), (-1, 0), 8),
+        ('BACKGROUND', (0, 0), (-1, 0), colors.HexColor('#f0f4f8')),
+        
+        # Signature images
+        ('ALIGN', (0, 1), (-1, 1), 'CENTER'),
+        ('VALIGN', (0, 1), (-1, 1), 'MIDDLE'),
+        ('TOPPADDING', (0, 1), (-1, 1), 10),
+        ('BOTTOMPADDING', (0, 1), (-1, 1), 5),
+        
+        # Signature lines
+        ('LINEABOVE', (0, 2), (-1, 2), 1.5, colors.black),
+        ('TOPPADDING', (0, 2), (-1, 2), 2),
+        ('BOTTOMPADDING', (0, 2), (-1, 2), 6),
+        
+        # Name row
+        ('FONTNAME', (0, 3), (-1, 3), 'Helvetica-Bold'),
+        ('FONTSIZE', (0, 3), (-1, 3), 9),
+        ('TEXTCOLOR', (0, 3), (-1, 3), colors.HexColor('#1a1a1a')),
+        ('ALIGN', (0, 3), (-1, 3), 'CENTER'),
+        ('TOPPADDING', (0, 3), (-1, 3), 4),
+        ('BOTTOMPADDING', (0, 3), (-1, 3), 2),
+        
+        # Title row
+        ('FONTNAME', (0, 4), (-1, 4), 'Helvetica'),
+        ('FONTSIZE', (0, 4), (-1, 4), 8),
+        ('TEXTCOLOR', (0, 4), (-1, 4), colors.HexColor('#666666')),
+        ('ALIGN', (0, 4), (-1, 4), 'CENTER'),
+        ('TOPPADDING', (0, 4), (-1, 4), 2),
+        ('BOTTOMPADDING', (0, 4), (-1, 4), 2),
+        
+        # Date row
+        ('FONTNAME', (0, 5), (-1, 5), 'Helvetica'),
+        ('FONTSIZE', (0, 5), (-1, 5), 8),
+        ('TEXTCOLOR', (0, 5), (-1, 5), colors.HexColor('#666666')),
+        ('ALIGN', (0, 5), (-1, 5), 'CENTER'),
+        ('TOPPADDING', (0, 5), (-1, 5), 2),
+        ('BOTTOMPADDING', (0, 5), (-1, 5), 6),
+        
+        # Grid and border
+        ('GRID', (0, 0), (-1, -1), 0.5, colors.HexColor('#cccccc')),
+        ('BOX', (0, 0), (-1, -1), 1.5, colors.HexColor('#0f4c81')),
+        ('VALIGN', (0, 0), (-1, -1), 'TOP'),
+    ]))
+    
+    elements.append(signature_table)
+    elements.append(Spacer(1, 0.2*inch))
+    
+    # Additional contract details in smaller table
+    details_data = [
+        ['Contractor Email:', driver.email or 'N/A'],
+        ['Corporation:', f'{settings.CORPORATION_NAME} (Business #: {settings.COMPANY_BUSINESS_NUMBER})'],
+    ]
+    
+    details_table = Table(details_data, colWidths=[1.5*inch, 5*inch])
+    details_table.setStyle(TableStyle([
+        ('FONTNAME', (0, 0), (0, -1), 'Helvetica-Bold'),
+        ('FONTNAME', (1, 0), (1, -1), 'Helvetica'),
+        ('FONTSIZE', (0, 0), (-1, -1), 7),
+        ('TEXTCOLOR', (0, 0), (-1, -1), colors.HexColor('#666666')),
+        ('ALIGN', (0, 0), (-1, -1), 'LEFT'),
+        ('VALIGN', (0, 0), (-1, -1), 'MIDDLE'),
+        ('LEFTPADDING', (0, 0), (-1, -1), 6),
+        ('RIGHTPADDING', (0, 0), (-1, -1), 6),
+        ('TOPPADDING', (0, 0), (-1, -1), 3),
+        ('BOTTOMPADDING', (0, 0), (-1, -1), 3),
+        ('GRID', (0, 0), (-1, -1), 0.5, colors.HexColor('#dddddd')),
+    ]))
+    
+    elements.append(details_table)
+    elements.append(Spacer(1, 0.3*inch))
+    
+    # ----------------------------
+    # Footer note
+    # ----------------------------
+    footer_style = ParagraphStyle(
+        'Footer',
+        parent=styles['Normal'],
+        fontSize=7,
+        textColor=colors.HexColor('#888888'),
+        alignment=TA_CENTER,
+        fontName='Helvetica-Oblique',
+        leading=10
+    )
+    
+    elements.append(Paragraph(
+        "This is a legally binding contract. Each party should retain a copy for their records.",
+        footer_style
+    ))
+    elements.append(Paragraph(
+        f"Document Generated: {datetime.now().strftime('%B %d, %Y at %I:%M %p')} | "
+        f"{settings.COMPANY_OPERATING_NAME} - {settings.COMPANY_SUB_GROUP_NAME}",
+        footer_style
+    ))
+    
+    # ----------------------------
+    # Build PDF
+    # ----------------------------
+    doc.build(elements)
+
+
+"""
+PHIPA/Privacy/NDA Acknowledgement Contract Generation
+This module handles the creation and upload of privacy and confidentiality agreements for drivers.
+"""
+
+@csrf_protect
+@require_http_methods(["POST"])
+@driver_auth_required
+def generate_privacy_agreement(request):
+    """
+    Generate a professional PHIPA/Privacy/NDA acknowledgement PDF with signatures and upload to GCP.
+    
+    Expects:
+        - signature: Image file (driver's signature)
+    
+    Saves the privacy agreement PDF to:
+        GCP_BUCKET_NAME / GCP_DRIVER_INVOICE_FOLDER / GCP_DRIVER_DOCUMENTS_FOLDER / {driver_folder} / privacy_agreement_{timestamp}.pdf
+    
+    Updates Driver.privacy_laws_agreement field with the public URL.
+    """
+    
+    try:
+        driver = request.driver
+        
+        logger.info(f"=== Generating privacy agreement for driver {driver.id} ({driver.name}) ===")
+        
+        # ----------------------------
+        # Validate signature upload
+        # ----------------------------
+        signature_file = request.FILES.get('signature')
+        if not signature_file:
+            logger.error("No signature file provided")
+            return JsonResponse(
+                {
+                    "success": False,
+                    "error": "Signature image is required"
+                },
+                status=400
+            )
+        
+        logger.info(f"Received signature: {signature_file.name} ({signature_file.size} bytes)")
+        
+        # Validate file type
+        allowed_exts = {".png", ".jpg", ".jpeg"}
+        ext = os.path.splitext(signature_file.name)[1].lower()
+        if ext not in allowed_exts:
+            logger.error(f"Invalid signature file type: {ext}")
+            return JsonResponse(
+                {
+                    "success": False,
+                    "error": "Signature must be a PNG, JPG, or JPEG image"
+                },
+                status=400
+            )
+        
+        # ----------------------------
+        # Build driver folder path
+        # ----------------------------
+        safe_name = "".join(
+            c for c in (driver.name or "") if c.isalnum() or c in ("_", "-")
+        ).strip() or "driver"
+        
+        safe_email = (
+            driver.email.replace("@", "_").replace(".", "_")
+            if driver.email else f"driver_{driver.id}"
+        )
+        
+        driver_folder = f"{driver.id}_{safe_name}_{safe_email}"
+        
+        # ----------------------------
+        # Download company signature
+        # ----------------------------
+        logger.info("Downloading company signature...")
+        try:
+            response = requests.get(settings.COMPANY_SIGNATURE_URL, timeout=10)
+            response.raise_for_status()
+            company_signature_data = io.BytesIO(response.content)
+            logger.info("✓ Company signature downloaded")
+        except Exception as e:
+            logger.exception("Failed to download company signature")
+            return JsonResponse(
+                {
+                    "success": False,
+                    "error": "Failed to download company signature"
+                },
+                status=500
+            )
+        
+        # ----------------------------
+        # Generate PDF privacy agreement
+        # ----------------------------
+        logger.info("Generating privacy agreement PDF...")
+        pdf_buffer = io.BytesIO()
+        
+        try:
+            generate_privacy_agreement_pdf(
+                pdf_buffer,
+                driver,
+                signature_file,
+                company_signature_data
+            )
+            logger.info("✓ Privacy agreement PDF generated")
+        except Exception as e:
+            logger.exception("Failed to generate privacy agreement PDF")
+            return JsonResponse(
+                {
+                    "success": False,
+                    "error": "Failed to generate privacy agreement PDF"
+                },
+                status=500
+            )
+        
+        # ----------------------------
+        # Upload to GCP
+        # ----------------------------
+        logger.info("Uploading privacy agreement to GCP...")
+        
+        # Initialize GCP client
+        credentials = service_account.Credentials.from_service_account_file(
+            settings.GCP_KEY_PATH
+        )
+        client = storage.Client(credentials=credentials)
+        bucket = client.bucket(settings.GCP_BUCKET_NAME)
+        
+        # Get timestamp in local timezone
+        utc_now = datetime.now(pytz.UTC)
+        local_now = utc_now.astimezone(settings.USER_TIMEZONE)
+        timestamp = local_now.strftime("%Y%m%d_%H%M%S")
+
+        gcp_object_path = (
+            f"{settings.GCP_DRIVER_INVOICE_FOLDER}/"
+            f"{settings.GCP_DRIVER_DOCUMENTS_FOLDER}/"
+            f"{driver_folder}/"
+            f"privacy_agreement_{timestamp}.pdf"
+        )
+        
+        logger.info(f"GCP path: {gcp_object_path}")
+        
+        # Upload PDF
+        blob = bucket.blob(gcp_object_path)
+        pdf_buffer.seek(0)
+        
+        try:
+            blob.upload_from_file(pdf_buffer, content_type='application/pdf')
+            
+            # Set cache-control to prevent caching issues
+            blob.cache_control = 'no-cache, no-store, must-revalidate'
+            blob.patch()
+            
+            logger.info("✓ Successfully uploaded privacy agreement to GCP")
+        except Exception as e:
+            logger.exception("Failed to upload privacy agreement to GCP")
+            raise
+        
+        # Generate public URL
+        public_url = f"https://storage.googleapis.com/{bucket.name}/{gcp_object_path}"
+        
+        # ----------------------------
+        # Save privacy agreement URL to driver
+        # ----------------------------
+        driver.privacy_laws_agreement = public_url
+        driver.save(update_fields=['privacy_laws_agreement'])
+        logger.info(f"✓ Privacy agreement URL saved to driver record: {public_url}")
+        
+        logger.info(f"=== Privacy agreement generation complete ===")
+        
+        return JsonResponse(
+            {
+                "success": True,
+                "driver_id": driver.id,
+                "privacy_agreement_url": public_url,
+                "message": "Privacy agreement generated and uploaded successfully"
+            },
+            status=200
+        )
+        
+    except Exception:
+        logger.exception("Error generating privacy agreement")
+        return JsonResponse(
+            {
+                "success": False,
+                "error": "Failed to generate privacy agreement"
+            },
+            status=500
+        )
+
+
+def generate_privacy_agreement_pdf(pdf_buffer, driver, driver_signature_file, company_signature_data):
+    """
+    Generate a professional PHIPA/Privacy/NDA acknowledgement PDF with proper formatting and signatures.
+    
+    Args:
+        pdf_buffer: BytesIO buffer to write PDF to
+        driver: Driver model instance
+        driver_signature_file: Uploaded signature file from request.FILES
+        company_signature_data: BytesIO containing company signature image data
+    """
+    
+    # Get current time in local timezone
+    import pytz
+    from datetime import datetime
+    
+    utc_now = datetime.now(pytz.UTC)
+    local_now = utc_now.astimezone(settings.USER_TIMEZONE)
+    
+    # Create document with professional margins
+    doc = SimpleDocTemplate(
+        pdf_buffer,
+        pagesize=letter,
+        rightMargin=0.75*inch,
+        leftMargin=0.75*inch,
+        topMargin=0.5*inch,
+        bottomMargin=0.75*inch
+    )
+    
+    # Container for the 'Flowable' objects
+    elements = []
+    
+    # Define styles
+    styles = getSampleStyleSheet()
+    
+    # Custom styles
+    title_style = ParagraphStyle(
+        'CustomTitle',
+        parent=styles['Heading1'],
+        fontSize=20,
+        textColor=colors.HexColor('#1a1a1a'),
+        spaceAfter=6,
+        spaceBefore=12,
+        alignment=TA_CENTER,
+        fontName='Helvetica-Bold',
+        leading=24
+    )
+    
+    subtitle_style = ParagraphStyle(
+        'SubTitle',
+        parent=styles['Normal'],
+        fontSize=10,
+        textColor=colors.HexColor('#555555'),
+        spaceAfter=6,
+        alignment=TA_CENTER,
+        fontName='Helvetica'
+    )
+    
+    company_info_style = ParagraphStyle(
+        'CompanyInfo',
+        parent=styles['Normal'],
+        fontSize=9,
+        textColor=colors.HexColor('#666666'),
+        spaceAfter=20,
+        alignment=TA_CENTER,
+        fontName='Helvetica',
+        leading=12
+    )
+    
+    heading_style = ParagraphStyle(
+        'CustomHeading',
+        parent=styles['Heading2'],
+        fontSize=12,
+        textColor=colors.HexColor('#8b0000'),
+        spaceAfter=8,
+        spaceBefore=16,
+        fontName='Helvetica-Bold',
+        borderWidth=1,
+        borderColor=colors.HexColor('#8b0000'),
+        borderPadding=6,
+        backColor=colors.HexColor('#fff5f5')
+    )
+    
+    subheading_style = ParagraphStyle(
+        'SubHeading',
+        parent=styles['Heading3'],
+        fontSize=11,
+        textColor=colors.HexColor('#1a1a1a'),
+        spaceAfter=6,
+        spaceBefore=10,
+        fontName='Helvetica-Bold'
+    )
+    
+    body_style = ParagraphStyle(
+        'CustomBody',
+        parent=styles['Normal'],
+        fontSize=10,
+        textColor=colors.HexColor('#333333'),
+        spaceAfter=10,
+        alignment=TA_JUSTIFY,
+        leading=14,
+        fontName='Helvetica'
+    )
+    
+    bullet_style = ParagraphStyle(
+        'BulletPoint',
+        parent=body_style,
+        leftIndent=25,
+        bulletIndent=10,
+        spaceAfter=6
+    )
+    
+    warning_style = ParagraphStyle(
+        'Warning',
+        parent=body_style,
+        textColor=colors.HexColor('#8b0000'),
+        fontName='Helvetica-Bold',
+        backColor=colors.HexColor('#fff5f5'),
+        borderWidth=1,
+        borderColor=colors.HexColor('#8b0000'),
+        borderPadding=8,
+        spaceAfter=12
+    )
+    
+    # ----------------------------
+    # Document Header with Logo
+    # ----------------------------
+    try:
+        # Download and add company logo
+        logo_response = requests.get('https://canalogistix.s3.us-east-2.amazonaws.com/Logo/CanaLogistiX_Logo_NOBG.png', timeout=10)
+        logo_response.raise_for_status()
+        logo_data = io.BytesIO(logo_response.content)
+        
+        # Resize logo to appropriate size
+        logo_img = PILImage.open(logo_data)
+        logo_width = 2.0 * inch
+        logo_height = logo_img.height * (logo_width / logo_img.width)
+        if logo_height > 1.0 * inch:
+            logo_height = 1.0 * inch
+            logo_width = logo_img.width * (logo_height / logo_img.height)
+        
+        logo_data.seek(0)
+        logo = Image(logo_data, width=logo_width, height=logo_height)
+        
+        # Center the logo
+        logo_table = Table([[logo]], colWidths=[6.5*inch])
+        logo_table.setStyle(TableStyle([
+            ('ALIGN', (0, 0), (-1, -1), 'CENTER'),
+            ('VALIGN', (0, 0), (-1, -1), 'MIDDLE'),
+        ]))
+        elements.append(logo_table)
+        elements.append(Spacer(1, 0.1*inch))
+        
+    except Exception as e:
+        logger.warning(f"Could not load company logo: {e}")
+        # Continue without logo
+    
+    # Company Information
+    elements.append(Paragraph(
+        f"<b>{settings.COMPANY_OPERATING_NAME}</b><br/>"
+        f"A division of {settings.COMPANY_SUB_GROUP_NAME}<br/>"
+        f"{settings.CORPORATION_NAME} | Business Number: {settings.COMPANY_BUSINESS_NUMBER}",
+        company_info_style
+    ))
+    
+    # Horizontal line separator
+    elements.append(Table([['']], colWidths=[6.5*inch], style=TableStyle([
+        ('LINEABOVE', (0, 0), (-1, 0), 2, colors.HexColor('#8b0000')),
+        ('LINEBELOW', (0, 0), (-1, 0), 0.5, colors.HexColor('#cccccc')),
+    ])))
+    elements.append(Spacer(1, 0.2*inch))
+    
+    # Document Title
+    elements.append(Paragraph(
+        "PRIVACY, CONFIDENTIALITY & NON-DISCLOSURE ACKNOWLEDGEMENT",
+        title_style
+    ))
+    elements.append(Paragraph(
+        "Personal Health Information Protection Act (PHIPA) & Personal Information Protection and Electronic Documents Act (PIPEDA) Compliance",
+        subtitle_style
+    ))
+    elements.append(Paragraph(
+        f"Effective Date: {local_now.strftime('%B %d, %Y')}",
+        subtitle_style
+    ))
+    elements.append(Spacer(1, 0.2*inch))
+    
+    # ----------------------------
+    # Parties Section
+    # ----------------------------
+    elements.append(Paragraph("PARTIES TO THIS ACKNOWLEDGEMENT", heading_style))
+    elements.append(Paragraph(
+        f"This Privacy, Confidentiality & Non-Disclosure Acknowledgement (the \"Acknowledgement\") is entered into as of "
+        f"{local_now.strftime('%B %d, %Y')} by and between:",
+        body_style
+    ))
+    elements.append(Spacer(1, 0.1*inch))
+    
+    # Parties table
+    parties_data = [
+        ['Company:', f'{settings.COMPANY_OPERATING_NAME}, an operating name of {settings.CORPORATION_NAME} ("Company")'],
+        ['Contractor:', f'{driver.name} ("Driver", "Contractor", or "Recipient")'],
+        ['Email:', driver.email or 'N/A'],
+        ['Phone:', driver.phone_number or 'N/A'],
+        ['Driver ID:', str(driver.id)]
+    ]
+    
+    parties_table = Table(parties_data, colWidths=[1.3*inch, 5.2*inch])
+    parties_table.setStyle(TableStyle([
+        ('FONTNAME', (0, 0), (0, -1), 'Helvetica-Bold'),
+        ('FONTNAME', (1, 0), (1, -1), 'Helvetica'),
+        ('FONTSIZE', (0, 0), (-1, -1), 10),
+        ('TEXTCOLOR', (0, 0), (-1, -1), colors.HexColor('#333333')),
+        ('VALIGN', (0, 0), (-1, -1), 'TOP'),
+        ('LEFTPADDING', (0, 0), (-1, -1), 8),
+        ('RIGHTPADDING', (0, 0), (-1, -1), 8),
+        ('TOPPADDING', (0, 0), (-1, -1), 6),
+        ('BOTTOMPADDING', (0, 0), (-1, -1), 6),
+        ('GRID', (0, 0), (-1, -1), 0.5, colors.HexColor('#cccccc')),
+        ('BACKGROUND', (0, 0), (0, -1), colors.HexColor('#f8f9fa')),
+    ]))
+    
+    elements.append(parties_table)
+    elements.append(Spacer(1, 0.2*inch))
+    
+    # ----------------------------
+    # Purpose and Context
+    # ----------------------------
+    elements.append(Paragraph("PURPOSE AND CONTEXT", heading_style))
+    
+    elements.append(Paragraph(
+        f"<b>WHEREAS</b>, {settings.COMPANY_OPERATING_NAME} (an operating name of {settings.CORPORATION_NAME}) "
+        "provides delivery services that may involve the transportation of packages containing sensitive, "
+        "confidential, and personal health information;",
+        body_style
+    ))
+    
+    elements.append(Paragraph(
+        "<b>WHEREAS</b>, the Contractor may have access to Personal Health Information (\"PHI\"), "
+        "personal information, proprietary business information, and other confidential data "
+        "in the course of performing delivery services;",
+        body_style
+    ))
+    
+    elements.append(Paragraph(
+        "<b>WHEREAS</b>, the protection of such information is governed by the Personal Health Information "
+        "Protection Act, 2004 (PHIPA), the Personal Information Protection and Electronic Documents Act (PIPEDA), "
+        "and other applicable privacy legislation in Ontario and Canada;",
+        body_style
+    ))
+    
+    elements.append(Paragraph(
+        "<b>NOW, THEREFORE</b>, the Contractor acknowledges and agrees to the following terms and obligations:",
+        body_style
+    ))
+    
+    elements.append(Spacer(1, 0.15*inch))
+    
+    # ----------------------------
+    # 1. Definitions
+    # ----------------------------
+    elements.append(Paragraph("1. DEFINITIONS", heading_style))
+    
+    elements.append(Paragraph("1.1 Personal Health Information (PHI)", subheading_style))
+    elements.append(Paragraph(
+        "\"Personal Health Information\" means identifying information about an individual in oral or "
+        "recorded form, if the information relates to the physical or mental health of the individual, "
+        "including information that relates to the provision of health care to the individual, or payments "
+        "or eligibility for health care, or the individual's health care number, as defined under PHIPA.",
+        body_style
+    ))
+    
+    elements.append(Paragraph("1.2 Confidential Information", subheading_style))
+    elements.append(Paragraph(
+        "\"Confidential Information\" includes, but is not limited to:",
+        body_style
+    ))
+    elements.append(Paragraph("• Personal Health Information (PHI)", bullet_style))
+    elements.append(Paragraph("• Customer names, addresses, and contact information", bullet_style))
+    elements.append(Paragraph("• Delivery routes, schedules, and operational procedures", bullet_style))
+    elements.append(Paragraph("• Business strategies, pricing, and financial information", bullet_style))
+    elements.append(Paragraph("• Pharmacy and healthcare provider relationships", bullet_style))
+    elements.append(Paragraph("• Technical systems, software, and proprietary technology", bullet_style))
+    elements.append(Paragraph("• Any information marked as confidential or that a reasonable person would consider confidential", bullet_style))
+    
+    # ----------------------------
+    # Page break
+    # ----------------------------
+    elements.append(PageBreak())
+    
+    # ----------------------------
+    # 2. Privacy Obligations Under PHIPA & PIPEDA
+    # ----------------------------
+    elements.append(Paragraph("2. PRIVACY OBLIGATIONS UNDER PHIPA & PIPEDA", heading_style))
+    
+    elements.append(Paragraph("2.1 Limited Access and Use", subheading_style))
+    elements.append(Paragraph(
+        "The Contractor acknowledges that they may have incidental access to PHI and personal information "
+        "during the course of delivery services. The Contractor agrees to:",
+        body_style
+    ))
+    elements.append(Paragraph("• Access PHI only to the minimum extent necessary to complete authorized deliveries", bullet_style))
+    elements.append(Paragraph("• Use PHI solely for the purpose of completing delivery services", bullet_style))
+    elements.append(Paragraph("• Not view, read, copy, photograph, or record any PHI or personal information", bullet_style))
+    elements.append(Paragraph("• Not disclose PHI to any unauthorized person, including family, friends, or other contractors", bullet_style))
+    
+    elements.append(Paragraph("2.2 Privacy Principles", subheading_style))
+    elements.append(Paragraph(
+        "The Contractor shall adhere to the following privacy principles as required under PHIPA and PIPEDA:",
+        body_style
+    ))
+    elements.append(Paragraph("• <b>Accountability:</b> The Contractor is personally responsible for protecting all information accessed", bullet_style))
+    elements.append(Paragraph("• <b>Limited Collection:</b> Do not collect, record, or retain any personal information", bullet_style))
+    elements.append(Paragraph("• <b>Limited Use and Disclosure:</b> Use information only for completing authorized deliveries", bullet_style))
+    elements.append(Paragraph("• <b>Accuracy:</b> Report any suspected errors or discrepancies immediately to the Company", bullet_style))
+    elements.append(Paragraph("• <b>Safeguards:</b> Protect all packages and information from unauthorized access or disclosure", bullet_style))
+    elements.append(Paragraph("• <b>Openness:</b> Be transparent about privacy practices when questioned by the Company", bullet_style))
+    
+    elements.append(Paragraph("2.3 Prohibited Activities", subheading_style))
+    elements.append(Paragraph(
+        "The Contractor shall NOT, under any circumstances:",
+        body_style
+    ))
+    elements.append(Paragraph("• Open, inspect, or tamper with sealed packages", bullet_style))
+    elements.append(Paragraph("• Photograph, copy, or record delivery labels, customer information, or package contents", bullet_style))
+    elements.append(Paragraph("• Discuss or share information about deliveries, customers, or package contents with anyone", bullet_style))
+    elements.append(Paragraph("• Use customer information for personal purposes or secondary commercial purposes", bullet_style))
+    elements.append(Paragraph("• Retain copies of delivery receipts, addresses, or customer signatures", bullet_style))
+    elements.append(Paragraph("• Post about deliveries, customers, or work activities on social media or public platforms", bullet_style))
+    
+    # ----------------------------
+    # 3. Confidentiality Obligations
+    # ----------------------------
+    elements.append(Paragraph("3. CONFIDENTIALITY OBLIGATIONS", heading_style))
+    
+    elements.append(Paragraph("3.1 Non-Disclosure Covenant", subheading_style))
+    elements.append(Paragraph(
+        f"The Contractor covenants and agrees that they will not, at any time during or after their "
+        f"engagement with {settings.COMPANY_OPERATING_NAME}, directly or indirectly:",
+        body_style
+    ))
+    elements.append(Paragraph("• Disclose any Confidential Information to any third party", bullet_style))
+    elements.append(Paragraph("• Use Confidential Information for any purpose other than performing authorized delivery services", bullet_style))
+    elements.append(Paragraph("• Exploit Confidential Information for personal gain or competitive advantage", bullet_style))
+    elements.append(Paragraph("• Retain, copy, or store any Confidential Information after completion of services", bullet_style))
+    
+    elements.append(Paragraph("3.2 Safeguarding Confidential Information", subheading_style))
+    elements.append(Paragraph(
+        "The Contractor shall exercise the same degree of care in safeguarding Confidential Information "
+        "as they would exercise in safeguarding their own confidential information, and in no event less "
+        "than a reasonable degree of care. This includes:",
+        body_style
+    ))
+    elements.append(Paragraph("• Securing all packages during transport and preventing unauthorized access", bullet_style))
+    elements.append(Paragraph("• Protecting delivery devices (phones, tablets) with passwords and encryption", bullet_style))
+    elements.append(Paragraph("• Not leaving packages unattended or in unsecured locations", bullet_style))
+    elements.append(Paragraph("• Ensuring delivery confirmation is obtained from authorized recipients only", bullet_style))
+    
+    elements.append(Paragraph("3.3 Return of Information", subheading_style))
+    elements.append(Paragraph(
+        "Upon termination of the engagement or upon request by the Company, the Contractor shall "
+        "immediately return or destroy all Confidential Information in their possession or control, "
+        "including all copies, notes, or records, whether in physical or electronic form.",
+        body_style
+    ))
+    
+    # ----------------------------
+    # Page break
+    # ----------------------------
+    elements.append(PageBreak())
+    
+    # ----------------------------
+    # 4. Security Breach Reporting
+    # ----------------------------
+    elements.append(Paragraph("4. SECURITY BREACH REPORTING", heading_style))
+    
+    elements.append(Paragraph("4.1 Immediate Notification Obligation", subheading_style))
+    elements.append(Paragraph(
+        "The Contractor shall immediately (within 1 hour of becoming aware) notify the Company of any:",
+        body_style
+    ))
+    elements.append(Paragraph("• Actual or suspected unauthorized access to PHI or Confidential Information", bullet_style))
+    elements.append(Paragraph("• Loss, theft, or damage to packages containing sensitive information", bullet_style))
+    elements.append(Paragraph("• Accidental disclosure of customer information or delivery details", bullet_style))
+    elements.append(Paragraph("• Security incidents involving delivery devices or systems", bullet_style))
+    elements.append(Paragraph("• Questions or concerns raised by customers about privacy or confidentiality", bullet_style))
+    
+    elements.append(Paragraph("4.2 Breach Response", subheading_style))
+    elements.append(Paragraph(
+        "In the event of a privacy or security breach, the Contractor shall:",
+        body_style
+    ))
+    elements.append(Paragraph("• Immediately contact Company management using emergency contact procedures", bullet_style))
+    elements.append(Paragraph("• Take immediate steps to contain and mitigate the breach", bullet_style))
+    elements.append(Paragraph("• Preserve all evidence related to the breach", bullet_style))
+    elements.append(Paragraph("• Provide full cooperation in the Company's investigation", bullet_style))
+    elements.append(Paragraph("• Not discuss the breach with anyone other than authorized Company representatives", bullet_style))
+    
+    # ----------------------------
+    # 5. Training and Compliance
+    # ----------------------------
+    elements.append(Paragraph("5. TRAINING AND COMPLIANCE", heading_style))
+    
+    elements.append(Paragraph("5.1 Mandatory Training", subheading_style))
+    elements.append(Paragraph(
+        f"The Contractor acknowledges that {settings.COMPANY_OPERATING_NAME} may provide privacy and "
+        "confidentiality training. The Contractor agrees to:",
+        body_style
+    ))
+    elements.append(Paragraph("• Complete all required privacy and security training", bullet_style))
+    elements.append(Paragraph("• Review and comply with all Company privacy policies and procedures", bullet_style))
+    elements.append(Paragraph("• Stay informed of updates to privacy legislation and Company requirements", bullet_style))
+    elements.append(Paragraph("• Participate in privacy audits and compliance reviews as requested", bullet_style))
+    
+    elements.append(Paragraph("5.2 Ongoing Compliance", subheading_style))
+    elements.append(Paragraph(
+        "The Contractor acknowledges that privacy and confidentiality obligations are ongoing and continuing, "
+        "and that the Company may implement additional safeguards, procedures, or requirements at any time. "
+        "The Contractor agrees to comply with all such requirements.",
+        body_style
+    ))
+    
+    # ----------------------------
+    # 6. Consequences of Breach
+    # ----------------------------
+    elements.append(Paragraph("6. CONSEQUENCES OF BREACH", heading_style))
+    
+    elements.append(Paragraph("6.1 Immediate Termination", subheading_style))
+    elements.append(Paragraph(
+        "The Contractor acknowledges that any breach of this Acknowledgement, including any unauthorized "
+        "access, use, or disclosure of PHI or Confidential Information, constitutes a material breach and "
+        "will result in:",
+        body_style
+    ))
+    elements.append(Paragraph("• Immediate termination of the Independent Contractor Agreement", bullet_style))
+    elements.append(Paragraph("• Immediate suspension of all Platform access and delivery privileges", bullet_style))
+    elements.append(Paragraph("• Forfeiture of any outstanding payments or compensation", bullet_style))
+    elements.append(Paragraph("• Requirement to return all Company property and Confidential Information", bullet_style))
+    
+    elements.append(Paragraph("6.2 Legal Liability", subheading_style))
+    elements.append(Paragraph(
+        "The Contractor acknowledges that breaches of privacy and confidentiality may result in:",
+        body_style
+    ))
+    elements.append(Paragraph("• Civil liability and damages to affected individuals and organizations", bullet_style))
+    elements.append(Paragraph("• Criminal prosecution under PHIPA, PIPEDA, or the Criminal Code of Canada", bullet_style))
+    elements.append(Paragraph("• Fines and penalties imposed by the Information and Privacy Commissioner of Ontario (IPC)", bullet_style))
+    elements.append(Paragraph("• Personal liability for all damages, costs, and legal fees incurred by the Company", bullet_style))
+    
+    elements.append(Paragraph("6.3 Indemnification", subheading_style))
+    elements.append(Paragraph(
+        f"The Contractor agrees to indemnify, defend, and hold harmless {settings.COMPANY_OPERATING_NAME}, "
+        f"{settings.CORPORATION_NAME}, and all affiliated entities, officers, directors, employees, and agents "
+        "from and against any and all claims, damages, liabilities, costs, and expenses (including reasonable "
+        "legal fees) arising from or relating to any breach of this Acknowledgement by the Contractor.",
+        body_style
+    ))
+    
+    # ----------------------------
+    # Page break
+    # ----------------------------
+    elements.append(PageBreak())
+    
+    # ----------------------------
+    # 7. Survival of Obligations
+    # ----------------------------
+    elements.append(Paragraph("7. SURVIVAL OF OBLIGATIONS", heading_style))
+    
+    elements.append(Paragraph("7.1 Indefinite Duration", subheading_style))
+    elements.append(Paragraph(
+        "The Contractor acknowledges and agrees that the obligations set forth in this Acknowledgement "
+        "shall survive the termination of the Independent Contractor Agreement and shall continue "
+        "<b>indefinitely</b>, regardless of the reason for termination.",
+        body_style
+    ))
+    
+    elements.append(Paragraph("7.2 No Expiration of Confidentiality", subheading_style))
+    elements.append(Paragraph(
+        "The duty to maintain the confidentiality of PHI and Confidential Information does not expire. "
+        "The Contractor shall maintain confidentiality for as long as the information remains sensitive "
+        "or protected under applicable law, which may be permanently.",
+        body_style
+    ))
+    
+    # ----------------------------
+    # 8. Acknowledgement of Understanding
+    # ----------------------------
+    elements.append(Paragraph("8. ACKNOWLEDGEMENT OF UNDERSTANDING", heading_style))
+    
+    elements.append(Paragraph("8.1 Legal Consultation", subheading_style))
+    elements.append(Paragraph(
+        "The Contractor acknowledges that they have been advised to seek independent legal advice "
+        "regarding this Acknowledgement and the legal obligations it imposes. The Contractor confirms "
+        "that they have either obtained such advice or voluntarily waived the opportunity to do so.",
+        body_style
+    ))
+    
+    elements.append(Paragraph("8.2 Voluntary Execution", subheading_style))
+    elements.append(Paragraph(
+        "The Contractor confirms that they are signing this Acknowledgement voluntarily, without any "
+        "duress or undue influence, and that they fully understand the obligations and consequences "
+        "set forth herein.",
+        body_style
+    ))
+    
+    elements.append(Paragraph("8.3 No Delegation or Assignment", subheading_style))
+    elements.append(Paragraph(
+        "The Contractor acknowledges that the obligations under this Acknowledgement are personal to "
+        "them and may not be delegated or assigned to any other person or entity.",
+        body_style
+    ))
+    
+    # ----------------------------
+    # 9. Governing Law and Jurisdiction
+    # ----------------------------
+    elements.append(Paragraph("9. GOVERNING LAW AND JURISDICTION", heading_style))
+    
+    elements.append(Paragraph(
+        "This Acknowledgement shall be governed by and construed in accordance with the laws of the "
+        "Province of Ontario and the federal laws of Canada applicable therein, including but not limited "
+        "to PHIPA and PIPEDA. The Contractor submits to the exclusive jurisdiction of the courts of Ontario "
+        "for any disputes arising from this Acknowledgement.",
+        body_style
+    ))
+    
+    # ----------------------------
+    # 10. Entire Agreement
+    # ----------------------------
+    elements.append(Paragraph("10. ENTIRE AGREEMENT AND AMENDMENTS", heading_style))
+    
+    elements.append(Paragraph(
+        "This Acknowledgement, together with the Independent Contractor Agreement, constitutes the entire "
+        "agreement between the parties regarding privacy, confidentiality, and non-disclosure obligations. "
+        f"{settings.COMPANY_OPERATING_NAME} reserves the right to update or amend this Acknowledgement "
+        "with reasonable notice to the Contractor.",
+        body_style
+    ))
+    
+    # ----------------------------
+    # Critical Warning Box
+    # ----------------------------
+    elements.append(Spacer(1, 0.2*inch))
+    
+    elements.append(Paragraph(
+        "⚠ CRITICAL NOTICE: Violation of privacy and confidentiality obligations may result in criminal "
+        "prosecution, significant fines, civil liability, and immediate termination. These obligations "
+        "continue indefinitely, even after your engagement ends. If you have any questions or concerns "
+        "about your obligations, contact Company management immediately.",
+        warning_style
+    ))
+    
+    # ----------------------------
+    # Page break for signatures
+    # ----------------------------
+    elements.append(PageBreak())
+    
+    # ----------------------------
+    # Acknowledgment and Acceptance
+    # ----------------------------
+    elements.append(Paragraph("ACKNOWLEDGMENT AND ACCEPTANCE", heading_style))
+    elements.append(Spacer(1, 0.15*inch))
+    
+    elements.append(Paragraph(
+        "By signing below, the Contractor confirms and acknowledges that they:",
+        body_style
+    ))
+    elements.append(Paragraph("• Have read and fully understand this Privacy, Confidentiality & Non-Disclosure Acknowledgement", bullet_style))
+    elements.append(Paragraph("• Understand their obligations under PHIPA, PIPEDA, and applicable privacy legislation", bullet_style))
+    elements.append(Paragraph("• Agree to comply with all privacy and confidentiality requirements set forth herein", bullet_style))
+    elements.append(Paragraph("• Understand the serious consequences of breaching privacy and confidentiality obligations", bullet_style))
+    elements.append(Paragraph("• Acknowledge that these obligations survive termination and continue indefinitely", bullet_style))
+    elements.append(Paragraph("• Have had the opportunity to seek independent legal advice", bullet_style))
+    elements.append(Paragraph("• Are signing this Acknowledgement voluntarily and of their own free will", bullet_style))
+    elements.append(Spacer(1, 0.3*inch))
+    
+    # ----------------------------
+    # Signature Section
+    # ----------------------------
+    
+    # Process and resize signatures
+    try:
+        # Driver signature
+        driver_sig_img = PILImage.open(driver_signature_file)
+        driver_sig_width = 2.2 * inch
+        driver_sig_height = driver_sig_img.height * (driver_sig_width / driver_sig_img.width)
+        if driver_sig_height > 0.8 * inch:
+            driver_sig_height = 0.8 * inch
+            driver_sig_width = driver_sig_img.width * (driver_sig_height / driver_sig_img.height)
+        
+        driver_signature_file.seek(0)
+        driver_sig = Image(driver_signature_file, width=driver_sig_width, height=driver_sig_height)
+        
+        # Company signature
+        company_sig_img = PILImage.open(company_signature_data)
+        company_sig_width = 2.2 * inch
+        company_sig_height = company_sig_img.height * (company_sig_width / company_sig_img.width)
+        if company_sig_height > 0.8 * inch:
+            company_sig_height = 0.8 * inch
+            company_sig_width = company_sig_img.width * (company_sig_height / company_sig_img.height)
+        
+        company_signature_data.seek(0)
+        company_sig = Image(company_signature_data, width=company_sig_width, height=company_sig_height)
+        
+    except Exception as e:
+        logger.error(f"Error processing signature images: {e}")
+        raise
+    
+    # Signature table
+    signature_data = [
+        ['CONTRACTOR', 'COMPANY'],
+        [driver_sig, company_sig],
+        ['', ''],
+        [f'{driver.name}', f'{settings.COMPANY_OPERATING_NAME}'],
+        ['Contractor', 'Authorized Representative'],
+        [local_now.strftime("%B %d, %Y"), local_now.strftime("%B %d, %Y")],
+    ]
+    
+    signature_table = Table(signature_data, colWidths=[3.25*inch, 3.25*inch])
+    signature_table.setStyle(TableStyle([
+        # Headers
+        ('FONTNAME', (0, 0), (-1, 0), 'Helvetica-Bold'),
+        ('FONTSIZE', (0, 0), (-1, 0), 10),
+        ('TEXTCOLOR', (0, 0), (-1, 0), colors.HexColor('#1a1a1a')),
+        ('ALIGN', (0, 0), (-1, 0), 'CENTER'),
+        ('BOTTOMPADDING', (0, 0), (-1, 0), 8),
+        ('BACKGROUND', (0, 0), (-1, 0), colors.HexColor('#fff5f5')),
+        
+        # Signature images
+        ('ALIGN', (0, 1), (-1, 1), 'CENTER'),
+        ('VALIGN', (0, 1), (-1, 1), 'MIDDLE'),
+        ('TOPPADDING', (0, 1), (-1, 1), 10),
+        ('BOTTOMPADDING', (0, 1), (-1, 1), 5),
+        
+        # Signature lines
+        ('LINEABOVE', (0, 2), (-1, 2), 1.5, colors.black),
+        ('TOPPADDING', (0, 2), (-1, 2), 2),
+        ('BOTTOMPADDING', (0, 2), (-1, 2), 6),
+        
+        # Name row
+        ('FONTNAME', (0, 3), (-1, 3), 'Helvetica-Bold'),
+        ('FONTSIZE', (0, 3), (-1, 3), 9),
+        ('TEXTCOLOR', (0, 3), (-1, 3), colors.HexColor('#1a1a1a')),
+        ('ALIGN', (0, 3), (-1, 3), 'CENTER'),
+        ('TOPPADDING', (0, 3), (-1, 3), 4),
+        ('BOTTOMPADDING', (0, 3), (-1, 3), 2),
+        
+        # Title row
+        ('FONTNAME', (0, 4), (-1, 4), 'Helvetica'),
+        ('FONTSIZE', (0, 4), (-1, 4), 8),
+        ('TEXTCOLOR', (0, 4), (-1, 4), colors.HexColor('#666666')),
+        ('ALIGN', (0, 4), (-1, 4), 'CENTER'),
+        ('TOPPADDING', (0, 4), (-1, 4), 2),
+        ('BOTTOMPADDING', (0, 4), (-1, 4), 2),
+        
+        # Date row
+        ('FONTNAME', (0, 5), (-1, 5), 'Helvetica'),
+        ('FONTSIZE', (0, 5), (-1, 5), 8),
+        ('TEXTCOLOR', (0, 5), (-1, 5), colors.HexColor('#666666')),
+        ('ALIGN', (0, 5), (-1, 5), 'CENTER'),
+        ('TOPPADDING', (0, 5), (-1, 5), 2),
+        ('BOTTOMPADDING', (0, 5), (-1, 5), 6),
+        
+        # Grid and border
+        ('GRID', (0, 0), (-1, -1), 0.5, colors.HexColor('#cccccc')),
+        ('BOX', (0, 0), (-1, -1), 1.5, colors.HexColor('#8b0000')),
+        ('VALIGN', (0, 0), (-1, -1), 'TOP'),
+    ]))
+    
+    elements.append(signature_table)
+    elements.append(Spacer(1, 0.2*inch))
+    
+    # Additional details
+    details_data = [
+        ['Contractor Email:', driver.email or 'N/A'],
+        ['Corporation:', f'{settings.CORPORATION_NAME} (Business #: {settings.COMPANY_BUSINESS_NUMBER})'],
+        ['Legislation:', 'Personal Health Information Protection Act, 2004 (PHIPA) & Personal Information Protection and Electronic Documents Act (PIPEDA)'],
+    ]
+    
+    details_table = Table(details_data, colWidths=[1.5*inch, 5*inch])
+    details_table.setStyle(TableStyle([
+        ('FONTNAME', (0, 0), (0, -1), 'Helvetica-Bold'),
+        ('FONTNAME', (1, 0), (1, -1), 'Helvetica'),
+        ('FONTSIZE', (0, 0), (-1, -1), 7),
+        ('TEXTCOLOR', (0, 0), (-1, -1), colors.HexColor('#666666')),
+        ('ALIGN', (0, 0), (-1, -1), 'LEFT'),
+        ('VALIGN', (0, 0), (-1, -1), 'MIDDLE'),
+        ('LEFTPADDING', (0, 0), (-1, -1), 6),
+        ('RIGHTPADDING', (0, 0), (-1, -1), 6),
+        ('TOPPADDING', (0, 0), (-1, -1), 3),
+        ('BOTTOMPADDING', (0, 0), (-1, -1), 3),
+        ('GRID', (0, 0), (-1, -1), 0.5, colors.HexColor('#dddddd')),
+    ]))
+    
+    elements.append(details_table)
+    elements.append(Spacer(1, 0.3*inch))
+    
+    # ----------------------------
+    # Footer
+    # ----------------------------
+    footer_style = ParagraphStyle(
+        'Footer',
+        parent=styles['Normal'],
+        fontSize=7,
+        textColor=colors.HexColor('#888888'),
+        alignment=TA_CENTER,
+        fontName='Helvetica-Oblique',
+        leading=10
+    )
+    
+    elements.append(Paragraph(
+        "This is a legally binding acknowledgement. The Contractor should retain a copy for their records.<br/>"
+        "Privacy and confidentiality obligations continue indefinitely, even after termination of engagement.",
+        footer_style
+    ))
+    elements.append(Paragraph(
+        f"Document Generated: {local_now.strftime('%B %d, %Y at %I:%M %p')} | "
+        f"{settings.COMPANY_OPERATING_NAME} - {settings.COMPANY_SUB_GROUP_NAME}",
+        footer_style
+    ))
+    
+    # ----------------------------
+    # Build PDF
+    # ----------------------------
+    doc.build(elements)
+
+
+@csrf_protect
+@require_http_methods(["GET"])
+@driver_auth_required
+def get_driver_commission(request):
+    """
+    Returns the driver commission rate configured in settings.
+    Commission is expressed as a percentage and decimal.
+    """
+
+    try:
+        commission_rate = settings.DRIVER_COMMISSION_RATE  # e.g. 0.30
+
+        return JsonResponse({
+            "success": True,
+            "commission": {
+                "decimal": float(commission_rate),           # 0.30
+                "percentage": float(commission_rate * 100)   # 30
+            }
+        }, status=200)
+
+    except AttributeError:
+        return JsonResponse({
+            "success": False,
+            "error": "Driver commission rate is not configured"
+        }, status=500)

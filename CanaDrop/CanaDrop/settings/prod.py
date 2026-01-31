@@ -177,9 +177,12 @@ GCP_CUSTOMER_PHARMACY_SIGNED_ACKNOWLEDGEMENTS = "PharmacySignedAcknowledgements"
 GCP_DRIVER_INVOICE_FOLDER = "DriverSummary"
 GCP_DRIVER_PROFILE_FOLDER = "DriverProfileImages"
 GCP_PROOF_FOLDER = "Proof"
+GCP_DRIVER_DOCUMENTS_FOLDER = "DriverDocuments"
 
 LOGO_PATH = os.path.join(BASE_DIR, "Logo", "Website_Logo_No_Background.png")
 LOGO_URL = "https://canalogistix.s3.us-east-2.amazonaws.com/Logo/CanaLogistiX_Logo_BG.png"
+
+COMPANY_SIGNATURE_URL = "https://canalogistix.s3.us-east-2.amazonaws.com/DirectorSignature.png"
 
 # ----------------------------
 # BUSINESS INFORMATION
@@ -201,7 +204,7 @@ BRAND_COLORS = {
 }
 
 
-DRIVER_COMMISSION_RATE = 0.40
+DRIVER_COMMISSION_RATE = 0.30
 PAYMENT_RATE_PERCENT = int(100 - (100 * DRIVER_COMMISSION_RATE))
 
 SITE_URL = "https://www.canalogistix.com"

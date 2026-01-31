@@ -1,0 +1,1822 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>My Documents - CanaLogistiX</title>
+    <link rel="icon" type="image/png" sizes="512x512" href="/favicon-512.png">
+    <link rel="apple-touch-icon" href="/favicon-512.png">
+    <script src="https://cdn.tailwindcss.com"></script>
+
+    <style>
+        body { font-family: 'Inter', sans-serif; }
+        
+        /* Custom scrollbar */
+        .custom-scrollbar::-webkit-scrollbar {
+            width: 8px;
+        }
+        .custom-scrollbar::-webkit-scrollbar-track {
+            background: #1e293b;
+            border-radius: 4px;
+        }
+        .custom-scrollbar::-webkit-scrollbar-thumb {
+            background: #475569;
+            border-radius: 4px;
+        }
+        .custom-scrollbar::-webkit-scrollbar-thumb:hover {
+            background: #64748b;
+        }
+
+        /* Prevent horizontal overflow on mobile */
+        @media (max-width: 640px) {
+            html, body {
+                overflow-x: hidden;
+                max-width: 100vw;
+            }
+            
+            .overflow-x-auto {
+                -webkit-overflow-scrolling: touch;
+                max-width: 100%;
+            }
+            
+            main {
+                overflow-x: hidden;
+                max-width: 100vw;
+            }
+        }
+
+        /* File upload hover effect */
+        .upload-area:hover {
+            border-color: #10b981;
+            background-color: rgba(16, 185, 129, 0.05);
+        }
+
+        /* File input custom styling */
+        input[type="file"] {
+            display: none;
+        }
+    </style>
+</head>
+<body class="min-h-screen bg-gradient-to-br from-slate-900 to-gray-900">
+    <!-- Loading Overlay -->
+    <div id="loadingOverlay" class="hidden fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+        <div class="bg-slate-800 rounded-lg p-8 flex items-center space-x-4">
+            <div class="animate-spin rounded-full h-8 w-8 border-b-2 border-emerald-500"></div>
+            <span class="text-slate-200">Processing...</span>
+        </div>
+    </div>
+
+    <div class="flex h-screen overflow-hidden">
+        <!-- Sidebar -->
+        <aside id="sidebar" class="w-64 bg-slate-800 border-r border-slate-700 flex flex-col fixed lg:static inset-y-0 left-0 z-40 transform -translate-x-full lg:translate-x-0 transition-transform duration-300 overflow-y-auto">
+            <div class="flex items-center justify-between h-16 px-4 border-b border-slate-700">
+                <div class="flex items-center">
+                    <img src="https://canalogistix.s3.us-east-2.amazonaws.com/Logo/CanaLogistiX_Logo_BG.png" alt="CanaLogistiX Logo" class="h-10 w-10 rounded-full object-cover"/>
+                    <span class="ml-2 text-lg font-semibold text-slate-100">CanaLogistiX</span>
+                </div>
+            </div>
+
+            <nav class="mt-8">
+                <a href="/driverDashboard/" class="nav-item flex items-center px-6 py-3 text-slate-300 hover:bg-slate-700 hover:text-emerald-400 transition-colors">
+                    <svg class="w-5 h-5 mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 7v10a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2H5a2 2 0 00-2-2z"/>
+                    </svg>
+                    Dashboard
+                </a>
+                <a href="/driverAcceptedDeliveries/" class="nav-item flex items-center px-6 py-3 text-slate-300 hover:bg-slate-700 hover:text-emerald-400 transition-colors">
+                    <svg class="w-5 h-5 mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 8l6 6 10-10"/>
+                    </svg>
+                    Accepted Deliveries
+                </a>
+                <a href="/driverFinances/" class="nav-item flex items-center px-6 py-3 text-slate-300 hover:bg-slate-700 hover:text-emerald-400 transition-colors">
+                    <svg class="w-5 h-5 mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1"/>
+                    </svg>
+                    Finances
+                </a>
+                <a href="/contactAdmin/" class="nav-item flex items-center px-6 py-3 text-slate-300 hover:bg-slate-700 hover:text-emerald-400 transition-colors">
+                    <svg class="w-5 h-5 mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 10h.01M12 10h.01M16 10h.01M21 12c0 4.418-4.03 8-9 8s-9-3.582-9-8 4.03-8 9-8 9 3.582 9 8zM12 14v-4m0 4h.01"/>
+                    </svg>
+                    Contact Admin
+                </a>
+                <a href="/driverIdentity/" class="nav-item flex items-center px-6 py-3 text-slate-300 hover:bg-slate-700 hover:text-emerald-400 transition-colors rounded-lg">
+                    <svg class="w-5 h-5 mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 6H5a2 2 0 00-2 2v9a2 2 0 002 2h14a2 2 0 002-2V8a2 2 0 00-2-2h-5m-4 0V5a2 2 0 114 0v1m-4 0a2 2 0 104 0m-5 8a2 2 0 100-4 2 2 0 000 4zm0 0c1.306 0 2.417.835 2.83 2M9 14a3.001 3.001 0 00-2.83 2M15 11h3m-3 4h2"/>
+                    </svg>
+                    My Identity
+                </a>
+                <a href="/driverDocuments/" class="nav-item active bg-slate-700 text-emerald-400 flex items-center px-6 py-3 transition-colors rounded-lg">
+                    <svg class="w-5 h-5 mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/>
+                    </svg>
+                    My Documents
+                </a>
+                <a href="/driverCCPoints/" class="nav-item flex items-center px-6 py-3 text-slate-300 hover:text-white hover:bg-slate-700 rounded-lg transition">
+                    <svg class="w-5 h-5 mr-3 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/>
+                    </svg>
+                    CC Points
+                </a>
+
+                <a href="#" onclick="handleLogout()" class="nav-item flex items-center px-6 py-3 text-slate-300 hover:bg-slate-700 hover:text-red-400 transition-colors mt-8">
+                    <svg class="w-5 h-5 mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1"/>
+                    </svg>
+                    Logout
+                </a>
+            </nav>
+        </aside>
+
+        <div id="sidebarOverlay" class="hidden lg:hidden fixed inset-0 bg-black/50 z-30"></div>
+
+        <!-- Main -->
+        <main class="flex-1 flex flex-col overflow-y-auto lg:ml-0">
+            <!-- Header -->
+            <header class="bg-slate-800 border-b border-slate-700 px-4 sm:px-6 py-4 flex items-center justify-between gap-4">
+                <button id="menuToggle" class="lg:hidden text-white p-2 flex-shrink-0">
+                    <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16"/>
+                    </svg>
+                </button>
+                <div class="flex-1 min-w-0">
+                    <h1 class="text-xl sm:text-2xl font-bold text-white truncate">My Documents</h1>
+                    <p class="text-sm text-slate-400 hidden sm:block">Upload and manage your driver documentation</p>
+                </div>
+                <div class="flex items-center space-x-2 md:space-x-4">
+                    <span class="text-slate-300 text-sm hidden lg:inline" id="welcomeText">Welcome back, Driver!</span>
+                    <div class="w-8 h-8 bg-emerald-500 rounded-full flex items-center justify-center">
+                        <span class="text-white font-semibold" id="profileInitial">D</span>
+                    </div>
+                </div>
+            </header>
+
+            <!-- Main Content -->
+            <section class="p-4 sm:p-6">
+                <!-- Success/Error Messages -->
+                <div id="successMessage" class="hidden bg-green-500 bg-opacity-10 border border-green-500 text-green-400 px-4 py-3 rounded-lg mb-6">
+                    <div class="flex items-center">
+                        <svg class="w-5 h-5 mr-2" fill="currentColor" viewBox="0 0 20 20">
+                            <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd"/>
+                        </svg>
+                        <span id="successText">Success!</span>
+                    </div>
+                </div>
+
+                <div id="errorMessage" class="hidden bg-red-500 bg-opacity-10 border border-red-500 text-red-400 px-4 py-3 rounded-lg mb-6">
+                    <div class="flex items-center">
+                        <svg class="w-5 h-5 mr-2" fill="currentColor" viewBox="0 0 20 20">
+                            <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clip-rule="evenodd"/>
+                        </svg>
+                        <span id="errorText">Error occurred</span>
+                    </div>
+                </div>
+
+                <!-- Upload Documents Section -->
+                <div class="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8">
+                    <!-- Provincial License -->
+                    <div class="bg-slate-800 border border-slate-700 rounded-lg p-6">
+                        <div class="flex items-center mb-4">
+                            <div class="p-2 bg-blue-500 bg-opacity-20 rounded-lg">
+                                <svg class="w-6 h-6 text-blue-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 7v10a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-2M7 3h6v4H7V3z"/>
+                                </svg>
+                            </div>
+                            <h3 class="ml-3 text-lg font-semibold text-slate-100">Provincial License</h3>
+                        </div>
+                        <p class="text-sm text-slate-400 mb-4">Upload your valid provincial driver's license</p>
+                        
+                        <div id="licensePreview" class="hidden mb-4">
+                            <div class="flex items-center justify-between bg-slate-700 rounded-lg p-3">
+                                <div class="flex items-center flex-1 min-w-0 mr-2">
+                                    <svg class="w-5 h-5 text-emerald-400 mr-2 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20">
+                                        <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd"/>
+                                    </svg>
+                                    <span class="text-sm text-slate-300 truncate" id="licenseFileName">File selected</span>
+                                </div>
+                                <button onclick="clearFile('license')" class="text-red-400 hover:text-red-300 text-xs px-2 py-1 rounded transition-colors flex-shrink-0" title="Remove file">
+                                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
+                                    </svg>
+                                </button>
+                            </div>
+                        </div>
+
+                        <label for="licenseUpload" class="upload-area cursor-pointer block border-2 border-dashed border-slate-600 rounded-lg p-6 text-center transition-all">
+                            <svg class="w-12 h-12 text-slate-400 mx-auto mb-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12"/>
+                            </svg>
+                            <p class="text-slate-300 mb-1">Click to upload</p>
+                            <p class="text-xs text-slate-500">PDF, JPG or PNG (Max 5MB)</p>
+                        </label>
+                        <input type="file" id="licenseUpload" accept=".pdf,.jpg,.jpeg,.png" onchange="handleFileSelect(this, 'license')">
+                    </div>
+
+                    <!-- Auto Insurance -->
+                    <div class="bg-slate-800 border border-slate-700 rounded-lg p-6">
+                        <div class="flex items-center mb-4">
+                            <div class="p-2 bg-purple-500 bg-opacity-20 rounded-lg">
+                                <svg class="w-6 h-6 text-purple-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z"/>
+                                </svg>
+                            </div>
+                            <h3 class="ml-3 text-lg font-semibold text-slate-100">Auto Insurance</h3>
+                        </div>
+                        <p class="text-sm text-slate-400 mb-4">Upload proof of your auto insurance</p>
+                        
+                        <div id="insurancePreview" class="hidden mb-4">
+                            <div class="flex items-center justify-between bg-slate-700 rounded-lg p-3">
+                                <div class="flex items-center flex-1 min-w-0 mr-2">
+                                    <svg class="w-5 h-5 text-emerald-400 mr-2 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20">
+                                        <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd"/>
+                                    </svg>
+                                    <span class="text-sm text-slate-300 truncate" id="insuranceFileName">File selected</span>
+                                </div>
+                                <button onclick="clearFile('insurance')" class="text-red-400 hover:text-red-300 text-xs px-2 py-1 rounded transition-colors flex-shrink-0" title="Remove file">
+                                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
+                                    </svg>
+                                </button>
+                            </div>
+                        </div>
+
+                        <label for="insuranceUpload" class="upload-area cursor-pointer block border-2 border-dashed border-slate-600 rounded-lg p-6 text-center transition-all">
+                            <svg class="w-12 h-12 text-slate-400 mx-auto mb-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12"/>
+                            </svg>
+                            <p class="text-slate-300 mb-1">Click to upload</p>
+                            <p class="text-xs text-slate-500">PDF, JPG or PNG (Max 5MB)</p>
+                        </label>
+                        <input type="file" id="insuranceUpload" accept=".pdf,.jpg,.jpeg,.png" onchange="handleFileSelect(this, 'insurance')">
+                    </div>
+
+                    <!-- Vehicle Registration -->
+                    <div class="bg-slate-800 border border-slate-700 rounded-lg p-6">
+                        <div class="flex items-center mb-4">
+                            <div class="p-2 bg-yellow-500 bg-opacity-20 rounded-lg">
+                                <svg class="w-6 h-6 text-yellow-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/>
+                                </svg>
+                            </div>
+                            <h3 class="ml-3 text-lg font-semibold text-slate-100">Vehicle Registration</h3>
+                        </div>
+                        <p class="text-sm text-slate-400 mb-4">Upload vehicle registration or ownership proof</p>
+                        
+                        <div id="registrationPreview" class="hidden mb-4">
+                            <div class="flex items-center justify-between bg-slate-700 rounded-lg p-3">
+                                <div class="flex items-center flex-1 min-w-0 mr-2">
+                                    <svg class="w-5 h-5 text-emerald-400 mr-2 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20">
+                                        <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd"/>
+                                    </svg>
+                                    <span class="text-sm text-slate-300 truncate" id="registrationFileName">File selected</span>
+                                </div>
+                                <button onclick="clearFile('registration')" class="text-red-400 hover:text-red-300 text-xs px-2 py-1 rounded transition-colors flex-shrink-0" title="Remove file">
+                                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
+                                    </svg>
+                                </button>
+                            </div>
+                        </div>
+
+                        <label for="registrationUpload" class="upload-area cursor-pointer block border-2 border-dashed border-slate-600 rounded-lg p-6 text-center transition-all">
+                            <svg class="w-12 h-12 text-slate-400 mx-auto mb-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12"/>
+                            </svg>
+                            <p class="text-slate-300 mb-1">Click to upload</p>
+                            <p class="text-xs text-slate-500">PDF, JPG or PNG (Max 5MB)</p>
+                        </label>
+                        <input type="file" id="registrationUpload" accept=".pdf,.jpg,.jpeg,.png" onchange="handleFileSelect(this, 'registration')">
+                    </div>
+
+                    <!-- Right to Work -->
+                    <div class="bg-slate-800 border border-slate-700 rounded-lg p-6">
+                        <div class="flex items-center mb-4">
+                            <div class="p-2 bg-green-500 bg-opacity-20 rounded-lg">
+                                <svg class="w-6 h-6 text-green-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4M7.835 4.697a3.42 3.42 0 001.946-.806 3.42 3.42 0 014.438 0 3.42 3.42 0 001.946.806 3.42 3.42 0 013.138 3.138 3.42 3.42 0 00.806 1.946 3.42 3.42 0 010 4.438 3.42 3.42 0 00-.806 1.946 3.42 3.42 0 01-3.138 3.138 3.42 3.42 0 00-1.946.806 3.42 3.42 0 01-4.438 0 3.42 3.42 0 00-1.946-.806 3.42 3.42 0 01-3.138-3.138 3.42 3.42 0 00-.806-1.946 3.42 3.42 0 010-4.438 3.42 3.42 0 00.806-1.946 3.42 3.42 0 013.138-3.138z"/>
+                                </svg>
+                            </div>
+                            <h3 class="ml-3 text-lg font-semibold text-slate-100">Right to Work</h3>
+                        </div>
+                        <p class="text-sm text-slate-400 mb-4">Upload proof of your right to work in Canada</p>
+                        
+                        <div id="workProofPreview" class="hidden mb-4">
+                            <div class="flex items-center justify-between bg-slate-700 rounded-lg p-3">
+                                <div class="flex items-center flex-1 min-w-0 mr-2">
+                                    <svg class="w-5 h-5 text-emerald-400 mr-2 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20">
+                                        <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd"/>
+                                    </svg>
+                                    <span class="text-sm text-slate-300 truncate" id="workProofFileName">File selected</span>
+                                </div>
+                                <button onclick="clearFile('workProof')" class="text-red-400 hover:text-red-300 text-xs px-2 py-1 rounded transition-colors flex-shrink-0" title="Remove file">
+                                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
+                                    </svg>
+                                </button>
+                            </div>
+                        </div>
+
+                        <label for="workProofUpload" class="upload-area cursor-pointer block border-2 border-dashed border-slate-600 rounded-lg p-6 text-center transition-all">
+                            <svg class="w-12 h-12 text-slate-400 mx-auto mb-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12"/>
+                            </svg>
+                            <p class="text-slate-300 mb-1">Click to upload</p>
+                            <p class="text-xs text-slate-500">PDF, JPG or PNG (Max 5MB)</p>
+                        </label>
+                        <input type="file" id="workProofUpload" accept=".pdf,.jpg,.jpeg,.png" onchange="handleFileSelect(this, 'workProof')">
+                    </div>
+                </div>
+
+                <!-- Upload All Button -->
+                <div class="mt-6 flex justify-center">
+                    <button 
+                        id="uploadAllBtn" 
+                        onclick="uploadAllDocuments()" 
+                        class="hidden bg-emerald-600 hover:bg-emerald-700 disabled:bg-slate-600 disabled:cursor-not-allowed text-white px-8 py-4 rounded-lg transition-colors flex items-center space-x-3 text-lg font-semibold"
+                        disabled
+                    >
+                        <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12"/>
+                        </svg>
+                        <span>Upload All Documents</span>
+                    </button>
+                </div>
+
+                <!-- Contracts Section -->
+                <div class="mt-8">
+                    <h2 class="text-2xl font-bold text-white mb-6">Legal Agreements</h2>
+                    
+                    <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                        <!-- Driver Contract -->
+                        <div class="bg-slate-800 border border-slate-700 rounded-lg p-6">
+                            <div class="flex items-center mb-4">
+                                <div class="p-2 bg-indigo-500 bg-opacity-20 rounded-lg">
+                                    <svg class="w-6 h-6 text-indigo-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/>
+                                    </svg>
+                                </div>
+                                <h3 class="ml-3 text-lg font-semibold text-slate-100">Independent Driver Contract</h3>
+                            </div>
+                            
+                            <!-- Contract Status Display (when contract exists) -->
+                            <div id="contractExistsView" class="hidden">
+                                <div class="bg-slate-700 rounded-lg p-4 mb-4">
+                                    <div class="flex items-center justify-between">
+                                        <div class="flex items-center">
+                                            <svg class="w-5 h-5 text-emerald-400 mr-2" fill="currentColor" viewBox="0 0 20 20">
+                                                <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd"/>
+                                            </svg>
+                                            <span class="text-sm text-slate-300">Status: <span class="font-semibold text-emerald-400">Signed</span></span>
+                                        </div>
+                                    </div>
+                                </div>
+                                <button id="viewContractBtn" onclick="viewDocument('contract')" class="w-full bg-indigo-600 hover:bg-indigo-700 text-white px-4 py-3 rounded-lg transition-colors flex items-center justify-center space-x-2">
+                                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/>
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"/>
+                                    </svg>
+                                    <span>View Contract</span>
+                                </button>
+                            </div>
+
+                            <!-- Sign Contract View (when contract doesn't exist) -->
+                            <div id="contractSignView" class="hidden">
+                                <p class="text-sm text-slate-400 mb-4">Sign your independent contractor agreement to continue</p>
+                                <button onclick="showSignatureModal()" class="w-full bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-700 hover:to-purple-700 text-white px-4 py-3 rounded-lg transition-all flex items-center justify-center space-x-2 font-semibold">
+                                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z"/>
+                                    </svg>
+                                    <span>Sign Contract Now</span>
+                                </button>
+                            </div>
+                        </div>
+
+                        <!-- Privacy Agreement -->
+                        <!-- <div class="bg-slate-800 border border-slate-700 rounded-lg p-6">
+                            <div class="flex items-center mb-4">
+                                <div class="p-2 bg-pink-500 bg-opacity-20 rounded-lg">
+                                    <svg class="w-6 h-6 text-pink-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"/>
+                                    </svg>
+                                </div>
+                                <h3 class="ml-3 text-lg font-semibold text-slate-100">Privacy & NDA Agreement</h3>
+                            </div>
+                            <p class="text-sm text-slate-400 mb-4">View your PHIPA/PIPEDA privacy and NDA acknowledgement</p>
+                            
+                            <div id="privacyStatus" class="bg-slate-700 rounded-lg p-4 mb-4">
+                                <div class="flex items-center justify-between">
+                                    <div class="flex items-center">
+                                        <svg class="w-5 h-5 text-slate-400 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"/>
+                                        </svg>
+                                        <span class="text-sm text-slate-300">Status: <span id="privacyStatusText" class="font-semibold">Loading...</span></span>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <button id="viewPrivacyBtn" onclick="viewDocument('privacy')" class="w-full bg-pink-600 hover:bg-pink-700 text-white px-4 py-3 rounded-lg transition-colors flex items-center justify-center space-x-2">
+                                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/>
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"/>
+                                </svg>
+                                <span>View Agreement</span>
+                            </button>
+                        </div> -->
+
+                        <!-- Privacy Agreement -->
+                        <div class="bg-slate-800 border border-slate-700 rounded-lg p-6">
+                            <div class="flex items-center mb-4">
+                                <div class="p-2 bg-pink-500 bg-opacity-20 rounded-lg">
+                                    <svg class="w-6 h-6 text-pink-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"/>
+                                    </svg>
+                                </div>
+                                <h3 class="ml-3 text-lg font-semibold text-slate-100">Privacy & NDA Agreement</h3>
+                            </div>
+                            
+                            <!-- Privacy Agreement Status Display (when agreement exists) -->
+                            <div id="privacyExistsView" class="hidden">
+                                <div class="bg-slate-700 rounded-lg p-4 mb-4">
+                                    <div class="flex items-center justify-between">
+                                        <div class="flex items-center">
+                                            <svg class="w-5 h-5 text-emerald-400 mr-2" fill="currentColor" viewBox="0 0 20 20">
+                                                <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd"/>
+                                            </svg>
+                                            <span class="text-sm text-slate-300">Status: <span class="font-semibold text-emerald-400">Signed</span></span>
+                                        </div>
+                                    </div>
+                                </div>
+                                <button id="viewPrivacyBtn" onclick="viewDocument('privacy')" class="w-full bg-pink-600 hover:bg-pink-700 text-white px-4 py-3 rounded-lg transition-colors flex items-center justify-center space-x-2">
+                                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/>
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"/>
+                                    </svg>
+                                    <span>View Agreement</span>
+                                </button>
+                            </div>
+
+                            <!-- Sign Privacy Agreement View (when agreement doesn't exist) -->
+                            <div id="privacySignView" class="hidden">
+                                <p class="text-sm text-slate-400 mb-4">Sign your PHIPA/PIPEDA privacy and NDA acknowledgement</p>
+                                <button onclick="showPrivacySignatureModal()" class="w-full bg-gradient-to-r from-pink-600 to-purple-600 hover:from-pink-700 hover:to-purple-700 text-white px-4 py-3 rounded-lg transition-all flex items-center justify-center space-x-2 font-semibold">
+                                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z"/>
+                                    </svg>
+                                    <span>Sign Privacy Agreement Now</span>
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Signature Modal (Hidden by default) -->
+                <div id="signatureModal" class="hidden fixed inset-0 bg-black bg-opacity-75 flex items-center justify-center z-50 p-4">
+                    <div class="bg-slate-800 rounded-lg max-w-3xl w-full max-h-[90vh] overflow-y-auto">
+                        <div class="sticky top-0 bg-gradient-to-r from-indigo-900 to-purple-900 p-6 border-b border-indigo-700">
+                            <div class="flex items-center justify-between">
+                                <h3 class="text-2xl font-bold text-white">Sign Your Contract</h3>
+                                <button onclick="closeSignatureModal()" class="text-slate-400 hover:text-white transition-colors">
+                                    <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
+                                    </svg>
+                                </button>
+                            </div>
+                        </div>
+
+                        <div class="p-6">
+                            <!-- Instructions -->
+                            <div class="bg-yellow-500 bg-opacity-10 border border-yellow-500 rounded-lg p-4 mb-6">
+                                <h4 class="text-white font-semibold mb-3 flex items-center">
+                                    <svg class="w-5 h-5 mr-2 text-yellow-400" fill="currentColor" viewBox="0 0 20 20">
+                                        <path fill-rule="evenodd" d="M8.257 3.099c.765-1.36 2.722-1.36 3.486 0l5.58 9.92c.75 1.334-.213 2.98-1.742 2.98H4.42c-1.53 0-2.493-1.646-1.743-2.98l5.58-9.92zM11 13a1 1 0 11-2 0 1 1 0 012 0zm-1-8a1 1 0 00-1 1v3a1 1 0 002 0V6a1 1 0 00-1-1z" clip-rule="evenodd"/>
+                                    </svg>
+                                    Please Read Carefully
+                                </h4>
+                                <ul class="space-y-2 text-sm text-slate-300">
+                                    <li class="flex items-start">
+                                        <svg class="w-5 h-5 text-emerald-400 mr-2 mt-0.5 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20">
+                                            <path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd"/>
+                                        </svg>
+                                        <span>Understand your responsibilities as an independent contractor</span>
+                                    </li>
+                                    <li class="flex items-start">
+                                        <svg class="w-5 h-5 text-emerald-400 mr-2 mt-0.5 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20">
+                                            <path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd"/>
+                                        </svg>
+                                        <span>Your signature will be legally binding</span>
+                                    </li>
+                                    <li class="flex items-start">
+                                        <svg class="w-5 h-5 text-emerald-400 mr-2 mt-0.5 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20">
+                                            <path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd"/>
+                                        </svg>
+                                        <span>Once submitted, the contract cannot be modified</span>
+                                    </li>
+                                </ul>
+                            </div>
+
+                            <!-- Signature Canvas -->
+                            <div class="bg-slate-700 rounded-lg p-6 mb-4">
+                                <label class="block text-white font-semibold mb-3">Draw Your Signature</label>
+                                <div class="bg-white rounded-lg p-2 mb-3">
+                                    <canvas id="signatureCanvas" width="600" height="200" class="border-2 border-slate-300 rounded cursor-crosshair w-full" style="touch-action: none;"></canvas>
+                                </div>
+                                <div class="flex justify-between items-center">
+                                    <button onclick="clearSignature()" class="text-slate-400 hover:text-white text-sm flex items-center transition-colors">
+                                        <svg class="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/>
+                                        </svg>
+                                        Clear Signature
+                                    </button>
+                                    <p class="text-xs text-slate-400">Sign using your mouse or touchscreen</p>
+                                </div>
+                            </div>
+
+                            <!-- Agreement Checkbox -->
+                            <div class="bg-slate-700 rounded-lg p-4 mb-6">
+                                <label class="flex items-start cursor-pointer">
+                                    <input type="checkbox" id="agreeCheckbox" class="mt-1 h-5 w-5 text-indigo-600 border-slate-600 rounded focus:ring-indigo-500">
+                                    <span class="ml-3 text-sm text-slate-300">
+                                        I have read and understood the Independent Contractor Agreement. I agree to all terms and conditions outlined in the contract. I acknowledge that I am signing this agreement voluntarily and that my electronic signature has the same legal effect as a handwritten signature.
+                                    </span>
+                                </label>
+                            </div>
+
+                            <!-- Submit Button -->
+                            <button 
+                                id="submitSignatureBtn" 
+                                onclick="submitSignature()" 
+                                class="w-full bg-indigo-600 hover:bg-indigo-700 disabled:bg-slate-600 disabled:cursor-not-allowed text-white px-6 py-4 rounded-lg transition-colors flex items-center justify-center space-x-3 text-lg font-semibold"
+                                disabled
+                            >
+                                <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/>
+                                </svg>
+                                <span>Submit Signed Contract</span>
+                            </button>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Privacy Agreement Signature Modal (Hidden by default) -->
+<div id="privacySignatureModal" class="hidden fixed inset-0 bg-black bg-opacity-75 flex items-center justify-center z-50 p-4">
+    <div class="bg-slate-800 rounded-lg max-w-3xl w-full max-h-[90vh] overflow-y-auto">
+        <div class="sticky top-0 bg-gradient-to-r from-pink-900 to-purple-900 p-6 border-b border-pink-700">
+            <div class="flex items-center justify-between">
+                <h3 class="text-2xl font-bold text-white">Sign Privacy & NDA Agreement</h3>
+                <button onclick="closePrivacySignatureModal()" class="text-slate-400 hover:text-white transition-colors">
+                    <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
+                    </svg>
+                </button>
+            </div>
+        </div>
+
+        <div class="p-6">
+            <!-- Instructions -->
+            <div class="bg-yellow-500 bg-opacity-10 border border-yellow-500 rounded-lg p-4 mb-6">
+                <h4 class="text-white font-semibold mb-3 flex items-center">
+                    <svg class="w-5 h-5 mr-2 text-yellow-400" fill="currentColor" viewBox="0 0 20 20">
+                        <path fill-rule="evenodd" d="M8.257 3.099c.765-1.36 2.722-1.36 3.486 0l5.58 9.92c.75 1.334-.213 2.98-1.742 2.98H4.42c-1.53 0-2.493-1.646-1.743-2.98l5.58-9.92zM11 13a1 1 0 11-2 0 1 1 0 012 0zm-1-8a1 1 0 00-1 1v3a1 1 0 002 0V6a1 1 0 00-1-1z" clip-rule="evenodd"/>
+                    </svg>
+                    Privacy & Confidentiality Agreement
+                </h4>
+                <ul class="space-y-2 text-sm text-slate-300">
+                    <li class="flex items-start">
+                        <svg class="w-5 h-5 text-emerald-400 mr-2 mt-0.5 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20">
+                            <path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd"/>
+                        </svg>
+                        <span>This agreement covers PHIPA/PIPEDA compliance and confidentiality obligations</span>
+                    </li>
+                    <li class="flex items-start">
+                        <svg class="w-5 h-5 text-emerald-400 mr-2 mt-0.5 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20">
+                            <path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd"/>
+                        </svg>
+                        <span>Your signature confirms understanding of privacy and confidentiality requirements</span>
+                    </li>
+                    <li class="flex items-start">
+                        <svg class="w-5 h-5 text-emerald-400 mr-2 mt-0.5 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20">
+                            <path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd"/>
+                        </svg>
+                        <span>This is a legally binding agreement</span>
+                    </li>
+                </ul>
+            </div>
+
+            <!-- Signature Canvas -->
+            <div class="bg-slate-700 rounded-lg p-6 mb-4">
+                <label class="block text-white font-semibold mb-3">Draw Your Signature</label>
+                <div class="bg-white rounded-lg p-2 mb-3">
+                    <canvas id="privacySignatureCanvas" width="600" height="200" class="border-2 border-slate-300 rounded cursor-crosshair w-full" style="touch-action: none;"></canvas>
+                </div>
+                <div class="flex justify-between items-center">
+                    <button onclick="clearPrivacySignature()" class="text-slate-400 hover:text-white text-sm flex items-center transition-colors">
+                        <svg class="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/>
+                        </svg>
+                        Clear Signature
+                    </button>
+                    <p class="text-xs text-slate-400">Sign using your mouse or touchscreen</p>
+                </div>
+            </div>
+
+            <!-- Agreement Checkbox -->
+            <div class="bg-slate-700 rounded-lg p-4 mb-6">
+                <label class="flex items-start cursor-pointer">
+                    <input type="checkbox" id="privacyAgreeCheckbox" class="mt-1 h-5 w-5 text-pink-600 border-slate-600 rounded focus:ring-pink-500">
+                    <span class="ml-3 text-sm text-slate-300">
+                        I have read and understood the Privacy, Confidentiality & Non-Disclosure Acknowledgement. I agree to comply with all PHIPA/PIPEDA requirements and confidentiality obligations. I acknowledge that my electronic signature has the same legal effect as a handwritten signature.
+                    </span>
+                </label>
+            </div>
+
+            <!-- Submit Button -->
+            <button 
+                id="submitPrivacySignatureBtn" 
+                onclick="submitPrivacySignature()" 
+                class="w-full bg-pink-600 hover:bg-pink-700 disabled:bg-slate-600 disabled:cursor-not-allowed text-white px-6 py-4 rounded-lg transition-colors flex items-center justify-center space-x-3 text-lg font-semibold"
+                disabled
+            >
+                <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/>
+                </svg>
+                <span>Submit Signed Privacy Agreement</span>
+            </button>
+        </div>
+    </div>
+</div>
+
+
+            </section>
+        </main>
+    </div>
+
+    <script>
+
+            function getCookie(name) {
+        const value = `; ${document.cookie}`;
+        const parts = value.split(`; ${name}=`);
+        if (parts.length === 2) return parts.pop().split(';').shift();
+        return null;
+    }
+
+    function getCSRFToken() {
+        return document.cookie
+            .split('; ')
+            .find(row => row.startsWith('csrftoken='))
+            ?.split('=')[1];
+    }
+
+    const uploadedDocs = {
+        license: null,
+        insurance: null,
+        registration: null,
+        workProof: null
+    };
+
+    // ===== SIGNATURE CANVAS VARIABLES =====
+    let canvas, ctx, isDrawing = false;
+    let hasSignature = false;
+
+    // Privacy signature canvas variables
+    let privacyCanvas, privacyCtx, isPrivacyDrawing = false;
+    let hasPrivacySignature = false;
+
+    function showLoading() {
+        document.getElementById('loadingOverlay').classList.remove('hidden');
+    }
+
+    function hideLoading() {
+        document.getElementById('loadingOverlay').classList.add('hidden');
+    }
+
+    function showSuccess(message) {
+        const successDiv = document.getElementById('successMessage');
+        const successText = document.getElementById('successText');
+        successText.textContent = message;
+        successDiv.classList.remove('hidden');
+        window.scrollTo({ top: 0, behavior: 'smooth' });
+        setTimeout(() => {
+            successDiv.classList.add('hidden');
+        }, 5000);
+    }
+
+    function showError(message) {
+        const errorDiv = document.getElementById('errorMessage');
+        const errorText = document.getElementById('errorText');
+        errorText.textContent = message;
+        errorDiv.classList.remove('hidden');
+        window.scrollTo({ top: 0, behavior: 'smooth' });
+        setTimeout(() => {
+            errorDiv.classList.add('hidden');
+        }, 5000);
+    }
+
+    function showInfo(message) {
+        const infoDiv = document.createElement('div');
+        infoDiv.className = 'fixed top-4 right-4 bg-blue-500 bg-opacity-10 border border-blue-500 text-blue-400 px-4 py-3 rounded-lg z-50';
+        infoDiv.innerHTML = `
+            <div class="flex items-center">
+                <svg class="w-5 h-5 mr-2" fill="currentColor" viewBox="0 0 20 20">
+                    <path fill-rule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z" clip-rule="evenodd"/>
+                </svg>
+                <span>${message}</span>
+            </div>
+        `;
+        document.body.appendChild(infoDiv);
+        setTimeout(() => {
+            infoDiv.remove();
+        }, 5000);
+    }
+
+    // ===== SIGNATURE MODAL FUNCTIONS =====
+    function showSignatureModal() {
+        document.getElementById('signatureModal').classList.remove('hidden');
+        document.body.style.overflow = 'hidden';
+        
+        // Initialize canvas if not already done
+        if (!canvas) {
+            initSignatureCanvas();
+        }
+    }
+
+    function closeSignatureModal() {
+        document.getElementById('signatureModal').classList.add('hidden');
+        document.body.style.overflow = 'auto';
+    }
+
+    function initSignatureCanvas() {
+        canvas = document.getElementById('signatureCanvas');
+        if (!canvas) return;
+        
+        ctx = canvas.getContext('2d');
+        ctx.strokeStyle = '#000000';
+        ctx.lineWidth = 2;
+        ctx.lineCap = 'round';
+        ctx.lineJoin = 'round';
+
+        // Mouse events
+        canvas.addEventListener('mousedown', startDrawing);
+        canvas.addEventListener('mousemove', draw);
+        canvas.addEventListener('mouseup', stopDrawing);
+        canvas.addEventListener('mouseout', stopDrawing);
+
+        // Touch events for mobile
+        canvas.addEventListener('touchstart', handleTouchStart, { passive: false });
+        canvas.addEventListener('touchmove', handleTouchMove, { passive: false });
+        canvas.addEventListener('touchend', stopDrawing);
+
+        // Checkbox listener
+        document.getElementById('agreeCheckbox').addEventListener('change', updateSubmitButton);
+    }
+
+    function startDrawing(e) {
+        isDrawing = true;
+        const rect = canvas.getBoundingClientRect();
+        ctx.beginPath();
+        ctx.moveTo(e.clientX - rect.left, e.clientY - rect.top);
+    }
+
+    function draw(e) {
+        if (!isDrawing) return;
+        const rect = canvas.getBoundingClientRect();
+        ctx.lineTo(e.clientX - rect.left, e.clientY - rect.top);
+        ctx.stroke();
+        hasSignature = true;
+        updateSubmitButton();
+    }
+
+    function stopDrawing() {
+        isDrawing = false;
+    }
+
+    function handleTouchStart(e) {
+        e.preventDefault();
+        const touch = e.touches[0];
+        const rect = canvas.getBoundingClientRect();
+        isDrawing = true;
+        ctx.beginPath();
+        ctx.moveTo(touch.clientX - rect.left, touch.clientY - rect.top);
+    }
+
+    function handleTouchMove(e) {
+        e.preventDefault();
+        if (!isDrawing) return;
+        const touch = e.touches[0];
+        const rect = canvas.getBoundingClientRect();
+        ctx.lineTo(touch.clientX - rect.left, touch.clientY - rect.top);
+        ctx.stroke();
+        hasSignature = true;
+        updateSubmitButton();
+    }
+
+    function clearSignature() {
+        if (!canvas || !ctx) return;
+        ctx.clearRect(0, 0, canvas.width, canvas.height);
+        hasSignature = false;
+        updateSubmitButton();
+    }
+
+    function updateSubmitButton() {
+        const submitBtn = document.getElementById('submitSignatureBtn');
+        const agreeCheckbox = document.getElementById('agreeCheckbox');
+        
+        if (hasSignature && agreeCheckbox && agreeCheckbox.checked) {
+            submitBtn.disabled = false;
+        } else {
+            submitBtn.disabled = true;
+        }
+    }
+
+    async function submitSignature() {
+        if (!hasSignature) {
+            showError('Please provide your signature');
+            return;
+        }
+
+        const agreeCheckbox = document.getElementById('agreeCheckbox');
+        if (!agreeCheckbox.checked) {
+            showError('Please agree to the terms and conditions');
+            return;
+        }
+
+        showLoading();
+
+        try {
+            // Convert canvas to blob
+            const blob = await new Promise(resolve => {
+                canvas.toBlob(resolve, 'image/png');
+            });
+
+            // Create form data
+            const formData = new FormData();
+            formData.append('signature', blob, 'signature.png');
+
+            // Submit to API
+            const response = await fetch('/api/driver/generate-contract/', {
+                method: 'POST',
+                body: formData,
+                headers: {
+                    'X-CSRFToken': getCSRFToken()
+                },
+                credentials: 'include'
+            });
+
+            const data = await response.json();
+
+            if (data.success) {
+                showSuccess('Contract signed successfully!');
+                closeSignatureModal();
+                
+                // Clear signature
+                clearSignature();
+                document.getElementById('agreeCheckbox').checked = false;
+                
+                // Reload document status to show the signed contract
+                setTimeout(() => {
+                    loadDocumentStatus();
+                }, 1000);
+            } else {
+                showError(data.error || 'Failed to submit signature');
+            }
+        } catch (error) {
+            console.error('Signature submission error:', error);
+            showError('Failed to submit signature. Please try again.');
+        } finally {
+            hideLoading();
+        }
+    }
+
+    // ===== PRIVACY SIGNATURE MODAL FUNCTIONS =====
+function showPrivacySignatureModal() {
+    document.getElementById('privacySignatureModal').classList.remove('hidden');
+    document.body.style.overflow = 'hidden';
+    
+    // Initialize canvas if not already done
+    if (!privacyCanvas) {
+        initPrivacySignatureCanvas();
+    }
+}
+
+function closePrivacySignatureModal() {
+    document.getElementById('privacySignatureModal').classList.add('hidden');
+    document.body.style.overflow = 'auto';
+}
+
+function initPrivacySignatureCanvas() {
+    privacyCanvas = document.getElementById('privacySignatureCanvas');
+    if (!privacyCanvas) return;
+    
+    privacyCtx = privacyCanvas.getContext('2d');
+    privacyCtx.strokeStyle = '#000000';
+    privacyCtx.lineWidth = 2;
+    privacyCtx.lineCap = 'round';
+    privacyCtx.lineJoin = 'round';
+
+    // Mouse events
+    privacyCanvas.addEventListener('mousedown', startPrivacyDrawing);
+    privacyCanvas.addEventListener('mousemove', drawPrivacy);
+    privacyCanvas.addEventListener('mouseup', stopPrivacyDrawing);
+    privacyCanvas.addEventListener('mouseout', stopPrivacyDrawing);
+
+    // Touch events for mobile
+    privacyCanvas.addEventListener('touchstart', handlePrivacyTouchStart, { passive: false });
+    privacyCanvas.addEventListener('touchmove', handlePrivacyTouchMove, { passive: false });
+    privacyCanvas.addEventListener('touchend', stopPrivacyDrawing);
+
+    // Checkbox listener
+    document.getElementById('privacyAgreeCheckbox').addEventListener('change', updatePrivacySubmitButton);
+}
+
+function startPrivacyDrawing(e) {
+    isPrivacyDrawing = true;
+    const rect = privacyCanvas.getBoundingClientRect();
+    privacyCtx.beginPath();
+    privacyCtx.moveTo(e.clientX - rect.left, e.clientY - rect.top);
+}
+
+function drawPrivacy(e) {
+    if (!isPrivacyDrawing) return;
+    const rect = privacyCanvas.getBoundingClientRect();
+    privacyCtx.lineTo(e.clientX - rect.left, e.clientY - rect.top);
+    privacyCtx.stroke();
+    hasPrivacySignature = true;
+    updatePrivacySubmitButton();
+}
+
+function stopPrivacyDrawing() {
+    isPrivacyDrawing = false;
+}
+
+function handlePrivacyTouchStart(e) {
+    e.preventDefault();
+    const touch = e.touches[0];
+    const rect = privacyCanvas.getBoundingClientRect();
+    isPrivacyDrawing = true;
+    privacyCtx.beginPath();
+    privacyCtx.moveTo(touch.clientX - rect.left, touch.clientY - rect.top);
+}
+
+function handlePrivacyTouchMove(e) {
+    e.preventDefault();
+    if (!isPrivacyDrawing) return;
+    const touch = e.touches[0];
+    const rect = privacyCanvas.getBoundingClientRect();
+    privacyCtx.lineTo(touch.clientX - rect.left, touch.clientY - rect.top);
+    privacyCtx.stroke();
+    hasPrivacySignature = true;
+    updatePrivacySubmitButton();
+}
+
+function clearPrivacySignature() {
+    if (!privacyCanvas || !privacyCtx) return;
+    privacyCtx.clearRect(0, 0, privacyCanvas.width, privacyCanvas.height);
+    hasPrivacySignature = false;
+    updatePrivacySubmitButton();
+}
+
+function updatePrivacySubmitButton() {
+    const submitBtn = document.getElementById('submitPrivacySignatureBtn');
+    const agreeCheckbox = document.getElementById('privacyAgreeCheckbox');
+    
+    if (hasPrivacySignature && agreeCheckbox && agreeCheckbox.checked) {
+        submitBtn.disabled = false;
+    } else {
+        submitBtn.disabled = true;
+    }
+}
+
+async function submitPrivacySignature() {
+    if (!hasPrivacySignature) {
+        showError('Please provide your signature');
+        return;
+    }
+
+    const agreeCheckbox = document.getElementById('privacyAgreeCheckbox');
+    if (!agreeCheckbox.checked) {
+        showError('Please agree to the terms and conditions');
+        return;
+    }
+
+    showLoading();
+
+    try {
+        // Convert canvas to blob
+        const blob = await new Promise(resolve => {
+            privacyCanvas.toBlob(resolve, 'image/png');
+        });
+
+        // Create form data
+        const formData = new FormData();
+        formData.append('signature', blob, 'signature.png');
+
+        // Submit to API
+        const response = await fetch('/api/driver/generate-privacy-agreement/', {
+            method: 'POST',
+            body: formData,
+            headers: {
+                'X-CSRFToken': getCSRFToken()
+            },
+            credentials: 'include'
+        });
+
+        const data = await response.json();
+
+        if (data.success) {
+            showSuccess('Privacy agreement signed successfully!');
+            closePrivacySignatureModal();
+            
+            // Clear signature
+            clearPrivacySignature();
+            document.getElementById('privacyAgreeCheckbox').checked = false;
+            
+            // Reload document status to show the signed agreement
+            setTimeout(() => {
+                loadDocumentStatus();
+            }, 1000);
+        } else {
+            showError(data.error || 'Failed to submit signature');
+        }
+    } catch (error) {
+        console.error('Privacy signature submission error:', error);
+        showError('Failed to submit signature. Please try again.');
+    } finally {
+        hideLoading();
+    }
+}
+
+    // ===== DOCUMENT UPLOAD FUNCTIONS =====
+    function handleFileSelect(input, docType) {
+        const file = input.files[0];
+        if (!file) return;
+
+        // Validate file size (5MB)
+        if (file.size > 5 * 1024 * 1024) {
+            showError('File size must be less than 5MB');
+            input.value = '';
+            return;
+        }
+
+        // Validate file type
+        const allowedTypes = ['application/pdf', 'image/jpeg', 'image/jpg', 'image/png'];
+        if (!allowedTypes.includes(file.type)) {
+            showError('Only PDF, JPG, and PNG files are allowed');
+            input.value = '';
+            return;
+        }
+
+        // Store file in uploadedDocs object
+        uploadedDocs[docType] = file;
+
+        // Show preview
+        const previewDiv = document.getElementById(`${docType}Preview`);
+        const fileNameSpan = document.getElementById(`${docType}FileName`);
+        fileNameSpan.textContent = file.name;
+        previewDiv.classList.remove('hidden');
+
+        // Check if all 4 documents are selected
+        checkAllDocsSelected();
+    }
+
+    function checkAllDocsSelected() {
+        const allSelected = Object.values(uploadedDocs).every(file => file !== null);
+        const uploadBtn = document.getElementById('uploadAllBtn');
+        
+        if (allSelected) {
+            uploadBtn.classList.remove('hidden');
+            uploadBtn.disabled = false;
+        } else {
+            uploadBtn.classList.add('hidden');
+            uploadBtn.disabled = true;
+        }
+    }
+
+    function clearFile(docType) {
+        uploadedDocs[docType] = null;
+        const fileInput = document.getElementById(`${docType}Upload`);
+        fileInput.value = '';
+        const previewDiv = document.getElementById(`${docType}Preview`);
+        previewDiv.classList.add('hidden');
+        checkAllDocsSelected();
+    }
+
+    async function uploadAllDocuments() {
+        showLoading();
+        
+        const formData = new FormData();
+        formData.append('license', uploadedDocs.license);
+        formData.append('insurance', uploadedDocs.insurance);
+        formData.append('ownership', uploadedDocs.registration);
+        formData.append('workstatus', uploadedDocs.workProof);
+
+        try {
+            const response = await fetch('/api/driver/uploadDriverDocuments/', {
+                method: 'POST',
+                body: formData,
+                headers: {
+                    'X-CSRFToken': getCSRFToken()
+                },
+                credentials: 'include'
+            });
+
+            const data = await response.json();
+
+            if (data.success) {
+                showSuccess(data.message || 'All documents uploaded successfully!');
+                document.getElementById('uploadAllBtn').classList.add('hidden');
+                
+                // Reload document status to show uploaded files
+                setTimeout(() => {
+                    loadDocumentStatus();
+                }, 1000);
+            } else {
+                showError(data.error || 'Failed to upload documents');
+            }
+        } catch (error) {
+            console.error('Upload error:', error);
+            showError('Failed to upload documents. Please try again.');
+        } finally {
+            hideLoading();
+        }
+    }
+
+    // ===== VIEW DOCUMENT FUNCTIONS =====
+    function viewUploadedDocument(url) {
+        if (url) {
+            window.open(url, '_blank');
+        } else {
+            showError('Document URL not available');
+        }
+    }
+
+    function viewDocument(docType) {
+        const button = docType === 'contract' 
+            ? document.getElementById('viewContractBtn')
+            : document.getElementById('viewPrivacyBtn');
+        
+        const url = button.getAttribute('data-url');
+        
+        if (url) {
+            window.open(url, '_blank');
+        } else {
+            showError('Document not available');
+        }
+    }
+
+    // ===== LOAD DOCUMENT STATUS =====
+    async function loadDocumentStatus() {
+        try {
+            const response = await fetch('/api/driver/document-status/', {
+                credentials: 'include',
+                headers: {
+                    'X-CSRFToken': getCSRFToken()
+                }
+            });
+
+            if (!response.ok) {
+                throw new Error('Failed to fetch document status');
+            }
+
+            const data = await response.json();
+            
+            if (!data.success) {
+                console.error('Document status fetch failed:', data.error);
+                return;
+            }
+
+            const status = data.document_status || {};
+            const urls = data.document_urls || {};
+            
+            console.log('Document Status:', status);
+            console.log('Document URLs:', urls);
+
+            // ===== CONTRACT STATUS =====
+            const contractExistsView = document.getElementById('contractExistsView');
+            const contractSignView = document.getElementById('contractSignView');
+            const viewContractBtn = document.getElementById('viewContractBtn');
+
+            if (status.driver_contract && urls.driver_contract) {
+                // Contract exists - show view button
+                contractExistsView.classList.remove('hidden');
+                contractSignView.classList.add('hidden');
+                viewContractBtn.setAttribute('data-url', urls.driver_contract);
+                viewContractBtn.disabled = false;
+                viewContractBtn.classList.remove('opacity-50', 'cursor-not-allowed');
+            } else {
+                // Contract doesn't exist - show sign button
+                contractExistsView.classList.add('hidden');
+                contractSignView.classList.remove('hidden');
+            }
+
+            // ===== PRIVACY AGREEMENT STATUS =====
+            const privacyExistsView = document.getElementById('privacyExistsView');
+            const privacySignView = document.getElementById('privacySignView');
+            const viewPrivacyBtn = document.getElementById('viewPrivacyBtn');
+
+            if (status.privacy_laws_agreement && urls.privacy_laws_agreement) {
+                // Privacy agreement exists - show view button
+                privacyExistsView.classList.remove('hidden');
+                privacySignView.classList.add('hidden');
+                viewPrivacyBtn.setAttribute('data-url', urls.privacy_laws_agreement);
+                viewPrivacyBtn.disabled = false;
+                viewPrivacyBtn.classList.remove('opacity-50', 'cursor-not-allowed');
+            } else {
+                // Privacy agreement doesn't exist - show sign button
+                privacyExistsView.classList.add('hidden');
+                privacySignView.classList.remove('hidden');
+            }
+
+            // ===== CHECK IF DOCUMENTS UPLOADED =====
+            const hasUploadedDocs = !!(
+                status.driver_license_url && 
+                status.auto_insurance_url && 
+                status.vehicle_ownership_url && 
+                status.right_to_work_url
+            );
+
+            if (hasUploadedDocs) {
+                // Documents already uploaded - lock interface and show them
+                const docMapping = {
+                    'driver_license_url': 'license',
+                    'auto_insurance_url': 'insurance',
+                    'vehicle_ownership_url': 'registration',
+                    'right_to_work_url': 'workProof'
+                };
+
+                Object.entries(docMapping).forEach(([apiKey, uiKey]) => {
+                    const url = urls[apiKey];
+                    if (!url) return;
+                    
+                    const previewDiv = document.getElementById(`${uiKey}Preview`);
+                    const filename = url.split('/').pop();
+                    
+                    previewDiv.classList.remove('hidden');
+                    previewDiv.innerHTML = `
+                        <div class="flex items-center justify-between bg-slate-700 rounded-lg p-3">
+                            <div class="flex items-center flex-1 min-w-0 mr-2">
+                                <svg class="w-5 h-5 text-emerald-400 mr-2 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20">
+                                    <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd"/>
+                                </svg>
+                                <span class="text-sm text-slate-300 truncate">${decodeURIComponent(filename)}</span>
+                                <span class="ml-2 text-xs text-emerald-400 flex-shrink-0">✓ Uploaded</span>
+                            </div>
+                            <button onclick="viewUploadedDocument('${url}')" class="text-blue-400 hover:text-blue-300 text-xs px-2 py-1 rounded transition-colors flex items-center flex-shrink-0" title="View document">
+                                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/>
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"/>
+                                </svg>
+                            </button>
+                        </div>
+                    `;
+                    
+                    // Disable file input
+                    const fileInput = document.getElementById(`${uiKey}Upload`);
+                    fileInput.disabled = true;
+                    
+                    // Disable upload area
+                    const label = fileInput.previousElementSibling;
+                    label.classList.add('opacity-50', 'cursor-not-allowed', 'pointer-events-none');
+                });
+                
+                // Hide upload button
+                document.getElementById('uploadAllBtn').classList.add('hidden');
+                
+                // Show info message (only once)
+                if (!sessionStorage.getItem('docsLockedMessageShown')) {
+                    showInfo('Your documents have been uploaded and locked. Contact admin if changes are needed.');
+                    sessionStorage.setItem('docsLockedMessageShown', 'true');
+                }
+            }
+
+        } catch (error) {
+            console.error('Error loading document status:', error);
+            showError('Failed to load document status');
+        }
+    }
+
+    // ===== LOGOUT =====
+    async function handleLogout() {
+        try {
+            const csrfToken = getCSRFToken();
+            await fetch("/api/driver/logout/", {
+                method: "POST",
+                headers: {
+                    "X-CSRFToken": csrfToken,
+                    "Accept": "application/json"
+                },
+                credentials: "include"
+            });
+        } catch (e) {
+            console.error("Logout failed:", e);
+        }
+
+        const cookiesToClear = ["driverId", "tokenExpiresAt", "csrftoken"];
+        cookiesToClear.forEach(name => {
+            document.cookie = `${name}=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/;`;
+        });
+
+        window.location.href = "/driverLogin/?reason=expired";
+    }
+
+    // ===== LOAD DRIVER INFO =====
+    async function loadDriverInfo() {
+        try {
+            const driverId = getCookie("driverId");
+            if (!driverId) {
+                window.location.href = "/driverLogin/";
+                return;
+            }
+
+            const response = await fetch(`/api/driver/details/?driverId=${driverId}`);
+            if (response.ok) {
+                const data = await response.json();
+                document.getElementById("welcomeText").textContent = `Welcome back, ${data.name}!`;
+                document.getElementById("profileInitial").textContent = data.name.charAt(0).toUpperCase();
+            }
+        } catch (error) {
+            console.error("Error loading driver info:", error);
+        }
+    }
+
+    // ===== INITIALIZE PAGE =====
+    document.addEventListener("DOMContentLoaded", function() {
+        const driverId = getCookie("driverId");
+        if (!driverId) {
+            window.location.href = "/driverLogin/";
+            return;
+        }
+
+        // Mobile menu toggle
+        const menuToggle = document.getElementById('menuToggle');
+        const sidebar = document.getElementById('sidebar');
+        const sidebarOverlay = document.getElementById('sidebarOverlay');
+
+        menuToggle?.addEventListener('click', () => {
+            sidebar.classList.toggle('-translate-x-full');
+            sidebarOverlay.classList.toggle('hidden');
+        });
+
+        sidebarOverlay?.addEventListener('click', () => {
+            sidebar.classList.add('-translate-x-full');
+            sidebarOverlay.classList.add('hidden');
+        });
+
+        loadDriverInfo();
+        loadDocumentStatus();
+    });
+        // function getCookie(name) {
+        //     const value = `; ${document.cookie}`;
+        //     const parts = value.split(`; ${name}=`);
+        //     if (parts.length === 2) return parts.pop().split(';').shift();
+        //     return null;
+        // }
+
+        // function getCSRFToken() {
+        //     return document.cookie
+        //         .split('; ')
+        //         .find(row => row.startsWith('csrftoken='))
+        //         ?.split('=')[1];
+        // }
+
+        // const uploadedDocs = {
+        //     license: null,
+        //     insurance: null,
+        //     registration: null,
+        //     workProof: null
+        // };
+
+        // function showLoading() {
+        //     document.getElementById('loadingOverlay').classList.remove('hidden');
+        // }
+
+        // function hideLoading() {
+        //     document.getElementById('loadingOverlay').classList.add('hidden');
+        // }
+
+        // function showSuccess(message) {
+        //     const successDiv = document.getElementById('successMessage');
+        //     const successText = document.getElementById('successText');
+        //     successText.textContent = message;
+        //     successDiv.classList.remove('hidden');
+        //     setTimeout(() => {
+        //         successDiv.classList.add('hidden');
+        //     }, 5000);
+        // }
+
+        // function showError(message) {
+        //     const errorDiv = document.getElementById('errorMessage');
+        //     const errorText = document.getElementById('errorText');
+        //     errorText.textContent = message;
+        //     errorDiv.classList.remove('hidden');
+        //     setTimeout(() => {
+        //         errorDiv.classList.add('hidden');
+        //     }, 5000);
+        // }
+
+        // function handleFileSelect(input, docType) {
+        //     const file = input.files[0];
+        //     if (!file) return;
+
+        //     // Validate file size (5MB)
+        //     if (file.size > 5 * 1024 * 1024) {
+        //         showError('File size must be less than 5MB');
+        //         input.value = '';
+        //         return;
+        //     }
+
+        //     // Validate file type
+        //     const allowedTypes = ['application/pdf', 'image/jpeg', 'image/jpg', 'image/png'];
+        //     if (!allowedTypes.includes(file.type)) {
+        //         showError('Only PDF, JPG, and PNG files are allowed');
+        //         input.value = '';
+        //         return;
+        //     }
+
+        //     // Store file in uploadedDocs object
+        //     uploadedDocs[docType] = file;
+
+        //     // Show preview
+        //     const previewDiv = document.getElementById(`${docType}Preview`);
+        //     const fileNameSpan = document.getElementById(`${docType}FileName`);
+        //     fileNameSpan.textContent = file.name;
+        //     previewDiv.classList.remove('hidden');
+
+        //     // Check if all 4 documents are selected
+        //     checkAllDocsSelected();
+        // }
+
+        // function checkAllDocsSelected() {
+        //     const allSelected = Object.values(uploadedDocs).every(file => file !== null);
+        //     const uploadBtn = document.getElementById('uploadAllBtn');
+            
+        //     if (allSelected) {
+        //         uploadBtn.classList.remove('hidden');
+        //         uploadBtn.disabled = false;
+        //     } else {
+        //         uploadBtn.classList.add('hidden');
+        //         uploadBtn.disabled = true;
+        //     }
+        // }
+
+        // function clearFile(docType) {
+        //     // Clear the stored file
+        //     uploadedDocs[docType] = null;
+            
+        //     // Clear the file input
+        //     const fileInput = document.getElementById(`${docType}Upload`);
+        //     fileInput.value = '';
+            
+        //     // Hide the preview
+        //     const previewDiv = document.getElementById(`${docType}Preview`);
+        //     previewDiv.classList.add('hidden');
+            
+        //     // Recheck if all docs are selected
+        //     checkAllDocsSelected();
+        // }
+
+        // async function uploadAllDocuments() {
+        //     showLoading();
+            
+        //     const formData = new FormData();
+            
+        //     // Append all 4 files with backend-expected names
+        //     formData.append('license', uploadedDocs.license);
+        //     formData.append('insurance', uploadedDocs.insurance);
+        //     formData.append('ownership', uploadedDocs.registration);    // ✅ Changed
+        //     formData.append('workstatus', uploadedDocs.workProof);      // ✅ Changed
+
+        //     try {
+        //         const response = await fetch('/api/driver/uploadDriverDocuments/', {
+        //             method: 'POST',
+        //             body: formData,
+        //             headers: {
+        //                 'X-CSRFToken': getCSRFToken()
+        //             },
+        //             credentials: 'include'
+        //         });
+
+        //         const data = await response.json();
+
+        //         if (data.success) {
+        //             showSuccess(data.message || 'All documents uploaded successfully!');
+                    
+        //             // Hide the upload button after success
+        //             document.getElementById('uploadAllBtn').classList.add('hidden');
+                    
+        //             // Disable all file inputs and hide clear buttons
+        //             Object.keys(uploadedDocs).forEach(key => {
+        //                 // Disable the file input
+        //                 const fileInput = document.getElementById(`${key}Upload`);
+        //                 fileInput.disabled = true;
+                        
+        //                 // Disable the label (upload area)
+        //                 const label = fileInput.previousElementSibling;
+        //                 label.classList.add('opacity-50', 'cursor-not-allowed', 'pointer-events-none');
+                        
+        //                 // Find and hide the clear button in preview
+        //                 const previewDiv = document.getElementById(`${key}Preview`);
+        //                 const clearBtn = previewDiv.querySelector('button');
+        //                 if (clearBtn) {
+        //                     clearBtn.classList.add('hidden');
+        //                 }
+                        
+        //                 // Update preview text
+        //                 const fileNameSpan = document.getElementById(`${key}FileName`);
+        //                 fileNameSpan.parentElement.parentElement.innerHTML = `
+        //                     <div class="flex items-center flex-1">
+        //                         <svg class="w-5 h-5 text-emerald-400 mr-2" fill="currentColor" viewBox="0 0 20 20">
+        //                             <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd"/>
+        //                         </svg>
+        //                         <span class="text-sm text-slate-300">${fileNameSpan.textContent}</span>
+        //                         <span class="ml-2 text-xs text-emerald-400">✓ Uploaded</span>
+        //                     </div>
+        //                 `;
+        //             });
+        //         } else {
+        //             showError(data.error || 'Failed to upload documents');
+        //         }
+        //     } catch (error) {
+        //         console.error('Upload error:', error);
+        //         showError('Failed to upload documents. Please try again.');
+        //     } finally {
+        //         hideLoading();
+        //     }
+        // }
+
+        // async function viewDocument(docType) {
+        //     showLoading();
+            
+        //     try {
+        //         const response = await fetch(`/api/driver/documents/${docType}/`, {
+        //             credentials: 'include'
+        //         });
+
+        //         if (!response.ok) {
+        //             throw new Error('Failed to fetch document');
+        //         }
+
+        //         const data = await response.json();
+                
+        //         if (data.url) {
+        //             window.open(data.url, '_blank');
+        //         } else {
+        //             showError('Document not available');
+        //         }
+        //     } catch (error) {
+        //         console.error('Error viewing document:', error);
+        //         showError('Failed to load document. Please try again.');
+        //     } finally {
+        //         hideLoading();
+        //     }
+        // }
+
+        // // View uploaded document in new tab
+        // function viewUploadedDocument(url) {
+        //     if (url) {
+        //         window.open(url, '_blank');
+        //     }
+        // }
+
+        // // Update the existing viewDocument function to use data-url attribute
+        // async function viewDocument(docType) {
+        //     const button = docType === 'contract' 
+        //         ? document.getElementById('viewContractBtn')
+        //         : document.getElementById('viewPrivacyBtn');
+            
+        //     const url = button.getAttribute('data-url');
+            
+        //     if (url) {
+        //         window.open(url, '_blank');
+        //     } else {
+        //         showError('Document not available');
+        //     }
+        // }
+
+        // // Add showInfo function if it doesn't exist
+        // function showInfo(message) {
+        //     const infoDiv = document.createElement('div');
+        //     infoDiv.className = 'fixed top-4 right-4 bg-blue-500 bg-opacity-10 border border-blue-500 text-blue-400 px-4 py-3 rounded-lg z-50';
+        //     infoDiv.innerHTML = `
+        //         <div class="flex items-center">
+        //             <svg class="w-5 h-5 mr-2" fill="currentColor" viewBox="0 0 20 20">
+        //                 <path fill-rule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z" clip-rule="evenodd"/>
+        //             </svg>
+        //             <span>${message}</span>
+        //         </div>
+        //     `;
+        //     document.body.appendChild(infoDiv);
+        //     setTimeout(() => {
+        //         infoDiv.remove();
+        //     }, 5000);
+        // }
+
+        // async function loadDocumentStatus() {
+        //     try {
+        //         const response = await fetch('/api/driver/documents/status/', {
+        //             credentials: 'include',
+        //             headers: {
+        //                 'X-CSRFToken': getCSRFToken()
+        //             }
+        //         });
+
+        //         if (!response.ok) {
+        //             throw new Error('Failed to fetch document status');
+        //         }
+
+        //         const data = await response.json();
+                
+        //         if (!data.success) {
+        //             console.error('Document status fetch failed:', data.error);
+        //             return;
+        //         }
+
+        //         const docs = data.documents || {};
+                
+        //         // Check if user has uploaded the 4 compliance documents
+        //         const hasUploadedDocs = !!(
+        //             docs.driver_license && 
+        //             docs.auto_insurance && 
+        //             docs.vehicle_ownership && 
+        //             docs.right_to_work
+        //         );
+
+        //         // ----------------------------
+        //         // Update Contract Status
+        //         // ----------------------------
+        //         const contractStatus = document.getElementById('contractStatusText');
+        //         const viewContractBtn = document.getElementById('viewContractBtn');
+                
+        //         if (docs.driver_contract) {
+        //             contractStatus.textContent = 'Available';
+        //             contractStatus.className = 'font-semibold text-emerald-400';
+        //             viewContractBtn.disabled = false;
+        //             viewContractBtn.setAttribute('data-url', docs.driver_contract);
+        //         } else {
+        //             contractStatus.textContent = 'Not Available';
+        //             contractStatus.className = 'font-semibold text-slate-400';
+        //             viewContractBtn.disabled = true;
+        //             viewContractBtn.classList.add('opacity-50', 'cursor-not-allowed');
+        //         }
+
+        //         // ----------------------------
+        //         // Update Privacy Agreement Status
+        //         // ----------------------------
+        //         const privacyStatus = document.getElementById('privacyStatusText');
+        //         const viewPrivacyBtn = document.getElementById('viewPrivacyBtn');
+                
+        //         if (docs.privacy_laws_agreement) {
+        //             privacyStatus.textContent = 'Available';
+        //             privacyStatus.className = 'font-semibold text-emerald-400';
+        //             viewPrivacyBtn.disabled = false;
+        //             viewPrivacyBtn.setAttribute('data-url', docs.privacy_laws_agreement);
+        //         } else {
+        //             privacyStatus.textContent = 'Not Available';
+        //             privacyStatus.className = 'font-semibold text-slate-400';
+        //             viewPrivacyBtn.disabled = true;
+        //             viewPrivacyBtn.classList.add('opacity-50', 'cursor-not-allowed');
+        //         }
+
+        //         // ----------------------------
+        //         // CASE 2: All documents uploaded - Lock everything
+        //         // ----------------------------
+        //         if (hasUploadedDocs) {
+        //             console.log('Case 2: All documents already uploaded - Locking interface');
+                    
+        //             const docMapping = {
+        //                 'driver_license': 'license',
+        //                 'auto_insurance': 'insurance',
+        //                 'vehicle_ownership': 'registration',
+        //                 'right_to_work': 'workProof'
+        //             };
+
+        //             Object.entries(docMapping).forEach(([apiKey, uiKey]) => {
+        //                 const url = docs[apiKey];
+                        
+        //                 // Show preview with uploaded status
+        //                 const previewDiv = document.getElementById(`${uiKey}Preview`);
+        //                 const fileNameSpan = document.getElementById(`${uiKey}FileName`);
+                        
+        //                 // Extract filename from URL
+        //                 const filename = url.split('/').pop();
+        //                 fileNameSpan.textContent = filename;
+        //                 previewDiv.classList.remove('hidden');
+                        
+        //                 // Update preview to show "Uploaded" status (no clear button)
+        //                 previewDiv.innerHTML = `
+        //                     <div class="flex items-center justify-between bg-slate-700 rounded-lg p-3">
+        //                         <div class="flex items-center flex-1">
+        //                             <svg class="w-5 h-5 text-emerald-400 mr-2" fill="currentColor" viewBox="0 0 20 20">
+        //                                 <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd"/>
+        //                             </svg>
+        //                             <span class="text-sm text-slate-300">${filename}</span>
+        //                             <span class="ml-2 text-xs text-emerald-400">✓ Uploaded</span>
+        //                         </div>
+        //                         <button onclick="viewUploadedDocument('${url}')" class="text-blue-400 hover:text-blue-300 text-xs px-2 py-1 rounded transition-colors flex items-center" title="View document">
+        //                             <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        //                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/>
+        //                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"/>
+        //                             </svg>
+        //                         </button>
+        //                     </div>
+        //                 `;
+                        
+        //                 // Disable file input
+        //                 const fileInput = document.getElementById(`${uiKey}Upload`);
+        //                 fileInput.disabled = true;
+                        
+        //                 // Disable upload area
+        //                 const label = fileInput.previousElementSibling;
+        //                 label.classList.add('opacity-50', 'cursor-not-allowed', 'pointer-events-none');
+        //             });
+                    
+        //             // Hide upload button
+        //             document.getElementById('uploadAllBtn').classList.add('hidden');
+                    
+        //             // Show info message
+        //             showInfo('Your documents have been uploaded and locked. Contact admin if changes are needed.');
+        //         }
+        //         // ----------------------------
+        //         // CASE 1: Only contracts available - Allow document upload
+        //         // ----------------------------
+        //         else {
+        //             console.log('Case 1: Contracts available, documents can be uploaded');
+        //             // Upload areas remain enabled (default state)
+        //         }
+
+        //     } catch (error) {
+        //         console.error('Error loading document status:', error);
+        //         // Don't show error to user - just log it
+        //     }
+        // }
+
+        // async function handleLogout() {
+        //     try {
+        //         const csrfToken = getCSRFToken();
+        //         await fetch("/api/driver/logout/", {
+        //             method: "POST",
+        //             headers: {
+        //                 "X-CSRFToken": csrfToken,
+        //                 "Accept": "application/json"
+        //             },
+        //             credentials: "include"
+        //         });
+        //     } catch (e) {
+        //         console.error("Logout failed:", e);
+        //     }
+
+        //     const cookiesToClear = ["driverId", "tokenExpiresAt", "csrftoken"];
+        //     cookiesToClear.forEach(name => {
+        //         document.cookie = `${name}=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/;`;
+        //     });
+
+        //     window.location.href = "/driverLogin/?reason=expired";
+        // }
+
+        // async function loadDriverInfo() {
+        //     try {
+        //         const driverId = getCookie("driverId");
+        //         if (!driverId) {
+        //             window.location.href = "/driverLogin/";
+        //             return;
+        //         }
+
+        //         const response = await fetch(`/api/driver/details/?driverId=${driverId}`);
+        //         if (response.ok) {
+        //             const data = await response.json();
+        //             document.getElementById("welcomeText").textContent = `Welcome back, ${data.name}!`;
+        //             document.getElementById("profileInitial").textContent = data.name.charAt(0).toUpperCase();
+        //         }
+        //     } catch (error) {
+        //         console.error("Error loading driver info:", error);
+        //     }
+        // }
+
+        // // Initialize page
+        // document.addEventListener("DOMContentLoaded", function() {
+        //     const driverId = getCookie("driverId");
+        //     if (!driverId) {
+        //         window.location.href = "/driverLogin/";
+        //         return;
+        //     }
+
+        //     // Mobile menu toggle
+        //     const menuToggle = document.getElementById('menuToggle');
+        //     const sidebar = document.getElementById('sidebar');
+        //     const sidebarOverlay = document.getElementById('sidebarOverlay');
+
+        //     menuToggle?.addEventListener('click', () => {
+        //         sidebar.classList.toggle('-translate-x-full');
+        //         sidebarOverlay.classList.toggle('hidden');
+        //     });
+
+        //     sidebarOverlay?.addEventListener('click', () => {
+        //         sidebar.classList.add('-translate-x-full');
+        //         sidebarOverlay.classList.add('hidden');
+        //     });
+
+        //     loadDriverInfo();
+        //     loadDocumentStatus();
+        // });
+    </script>
+</body>
+</html>

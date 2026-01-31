@@ -133,6 +133,7 @@ GCP_CUSTOMER_PHARMACY_SIGNED_ACKNOWLEDGEMENTS = os.getenv(
 GCP_DRIVER_INVOICE_FOLDER = os.getenv("GCP_DRIVER_INVOICE_FOLDER")
 GCP_DRIVER_PROFILE_FOLDER = os.getenv("GCP_DRIVER_PROFILE_FOLDER")
 GCP_PROOF_FOLDER = os.getenv("GCP_PROOF_FOLDER")
+GCP_DRIVER_DOCUMENTS_FOLDER = os.getenv("GCP_DRIVER_DOCUMENTS_FOLDER")
 
 # -------------------------------------------------
 # EMAIL (CONSOLE BY DEFAULT IN DEV)
@@ -185,7 +186,7 @@ OTP_MAX_PER_HOUR = 5               # hard cap
 # -------------------------------------------------
 # APP CONSTANTS
 # -------------------------------------------------
-DRIVER_COMMISSION_RATE = float(os.getenv("DRIVER_COMMISSION_RATE", 0.40))
+DRIVER_COMMISSION_RATE = float(os.getenv("DRIVER_COMMISSION_RATE"))
 PAYMENT_RATE_PERCENT = int(100 - (100 * DRIVER_COMMISSION_RATE))
 
 SITE_URL = os.getenv("SITE_URL", "http://localhost:8000")
@@ -207,6 +208,8 @@ if not JWT_SECRET_KEY:
 # -------------------------------------------------
 LOGO_PATH = os.path.join(BASE_DIR, "Logo", "Website_Logo_No_Background.png")
 LOGO_URL = "https://canalogistix.s3.us-east-2.amazonaws.com/Logo/CanaLogistiX_Logo_BG.png"
+
+COMPANY_SIGNATURE_URL = "https://canalogistix.s3.us-east-2.amazonaws.com/DirectorSignature.png"
 
 # -------------------------------------------------
 # BUSINESS INFORMATION

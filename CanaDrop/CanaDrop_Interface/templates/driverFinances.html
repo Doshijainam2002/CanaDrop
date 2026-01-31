@@ -101,6 +101,16 @@
                 My Identity
             </a>
 
+            <a href="/driverDocuments/"
+                class="nav-item flex items-center px-6 py-3 text-slate-300 hover:bg-slate-700 hover:text-emerald-400 transition-colors rounded-lg">
+                    <svg class="w-5 h-5 mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                            d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/>
+                    </svg>
+                    My Documents
+                </a>
+
+
             <!-- CC Points (Inactive) -->
             <a href="/driverCCPoints/" class="nav-item flex items-center px-6 py-3 text-slate-300 hover:text-white hover:bg-slate-700 rounded-lg transition">
                 <svg class="w-5 h-5 mr-3 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -312,6 +322,7 @@ function formatDatePlain(dateOnly) {
 
 let invoiceData = [];
 let currentDriverId = null;
+let driverCommissionRate = 0.30; // Default Fallback Value
 
 function getCookie(name) {
     const value = `; ${document.cookie}`;
@@ -342,6 +353,36 @@ function showInfo(message) {
                 .find(row => row.startsWith('csrftoken='))
                 ?.split('=')[1];
         }
+
+       async function fetchCommissionRate() {
+    try {
+        const response = await fetch('/api/driver/commission/', {
+            method: 'GET',
+            credentials: 'include',
+            headers: {
+                'Content-Type': 'application/json',
+                'X-CSRFToken': getCSRFToken()
+            }
+        });
+
+        if (!response.ok) {
+            console.error('Failed to fetch commission rate, using default 30%');
+            return;
+        }
+
+        const data = await response.json();
+        
+        if (data.success && data.commission) {
+            driverCommissionRate = data.commission.decimal;
+            console.log(`Commission rate loaded: ${data.commission.percentage}% (${data.commission.decimal})`);
+        } else {
+            console.error('Invalid commission data received, using default 30%');
+        }
+    } catch (error) {
+        console.error('Error fetching commission rate:', error);
+        console.log('Using default commission rate of 30%');
+    }
+} 
 
 function showLoading() {
     document.getElementById('loadingOverlay').classList.remove('hidden');
@@ -491,34 +532,33 @@ function viewInvoiceDetails(startDate) {
             <div>
                 <h4 class="text-lg font-semibold text-slate-100 mb-4">Order Details</h4>
                 <div class="overflow-x-auto">
-                    <table class="w-full bg-slate-700 rounded-lg">
-                        <thead>
-                            <tr class="border-b border-slate-600">
-                                <th class="px-4 py-3 text-left text-xs font-semibold text-slate-300 uppercase">Order ID</th>
-                                <th class="px-4 py-3 text-left text-xs font-semibold text-slate-300 uppercase">Pickup</th>
-                                <th class="px-4 py-3 text-left text-xs font-semibold text-slate-300 uppercase">Delivery</th>
-                                <th class="px-4 py-3 text-left text-xs font-semibold text-slate-300 uppercase">Gross Rate</th>
-                                <th class="px-4 py-3 text-left text-xs font-semibold text-slate-300 uppercase">Your Earning</th>
-                                <th class="px-4 py-3 text-left text-xs font-semibold text-slate-300 uppercase">Date</th>
-                            </tr>
-                        </thead>
-                        <tbody class="divide-y divide-slate-600">
-                            ${invoice.orders.map(order => {
-                                const grossRate = parseFloat(order.rate || 0);
-                                const netEarning = grossRate * 0.60; // Driver gets 85% (100% - 15% commission)
-                                return `
-                                    <tr>
-                                        <td class="px-4 py-3 text-sm text-slate-200">#${order.id}</td>
-                                        <td class="px-4 py-3 text-sm text-slate-300">${order.pickup_city || 'N/A'}</td>
-                                        <td class="px-4 py-3 text-sm text-slate-300">${order.drop_city || 'N/A'}</td>
-                                        <td class="px-4 py-3 text-sm text-slate-300">$${grossRate.toFixed(2)}</td>
-                                        <td class="px-4 py-3 text-sm text-emerald-400">$${netEarning.toFixed(2)}</td>
-                                        <td class="px-4 py-3 text-sm text-slate-300">${order.updated_at ? parseUtcDateTime(order.updated_at).toLocaleDateString() : 'N/A'}
-                                    </tr>
-                                `;
-                            }).join('')}
-                        </tbody>
-                    </table>
+                <table class="w-full bg-slate-700 rounded-lg">
+                    <thead>
+                        <tr class="border-b border-slate-600">
+                            <th class="px-4 py-3 text-left text-xs font-semibold text-slate-300 uppercase">Order ID</th>
+                            <th class="px-4 py-3 text-left text-xs font-semibold text-slate-300 uppercase">Pickup</th>
+                            <th class="px-4 py-3 text-left text-xs font-semibold text-slate-300 uppercase">Delivery</th>
+                            <th class="px-4 py-3 text-left text-xs font-semibold text-slate-300 uppercase">Your Earning</th>
+                            <th class="px-4 py-3 text-left text-xs font-semibold text-slate-300 uppercase">Date</th>
+                        </tr>
+                    </thead>
+                    <tbody class="divide-y divide-slate-600">
+                        ${invoice.orders.map(order => {
+                            const grossRate = parseFloat(order.rate || 0);
+                            const driverShare = 1 - driverCommissionRate; // e.g., 1 - 0.30 = 0.70
+                            const netEarning = grossRate * driverShare;
+                            return `
+                                <tr>
+                                    <td class="px-4 py-3 text-sm text-slate-200">#${order.id}</td>
+                                    <td class="px-4 py-3 text-sm text-slate-300">${order.pickup_city || 'N/A'}</td>
+                                    <td class="px-4 py-3 text-sm text-slate-300">${order.drop_city || 'N/A'}</td>
+                                    <td class="px-4 py-3 text-sm text-emerald-400">$${netEarning.toFixed(2)}</td>
+                                    <td class="px-4 py-3 text-sm text-slate-300">${order.updated_at ? parseUtcDateTime(order.updated_at).toLocaleDateString() : 'N/A'}</td>
+                                </tr>
+                            `;
+                        }).join('')}
+                    </tbody>
+                </table>
                 </div>
             </div>
 
@@ -797,7 +837,7 @@ document.addEventListener('keydown', function(e) {
 });
 
 // Initialize page
-document.addEventListener("DOMContentLoaded", function() {
+document.addEventListener("DOMContentLoaded", async function() {
     // Check if driver is logged in
     const driverId = getCookie("driverId");
     if (!driverId) {
@@ -820,6 +860,9 @@ document.addEventListener("DOMContentLoaded", function() {
       sidebarOverlay.classList.add('hidden');
     });
 
+    // Load commission rate first
+    await fetchCommissionRate();
+    
     // Load data
     loadDriverInfo();
     loadInvoiceData();

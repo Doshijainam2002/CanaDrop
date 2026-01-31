@@ -117,6 +117,14 @@ class Driver(models.Model):
     active = models.BooleanField(default=True, db_index=True)
     identity_url = models.URLField(blank=True, null=True)
 
+    driver_license_url = models.URLField(blank=True, null=True)
+    auto_insurance_url = models.URLField(blank=True, null=True)
+    vehicle_ownership_url = models.URLField(blank=True, null=True)  # ownership/registration
+    right_to_work_url = models.URLField(blank=True, null=True) 
+
+    driver_contract = models.URLField(blank=True, null=True) 
+    privacy_laws_agreement = models.URLField(blank=True, null=True) 
+
     def save(self, *args, **kwargs):
         if not self.password.startswith('pbkdf2_'):
             self.password = make_password(self.password)

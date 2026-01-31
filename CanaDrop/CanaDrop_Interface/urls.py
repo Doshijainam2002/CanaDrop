@@ -57,6 +57,14 @@ urlpatterns = [
     path("api/driver/<int:driver_id>/cc-points/", views.get_driver_cc_points, name="driver_cc_points"), # Done
     path('api/driver/logout/', views.driver_logout_api, name="DriverLogoutAPI"), # Done
     path("api/driver/add-order-notes/", views.add_driver_notes, name="add_driver_notes"), # Done
+    path("driverDocuments/", views.driverMyDocumentsView, name="DriverDocumentsPage"), # Done
+    path("api/driver/uploadDriverDocuments/", views.upload_driver_documents, name="UploadDriverDocumentsAPI"), # Done
+    path("api/driver/documents/status/", views.get_driver_documents, name="FetchDriverDocuments"), # Done
+    path("api/driver/document-status/", views.get_driver_document_status, name="driver-document-status"), # Done
+    path('api/driver/generate-contract/', views.generate_driver_contract, name='generate_driver_contract'), # Done
+    path('api/driver/generate-privacy-agreement/', views.generate_privacy_agreement, name='generate_privacy_agreement'), # Done
+    path('api/driver/commission/', views.get_driver_commission, name="GETDRIVERCOMMISSIONVALUES"), # Done
+
 
     path('contactAdmin/', views.contactAdminView, name='contactAdminPage'), # Done
     path('api/contact-admin/', views.contact_admin_api, name='contact_admin_api'), # Done
